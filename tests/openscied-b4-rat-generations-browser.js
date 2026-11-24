@@ -492,6 +492,9 @@ async function reportCheck(page, state) {
     /simulation|simulated|classroom model/i.test(report) && report.includes('Dataset ID: ' + trialTag(state.seed)) &&
     Object.values(state.answers || {}).filter(Boolean).every(answer => report.includes(answer)),
     'the actual downloadable investigation includes local report labels, model disclosure, and saved writing');
+  check(state.analysisAttempt==='alleles' &&
+    /ANALYZE QUICK CHECK · SAVED ANSWER[\s\S]*Number of allele copies in that snapshot/.test(report),
+    'the actual TXT includes the submitted quick-check answer');
   for (const row of expectedRows(ModelAt(state.seed, 6))) {
     const { allele, carrier, survival } = measures(row.counts, row.births, row.phase);
     const prefix = 'G' + row.generation + ' ' + (row.phase === 'born' ? 'Born' : 'Survived') + ':';
@@ -563,6 +566,9 @@ async function denominatorCheck(page) {
     const choice = quiz.locator('input[name="rg-concept"][value="' + value + '"]');
     await choice.focus();
     await page.keyboard.press('Space');
+    if(value==='alleles')check(/Choice changed.*Check answer/.test(await feedback.textContent()) &&
+      (await save(page)).analysisAttempt==='rats',
+      'a new choice asks for a check rather than displaying feedback for the saved answer');
     await quiz.locator('button[type="submit"]').press('Enter');
     check(await feedback.isVisible() && expected.test(await feedback.textContent()),
       'denominator check explains selecting ' + value);

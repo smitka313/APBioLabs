@@ -7,6 +7,8 @@ const path = require('node:path');
 const vm = require('node:vm');
 const Save = require('../openscied-save-session.js');
 const root = path.join(__dirname, '..');
+const CancerRatesLogic = require('../openscied-b3-cancer-rates-logic.js');
+const CancerRatesData = require('../openscied-b3-cancer-rates-data.js');
 let flags = 0, passes = 0;
 function check(ok, description) {
   flags++;
@@ -29,6 +31,7 @@ for (const [name, spec] of Object.entries(setup)) {
   const start = source.indexOf('  const saveScope');
   const since = start < 0 ? '' : source.slice(start, source.indexOf("window.addEventListener('pageshow', watchSaveChanges);",start) + "window.addEventListener('pageshow', watchSaveChanges);".length);
   const save = spec.key ? source.slice(source.indexOf('  function save(){'),source.indexOf('  const node=')) : sliceFunction(source,'save',spec.endSave);
+  const qualifyingPins = spec.key ? sliceFunction(source,'qualifyingPins','hasFinalResponses') : '';
   const reset = spec.key ? source.slice(source.indexOf("  $('reset-confirm').addEventListener('click',()=>{"),source.indexOf("  const figure=$('chart')"))
     : spec.endReset === 'mountScene'
       ? source.slice(source.indexOf('  function clearActivity() {'),source.indexOf('  /* ---------- scenes: public hooks',source.indexOf('  function clearActivity() {')))
@@ -46,19 +49,19 @@ for (const [name, spec] of Object.entries(setup)) {
       if (!elements.has(id)) elements.set(id, {textContent:'',value:'',style:{},close(){},focus(){},addEventListener(t,fn){this[t]=fn;}});
       return elements.get(id);
     };
-    const state = { fields:{},game:{},trials:[],quick:'',mechanism:'',fork:null, expression:{runs:[]},feedback:{},claim:value, lastSection:'overview' };
+    const state = { fields:{},game:{},trials:[],quick:'',mechanism:'',fork:null, expression:{runs:[]},feedback:{},claim:value, evidence:[], lastSection:'overview' };
     let reloads=0;
     const context = {
       document:{getElementById:id=>id==='save-announcement' ? warningSpeech :
         id==='step-announcement' ? stepSpeech : notice}, localStorage:storage,
       window:{ localStorage:storage,OpenSciEdSaveSession:Save,addEventListener(t,fn){handlers[t]=fn;},location:{reload(){reloads++;}}},
       history:{replaceState(){}},location:{hash:'',pathname:'/',search:'',reload(){reloads++;}},
-      state, ready:true, cleared:false, hadSaved:false, invalid:false, blocked:false, RESPONSE_IDS:[spec.field],SCENE_IDS:[],SECTIONS:[],
+      state,D:CancerRatesData,L:CancerRatesLogic,ready:true, cleared:false, hadSaved:false, invalid:false, blocked:false, RESPONSE_IDS:[spec.field],SCENE_IDS:[],SECTIONS:[],
       $:element, $$:sel=>sel.startsWith('input[type=radio]:checked')?[field]:[], collectFields:()=>({[spec.field]:field.value}),
       renderReport(){}, renderBaselineEcho(){}, refreshAll(){}, fresh(){return {};}, syncCasefile(){},syncIdentity(){},text(){},render(){},announce(){}
     };
     vm.createContext(context);
-    vm.runInContext('const KEY='+JSON.stringify(key)+';\n'+since+'\n'+save+'\n'+reset,context);
+    vm.runInContext('const KEY='+JSON.stringify(key)+';\n'+since+'\n'+qualifyingPins+'\n'+save+'\n'+reset,context);
     return {save:context.save, notice, state, reloads:()=>reloads,
       warningSpeech, stepSpeech, warningUpdates:()=>warningUpdates,
       sync(){handlers.storage?.({type:'storage',key});},

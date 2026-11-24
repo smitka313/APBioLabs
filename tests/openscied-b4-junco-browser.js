@@ -82,6 +82,9 @@ async function download(page,size) {
   const saved=await fs.readFile(await file.path(),'utf8');
   check(saved.includes(CLAIM)&&saved.includes(LIMIT)&&saved.includes(OBSERVATION)&&saved.includes('Name: J. Student')&&saved.includes('Class period: 4'),
     'the downloaded file contains the original field observation, claim, and limitation');
+  check(file.suggestedFilename()==='junco-field-report.txt' &&
+    /Hormone graph: All plotted birds[\s\S]*40 birds shown; correlation r = -0\.53/.test(saved),
+    'a revealed TXT retains its filename and computed hormone summary');
 }
 
 async function exerciseFlightSimulation(page,size,label) {

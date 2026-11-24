@@ -209,6 +209,10 @@
     const evidence = saved.evidence.filter(row => row && typeof row.a==='string' && !!row.a &&
       typeof row.b==='string' && !!row.b && row.a!==row.b &&
       Object.hasOwn(CANCER_MEASURES,row.view) && CANCER_MEASURES[row.view].includes(row.measure)).length;
+    // New saves supply the activity's validated count of numeric comparisons.
+    // Older exports are revalidated when opened; do not load the data library here.
+    const numeric = saved.qualifyingPinCount === undefined ? evidence : Number.isInteger(saved.qualifyingPinCount)
+      ? Math.min(evidence, Math.max(0, saved.qualifyingPinCount)) : 0;
     const answers = cancerRatesResponseIds().filter(field).length;
     const casework = saved.casework || {};
     // The activity only stores checked directions, not unsuccessful guesses.
@@ -216,20 +220,21 @@
     const notes = ['diagnoses','deaths','map'].filter(key => written(casework.notes ?? {}, key)).length;
     const trends = checks + notes;
     const question = cancerInvestigationQuestion(saved);
-    const draft = written(casework, 'questionDraft');
+    const draft = typeof casework.questionDraft==='string' && casework.questionDraft.trim() !== String(casework.question || '').trim();
     const caseReady = trends === 6 && !!question;
-    const completed = prediction && caseReady && evidence > 0 && answers === 2 && saved.completed === true;
+    const completed = prediction && caseReady && !draft && numeric > 0 && answers === 2 && saved.completed === true;
     if (!prediction && !predictionDraft && !evidence && !answers && !trends && !question && !draft) return empty;
     const caseSummary = draft ? 'Question draft saved' : question ? 'Investigation question saved' : trends ? trends+' of 6 exhibits complete' : '';
     const fallback = answers || completed ? 'explain' : evidence || question ? 'explore' : 'predict';
     let section = CANCER_RATES_SECTIONS.includes(saved.step) ? saved.step : fallback;
     if (!prediction) section = 'predict';
     else if (draft || !caseReady) section = 'cr-income-cards';
-    else if (!evidence) section = 'explore';
+    else if (!numeric) section = 'explore';
     return { started:true, section, visited:Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
       stepsDone:trends,stepsTotal:6,stepsLabel:'Case-file exhibits completed',
       summary: [completed ? 'Investigation complete' : prediction ? 'Prediction saved' : predictionDraft ? 'Prediction draft' : '',
-        caseSummary, evidence || !caseSummary ? evidence+' pinned '+(evidence === 1 ? 'comparison' : 'comparisons') : '',
+        caseSummary, numeric !== evidence ? numeric+' usable '+(numeric===1?'comparison':'comparisons')+' · '+(evidence-numeric)+' reference '+(evidence-numeric===1?'pin':'pins')
+          : evidence || !caseSummary ? evidence+' pinned '+(evidence === 1 ? 'comparison' : 'comparisons') : '',
         answers ? answers+' of 2 responses saved' : ''].filter(Boolean).join(' · ') };
   }
   function cellCycleProgress(raw) {
@@ -327,16 +332,26 @@
   }
   // Fires: Peat, Decomposition & Earth's Tilt (Unit B.2, Lessons 3 and 5): the activity saves the ids of every response; three scenes may save state.
   const B2_SECTIONS = ['overview', 'ideas', 'plan', 'yeast', 'cards', 'sense3', 'hypothesis', 'tilt', 'sense5', 'peat', 'wrapup'];
+  const FIRES_TEMPS=[5,18,27,35,43,55], FIRES_DEFAULT_TEMPS=[18,27,43];
+  const FIRES_LIGHTS=['direct','tilt45','tilt70','foil'];
   function firesMilestones(saved) {
     const evidence=saved.modelEvidence;
-    if (evidence && typeof evidence==='object') {
-      return Number(evidence.cardsRight===5)+Number(evidence.foamAfterBaseline===true)+
-        Number(evidence.tubesRead===3&&evidence.starchTested===true);
-    }
-    // Older saves keep the same underlying observations rather than the derived evidence summary.
-    return Number(saved.cards?.solved===true)+
-      Number(Array.isArray(saved.decomp?.recorded)&&saved.decomp.recorded.some(minute=>Number.isFinite(minute)&&minute>0))+
-      Number(saved.tilt?.recorded===true&&saved.tilt?.starchDone===true);
+    const foam = saved.decomp, tilt=saved.tilt;
+    // Older saves have the model inputs but lack the new comparison summary.
+    const temps = FIRES_DEFAULT_TEMPS.map((fallback,i)=>{
+      const raw=foam?.temps?.[i];
+      if (raw==null) return fallback;
+      const n=Number(raw);
+      return Number.isFinite(n) ? FIRES_TEMPS.reduce((best,x)=>Math.abs(x-n)<Math.abs(best-n)?x:best) : 27;
+    });
+    const foamAfterBaseline=evidence?.foamAfterBaseline ??
+      (Number.isFinite(foam?.seed) && Array.isArray(foam?.recorded) && foam.recorded.some(t=>Number.isInteger(t) && t>0 && t<=20 && t%2===0));
+    const foamComparison=evidence?.foamComparison ?? (foamAfterBaseline && new Set(temps).size>=2);
+    const validTubes=Array.isArray(tilt?.settings) && tilt.settings.length===3 && tilt.settings.every(id=>FIRES_LIGHTS.includes(id));
+    const tiltComparison=evidence?.tiltComparison ??
+      (tilt?.recorded===true && Number.isFinite(tilt.seed) && validTubes && new Set(tilt.settings).size>=2);
+    return Number(evidence ? evidence.cardsRight===5 : saved.cards?.solved===true) + Number(foamComparison===true) +
+      Number(tiltComparison===true && (evidence?.starchTested ?? tilt?.starchDone)===true);
   }
   const usedFiresScenes = saved => [
     hasEntries(saved.cards?.placed) || saved.cards?.solved===true || positive(saved.modelEvidence?.cardsPlaced),
@@ -370,7 +385,11 @@
     let saved;
     try { saved = JSON.parse(raw); if (!saved || saved.v !== 1) throw Error('Unknown saved format'); }
     catch (e) { return { summary: 'Saved work could not be read. Download a copy before restarting.', started: false, section: 'overview', visited: 0 }; }
-    const trials = Array.isArray(saved.trials) ? saved.trials.length : 0;
+    const trialRows = Array.isArray(saved.trials) ? saved.trials : [];
+    const trials = trialRows.length;
+    const inputs=Object.keys(PEAT_DEFAULTS);
+    const conditions=new Set(trialRows.map(row=>inputs.map(key=>row?.[key]))
+      .filter(values=>values.every(Number.isFinite)).map(values=>JSON.stringify(values)));
     const bogChanged = !!saved.settings && Object.keys(PEAT_DEFAULTS).some(k => typeof saved.settings[k] === 'number' && Math.abs(saved.settings[k] - PEAT_DEFAULTS[k]) > 1e-6);
     // The page saves warmingUsed once any Global warming control or "Test the bog in this year" is used (even if the student ends on today's values).
     // Saves from before that flag existed fall back to comparing the climate settings with today's.
@@ -379,8 +398,10 @@
     const fallback = trials ? 'trials' : warmChanged ? 'warming' : bogChanged ? 'bog' : 'overview';
     return { started, section: PEAT_SECTIONS.includes(saved.lastSection) ? saved.lastSection : fallback,
       visited: Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
-      stepsDone:Math.min(trials,2),stepsTotal:2,stepsLabel:'Trials saved for a comparison',
-      summary: started ? trials + ' simulated trial' + (trials === 1 ? '' : 's') + ' recorded · bog settings ' + (bogChanged ? 'changed' : 'unchanged') + ' · warming ' + (warmChanged ? 'explored' : 'not explored') : 'Not started' };
+      stepsDone:Math.min(conditions.size,2),stepsTotal:2,stepsLabel:'Trials saved for a comparison',
+      summary: started ? trials + ' simulated trial' + (trials === 1 ? '' : 's') + ' recorded' +
+        (trials>=2 && conditions.size===1 ? ' · The trials use the same conditions' : '') +
+        ' · bog settings ' + (bogChanged ? 'changed' : 'unchanged') + ' · warming ' + (warmChanged ? 'explored' : 'not explored') : 'Not started' };
   }
   // Burning Fuels (Unit B.2, Lesson 2): the activity saves the ids of every response; the burn scene may save recorded samples.
   const BURN_SECTIONS = ['overview', 'ideas', 'fuels', 'burn', 'sense', 'sort', 'peat', 'wrapup'];
@@ -470,8 +491,11 @@
     const dialog = $('#clear-openscied-dialog');
     const confirmation = $('#openscied-erase-confirmation');
     const confirmButton = $('#confirm-openscied-clear');
+    const backupButton = $('#backup-before-openscied-clear');
     const backupStatus = $('#openscied-backup-status');
-    let clearTarget = null;
+    const staleMessage = 'This device was switched to another student or cleared in a different tab. Reload this dashboard before using saved work.';
+    const changedWorkMessage = 'Saved work changed while this dialog was open. Cancel and reopen this action to review the current work.';
+    let clearTarget = null, confirmedWork = null;
     let tracker;
     try { tracker=window.OpenSciEdResume?.connect(localStorage); } catch (_) { /* saved-work display already handles blocked storage */ }
     const resumeLink=$('#openscied-resume-link');
@@ -519,7 +543,50 @@
     function savedKeys() {
       return Object.keys(localStorage).filter(isOpenSciEdKey);
     }
+    function workspaceError() {
+      const state = Lab.data?.workspaceStatus?.() || 'unavailable';
+      return state === 'current' ? '' : state === 'changed' ? staleMessage :
+        'This browser cannot access saved work. Allow site storage to save or clear results.';
+    }
+    function stopClear(message) {
+      confirmedWork = null;
+      confirmButton.disabled = true;
+      if (backupButton) backupButton.disabled = true;
+      $('#openscied-clear-error').textContent = message;
+    }
+    function captureClear(activity) {
+      const api = window.OpenSciEdSaveSession;
+      if (!api) throw Error('Cannot check saved work');
+      const scope = activity?.file.replace(/^openscied-|\.html$/g, '') ?? null;
+      const keys = (activity ? activityKeys(activity) : savedKeys()).slice().sort();
+      // Do not erase new responses from another tab while a confirmation is open.
+      const version = JSON.stringify([localStorage.getItem(api.globalKey),
+        scope ? localStorage.getItem(api.scopeKey(scope)) : null,
+        keys.map(key=>[key, localStorage.getItem(api.resetKey(key)), localStorage.getItem(key)])]);
+      return { scope, keys, version };
+    }
     function refresh(message) {
+      const blocked = workspaceError();
+      if (blocked) {
+        $('#openscied-resume').hidden = true;
+        dateLabel(0);
+        meters.forEach(({summary,bar})=>{summary.hidden=true;bar.hidden=true;});
+        ACTIVITIES.forEach(activity=>{
+          const reset=$('#'+activity.id+'-reset'), progress=$('#'+activity.id+'-progress'), link=$('#'+activity.id+'-open');
+          if (reset) reset.disabled=true;
+          if (progress) progress.textContent='Saved work unavailable in this tab';
+          if (link) {
+            link.href=activity.file; link.textContent='Open activity →'; link.setAttribute('aria-label','Open activity: '+activity.name);
+            const picture=link.closest?.('.dashboard-activity')?.querySelector('.dashboard-preview');
+            if (picture) picture.href=activity.file;
+          }
+        });
+        if (dialog.open) stopClear(blocked);
+        status.textContent=blocked;
+        $('#download-openscied-results').disabled=true;
+        $('#clear-openscied-results').disabled=true;
+        return;
+      }
       try {
         const count = savedKeys().length;
         const recent = [];
@@ -550,9 +617,13 @@
         if (recent.length) {
           const { activity, item, opened, legacy } = recent[0];
           dateLabel(opened,legacy);
-          $('#openscied-resume-description').textContent = activity.name + ' · ' + item.summary;
+          const guest = !Lab.identity.get()?.name;
+          $('#resume-title').textContent = guest ? 'Saved work on this device' : 'Continue your activity';
+          $('#openscied-resume-description').textContent = guest
+            ? activity.name + ' · ' + item.summary + '. Continue only if this work is yours. Otherwise, switch students.'
+            : activity.name + ' · ' + item.summary;
           resumeLink.href = activityDestination(activity, item);
-          resumeLink.textContent = 'Resume ' + activity.name + ' →';
+          resumeLink.textContent = (guest ? 'Continue my saved ' : 'Resume ') + activity.name + ' →';
         } else dateLabel(0);
         $('#download-openscied-results').disabled = !count;
         $('#clear-openscied-results').disabled = !count;
@@ -570,6 +641,11 @@
       }
     }
     function downloadWork(onlyKeys, feedback = status) {
+      const blocked = workspaceError();
+      if (blocked) {
+        if (feedback) feedback.textContent=blocked;
+        return false;
+      }
       try {
         const work = {};
         const keys = (onlyKeys || savedKeys()).filter(key => {
@@ -596,6 +672,9 @@
             responses[activity.id].predictionReason = typeof saved?.prediction?.reason === 'string' ? saved.prediction.reason : '';
             const question = cancerInvestigationQuestion(saved);
             if (question) responses[activity.id].investigationQuestion = question;
+            if (typeof saved?.casework?.questionDraft==='string' && saved.casework.questionDraft.trim()!==question.trim()) {
+              responses[activity.id].investigationQuestionDraft = saved.casework.questionDraft;
+            }
             const savedNotes = saved?.casework?.notes ?? {};
             const observations = Object.fromEntries(Object.entries({ A:'diagnoses', B:'deaths', C:'map' })
               .filter(([,key]) => written(savedNotes,key))
@@ -628,15 +707,19 @@
       }
     }
     $('#download-openscied-results').addEventListener('click', () => downloadWork());
-    $('#backup-before-openscied-clear').addEventListener('click', () => downloadWork(clearTarget ? activityKeys(clearTarget) : null, backupStatus || status));
+    backupButton.addEventListener('click', () => downloadWork(clearTarget ? activityKeys(clearTarget) : null, backupStatus || status));
     function openClear(activity) {
+      const blocked = workspaceError();
+      if (blocked) { refresh(blocked); return; }
       clearTarget = activity || null;
+      try { confirmedWork = captureClear(clearTarget); }
+      catch (_) { status.textContent = 'Could not check saved work. Nothing was cleared.'; return; }
       $('#clear-openscied-title').textContent = activity ? 'Restart ' + activity.name + '?' : 'Clear OpenSciEd results?';
       $('#clear-openscied-description').textContent = activity
         ? 'This permanently clears this activity’s ' + activity.clears + ' on this device. Other activities, your name, class period, and AP Biology work stay saved.'
         : 'This permanently clears all OpenSciEd activity progress, model results, and answers saved on this device. Your name, class period, and AP Biology lab work will stay saved.';
       confirmButton.textContent = activity ? 'Erase this activity’s results' : 'Erase OpenSciEd results';
-      confirmation.value = ''; confirmButton.disabled = true;
+      confirmation.value = ''; confirmButton.disabled = true; backupButton.disabled = false;
       $('#openscied-clear-error').textContent = '';
       if (backupStatus) {
         backupStatus.textContent = '';
@@ -646,15 +729,17 @@
     }
     $('#clear-openscied-results').addEventListener('click', () => openClear());
     ACTIVITIES.forEach(activity => $('#' + activity.id + '-reset')?.addEventListener('click', () => openClear(activity)));
-    confirmation.addEventListener('input', () => { confirmButton.disabled = confirmation.value !== 'ERASE'; });
+    confirmation.addEventListener('input', () => { confirmButton.disabled = !confirmedWork || confirmation.value !== 'ERASE'; });
     $('#cancel-openscied-clear').addEventListener('click', () => dialog.close());
-    dialog.addEventListener('close', () => backupStatus?.removeAttribute?.('role'));
+    dialog.addEventListener('close', () => { confirmedWork=null; backupStatus?.removeAttribute?.('role'); });
     $('#clear-openscied-form').addEventListener('submit', event => {
       event.preventDefault();
-      if (confirmation.value !== 'ERASE') return;
+      if (!confirmedWork || confirmation.value !== 'ERASE') return;
+      const blocked = workspaceError();
+      if (blocked) { stopClear(blocked); return; }
       try {
-        const keys = clearTarget ? activityKeys(clearTarget) : savedKeys();
-        const scope = clearTarget?.file.replace(/^openscied-|\.html$/g, '') ?? null;
+        const { keys, scope, version } = captureClear(clearTarget);
+        if (version !== confirmedWork.version) { stopClear(changedWorkMessage); return; }
         const result = window.OpenSciEdSaveSession?.erase(localStorage, scope, keys);
         if (!result?.ok) throw Error('Could not protect the reset');
         dialog.close();
@@ -666,14 +751,18 @@
     // Snapshot before leaving the dashboard too, so even a fast first trip or a
     // delayed activity script has a baseline. Reopening unchanged work keeps its rank.
     document.addEventListener('click', event => {
-      if (!tracker || event.defaultPrevented || (event.button != null && event.button!==0)) return;
+      if (!tracker || workspaceError() || event.defaultPrevented || (event.button != null && event.button!==0)) return;
       const link=event.target?.closest?.('a.dashboard-preview, a.dashboard-open');
       if (link?.origin===window.location.origin && window.OpenSciEdResume.route(link.pathname)) {
         tracker.snapshot(link.pathname,'open');
       }
     });
     // The dashboard can remain open while an activity saves in another tab.
-    window.addEventListener('storage', event => { if (!event.key || event.key === window.OpenSciEdResume?.META_KEY || isOpenSciEdKey(event.key)) refresh(); });
+    window.addEventListener('storage', event => { if (!event.key || event.key === Lab.data.workspaceEpochKey ||
+      event.key === 'aplab:student' || event.key === window.OpenSciEdResume?.META_KEY || isOpenSciEdKey(event.key)) refresh(); });
+    document.addEventListener('submit', event => {
+      if (event.target?.closest?.('#openscied-student-identity')) setTimeout(refresh,0);
+    });
     window.addEventListener('pageshow', () => refresh());
     refresh();
   }

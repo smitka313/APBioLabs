@@ -5,6 +5,7 @@ const vm = require('node:vm');
 const path = require('node:path');
 const SaveSession = require('../openscied-save-session.js');
 const source = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.js'), 'utf8');
+const workspaceEpochKey = 'aplab:pref:workspace-handoff:v1';
 function setup(blocked = false, overrides = {}, absent = [], tracker) {
   const elements = new Map(), created = [], events = {};
   function element(tag) {
@@ -13,7 +14,7 @@ function setup(blocked = false, overrides = {}, absent = [], tracker) {
       setAttribute(k,v) { this.attrs[k]=v; }, before() {}, after() {},
       addEventListener(type, fn) { handlers[type] = fn; },
       fire(type) { handlers[type]?.({ preventDefault() {} }); },
-      showModal() { this.open = true; }, close() { this.open = false; },
+      showModal() { this.open = true; }, close() { this.open = false; this.fire('close'); },
       click() {}, remove() {} };
   }
   const data = { 'aplab:openscied:b3-cell-cycle:v1': '{"trials":[1]}',
@@ -22,6 +23,7 @@ function setup(blocked = false, overrides = {}, absent = [], tracker) {
     'aplab:lab05:results': '{"rate":4}', 'aplab:pref:theme': '"dark"',
     'aplab:openscied-other:keep': 'unrelated' };
   Object.assign(data, overrides);
+  const workspaceEpoch = data[workspaceEpochKey] ?? null;
   const storage = blocked ? new Proxy({}, { ownKeys() { throw new Error('Storage blocked'); } }) : data;
   Object.defineProperty(data, 'getItem', { value: key => data[key] ?? null });
   Object.defineProperty(data, 'removeItem', { value: key => { delete data[key]; } });
@@ -31,7 +33,11 @@ function setup(blocked = false, overrides = {}, absent = [], tracker) {
       addEventListener(type, fn) { events[type]=fn; },
       querySelector(selector) { if (absent.includes(selector)) return null; if (!elements.has(selector)) elements.set(selector, element()); return elements.get(selector); },
       createElement(tag) { const el=element(tag);created.push(el);return el; }, body: { appendChild() {} } },
-    Lab: { identity: { mount(selector, options) { mounted = selector; mountOptions = options; }, get: () => JSON.parse(data['aplab:student'] || 'null') } },
+    Lab: {
+      identity: { mount(selector, options) { mounted = selector; mountOptions = options; }, get: () => JSON.parse(data['aplab:student'] || 'null') },
+      data: { workspaceEpochKey, workspaceStatus: () => blocked ? 'unavailable' :
+        (data[workspaceEpochKey] ?? null) === workspaceEpoch ? 'current' : 'changed' }
+    },
     localStorage: storage, window: { location:{origin:'https://biologylabbench.com'},OpenSciEdResume:tracker,OpenSciEdSaveSession:SaveSession,addEventListener(type, fn) { events[type]=fn; } }, Blob,
     URL: { createObjectURL(value) { if (failBackup) throw Error('blocked download'); blob = value; return 'blob:backup'; }, revokeObjectURL() {} }, setTimeout() {} };
   vm.runInNewContext(source, context);
@@ -444,6 +450,11 @@ test('Resume ranks changed evidence, separately shows last opened, and renders a
   assert.equal(stamp.dateTime,new Date(base+1000).toISOString());
   const ledger=s.data[Resume.META_KEY];
   assert.doesNotMatch(ledger,/analysis|claim/);
+  delete s.data['aplab:student'];
+  refresh();
+  assert.equal(s.el('#resume-title').textContent,'Saved work on this device');
+  assert.match(s.el('#openscied-resume-description').textContent,/Continue only if this work is yours/);
+  assert.match(s.el('#openscied-resume-link').textContent,/^Continue my saved Migration Map Explorer/);
   s.el('#download-openscied-results').fire('click');
   const payload=JSON.parse(await s.blob().text());
   assert.equal(payload.work[Resume.META_KEY],undefined,'metadata never exports as student work');
@@ -488,9 +499,9 @@ test('Fires only completes meter milestones on recorded evidence while resuming 
     modelEvidence:{cardsPlaced:1,cardsRight:1,foamReadings:1,foamAfterBaseline:false,tubesRead:3,starchTested:false}});
   assert.match(started.el('#openscied-resume-link').href,/fires\.html#tilt$/);
   assert.equal(read(started),0,'initial readings and partial work are resumable without claiming a milestone');
-  const completed=make({modelEvidence:{cardsPlaced:5,cardsRight:5,foamReadings:2,foamAfterBaseline:true,tubesRead:3,starchTested:true}});
+  const completed=make({modelEvidence:{cardsPlaced:5,cardsRight:5,foamReadings:2,foamAfterBaseline:true,foamComparison:true,tubesRead:3,tiltComparison:true,starchTested:true}});
   assert.equal(read(completed),3);
-  const old=make({cards:{placed:{sugar:'in'}},decomp:{recorded:[0,5]},tilt:{recorded:true,starchDone:true}});
+  const old=make({cards:{placed:{sugar:'in'}},decomp:{seed:7,temps:[18,27,43],recorded:[0,2]},tilt:{seed:7,settings:['direct','tilt45','foil'],recorded:true,starchDone:true}});
   assert.match(old.el('#openscied-resume-link').href,/fires\.html#tilt$/);
   assert.equal(read(old),2,'legacy observations remain measurable and resumable');
 });
@@ -704,9 +715,13 @@ test('Peat Bog shows trial collection progress without inventing completion', ()
   const s=setup();
   const meter=s.created.find(el=>el.tag==='progress' && el.attrs['aria-label'].startsWith('Peat Bog'));
   assert.equal(meter.max,2); assert.equal(meter.value,0);
-  s.data[key]=JSON.stringify({v:1,trials:[{}]}); s.events.pageshow();
+  const trial={tilt:23.44,temp:10,co2:420,o2:21,wet:75,burn:0};
+  s.data[key]=JSON.stringify({v:1,trials:[trial]}); s.events.pageshow();
   assert.equal(meter.value,1);
-  s.data[key]=JSON.stringify({v:1,trials:[{},{},{}]}); s.events.pageshow();
+  s.data[key]=JSON.stringify({v:1,trials:[trial,{...trial,label:'Same inputs'}]}); s.events.pageshow();
+  assert.equal(meter.value,1);
+  assert.match(s.el('#peat-bog-progress').textContent,/same conditions/);
+  s.data[key]=JSON.stringify({v:1,trials:[trial,{...trial},{...trial,wet:30}]}); s.events.pageshow();
   assert.equal(meter.value,2);
   assert.match(s.el('#peat-bog-progress').textContent,/3 simulated trials/);
   assert.match(meter.attrs['aria-label'],/Trials saved for a comparison/);

@@ -178,7 +178,7 @@
         nests.append(n);
       });
       if(enabled)instruction.textContent=seats.every(Boolean)
-        ? 'Both assigned rats are in their nests. Use their allele chips to build the cross.'
+        ? 'Next: the Punnett workbench.'
         : 'P1 and P2 mark parent assignments, not rat IDs. Drag each marked rat to its nest, or select the rat and then its nest.';
       else instruction.textContent=stage==='survived'
         ? 'Only surviving rats can parent the next generation in this model.'
@@ -238,7 +238,7 @@
       const nest=nests.querySelector('[data-rg-burrow-target="'+slot+'"]');
       const landing=nest?.querySelector('[data-rg-burrow-nest-rat]')??nest;
       flyingSprite(rat,origin,landing?.getBoundingClientRect());
-      say(filled().every(Boolean)?'Both parents are in their nests. Match their allele letters in the Punnett square.':
+      say(filled().every(Boolean)?'Both parents placed.':
         'Parent '+(slot+1)+' is in its nest. Place the other parent next.');
       if(focus){
         const next=colony.querySelector('[data-rg-burrow-source]');

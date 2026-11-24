@@ -19,6 +19,8 @@
 .teacher-guide-index-group li{margin:0}
 .teacher-guide-index-group a{display:inline-flex;align-items:center;min-height:29px;line-height:1.25;padding:3px 0;overflow-wrap:anywhere}
 .teacher-guide-index-group h3 a{color:var(--ink)}
+.teacher-guide-collect-jump{display:inline-flex;align-items:center;min-height:32px;margin-top:8px;font-weight:700}
+#collect{scroll-margin-top:12px}
 .teacher-guide-back{font-size:.86rem;font-weight:650;display:inline-flex;align-items:center;min-height:28px}
 .teacher-guide-utilities{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;margin:12px 0 16px}
 .ose-teacher-callout{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:11px;padding:10px 13px;background:var(--surface);margin:0}
@@ -69,7 +71,7 @@ p.teacher-guide-cue,.teacher-guide-cue>p{color:var(--muted)}
 }
 @media print{
  .ose-teacher-shell{padding:0;max-width:none;color:var(--ink)}
- .ose-teacher-top,.teacher-guide-index,.ose-teacher-hero__art,.ose-teacher-links,.teacher-guide-back{display:none}
+ .ose-teacher-top,.teacher-guide-index,.ose-teacher-hero__art,.ose-teacher-links,.teacher-guide-back,.teacher-guide-collect-jump{display:none}
  .ose-teacher-grid,.ose-teacher-hero{display:block}
  .ose-teacher-unit{margin:12px 0}
  .ose-teacher-card{break-inside:avoid;margin:0 0 8px}

@@ -12,20 +12,32 @@ function check(value, description) {
 const root = path.join(__dirname,'..'), answer = 'My synthetic student answer <not markup>';
 const configuration = [
   ['cancer-rates', 'cr-download', () => {
-    const datum={source:'OpenSciEd synthetic fixture',period:'2021 fixture',url:'https://example.test/source'};
+    const L=require(path.join(root,'openscied-b3-cancer-rates-logic.js'));
+    const D=require(path.join(root,'openscied-b3-cancer-rates-data.js'));
     const casework={opened:false,notes:{},questionDraft:answer};
     const state={prediction:{locked:false,choice:'a',reason:answer},casework,evidence:[],claim:'',limits:'',design:{}};
+    const qualifyingPins=()=>state.evidence.filter(pin=>L.isNumericComparison(L.comparison(D,pin)));
+    const canFinish=()=>casework.opened&&qualifyingPins().length>0&&!!state.claim&&!!state.limits&&!L.hasPendingQuestion(casework);
     return {state,ctx:{
-      invalid:false,blocked:false,caseMarks:()=>Array(6).fill(casework.opened),canFinish:()=>state.completed,isComplete:()=>state.completed,
+      invalid:false,blocked:false,caseMarks:()=>Array(6).fill(casework.opened),qualifyingPins,canFinish,isComplete:()=>state.completed&&canFinish(),
       displayIdentity:()=>({name:'Custom name',period:'2'}),predictions:{a:'Different'},
-      lessonNotes:['diagnoses','deaths','map'],testCostRows:[{label:'First event',value:1}],$(){return {href:datum.url};},
-      designItems:{access:'Access evidence'},formatPair:()=> '18.2 per 100,000',evidenceText:()=> 'Published result',
-      L:{comparison:()=>({a:{name:'Group A'},b:{name:'Group B'}})},spec:{types:{title:'Ranking'}}, labels:{incidence:'Diagnosis rate'},
-      D:{types:datum,states:datum,poverty:{...datum,incomeSource:datum},race:{incidence:datum,mortality:datum}}
+      lessonNotes:['diagnoses','deaths','map'],testCostRows:[{label:'First event',value:1}],$(){return {href:D.types.source};},
+      designItems:{access:'Access evidence'},formatPair:(row,measure)=>Number.isFinite(row[measure])?row[measure]+' per 100,000':'Not reported',evidenceText:()=> 'Published result',
+      L,D,spec:{types:{title:'Ranking'}},labels:{incidence:'Diagnosis rate'}
     },finish(){
       Object.assign(state,{completed:true,claim:answer,limits:'Association is not causation.'});
-      Object.assign(casework,{opened:true,question:answer,'test-cost':true}); state.prediction.locked=true;state.evidence.push({view:'types',measure:'incidence'});
-    },specific:s=>s.student.name==='Custom name' && JSON.stringify(s.sections).includes('per 100,000')};
+      Object.assign(casework,{opened:true,question:answer,questionDraft:'Pending student question','test-cost':true});
+      state.prediction.locked=true;
+      state.evidence.push({view:'types',measure:'incidence',a:'pancreas',b:'breast'}); // Pancreas diagnosis is not reported in this table.
+    },
+    beforeMore:s=>s.status===draft && s.missing.some(x=>x.includes('two reported values')) &&
+      s.missing.some(x=>x.includes('revised question')) && JSON.stringify(s.sections).includes('Pending student question'),
+    more(){
+      casework.questionDraft=null;
+      state.evidence=[{view:'types',measure:'incidence',a:'breast',b:'lung'}];
+    },
+    specific:s=>s.student.name==='Custom name' && s.keyResults.some(k=>k.label==='Comparisons with reported values'&&k.value===1) &&
+      JSON.stringify(s.sections).includes('per 100,000') && !JSON.stringify(s.sections).includes('Pending student question')};
   }],
   ['cell-cycle','download-work',() => {
     const state={game:{roundResults:{}},quick:'Recorded',mechanism:'Recorded'};
@@ -67,18 +79,24 @@ const configuration = [
     specific:s=>s.student.period==='4' && JSON.stringify(s.sections).includes('A–T')};
   }],
   ['inheritance-environment','download-work',() => {
-    const state={pedigree:{},planner:{},yeast:{},question:null},answers=[{id:'wrap-sentence',prompt:'Genes and chance',answer}],choices=[{id:'exit-q1',question:'What varied?',answer:'',value:''}],sequence=[];
+    const state={pedigree:{},planner:{},yeast:{},question:null},answers=[{id:'wrap-sentence',prompt:'Genes and chance',answer}],
+      choices=[{id:'exit-q1',question:'Untouched family prompt?',answer:'',value:''},
+        {id:'early-thought',question:'Earlier thought',answer:'Student’s recorded Lesson 8 work',value:'a'}],sequence=[];
     const selectedChips = [];
+    const sections=['overview','ideas','envideas','wrapup'];
     return {state,ctx:{picks:()=>choices,chips:()=>[{id:'cer-evidence',question:'Evidence chips',chosen:selectedChips}],
-      textAnswers:()=>answers,orderSeq:()=>sequence,BOXES:[],L:{checkOrder:r=>({status:r.length?'correct':'empty'})},
-      STEP_LABELS:{copy:'DNA copied'}
+      textAnswers:()=>answers,orderSeq:()=>sequence,BOXES:Array.from({length:6},()=>['fixture',()=>[]]),
+      L:{checkOrder:r=>({status:r.length?'correct':'empty'})},STEP_LABELS:{copy:'DNA copied'},
+      SECTIONS:sections,$$:(query,section)=>section ? [{dataset:{id:'exit-q1'}},{dataset:{id:'early-thought'}}] : sections.map(id=>({id}))
     },finish(){
       Object.assign(state,{skin:{viewed:{black:true}},planner:{ready:true},yeast:{dishes:[{colonies:0}]},question:{text:'My testable question',ok:true}});
     },beforeMore:s=>s.status===draft && s.missing.some(x=>x.includes('claim, evidence and reasoning')),
     more(){
       choices.push({id:'cer-claim',value:'a',question:'Claim',answer:'I noticed a difference.'},{id:'cer-reason',value:'a',question:'Reason',answer:'My dish evidence.'});
       selectedChips.push('My observation');
-    },specific:s=>s.title==='Environment & UV Evidence · Lesson 9' && JSON.stringify(s.sections).includes('My observation') && JSON.stringify(s.sections).includes('Eide and Weinstock')};
+    },specific:s=>s.title==='Environment & UV Evidence · Lesson 9' && JSON.stringify(s.sections).includes('My observation') &&
+      JSON.stringify(s.sections).includes('Eide and Weinstock') && !JSON.stringify(s.sections).includes('Untouched family prompt?') &&
+      s.sections.find(section=>section.title.startsWith('Earlier Lesson 8'))?.items.some(item=>item.value==='Student’s recorded Lesson 8 work')};
   }]
 ];
 for (const [activity,legacy,fixture] of configuration) {

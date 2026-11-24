@@ -5,6 +5,7 @@ const {readFileSync} = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const Save = require('../openscied-save-session.js');
+const CancerRatesLogic = require('../openscied-b3-cancer-rates-logic.js');
 const cases = {
   'cancer-rates': {build:'report', next:'displayIdentity', identity:'displayIdentity', identityNext:'syncIdentity', text:true},
   'cell-cycle': {build:'download', end:'  // "Clear this activity"', identity:'studentIdentity', identityNext:'ANALYSIS_PROMPTS', constNext:true},
@@ -24,7 +25,7 @@ function check(ok, msg) {
   console.log((ok ? 'ok:   ' : 'FAIL: ') + msg);
 }
 for (const [name, spec] of Object.entries(cases)) {
-  const scope = 'b3-' + name;
+  const scope = 'b3-' + name, isCancer = name === 'cancer-rates';
   const source = readFileSync(path.join(__dirname, '..', 'openscied-' + scope + '.js'), 'utf8');
   const key = 'aplab:openscied:' + scope + ':v1';
   const init = spec.workshop
@@ -38,9 +39,10 @@ for (const [name, spec] of Object.entries(cases)) {
     const disk = new Map([[key, '{"test":"old saved work"}']]);
     const storage = { getItem:k=>disk.get(k)??null, setItem(k,v){disk.set(k,v);}, removeItem(k){disk.delete(k);} };
     const answer = 'Student A observation, still in the old tab';
+    const questionDraft = 'Student A question revision, still in the old tab';
     const state = {
       answers:{intro:answer}, progress:{placed:{}}, fields:{shortAnswer:answer}, claim:answer, limits:'',
-      prediction:{}, casework:{notes:{}}, evidence:[], person:{name:'',period:'',...override},
+      prediction:{}, casework:{notes:{},...(isCancer?{opened:true,question:'Student A’s original question',questionDraft}: {})}, evidence:[], person:{name:'',period:'',...override},
       game:{}, trials:[], legacy:{}, expression:{}, question:null
     };
     const $ = () => ({href:''}), sourceLink = {source:'model',sourcePrintedPage:65,url:'https://example.test/data'};
@@ -53,7 +55,7 @@ for (const [name, spec] of Object.entries(cases)) {
       STEPS:['intro'], LESSON:{intro:{title:'Introduction'}}, model:()=>({slots:[]}),
       save(){}, MAKING_SENSE_ROWS:[], MAKING_SENSE_PROMPTS:[], roundEvidence:()=>[],
       cardResult:()=>({}), parseVal:()=>'', CHECK_ROWS:[], RESPONSE_IDS:[], optionalWriting:()=>[],
-      L:{forkSummary:()=>null,explanationLevel:()=>null}, selfFlags:()=>[], SCENE_IDS:[],
+      L:isCancer?CancerRatesLogic:{forkSummary:()=>null,explanationLevel:()=>null}, selfFlags:()=>[], SCENE_IDS:[],
       picks:()=>({}), chips:()=>[], textAnswers:()=>({}), orderSeq:()=>[],
       Blob:function(chunks){exportText=chunks.join('');},
       URL:{createObjectURL:()=>'',revokeObjectURL(){}}, setTimeout(){},
@@ -74,7 +76,7 @@ for (const [name, spec] of Object.entries(cases)) {
         context.download();
         return {...JSON.parse(exportText).student,text:exportText};
       },
-      answer,
+      answer, questionDraft,
     };
   }
   const old = {name:'Student A',period:'2'}, corrected = {name:'Student Aa',period:'3'}, newer = {name:'Student B',period:'7'};
@@ -90,6 +92,10 @@ for (const [name, spec] of Object.entries(cases)) {
   output = a.report();
   check(output.name===corrected.name && output.period===corrected.period && !output.text.includes(newer.name),
     scope+' does not relabel previous work after next student signs in');
+  if (isCancer) {
+    check(output.text.includes('QUESTION DRAFT (NOT SUBMITTED)') && output.text.includes(a.questionDraft),
+      scope+' keeps the saved question revision in the original student’s recovery export');
+  }
   const replaced = makeTab(old);
   replaced.replace(); replaced.update(newer);
   check(replaced.report().name===old.name, scope+' rejects new identity fallback once another tab replaced its guarded record');

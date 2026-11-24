@@ -35,8 +35,13 @@ const B2 = 'aplab:openscied:b2-fires:v1', INH = 'aplab:openscied:b3-inheritance-
       const text = await p.locator('#b2-fires-progress').innerText();
       T.ok(await p.locator('.dashboard-activity').filter({has:p.locator('#b2-fires-progress')}).locator('progress').getAttribute('aria-valuetext') === '0 of 3 model evidence milestones complete' && /3 of 5 answers saved/.test(text), 'card counts models and answers: ' + text);
       T.ok(/1 of 6 interactive models used|interactive models used/.test(await p.locator('#inh-env-progress').innerText()), 'the inheritance card still reads its own save');
-      T.ok(await p.locator('#openscied-resume-link').getAttribute('href') === 'openscied-b2-fires.html#cards' && /Resume Fires/.test(await p.locator('#openscied-resume-link').innerText()), 'Resume points at the newest activity and section');
-      await p.locator('#openscied-resume-link').click();
+      const savedWork = p.getByRole('region', { name: 'Saved work on this device', exact: true });
+      const continueSaved = savedWork.getByRole('link', { name: 'Continue my saved Fires: Peat, Decomposition & Earth’s Tilt →', exact: true });
+      T.ok(await savedWork.isVisible() && await continueSaved.count() === 1 &&
+        (await savedWork.locator('#openscied-resume-description').innerText()).includes('Continue only if this work is yours. Otherwise, switch students.') &&
+        await continueSaved.getAttribute('href') === 'openscied-b2-fires.html#cards',
+        width + ' px: guest continuation warns about ownership and links to the newest saved section');
+      await continueSaved.click();
       await p.waitForFunction(() => document.querySelector('#cards.is-current'));
       await p.evaluate(() => { location.hash = 'plan'; });
       await p.waitForFunction(() => document.querySelector('#plan.is-current'));

@@ -377,6 +377,10 @@
   function fillPerson(){
     const labels=person();for(const key of Object.keys(fields))$('#rg-'+key).value=labels[key]||'';
   }
+  function analysisSelection(){
+    return state.analysisAttempt &&
+      $('input[name="rg-concept"][value="'+state.analysisAttempt+'"]')?.labels?.[0]?.textContent?.trim() || '';
+  }
   function submissionReport(){
     const missing=[];
     if(!state.prediction)missing.push('Save a prediction.');
@@ -385,12 +389,10 @@
     for(const [id,label] of [['claim','claim'],['evidence','evidence response'],['limits','model limits response']])
       if(!state.answers[id]?.trim())missing.push('Write your '+label+'.');
 
-    const quickSelection=state.analysisAttempt &&
-      $('input[name="rg-concept"][value="'+state.analysisAttempt+'"]')?.labels?.[0]?.textContent?.trim();
     const sections=[{title:'Prediction, analysis, and explanation',items:[
       {type:'answer',prompt:$('#rg-prediction legend')?.textContent?.trim()||'Prediction',value:PRED[state.prediction]||''},
       ...$answer.map(f=>({type:'answer',prompt:f.labels?.[0]?.textContent?.trim()||f.dataset.rgAnswer,value:state.answers[f.dataset.rgAnswer]||''})),
-      {type:'answer',prompt:$('#rg-check legend')?.textContent?.trim()||'Analyze quick check · selected denominator',value:quickSelection||''}
+      {type:'answer',prompt:$('#rg-check legend')?.textContent?.trim()||'Analyze quick check · selected denominator',value:analysisSelection()}
     ]}];
     const keyResults=[], simItems=[{type:'text',text:'These are modeled colony snapshots, not measured animal outcomes. R is the red resistance allele, and the model treats RR and RB as resistant and BB as not resistant. Each rat carries two allele copies.'}];
     const records=snapshots();
@@ -433,6 +435,9 @@
       (phase==='survived'?'; survival '+fraction(c.total,born):'')+'.');
     lines.push('','MY RESPONSES');
     for(const f of $answer)lines.push(f.labels?.[0]?.textContent?.trim()||f.dataset.rgAnswer,state.answers[f.dataset.rgAnswer]||'[No response yet]','');
+    const selected=analysisSelection();
+    if(selected)lines.push('ANALYZE QUICK CHECK · SAVED ANSWER',
+      $('#rg-check legend')?.textContent?.trim()||'Which denominator belongs in the R-allele frequency?',selected,'');
     lines.push('This model does not supply measured animal outcomes or predict a real population.');
     return lines.join('\n');
   }
@@ -491,6 +496,13 @@
     $('input[name=rg-concept][value="'+state.analysisAttempt+'"]').checked=true;
     set('check-feedback',analysisFeedback(state.analysisAttempt));
   }
+  $('#rg-check').addEventListener('change',e=>{
+    const input=e.target;
+    if(input.name!=='rg-concept')return;
+    const current=input.value;
+    set('check-feedback',state.analysisAttempt&&state.analysisAttempt===current?analysisFeedback(current):
+      state.analysisAttempt?'Choice changed. Select Check answer to save it and update the feedback.':'Select Check answer to see feedback.');
+  });
   $('#rg-check').addEventListener('submit',e=>{
     e.preventDefault();
     const selected=$('input[name=rg-concept]:checked')?.value;

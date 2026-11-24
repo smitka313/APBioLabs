@@ -48,7 +48,7 @@ function page(localStorage,pathname='/index.html'){
     setTimeout:noop,clearTimeout:noop,setInterval:noop,clearInterval:noop,addEventListener:noop,requestAnimationFrame:noop,cancelAnimationFrame:noop,
     Blob,URL:{createObjectURL:blob=>(downloads.push(blob),'blob:test'),revokeObjectURL:noop}};
   env.window=env; vm.runInNewContext(source,env);
-  return {Lab:env.Lab, doc, nav, downloads, el:tag=>new Element(tag)};
+  return {Lab:env.Lab, doc, nav, downloads, el:tag=>new Element(tag), env};
 }
 function confirm(box,id='signout',typed='First'){
   const gate=box.querySelector('#dm-'+id+'-gate');
@@ -136,4 +136,159 @@ test('new OpenSciEd work discovered after confirmation opens is offered for back
   assert.equal(dialog.querySelector('.dm-openscied-work').hidden,false);
   assert.match(dialog.querySelector('.tool-status').textContent,/Download a backup/);
   dialog.querySelector('.dm-confirm').click();assert.deepEqual(p.nav,['reload']);
+});
+
+const OSE_PATH='/openscied-b1-migration.html';
+const migWork=(claim,stamp=0)=>JSON.stringify({v:1,month:0,visited:[],notes:[],answers:{claim},lastVisitedAt:stamp});
+const backupFor=(p,student)=>p.Lab.progressFile.parse({app:'aplab',v:1,lab:'lab02',student,data:{'field:model':'restored AP work'}});
+test('named restore cannot replace a different site-wide sign-in or relabel unrelated OpenSciEd work',()=>{
+  const s=withStudent({[MIG]:migWork('original record'),[AP]:'"first AP answer"'}), ap=page(s,'/lab02.html'), ose=page(s,OSE_PATH);
+  const session=guard.open(s,'b1-migration',[MIG]);
+  const reportIdentity=guard.reportIdentity(session,[MIG],()=>ose.Lab.identity.get());
+  const incoming=backupFor(ap,NEW);
+  assert.match(ap.Lab.progressFile.question(incoming).blocked,/does not match the current sign-in/);
+  assert.throws(()=>ap.Lab.progressFile.apply(incoming), /sign out before restoring another student/);
+  assert.equal(s.getItem(AP),'"first AP answer"'); assert.equal(s.getItem(MIG),migWork('original record'));
+  assert.equal(reportIdentity().name,OLD.name); assert.deepEqual(ap.nav,[]);
+});
+test('same-student restore and clean unnamed-device restore work without touching other apps',()=>{
+  const match=withStudent({[MIG]:migWork('same student record')}), a=page(match,'/lab02.html');
+  a.Lab.progressFile.apply(backupFor(a,OLD));
+  assert.equal(match.getItem(MIG),migWork('same student record')); assert.deepEqual(a.nav,['reload']);
+  const different=storage({[MIG]:migWork('unnamed existing work')}), b=page(different,'/lab02.html');
+  assert.throws(()=>b.Lab.progressFile.apply(backupFor(b,NEW)), /Other work is already saved/);
+  assert.equal(different.getItem('aplab:student'),null);
+  const clean=storage(), c=page(clean,'/lab02.html');
+  c.Lab.progressFile.apply(backupFor(c,NEW));
+  assert.equal(JSON.parse(clean.getItem('aplab:student')).name,NEW.name);
+  assert.equal(clean.getItem('aplab:lab02:field:model'),'"restored AP work"');
+});
+function dashboard(s) {
+  const p=page(s,'/openscied-dashboard.html'), ids={};
+  const el=id=>{
+    if(!ids[id]){
+      const item=p.el(id.includes('-open')||id==='openscied-resume-link'?'a':id==='clear-openscied-dialog'?'dialog':'div');
+      item.before=(...related)=>{item.beforeNodes=related;};
+      item.showModal=()=>{item.open=true;};
+      item.close=()=>{item.open=false;item.trigger('close');};
+      ids[id]=item;
+    }
+    return ids[id];
+  };
+  p.doc.readyState='complete';
+  p.doc.querySelector=sel=>sel.startsWith('#')?el(sel.slice(1)):null;
+  p.env.OpenSciEdSaveSession=guard;
+  p.env.OpenSciEdResume=require(root+'/openscied-resume.js');
+  vm.runInNewContext(fs.readFileSync(root+'/openscied-dashboard.js','utf8'),p.env);
+  return {...p,el};
+}
+function dashboardConfirm(d){
+  d.el('openscied-erase-confirmation').value='ERASE';
+  d.el('openscied-erase-confirmation').trigger('input');
+  d.el('clear-openscied-form').trigger('submit');
+}
+test('an older dashboard confirmation cannot clear or back up the next student’s work',()=>{
+  const s=withStudent({[MIG]:migWork('previous student')});
+  const d=dashboard(s); d.el('migration-reset').click();
+  assert.equal(d.el('clear-openscied-dialog').open,true);
+  confirm(page(s).Lab.data.signOut());
+  page(s).Lab.identity.set(NEW);
+  s.setItem(MIG,migWork('new student'));
+  dashboardConfirm(d);
+  assert.equal(s.getItem(MIG),migWork('new student'));
+  assert.equal(d.el('confirm-openscied-clear').disabled,true);
+  assert.match(d.el('openscied-clear-error').textContent,/Reload this dashboard/);
+  d.el('download-openscied-results').click(); assert.equal(d.downloads.length,0);
+});
+test('same-workspace changes cancel a stale confirmation; reviewing fresh work still permits a scoped clear',()=>{
+  const s=withStudent({[MIG]:migWork('original'),[AP]:'"AP work"'}), d=dashboard(s);
+  d.el('migration-reset').click();
+  s.setItem(MIG,migWork('more work in another tab'));
+  dashboardConfirm(d);
+  assert.match(d.el('openscied-clear-error').textContent,/Saved work changed/);
+  assert.equal(s.getItem(MIG),migWork('more work in another tab'));
+  d.el('cancel-openscied-clear').click();
+  d.el('migration-reset').click();
+  dashboardConfirm(d);
+  assert.equal(s.getItem(MIG),null); assert.equal(s.getItem(AP),'"AP work"');
+});
+test('guest dashboard describes unattributed work without silently naming it as this student’s',()=>{
+  const d=dashboard(storage({[MIG]:migWork('guest evidence')}));
+  assert.equal(d.el('openscied-resume').hidden,false);
+  assert.equal(d.el('resume-title').textContent,'Saved work on this device');
+  assert.match(d.el('openscied-resume-description').textContent,/Continue only if this work is yours/);
+  assert.match(d.el('openscied-resume-link').textContent,/Continue my saved Migration Map Explorer/);
+});
+test('stale activity exits cannot refresh Resume after sign-out or scoped dashboard clear',()=>{
+  const resume=require(root+'/openscied-resume.js'), J='aplab:openscied:b2-carbon-journey:v1';
+  const CR='/openscied-b2-carbon-journey.html';
+  const s=withStudent({[MIG]:migWork('First student',1000)});
+  let now=1200;
+  const stale=resume.connect(s,()=>now,{scope:'b1-migration'}); stale.snapshot(OSE_PATH,'open');
+  confirm(page(s).Lab.data.signOut());
+  const fresh=resume.connect(s,()=>now), mounted=resume.connect(s,()=>now,{scope:'b1-migration'});
+  now=2000; mounted.snapshot(OSE_PATH,'open');
+  now=2100; s.setItem(MIG,migWork('next student earlier',now));
+  now=2400; s.setItem(J,JSON.stringify({version:3,rows:[{note:'next student later'}],lastVisitedAt:now}));
+  now=3000; assert.deepEqual(stale.snapshot(OSE_PATH,'exit'),{});
+  assert.equal(fresh.snapshot(OSE_PATH).changed,2100);
+  assert.equal(fresh.snapshot(CR).changed,2400);
+  assert.equal(guard.erase(s,'b1-migration',[MIG]).ok,true);
+  s.setItem(MIG,migWork('newer run after scoped clear',3150));
+  now=3200;assert.deepEqual(mounted.snapshot(OSE_PATH,'exit'),{});
+  assert.ok(fresh.snapshot(OSE_PATH).changed>0);
+});
+
+test('Peat Bog dashboard distinguishes duplicate trials from a real model contrast',()=>{
+  const key='aplab:openscied:b2-peat-bog:v1';
+  const t={ tilt:23.44,temp:10,co2:420,o2:21,wet:75,burn:0 };
+  const same={...t,label:'Different title, same inputs'};
+  const identical=dashboard(withStudent({[key]:JSON.stringify({v:1,trials:[t,same]})}));
+  assert.match(identical.el('peat-bog-progress').textContent,/same conditions/);
+  assert.equal(identical.el('peat-bog-progress').beforeNodes[1].value,1);
+  const contrasted=dashboard(withStudent({[key]:JSON.stringify({v:1,trials:[t,{...t,co2:800}]})}));
+  assert.equal(contrasted.el('peat-bog-progress').beforeNodes[1].value,2);
+});
+test('Fires dashboard counts only valid contrasts, including older matching records',()=>{
+  const key='aplab:openscied:b2-fires:v1', filesave=x=>withStudent({[key]:JSON.stringify({v:1,...x})});
+  const cards={solved:true}, decomp={seed:7,temps:[18,18,18],recorded:[0,2]};
+  const tilt={seed:7,settings:['direct','direct','direct'],recorded:true,starchDone:true};
+  const identical=dashboard(filesave({cards,decomp,tilt}));
+  assert.equal(identical.el('b2-fires-progress').beforeNodes[1].value,1);
+  const contrasted=dashboard(filesave({cards,decomp:{...decomp,temps:[18,27,43]},tilt:{...tilt,settings:['direct','tilt70','foil']}}));
+  assert.equal(contrasted.el('b2-fires-progress').beforeNodes[1].value,3);
+  const marked=dashboard(filesave({cards,decomp,tilt,modelEvidence:{cardsRight:5,tubesRead:3,starchTested:true,foamAfterBaseline:true,
+    foamComparison:false,tiltComparison:false}}));
+  assert.equal(marked.el('b2-fires-progress').beforeNodes[1].value,1);
+});
+test('Cancer Rates dashboard will not show completed with reference-only pins or an uncommitted question edit',()=>{
+  const KEY='aplab:openscied:b3-cancer-rates:v1';
+  const seed=x=>withStudent({[KEY]:JSON.stringify(x)});
+  const casework={access:'falling',diagnosis:'rising','test-cost':'longer',notes:{diagnoses:'trend',deaths:'trend',map:'trend'},opened:true,question:'Original question'};
+  const complete={step:'explain',prediction:{choice:'same',locked:true},casework,claim:'claim',limits:'limit',
+    evidence:[{a:'A',b:'B',view:'michigan',measure:'late-rate'}],completed:true};
+  const reference=dashboard(seed({...complete,qualifyingPinCount:0}));
+  assert.doesNotMatch(reference.el('cancer-rates-progress').textContent,/Investigation complete/);
+  assert.match(reference.el('cancer-rates-progress').textContent,/0 usable comparisons · 1 reference pin/);
+  assert.match(reference.el('cancer-rates-open').href,/#explore$/);
+  const pending=dashboard(seed({...complete,casework:{...casework,questionDraft:'New question'},qualifyingPinCount:1}));
+  assert.doesNotMatch(pending.el('cancer-rates-progress').textContent,/Investigation complete/);
+  assert.match(pending.el('cancer-rates-progress').textContent,/Question draft saved/);
+  const valid=dashboard(seed({...complete,casework:{...casework,questionDraft:' Original question '},qualifyingPinCount:1}));
+  assert.match(valid.el('cancer-rates-progress').textContent,/Investigation complete/);
+});
+
+test('a legacy same-student backup with blank period does not overwrite a currently entered class period',()=>{
+  const s=withStudent(), ap=page(s,'/lab02.html');
+  ap.Lab.progressFile.apply(backupFor(ap,{name:' first student ',period:''}));
+  assert.deepEqual(JSON.parse(s.getItem('aplab:student')),OLD);
+  assert.equal(s.getItem('aplab:lab02:field:model'),'"restored AP work"');
+});
+test('a clean-device restore rolls back the imported AP record when browser storage cannot save its label',()=>{
+  const s=storage(), ap=page(s,'/lab02.html');
+  s.blocked.set='aplab:student';
+  assert.throws(()=>ap.Lab.progressFile.apply(backupFor(ap,NEW)),/progress could not be loaded/);
+  assert.equal(s.getItem('aplab:student'),null); assert.equal(ap.Lab.identity.get(),null);
+  assert.equal(s.getItem('aplab:lab02:field:model'),null);
+  assert.deepEqual(ap.nav,[]);
 });

@@ -109,7 +109,7 @@
     // have inherited the national axis; don't retrospectively claim what was on that chart.
     const x=view==='michigan'?(['michigan:screening','michigan:income'].includes(p?.x)?p.x:''):
       p?.x==='income'?'income':'poverty';
-    return {x,trend:p?.trend===true,query:str(p?.query,80),region:['urban','rural'].includes(p?.region)?p.region:'all'};
+    return {x,trend:p?.trend===true,pairOnly:p?.pairOnly===true,query:str(p?.query,80),region:['urban','rural'].includes(p?.region)?p.region:'all'};
   }
   function suggestedDataset(questionText){
     const q=questionText.toLowerCase();
@@ -123,6 +123,7 @@
   try{const saved=(saveSession?.read(KEY) ?? null);if(saved!==null){try{state=clean(JSON.parse(saved));}catch(_){invalid=true;}}}catch(_){blocked=true;}
   function save(){
     state.lastVisitedAt=Date.now();
+    state.qualifyingPinCount=qualifyingPins().length;
     if(invalid){$('save').textContent='A previous record was preserved. Download this investigation before leaving.';return false;}
     const result=saveSession?.write(KEY,JSON.stringify(state)) ?? unavailableSave;
     blocked=!result.ok;
@@ -166,20 +167,21 @@
     return [...lessonNotes.map(k=>Boolean(record.casework.notes[k]?.trim())),...exhibits.map(k=>Boolean(directions[k]&&record.casework[k]===directions[k]))];
   }
   function caseReady(record){return record.casework.opened&&caseMarks(record).every(Boolean);}
-  function hasFinalResponses(record){return record.evidence.length>0&&!!record.claim.trim()&&!!record.limits.trim();}
+  function qualifyingPins(record=state){return record.evidence.filter(pin=>L.isNumericComparison(L.comparison(D,pin)));}
+  function hasFinalResponses(record){return qualifyingPins(record).length>0&&!!record.claim.trim()&&!!record.limits.trim();}
   function available(step,record=state){
     return step==='predict'||(record.prediction.locked&&caseReady(record)&&(step==='explore'||(step==='explain'&&record.evidence.length>0)));
   }
-  function canFinish(){return available('explain')&&hasFinalResponses(state);}
+  function canFinish(){return available('explain')&&hasFinalResponses(state)&&!L.hasPendingQuestion(state.casework);}
   function isComplete(){return state.completed&&canFinish();}
   function reviewReady(){return $('evidence-confirm').checked;}
   function resetEvidenceReview(){$('evidence-confirm').checked=false;}
   function renderSteps(){
-    const locked=state.prediction.locked, ready=available('explore'), pinned=available('explain'), finished=isComplete();
+    const locked=state.prediction.locked, ready=available('explore'), pinned=ready&&qualifyingPins().length>0, finished=isComplete();
     const complete={predict:locked,explore:pinned,explain:finished};
     const hint={
       predict:locked?'Prediction saved.':'Choose and save a prediction before opening the Evidence Folder.',
-      explore:!locked?'Save your prediction first.':!ready?'Complete all six exhibits and save a follow-up question to unlock Explore More Data.':pinned?'Evidence pinned.':'Pin one comparison to finish this step.',
+      explore:!locked?'Save your prediction first.':!ready?'Complete all six exhibits and save a follow-up question to unlock Explore More Data.':pinned?'Evidence pinned.':'Pin one comparison with two reported values to finish this step.',
       explain:!pinned?'Pin at least one comparison in Explore More Data to unlock Explain.':finished?'Investigation complete.':'Write your claim and one limit, check your evidence, then select Finish investigation.'
     };
     for(const step of steps){
@@ -232,7 +234,8 @@
     const opts=L.sortRows(rows,'name','asc').map(r=>[r.id,r.name]);
     renderSelect($('compare-a'),opts,s.a);renderSelect($('compare-b'),opts,s.b);
     $('verdict').hidden=!state.prediction.locked;if(state.prediction.locked)text('verdict',predictions[state.prediction.choice]+' '+firstResult());text('view-source',spec[v].caption+(isMI()?' '+D.michigan.period:''));
-    text('pin-count',state.evidence.length+' comparison'+(state.evidence.length===1?'':'s')+' pinned');
+    const n=qualifyingPins().length, reference=state.evidence.length-n;
+    text('pin-count',n+' comparison'+(n===1?'':'s')+' pinned'+(reference?' · '+reference+' older reference '+(reference===1?'pin':'pins'):''));
     const suggested=suggestedDataset(state.casework.question);
     text('view-help',(suggested ? 'Suggested starting view: '+spec[suggested.view].title+'. ' : '')+
       'Pick the data that can answer your question. You can switch views.');
@@ -398,8 +401,9 @@
     if(comparison&&v==='types'&&picks[0].group!==picks[1].group&&finite(gap))msg+=' Read the population labels before comparing rates.';
     holder.replaceChildren(...cards,node('p',msg,'cr-gap'));
     const duplicate=state.evidence.some(p=>p.view===v&&p.measure===s.measure&&[p.a,p.b].includes(s.a)&&[p.a,p.b].includes(s.b));
-    $('pin').disabled=!comparison||state.evidence.length>=8||duplicate;
-    $('pin').textContent=duplicate?'Comparison already pinned':state.evidence.length>=8?'Notebook full (8 pins)':'Pin this comparison';
+    const missingValue=!!comparison&&!L.isNumericComparison(comparison);
+    $('pin').disabled=!comparison||missingValue||state.evidence.length>=8||duplicate;
+    $('pin').textContent=missingValue?'Choose two reported values':duplicate?'Comparison already pinned':state.evidence.length>=8?'Notebook full (8 pins)':'Pin this comparison';
   }
   function renderTable(){
     const v=state.view,s=current(),rows=inRegion(D[v].rows,s),k=isMI()?'late-share':other(),first=isMI()?(['incidence','income'].includes(s.measure)?s.measure:'late-rate'):'incidence',ranks=L.rankRows(rows,s.measure);
@@ -431,6 +435,11 @@
     const pair=L.comparison(D,p);
     if(!pair)return '';
     const pairStr=r=>r.name+': '+labels[p.measure].toLowerCase()+' '+formatPair(r,p.measure,p.view);
+    const noPair=L.isNumericComparison(pair)?'':' Reference only: this measure does not have two reported values.';
+    const outsideNote=(rows,chart)=> {
+      const hidden=[pair.a,pair.b].filter(r=>!rows.some(shown=>shown.id===r.id)).map(r=>r.name);
+      return hidden.length?' Not shown in this '+chart+': '+hidden.join(' and ')+'. The comparison still uses the source table.':'';
+    };
     let extra='';
     if(p.view==='michigan'){
       const readings=r=>r.name+' ('+r.region+'): '+spec.michigan.measures.filter(k=>finite(r[k])).map(k=>labels[k]+' '+full(r[k],k)).join(', ')+(r.lateCI?.every(finite)?'; late-stage 95% CI '+r.lateCI.join('–'):'')+(r.screeningCI?.every(finite)?'; mammography 95% CI '+r.screeningCI.join('–')+'%':'');
@@ -438,23 +447,28 @@
       let viewNote='';
       if(x){
         const filtered=D.michigan.rows.filter(r=>ctx.region==='all'||r.region?.toLowerCase()===ctx.region);
-        const matches=L.sortRows(filtered,p.measure,'desc',ctx.query).filter(r=>finite(r[x])&&finite(r[p.measure]));
+        const matches=L.sortRows(filtered,p.measure,'desc',ctx.query)
+          .filter(r=>finite(r[x])&&finite(r[p.measure])&&(!ctx.pairOnly||[p.a,p.b].includes(r.id)));
         const scope=(ctx.region==='all'?'all county types':ctx.region+' counties')+(ctx.query?' · search “'+ctx.query+'”':'');
         const fit=ctx.trend&&x!==p.measure?L.fitLine(matches,x,p.measure):null;
         const fitNote=ctx.trend&&x!==p.measure?(fit?' Trend line: '+fit.n+' counties, '+(Math.abs(fit.slope)<1e-12?'flat':fit.slope>0?'upward':'downward')+'.':' No line could be fitted from that filtered view.'):'';
         viewNote=x===p.measure?' Chart was a comparison by '+labels[x].toLowerCase()+' ('+scope+').':
           ' Scatterplot: '+labels[x]+' (x) and '+labels[p.measure]+' (y), '+scope+'.'+fitNote;
+        viewNote+=outsideNote(matches,x===p.measure?'comparison chart':'scatterplot');
       }else viewNote=' This older pin did not record which horizontal axis was shown.';
-      return spec.michigan.title+' · '+D.michigan.period+' Pinned by '+labels[p.measure].toLowerCase()+'. '+readings(pair.a)+' | '+readings(pair.b)+'.'+viewNote+' County comparisons cannot measure individual access or prove a cause.';
+      return spec.michigan.title+' · '+D.michigan.period+' Pinned by '+labels[p.measure].toLowerCase()+'. '+readings(pair.a)+' | '+readings(pair.b)+'.'+viewNote+noPair+' County comparisons cannot measure individual access or prove a cause.';
     }
     if(p.view==='poverty'){
       const co=cleanContext(p.context,p.view),x=co.x;
       extra=' · Scatterplot: '+pair.a.name+' '+full(pair.a[x],x)+' and '+pair.b.name+' '+full(pair.b[x],x)+'; diagnoses '+full(pair.a.incidence,'incidence')+' and '+full(pair.b.incidence,'incidence')+'.';
-      const rows=L.sortRows(D.poverty.rows,'incidence','desc',co.query);
+      const rows=L.sortRows(D.poverty.rows,'incidence','desc',co.query)
+        .filter(r=>finite(r[x])&&finite(r.incidence)&&(!co.pairOnly||[p.a,p.b].includes(r.id)));
+      if(co.query)extra+=' Search: “'+co.query+'”.';
+      extra+=outsideNote(rows,'scatterplot');
       if(co.trend){const fit=L.fitLine(rows,x);if(fit)extra+=' Trend fit on '+fit.n+' matching locations ('+(Math.abs(fit.slope)<1e-12?'flat':fit.slope>0?'upward':'downward')+'); not causal.';}
     }else if(p.view==='race'&&[p.a,p.b].includes('ai-an'))extra=' · '+aiCaveat;
     const period=p.view==='poverty'?'Cancer 2019–2023; Census 2023':D[p.view].period;
-    return spec[p.view].title+' ('+period+') · '+pairStr(pair.a)+' | '+pairStr(pair.b)+extra;
+    return spec[p.view].title+' ('+period+') · '+pairStr(pair.a)+' | '+pairStr(pair.b)+extra+noPair;
   }
   const testCostEvidence=row=>row.label+': +'+row.value+' months';
   function renderExplain(){
@@ -487,12 +501,14 @@
     $('evidence-confirm').disabled=finished;
     $('evidence-review').hidden=finished;
     $('done').hidden=!finished;
-    text('finish-hint',finished?'Finished. Preview your report before turning it in.':!claim&&!limits?'Write both responses to unlock Finish investigation.':!claim?'Add a claim to unlock Finish investigation.':!limits?'Add a limit to unlock Finish investigation.':!reviewReady()?'Check that your comparison answers your question and that you cited both values.':'Select Finish investigation to mark your work complete.');
+    text('finish-hint',finished?'Finished. Preview your report before turning it in.':
+      L.hasPendingQuestion(state.casework)?'Save your revised question or restore your saved question before finishing.':
+      !qualifyingPins().length?'Return to Explore and pin a comparison with two reported values.':!claim&&!limits?'Write both responses to unlock Finish investigation.':!claim?'Add a claim to unlock Finish investigation.':!limits?'Add a limit to unlock Finish investigation.':!reviewReady()?'Check that your comparison answers your question and that you cited both values.':'Select Finish investigation to mark your work complete.');
     renderSteps();
   }
   function report(){
     const person=displayIdentity();
-    const lines=['Cancer Rates Data Dive — Investigation','Name: '+person.name,'Class period: '+person.period,'Status: '+(isComplete()?'Complete':'In progress'),'','PREDICTION',predictions[state.prediction.choice]||'Not recorded',state.prediction.reason,state.prediction.locked?firstResult():'',...(state.casework.opened?['','INVESTIGATION QUESTION',state.casework.question]:[]),...(lessonNotes.some(k=>state.casework.notes[k])?[
+    const lines=['Cancer Rates Data Dive — Investigation','Name: '+person.name,'Class period: '+person.period,'Status: '+(isComplete()?'Complete':'In progress'),'','PREDICTION',predictions[state.prediction.choice]||'Not recorded',state.prediction.reason,state.prediction.locked?firstResult():'',...(state.casework.opened?['','INVESTIGATION QUESTION',state.casework.question]:[]),...(L.hasPendingQuestion(state.casework)?['','QUESTION DRAFT (NOT SUBMITTED)',state.casework.questionDraft || '(blank)']:[]),...(lessonNotes.some(k=>state.casework.notes[k])?[
       '','LESSON 1 EVIDENCE OBSERVATIONS',...lessonNotes.flatMap((key,i)=>state.casework.notes[key]?['Exhibit '+'ABC'[i]+': '+state.casework.notes[key]]:[])
     ]:[]),...(state.casework['test-cost']?[
       '','EXHIBIT F: THE COST OF GETTING TESTED',
@@ -536,8 +552,8 @@
   $('pin').addEventListener('click',()=>{
     const s=current(),view=state.view;
     const plotX=view==='michigan'?(miMeasures().includes('income')?s.x:'screening'):state.socio;
-    const p={view,measure:s.measure,a:s.a,b:s.b,context:{x:view==='michigan'?'michigan:'+plotX:plotX,trend:scatterView()&&state.layer.trend&&!state.layer['pair-only'],query:s.query,region:s.region}};
-    if($('pin').disabled||!L.comparison(D,p))return;
+    const p={view,measure:s.measure,a:s.a,b:s.b,context:{x:view==='michigan'?'michigan:'+plotX:plotX,trend:scatterView()&&state.layer.trend&&!state.layer['pair-only'],pairOnly:state.layer['pair-only'],query:s.query,region:s.region}};
+    if($('pin').disabled||!L.isNumericComparison(L.comparison(D,p)))return;
     state.evidence.push(p);state.completed=false;resetEvidenceReview();save();renderExplore();renderSteps();announce('Comparison pinned. You can now use it in Explain.');
     $('to-explain').focus({preventScroll:true});
   });
@@ -593,6 +609,7 @@
     followup.hidden=!ready;
     $('income-explore').disabled=!ready||!question.value.trim();
     questionJump.disabled=!ready;
+    $('restore-question').hidden=!state.casework.opened||!L.hasPendingQuestion(state.casework);
     for(const next of all('[data-case-next]')){
       const i=caseTabs.indexOf(next.dataset.caseNext)-1;
       next.disabled=!marks[i];
@@ -693,7 +710,10 @@
   });
   $('revise-question').addEventListener('click',()=>{casefile.open=true;updateFollowup();question.focus();});
   question.addEventListener('input',()=>{
-    state.casework.questionDraft=str(question.value,500);save();updateFollowup();
+    state.casework.questionDraft=str(question.value,500);resetEvidenceReview();save();updateFollowup();renderCompletion();
+  });
+  $('restore-question').addEventListener('click',()=>{
+    state.casework.questionDraft=null;question.value=state.casework.question;save();updateFollowup();renderCompletion();question.focus();
   });
   followup.addEventListener('submit',event=>{
     event.preventDefault();
@@ -744,7 +764,8 @@
     if (!state.prediction.locked) missing.push('Save your prediction.');
     if (cases < 6) missing.push('Complete the remaining ' + (6 - cases) + ' evidence exhibit(s).');
     if (!state.casework.opened) missing.push('Save your follow-up investigation question.');
-    if (!state.evidence.length) missing.push('Pin at least one comparison.');
+    if (!qualifyingPins().length) missing.push('Pin at least one comparison with two reported values.');
+    if (L.hasPendingQuestion(state.casework) && state.casework.opened) missing.push('Save the revised question or restore the original.');
     if (!state.claim.trim()) missing.push('Write your claim.');
     if (!state.limits.trim()) missing.push('Write a limitation or suggest further evidence.');
     if (canFinish() && !isComplete()) missing.push('Check your pinned evidence and select Finish investigation.');
@@ -762,7 +783,8 @@
     const sections = [
       {title:'Prediction and follow-up question',items:[
         answer('My prediction',predictions[state.prediction.choice]), answer('My reason',state.prediction.reason),
-        answer('My follow-up question',state.casework.opened ? state.casework.question : state.casework.questionDraft)
+        ...(state.casework.opened ? [answer('My saved follow-up question',state.casework.question)] : []),
+        ...(L.hasPendingQuestion(state.casework) ? [answer('Question draft · not submitted',state.casework.questionDraft || '(blank)')] : [])
       ]},
       {title:'Exhibits and pinned comparisons',items:[
         ...lessonNotes.map((k,i) => answer('Exhibit ' + notes[i] + ' observation',state.casework.notes[k])),
@@ -788,7 +810,7 @@
       status:invalid || blocked || !saveSession?.check(KEY).ok ? 'recovery' : isComplete() ? 'final' : 'draft',missing,
       student:person.name || person.period ? person : null,keyResults:[
         {label:'Evidence exhibits completed',value:cases + ' of 6'},
-        {label:'Comparisons pinned',value:state.evidence.length}
+        {label:'Comparisons with reported values',value:qualifyingPins().length}
       ],sections};
   }
 

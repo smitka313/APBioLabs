@@ -58,7 +58,7 @@ const FIXTURE = '<!doctype html><html lang="en"><meta charset="utf-8"><title>Ope
     assert.equal(await page.evaluate(() => collectionCalls), 0, 'mount does not read any saved work');
     assert.equal(await page.locator('[aria-live], [role="status"]').count(), 1, 'does not add a duplicate live region');
     assert.equal(await page.locator('#submit button').count(), 1, 'one launcher in ordinary phases');
-    assert.equal(await page.getByRole('button', { name: 'Download .docx' }).count(), 0, 'no direct Word shortcut');
+    assert.equal(await page.getByRole('button', { name: 'Download Word (.docx)' }).count(), 0, 'no direct Word shortcut');
     await page.evaluate(() => {
       window.initialLauncher = document.querySelector('#submit button');
       document.querySelector('#final-phase').classList.remove('fixture-off');
@@ -77,7 +77,7 @@ const FIXTURE = '<!doctype html><html lang="en"><meta charset="utf-8"><title>Ope
     assert.match(await dialog.innerText(), /In progress/i);
     assert.ok(await dialog.getByRole('button', { name: 'Print or save as PDF' }).isVisible());
     assert.ok(await dialog.getByRole('button', { name: 'Close report' }).isVisible());
-    assert.equal(await dialog.getByRole('button', { name: 'Download .docx' }).count(), 0, 'Word starts inside a closed disclosure');
+    assert.equal(await dialog.getByRole('button', { name: 'Download Word (.docx)' }).count(), 0, 'Word starts inside a closed disclosure');
     assert.match(await dialog.innerText(), /Finish the final trial/);
     assert.match(await dialog.innerText(), /<img src=x/);
     assert.equal(await dialog.getByRole('img').count(), 0);
@@ -106,11 +106,11 @@ const FIXTURE = '<!doctype html><html lang="en"><meta charset="utf-8"><title>Ope
     }
 
     // Hold the original preview snapshot even if the activity state changes before download/print.
-    await page.evaluate(() => { synthetic.student.name = 'Wrong Next Student'; });
+    await page.evaluate(() => { synthetic.sections[0].items[0].value = 'Evidence edited in another step'; });
     await dialog.getByText('More formats', { exact: true }).click();
-    assert.ok(await dialog.getByRole('button', { name: 'Download .docx' }).isVisible());
+    assert.ok(await dialog.getByRole('button', { name: 'Download Word (.docx)' }).isVisible());
     const download = page.waitForEvent('download');
-    await dialog.getByRole('button', { name: 'Download .docx' }).click();
+    await dialog.getByRole('button', { name: 'Download Word (.docx)' }).click();
     const d = await download;
     const file = path.join(dir, 'report.docx');
     assert.equal(d.suggestedFilename(), 'recorded-ecosystem-observations-submission.docx');
@@ -132,7 +132,7 @@ const FIXTURE = '<!doctype html><html lang="en"><meta charset="utf-8"><title>Ope
     assert.match(xml, /Season 119/);
     assert.match(xml, /w:tblHeader/);
     assert.match(xml, /&lt;img src=x/);
-    assert.doesNotMatch(xml, /Wrong Next Student|aplab_payload/);
+    assert.doesNotMatch(xml, /Evidence edited in another step|aplab_payload/);
     if (T.BROWSER === 'chromium') {
       const pdf = path.join(dir, 'report.pdf');
       await page.emulateMedia({ media: 'print' });
@@ -173,14 +173,38 @@ const FIXTURE = '<!doctype html><html lang="en"><meta charset="utf-8"><title>Ope
     if (shots) await page.screenshot({ path:path.join(shots, 'submission-preview-complete-without-id.png') });
     await dialog.getByText('More formats', { exact: true }).click();
     const editedDownload = page.waitForEvent('download');
-    await dialog.getByRole('button', { name: 'Download .docx' }).click();
+    await dialog.getByRole('button', { name: 'Download Word (.docx)' }).click();
     const editedFile = path.join(dir, 'corrected.docx');
     await (await editedDownload).saveAs(editedFile);
     assert.match(execFileSync('unzip', ['-p', editedFile, 'word/header1.xml'], { encoding: 'utf8' }), /Example No-Id Student · Class 3/);
     await page.evaluate(() => { synthetic.status = 'recovery'; window.print = () => { window.printedUnexpectedly = true; }; });
     await dialog.getByRole('button', { name: 'Print or save as PDF' }).click();
-    assert.match(await dialog.innerText(), /Close it and open a new preview/);
+    assert.match(await dialog.innerText(), /now marked Recovered work/);
     assert.equal(await page.evaluate(() => window.printedUnexpectedly), undefined, 'an edited copy cannot be exported after the save is retired');
+    assert.equal(await dialog.locator('.osr-stamp').count(), 0);
+    assert.doesNotMatch(await dialog.innerText(), /Example No-Id Student/);
+    await dialog.getByRole('button', { name: 'Close report' }).click();
+    await page.evaluate(() => { synthetic.status = 'final'; synthetic.student = { name:'Original student', period:'1' }; });
+    await page.getByRole('button', { name: 'Preview report' }).click();
+    await page.evaluate(() => {
+      synthetic.student = { name:'Wrong Next Student', period:'2' };
+      window.dispatchEvent(new Event('beforeprint'));
+    });
+    assert.match(await dialog.locator('.osr-label').innerText(), /Recovered work/i, 'native print revalidates an unedited preview');
+    assert.match(await dialog.locator('.osr-meta').innerText(), /Original student/);
+    assert.doesNotMatch(await dialog.innerText(), /Wrong Next Student/);
+    assert.equal(await dialog.locator('.osr-stamp').count(), 0);
+    await dialog.getByText('More formats', { exact: true }).click();
+    const recoveredDownload = page.waitForEvent('download');
+    await dialog.getByRole('button', { name:'Download Word (.docx)' }).click();
+    const recovery = await recoveredDownload;
+    assert.match(recovery.suggestedFilename(), /-recovery\.docx$/);
+    const recoveredFile = path.join(dir, 'recovered.docx');
+    await recovery.saveAs(recoveredFile);
+    const recoveredXML = execFileSync('unzip', ['-p', recoveredFile, 'word/document.xml'], { encoding:'utf8' });
+    assert.match(recoveredXML, /RECOVERED WORK/i);
+    assert.match(recoveredXML, /Original student/);
+    assert.doesNotMatch(recoveredXML, /Wrong Next Student|Activity complete/i);
     await dialog.getByRole('button', { name: 'Close report' }).click();
     await page.evaluate(() => { synthetic.status = 'final'; synthetic.allowIdentityEdit = false; });
     await page.getByRole('button', { name: 'Preview report' }).click();

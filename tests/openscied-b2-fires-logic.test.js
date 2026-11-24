@@ -310,11 +310,11 @@ test('seeded random numbers are stable and in range', () => {
 });
 
 test('scene evidence counts actual sorted cards and recorded readings, not just a saved configuration', () => {
-  const empty = { cardsPlaced: 0, cardsRight: 0, foamReadings: 0, foamAfterBaseline: false, tubesRead: 0, starchTested: false };
+  const empty = { cardsPlaced: 0, cardsRight: 0, foamReadings: 0, foamAfterBaseline: false, foamComparison: false, tubesRead: 0, tiltComparison: false, starchTested: false };
   assert.deepEqual(L.sceneEvidence({cards:{},decomp:{seed:1,recorded:[]},tilt:{seed:1,settings:['direct','tilt45','foil'],recorded:false}}),empty);
   const cards = {placed:Object.fromEntries(L.CARDS.map(c=>[c.id,c.zone]))};
   const decomp = {seed:1,temps:[18,27,43],recorded:[0,0,2,4,99]};
   assert.deepEqual(L.sceneEvidence({cards,decomp,tilt:{seed:1,settings:['direct','tilt45','foil'],recorded:true,starchDone:true}}),
-    {cardsPlaced:5,cardsRight:5,foamReadings:3,foamAfterBaseline:true,tubesRead:3,starchTested:true});
+    {cardsPlaced:5,cardsRight:5,foamReadings:3,foamAfterBaseline:true,foamComparison:true,tubesRead:3,tiltComparison:true,starchTested:true});
   assert.equal(L.sceneEvidence({tilt:{seed:1,settings:[],recorded:true}}).tubesRead,0);
 });

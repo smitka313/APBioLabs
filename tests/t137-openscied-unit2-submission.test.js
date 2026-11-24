@@ -131,6 +131,15 @@ test('Fires: configuration and baseline are not full evidence; recorded model re
   assert.equal(item(report, 'Recorded foam height (mm)').rows.length, 2);
   assert.ok(named(report, 'Light angle'));
   assert.doesNotMatch(JSON.stringify(report), /incorrect|correct so far|Starch index/);
+  state.decomp.temps = [43,43,43];
+  state.tilt.settings = ['direct','direct','direct'];
+  report = f.report();
+  assert.equal(report.status, 'draft', 'same-setting data are real readings, not completed comparisons');
+  assert.ok(named(report, 'Light angle') && item(report, 'Recorded foam height (mm)'), 'draft report keeps both sets of readings');
+  assert.match(report.missing.join(' '), /same-temperature readings are saved.*same-light readings are saved/);
+  state.decomp.temps = [43,55,55];
+  state.tilt.settings = ['direct','tilt45','tilt70'];
+  assert.equal(f.report().status, 'final', 'custom comparisons count without the class settings, foil, or starch');
   state.tilt.starchDone = true;
   assert.match(JSON.stringify(f.report()), /Starch index/);
   f.handOff();

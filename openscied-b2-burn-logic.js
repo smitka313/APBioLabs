@@ -235,7 +235,7 @@
 
   /* ---------- predictions, checked against the student's own table ---------- */
   const QUICK_S = 10;   // "lights quickly" means it ignited in 10 seconds or less
-  // kind 'ignite': value 'quickly' | 'slowly'. kind 'energy': value 'less' | 'more' than the other fuels the student has burned.
+  // kind 'ignite': value 'quickly' | 'slowly'. legacy kind 'energy': value 'less' | 'more' temperature rise than the other fuels burned.
   function checkPrediction(fuelId, kind, value, st) {
     if (!value) return { status: 'empty', message: '' };
     const rows = tableRows(st), g = byFuel(rows), mine = g.find(x => x.fuel === fuelId), name = fuelLabel(fuelId).toLowerCase();
@@ -245,7 +245,7 @@
       return { status: ok ? 'correct' : 'wrong', message: (ok ? 'Yes. ' : 'Not quite. ') + 'In your data ' + name + ' caught fire after ' + s + ' s, which is ' + (quick ? 'quick' : 'slow') + ' (10 s or less is quick).' };
     }
     const others = g.filter(x => x.fuel !== fuelId);
-    if (!others.length) return { status: 'nodata', message: 'Burn and record at least one other fuel to compare energy.' };
+    if (!others.length) return { status: 'nodata', message: 'Burn and record at least one other fuel to compare temperature changes.' };
     const avg = mean(others.map(x => x.tempRise)), more = mine.tempRise > avg, ok = (value === 'more') === more;
     return { status: ok ? 'correct' : 'wrong', message: (ok ? 'Yes. ' : 'Not quite. ') + 'In your data ' + name + ' warmed up ' + mine.tempRise.toFixed(1) + ' °C, ' + (more ? 'more' : 'less') + ' than the others on average (' + avg.toFixed(1) + ' °C).' };
   }

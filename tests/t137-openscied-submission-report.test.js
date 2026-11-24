@@ -72,3 +72,96 @@ test('Word contract creates editable typed runs, tables and repeated headers wit
   assert.doesNotMatch(json, /aplab_payload|LB1/);
   assert.ok(findRow(document));
 });
+
+function mountedReport() {
+  const fs = require('node:fs');
+  const vm = require('node:vm');
+  const Guard = require('../openscied-save-session.js');
+  class Node {
+    constructor(tag) {
+      Object.assign(this, { tag, children: [], handlers: {}, className: '',
+        classList: { add() {}, remove() {} } });
+    }
+    append(...nodes) { nodes.forEach(n => { n.parent = this; this.children.push(n); }); }
+    after(n) { n.parent = this.parent; this.parent.children.splice(this.parent.children.indexOf(this) + 1, 0, n); }
+    replaceChildren(...nodes) { this.children = []; this.append(...nodes); }
+    replaceWith(n) { this.after(n); this.remove(); }
+    remove() { if (this.parent) this.parent.children.splice(this.parent.children.indexOf(this), 1); }
+    setAttribute() {}
+    addEventListener(key, fn) { this.handlers[key] = fn; }
+    click() { if (this.download) downloads.push(this.download); this.handlers.click?.(); }
+    focus() {}
+    showModal() { this.open = true; }
+    querySelector(sel) { return this.all().find(n => n.className.split(' ').includes(sel.slice(1))); }
+    all() { return [this, ...this.children.flatMap(n => n.all())]; }
+    getClientRects() { return [1]; }
+    getContext() { return null; }
+  }
+  const doc = { body: new Node('body'), head: new Node('head'), createElement: tag => new Node(tag), querySelectorAll: () => [] };
+  const events = {}, downloads = [], printed = [], work = new Map();
+  let owner = { name: 'Original Student', period: '4' };
+  const storage = { getItem: k => work.get(k) ?? null, setItem: (k, v) => work.set(k, v), removeItem: k => work.delete(k) };
+  const key = 'aplab:openscied:b1-carrying:fixture';
+  const guard = Guard.open(storage, 'b1-carrying', [key]);
+  guard.read(key);
+  assert.ok(guard.write(key, 'fictional saved work').ok);
+  const identify = Guard.reportIdentity(guard, [key], () => owner);
+  const collect = () => ({ ...fixture(), student: identify(), status: guard.check(key).ok ? 'final' : 'recovery' });
+  let startPack;
+  const packStarted = new Promise(resolve => { startPack = resolve; });
+  let release;
+  const pack = new Promise(resolve => { release = resolve; });
+  class WordNode { constructor(options) { this.options = options; } }
+  const window = {
+    document: doc, print: () => printed.push(doc.body.querySelector('.osr-label').textContent),
+    addEventListener: (key, fn) => { events[key] = fn; }, removeEventListener: key => delete events[key],
+    URL: { createObjectURL: () => 'blob:test', revokeObjectURL() {} }, setTimeout() {},
+    docx: new Proxy({ Packer: { toBlob: () => { startPack(); return pack; } } },
+      { get: (obj, key) => key === 'then' ? undefined : obj[key] || WordNode }),
+  };
+  vm.runInNewContext(fs.readFileSync(require.resolve('../openscied-submission-report.js'), 'utf8'), { window });
+  const target = new Node('target'); doc.body.append(target);
+  window.OpenSciEdSubmission.mount({ target, collect }).open();
+  return {
+    doc, events, downloads, printed, packStarted, release,
+    retire() {
+      assert.ok(Guard.invalidate(storage).ok);
+      storage.removeItem(key); owner = { name: 'Other Student', period: '2' };
+      assert.equal(collect().status, 'recovery');
+      assert.equal(collect().student.name, 'Original Student');
+    },
+    button: text => doc.body.all().find(n => n.tag === 'button' && n.textContent === text),
+  };
+}
+
+test('an open preview must downgrade before the PDF button or native print can export retired work', () => {
+  for (const nativePrint of [false, true]) {
+    const f = mountedReport();
+    assert.equal(f.doc.body.querySelector('.osr-label').textContent, 'Activity complete');
+    f.retire();
+    if (nativePrint) f.events.beforeprint?.();
+    else f.button('Print or save as PDF').click();
+    assert.equal(f.doc.body.querySelector('.osr-label').textContent, 'Recovered work');
+    assert.deepEqual(f.printed, []);
+    assert.ok(f.doc.body.all().some(n => n.textContent === 'Original Student'));
+    assert.ok(!f.doc.body.all().some(n => n.textContent === 'Other Student'));
+    assert.equal(f.doc.body.querySelector('.osr-identity-editor'), undefined);
+    f.button('Print or save as PDF').click();
+    assert.deepEqual(f.printed, ['Recovered work']);
+  }
+});
+
+test('Word packing revalidates the open snapshot before download', async () => {
+  const f = mountedReport();
+  const wordButton = f.button('Download Word (.docx)') || f.button('Download .docx');
+  wordButton.click();
+  await f.packStarted;
+  f.retire();
+  f.release({});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(f.downloads, [], 'completion file was not downloaded after handoff');
+  assert.equal(f.doc.body.querySelector('.osr-label').textContent, 'Recovered work');
+  wordButton.click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(f.downloads, ['ecosystem-report-recovery.docx']);
+});

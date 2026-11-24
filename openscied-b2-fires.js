@@ -186,11 +186,20 @@
   }
   const BOXES = [['#data-decomp-body', function () { return decompNodes(false); }], ['#data-sense-foam-body', function () { return decompNodes(false); }], ['#data-tilt-body', tiltNodes]];
   function renderData() {
+    const e = L.sceneEvidence(state);
     BOXES.forEach(function (b) {
       const box = $(b[0]); if (!box) return;
       const nodes = b[1](); box.replaceChildren();
       if (!nodes.length) box.appendChild(el('p', 'muted', 'Run the test first. Your results will appear here.'));
-      else nodes.forEach(function (n) { box.appendChild(n); });
+      else {
+        nodes.forEach(function (n) { box.appendChild(n); });
+        if (b[0] === '#data-sense-foam-body' && e.foamAfterBaseline && !e.foamComparison) {
+          box.appendChild(el('p', 'small', 'Same temperature in all beakers: readings saved, but this is not a temperature comparison. You can still use the class example below.'));
+        }
+        if (b[0] === '#data-tilt-body' && e.tubesRead && !e.tiltComparison) {
+          box.appendChild(el('p', 'small', 'Same light setting in all tubes: readings saved, but this is not a light comparison. You can still use the class example below.'));
+        }
+      }
     });
     const foam = decompNodes(false), tubes = tiltNodes(), data = $('#cer-model-data');
     data.hidden = !(foam.length || tubes.length);
@@ -380,7 +389,9 @@
     const missing = [];
     if (ev.cardsPlaced < L.CARDS.length) missing.push('Place all ' + L.CARDS.length + ' matter and energy cards.');
     if (!ev.foamAfterBaseline) missing.push('Record a yeast foam reading after 0 minutes.');
+    else if (!ev.foamComparison) missing.push('Record a yeast reading from beakers at two or more temperatures. Your same-temperature readings are saved.');
     if (!ev.tubesRead) missing.push('Record the three BTB tube readings.');
+    else if (!ev.tiltComparison) missing.push('Record tubes with at least two light settings. Your same-light readings are saved.');
     if (stats.answered < stats.total) missing.push('Complete ' + (stats.total - stats.answered) + ' required answers.');
     const recovering = preservedSave || !saveSession?.check(KEY).ok;
     const sections = [];
@@ -405,6 +416,8 @@
       status: recovering ? 'recovery' : missing.length ? 'draft' : 'final', missing, student: reportIdentity(preservedSave),
       keyResults: [{ label: 'Matter and energy cards placed', value: ev.cardsPlaced + ' of ' + L.CARDS.length },
         { label: 'Foam readings recorded', value: ev.foamReadings }, { label: 'BTB tubes recorded', value: ev.tubesRead + ' of 3' },
+        { label: 'Temperature comparison recorded', value: ev.foamComparison ? 'Yes' : 'Not yet' },
+        { label: 'Light comparison recorded', value: ev.tiltComparison ? 'Yes' : 'Not yet' },
         { label: 'Required answers completed', value: stats.answered + ' of ' + stats.total }],
       sections: sections.concat(classroomResponses())
     };

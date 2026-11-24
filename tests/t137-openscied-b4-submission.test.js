@@ -106,20 +106,27 @@ test('Rat Generations includes attempted, not graded, analysis and exact snapsho
   const pair=model.generations[1].pairs[0];
   state.crosses[pair.id]={parents:[true,true],headers:[true,true,true,true],cells:Array.from({length:4},()=>[true,true])};
   const src=source('rat-generations');
-  const report=collect('rat-generations','rg',{
+  const bind={
     state,model,M,B,invalid:false,KEY:'key',PRED:{decrease:'Decrease'},$:selector,session:{check:()=>({ok:true})},
     person:()=>({name:'Report name',period:'2'}),trialId:s=>'RG-'+s,selectionName:{born:'Born',survived:'Survived'},
     fraction:(n,d)=>n+' / '+d,$answer:['reason','claim','evidence','limits'].map(id=>input('rg',id))
-  },between(src,'function snapshots(','function button('));
+  };
+  const helpers=between(src,'function snapshots(','function button(')+
+    between(src,'function analysisSelection()','function submissionReport()');
+  const report=collect('rat-generations','rg',bind,helpers);
+  const legacy=()=>vm.runInNewContext(helpers+between(src,'function report()','function copy(')+'report();',bind);
   const r=report();
   assert.equal(r.status,'final','A checked but incorrect selection is an attempt, not a missing response');
   assert.equal(r.sections[0].items.at(-1).value,'Original response choice');
   assert.ok(!JSON.stringify(r).includes('Correct'));
+  assert.match(legacy(),/ANALYZE QUICK CHECK · SAVED ANSWER\nOriginal prompt\nOriginal response choice/);
+  assert.ok(!legacy().includes('Correct'),'TXT describes the wrong attempt without grading it');
   assert.equal(table(r,'Generation record').rows.length,model.generations.length+model.generations.filter(g=>g.survivors).length);
   assert.equal(table(r,'Punnett squares you built · expected model outcomes').rows[0][3],pair.cells.join(', '));
   state.analysisAttempt='';
   assert.equal(report().status,'draft');
   assert.deepEqual(report().missing,['Try the Analyze quick check.']);
+  assert.ok(!legacy().includes('ANALYZE QUICK CHECK'),'No saved attempt is not printed as a response');
 });
 
 test('Junco does not leak unrevealed evidence and distinguishes published and illustrative records',()=>{
@@ -128,19 +135,34 @@ test('Junco does not leak unrevealed evidence and distinguishes published and il
     revealed:false,sim:{results:[{id:1,site:'urban',group:'foraging',step:valid}]}};
   const points=D.cort.rows.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
   const src=source('junco');
-  const report=collect('junco','ju',{
+  const bind={
     D,state,points,identified:false,invalid:false,key:'key', session:{check:()=>({ok:true})},choices:{same:'About the same'},
     sites:{urban:'UC San Diego',mountain:'Mt. Laguna'},fieldLabels:{foraging:'Birds looking for food'},aviaryLabels:{female:'Females'},
-    $:id=>({value:id==='name'?'Student label':'3',labels:[{textContent:id}]}),fmt:String,window:{JuncoFlight:flight}
-  },between(src,'const errName=','function summary(')+between(src,'function corr(','const points='));
+    $:id=>({value:id==='name'?'Student label':'3',labels:[{textContent:id}],textContent:'STALE DOM SENTINEL'}),
+    fmt:value=>Number.isFinite(value)?String(Number(value.toFixed(2))):String(value),window:{JuncoFlight:flight}
+  };
+  const helpers=between(src,'const errName=','function summary(')+between(src,'function corr(','const points=')+
+    between(src,'function cortReading()','function cort()');
+  const report=collect('junco','ju',bind,helpers);
+  const legacy=()=>vm.runInNewContext(helpers+between(src,'function pairLine(','function evidence()')+
+    between(src,'function plainTextReport()','function download()')+'plainTextReport();',{...bind});
   assert.equal(report().status,'draft');
   assert.ok(sections(report()).some(s=>s.includes('Field distance')));
   assert.ok(!sections(report()).some(s=>s.includes('Hormone')||s.includes('aviary')));
   assert.equal(table(report(),'Completed virtual observations').rows[0].at(-1),flight.distance('foraging',valid));
+  const draftText=legacy();
+  assert.match(draftText,/Not revealed yet/);
+  assert.ok(draftText.includes(state.observation)&&draftText.includes(D.field.url)&&draftText.includes('SIMULATED WALK-UP TRIALS'));
+  assert.ok(!draftText.includes(D.aviary.url)&&!draftText.includes(D.cort.url)&&!draftText.includes('Aviary exploration ·'));
+  assert.ok(!draftText.includes('STALE DOM SENTINEL'));
   Object.assign(state,{prediction:'same',revealed:true,claim:'My explanation',limits:'A limitation'});
   assert.equal(report().status,'final');
   assert.equal(report().student.name,'Student label');
   assert.ok(sections(report()).some(s=>s.includes('Hormone')));
+  const fullText=legacy();
+  assert.ok(fullText.includes(D.aviary.url)&&fullText.includes(D.cort.url)&&fullText.includes(state.claim)&&fullText.includes(state.limits));
+  assert.match(fullText,/40 birds shown; correlation r = -0\.53/);
+  assert.ok(!fullText.includes('STALE DOM SENTINEL'),'Backup summaries come from the captured state even when CORT was not rendered');
   const plotted=table(report(),'Classroom points approximated from the published figure');
   if(points.length){
     assert.equal(plotted.rows.length,points.length);
