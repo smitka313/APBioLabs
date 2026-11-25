@@ -262,10 +262,13 @@
   }
   function chips() {
     return $$('main fieldset.chipset').map(function (fs) {
-      const picked = $$('input:checked', fs);
-      const result = { id: fs.dataset.id || legendOf(fs), question: legendOf(fs), chosen: picked.filter(b => !b.dataset.evidence || b.dataset.evidence === 'supported').map(b => b.parentElement.textContent.trim()) };
+      // Export only the checked boxes and their own labels, never an
+      // answer list or a data-consistency note from another checkbox.
+      const picked = $$('input[type=checkbox]:checked', fs);
+      const selectedLabel = b => (b.labels?.[0] || b.closest('label') || b.parentElement).textContent.replace(/\s+/g, ' ').trim();
+      const result = { id: fs.dataset.id || legendOf(fs), question: legendOf(fs), chosen: picked.filter(b => !b.dataset.evidence || b.dataset.evidence === 'supported').map(selectedLabel) };
       const drafts = picked.filter(b => b.dataset.evidence && b.dataset.evidence !== 'supported');
-      if (drafts.length) result.notSupportedByRecordedData = drafts.map(b => b.parentElement.textContent.trim());
+      if (drafts.length) result.notSupportedByRecordedData = drafts.map(selectedLabel);
       return result;
     });
   }
@@ -308,11 +311,16 @@
   function classroomResponses() {
     const answer = (prompt, value) => ({ type: 'answer', prompt, value });
     return [
-      { title: 'Choices and predictions', items: [...picks().map(r => [r.question, r.answer]),
-        ...dropdowns().map(r => [document.getElementById(r.id)?.getAttribute('aria-label') || labelFor(r.id), r.answer])].filter(([, value]) => value).map(([prompt, value]) => answer(prompt, value)) },
+      { title: 'Choices and predictions', items: [
+        ...picks().map(r => [r.question, r.answer, r.result]),
+        ...dropdowns().map(r => [document.getElementById(r.id)?.getAttribute('aria-label') || labelFor(r.id), r.answer, r.result])
+      ].filter(([, value]) => value).flatMap(([prompt, value, result]) => [
+        answer(prompt, value),
+        ...(['wrong', 'incorrect'].includes(result) ? [answer('Check feedback for: ' + prompt, 'Review this selection against the evidence. This check is not a grade.')] : [])
+      ]) },
       { title: 'Evidence and self-check selections', items: chips().flatMap(r => [
         r.chosen.length ? answer(r.question, r.chosen.join('; ')) : null,
-        r.notSupportedByRecordedData?.length ? answer('Draft selections not supported by recorded evidence', r.notSupportedByRecordedData.join('; ')) : null
+        r.notSupportedByRecordedData?.length ? answer(r.question + ' · My selections not supported by recorded evidence', r.notSupportedByRecordedData.join('; ')) : null
       ].filter(Boolean)) },
       { title: 'Written responses', items: textAnswers().filter(r => r.answer).map(r => answer(r.prompt, r.answer)) }
     ].filter(section => section.items.length);

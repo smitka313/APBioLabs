@@ -19,7 +19,7 @@ test('Fires names 18 °C and 43 °C as the example, without misrepresenting a cu
   const html = source('openscied-b2-fires.html');
   assert.match(html, /class example:[\s\S]*10 mm of foam at 18 °C and 62 mm at 43 °C/i);
   assert.match(html, /id="sense3"[\s\S]*id="data-sense-foam-body"[\s\S]*even if you tried different ones/);
-  assert.match(source('openscied-b2-fires.js'), /'#data-sense-foam-body', function \(\) \{ return decompNodes\(false\); \}/);
+  assert.match(source('openscied-b2-fires.js'), /'#data-sense-foam-body', function \(\) \{ return decompNodes\(false, false\); \}/, 'show the actual last reading without duplicating the adjacent prediction result');
   for (const value of ['faster','slower','same']) {
     for (const pick of ['sense-energy','cards-rate-hot']) {
       const result = L.checkPick(pick, value);

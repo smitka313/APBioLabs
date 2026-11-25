@@ -133,6 +133,12 @@
       btbBefore: START_BTB, btbAfter, btbLabelBefore: btbLabel(START_BTB), btbLabelAfter: btbLabel(btbAfter), btbChange: round1(btbAfter - START_BTB) };
   }
 
+  function instrumentCaption(res, phase, read) {
+    if (phase === 'running') return 'Balance idle · thermometer put down';
+    if (!read) return phase === 'finished' ? 'Ash not yet weighed · temperature not yet read' : 'Fuel not yet weighed · temperature not yet read';
+    const after = phase === 'finished';
+    return 'Balance: ' + (after ? res.massAfter : res.massBefore).toFixed(1) + ' g · temperature: ' + (after ? res.tempAfter : res.tempBefore) + ' °C';
+  }
   /* ---------- the timeline of a run (seconds since the sample went into the flame) ---------- */
   function simSeconds(startedAt, now, skipped, total) {
     const T = num(total) ? Math.max(0, total) : 0;
@@ -341,6 +347,6 @@
   }
 
   return { num, clamp, hash32, makeRng, FUELS, FUEL_IDS, FUEL, SHORT, SHORT_NARROW, fuelLabel, normalizeFuel, massOf, DISSOLVED_SHARE, btbFor, dropletLevel, DROP_FULL, START_TEMP, START_BTB, MAX_SAMPLES, TAIL, RATE, QUICK_S,
-    BTB_LABELS, BTB_RGB, btbLabel, btbColor, btbText, btbFromDissolved, burnResult, simSeconds, burnedFraction, stateAt, OBS, OBS_IDS, obsTruth,
+    BTB_LABELS, BTB_RGB, btbLabel, btbColor, btbText, btbFromDissolved, burnResult, instrumentCaption, simSeconds, burnedFraction, stateAt, OBS, OBS_IDS, obsTruth,
     cleanState, samplesOf, nextSample, tableRows, byFuel, METRICS, chartSeries, checkPrediction, checkDataPick, PICKS, checkPick, claimLevel, evidenceChecks, evidenceFromGroups, evidenceDetail };
 });

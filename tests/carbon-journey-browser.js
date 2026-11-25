@@ -17,6 +17,9 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       const ctx = await browser.newContext({ viewport: { width, height }, colorScheme: width < 400 ? 'dark' : 'light', reducedMotion: 'reduce' });
       const p = await ctx.newPage(), errors = []; p.on('pageerror', e => errors.push(e.message));
       await p.goto(url);
+      await p.goto(url + '#budget');
+      assert.equal(await p.getByRole('button',{name:'Carbon & Energy Budget',exact:true}).isDisabled(),true);
+      assert.equal(await p.locator('#budget').isHidden(),true);
       const shot = state => p.screenshot({ path: path.join(root, `artifacts/l9/${width}-${state}.png`), fullPage: true });
       const fits = async selector => { const b = await p.locator(selector).boundingBox(); assert.ok(b && b.y >= 0 && b.y + b.height <= height + 1, `${selector} within viewport at ${width}x${height}: ${JSON.stringify(b)}`); };
       await p.locator('#roll').waitFor();
@@ -89,11 +92,17 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       const dashboard = await ctx.newPage();
       await dashboard.goto(url.replace('openscied-b2-carbon-journey.html','openscied-dashboard.html'));
-      assert.equal(await dashboard.locator('section[aria-labelledby="unit1"] .dashboard-activity').count(),3);
-      assert.equal(await dashboard.locator('section[aria-labelledby="unit2"] .dashboard-activity').count(),4);
-      assert.equal(await dashboard.locator('section[aria-labelledby="unit3"] .dashboard-activity').count(),5);
-      assert.equal(await dashboard.locator('section[aria-labelledby="unit4"] .dashboard-activity').count(),3);
-      assert.equal(await dashboard.locator('.dashboard-activity').count(),15);
+      const units = dashboard.locator('section.dashboard-unit[aria-labelledby^="unit"]');
+      assert.deepEqual(await units.evaluateAll(sections=>sections.map(s=>s.getAttribute('aria-labelledby'))),
+        ['unit1','unit2','unit3','unit4','unit5'], 'all five curriculum units remain visible in order');
+      for (const unit of await units.all()) {
+        const advertised = (await unit.locator('.dashboard-tag').first().textContent()).match(/^(\d+) activities? available$/);
+        assert.ok(advertised, 'each unit advertises its activity count');
+        assert.equal(await unit.locator('article.dashboard-activity').count(), Number(advertised[1]), 'visible count matches activity cards');
+      }
+      assert.deepEqual(await dashboard.locator('section[aria-labelledby="unit2"] .dashboard-open').evaluateAll(links=>links.map(link=>link.id)), [
+        'b2-burn-open', 'b2-fires-open', 'peat-bog-open', 'carbon-journey-open'
+      ], 'all Unit 2 activity links remain in the expected order');
       assert.match(await dashboard.locator('#carbon-journey-progress').textContent(),/10 rolls recorded/);
       await dashboard.screenshot({path:path.join(root,`artifacts/l9/${width}-dashboard.png`),fullPage:true});
       const resume = dashboard.locator('#carbon-journey-open');
@@ -209,6 +218,10 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       const writer=await multiCtx.newPage(), stale=await multiCtx.newPage(), dash=await multiCtx.newPage();
       const keys=['aplab:openscied:b2-carbon-journey:v1','aplab:openscied:b2-carbon-journey:budget:v1'];
       await writer.goto(url);
+      await writer.evaluate(key=>localStorage.setItem(key,JSON.stringify({
+        v:1, position:-1, furthest:-1, prediction:'Earlier test budget', explanation:''
+      })),keys[1]);
+      await writer.reload();
       const recordTurn=async()=>{
         await writer.locator('#roll').click();await writer.locator('#skip-prediction').click();await writer.locator('#record').click();
       };

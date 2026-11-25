@@ -14,7 +14,7 @@
        trialLabel: string                                   the label box in My trials
        warmingUsed: bool                                    true once the student has used any Global warming control or "Test the bog in this year"
                                                             (the dashboard reads this; older saves without it fall back to "settings differ from today")
-       responseIds: [], fields: {}                          this page has no written answers; kept so the dashboard reads every companion alike
+       responseIds: ['graph-answer'], fields: {...}           graph evidence response, kept so the dashboard reads every companion alike
        lastSection, lastVisitedAt }
    Nothing is written until the student changes something, so a fresh visit (or one right after "Clear this activity") leaves no record. */
 (function () {
@@ -51,7 +51,7 @@
   const motionQuery = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : null;
   const reduceMotion = () => !!(motionQuery && motionQuery.matches);
 
-  const state = { S: Object.assign({}, L.DEFAULTS), climate: { fossil: 10, forest: 100, year: 2100 }, warmingUsed: false, explore: 'temp', season: 0, motionPaused: false, trials: [], trialLabel: '', lastSection: 'overview' };
+  const state = { S: Object.assign({}, L.DEFAULTS), climate: { fossil: 10, forest: 100, year: 2100 }, warmingUsed: false, climateTests: [], graphAnswer: '', explore: 'temp', season: 0, motionPaused: false, trials: [], trialLabel: '', lastSection: 'overview' };
   let cleared = false, hadSaved = false, ready = false, preservedSave = false, cur = null, rows = [], playTimer = null, nextId = 1;
 
   function svgEl(tag, attrs, parent) {
@@ -89,6 +89,10 @@
       if (d.settings) state.S = L.sanitize(d.settings);
       if (d.climate) state.climate = L.sanitizeClimate(d.climate);
       state.warmingUsed = d.warmingUsed === true;
+      state.climateTests = (Array.isArray(d.climateTests) ? d.climateTests : [])
+        .filter(x => x && Number.isFinite(x.year) && Number.isFinite(x.fossil) && Number.isFinite(x.forest))
+        .slice(-30).map(L.sanitizeClimate);
+      state.graphAnswer = typeof d.fields?.['graph-answer'] === 'string' ? d.fields['graph-answer'].slice(0, 4000) : '';
       if (L.VARS.some(function (v) { return v.key === d.explore; })) state.explore = d.explore;
       if (d.season === 0 || d.season === 1 || d.season === 2 || d.season === 3) state.season = d.season;
       state.motionPaused = d.motionPaused === true;
@@ -100,7 +104,7 @@
   }
   function record() {
     return { v: 1, settings: state.S, climate: state.climate, warmingUsed: state.warmingUsed, explore: state.explore, season: state.season, motionPaused: state.motionPaused, trials: state.trials, trialLabel: state.trialLabel,
-      responseIds: [], fields: {}, lastSection: state.lastSection, lastVisitedAt: Date.now() };
+      responseIds: ['graph-answer'], fields: { 'graph-answer': state.graphAnswer }, climateTests: state.climateTests, lastSection: state.lastSection, lastVisitedAt: Date.now() };
   }
   function save() {
     if (cleared || !ready) return false;
@@ -150,7 +154,14 @@
     let committed = null;
     range.addEventListener('input', function () { committed = null; set(+range.value); showClampNote(num, ''); });
     range.addEventListener('change', function () { if (lastSpoken) announceNow(lastSpoken); });
-    num.addEventListener('input', function () { committed = null; });
+    num.addEventListener('input', function () {
+      committed = null;
+      // Preview and save complete in-range numbers immediately. Keep incomplete or
+      // out-of-range edits intact until change/Enter, where the correction is announced.
+      if (!num.value || !num.validity.valid) return;
+      const value = Number(num.value);
+      if (Number.isFinite(value) && value !== +num.dataset.value) set(value);
+    });
     function commit() {
       const typed = parseFloat(String(num.value).replace(',', '.'));
       if (isNaN(typed)) { num.value = (+num.dataset.value).toFixed(dec); return; }
@@ -832,6 +843,11 @@
     byId('sendBog').addEventListener('click', function () {
       const vals = L.bogForYear(rows, state.climate.year);
       state.warmingUsed = true;
+      const c = state.climate;
+      const previous = state.climateTests.at(-1);
+      if (!previous || CLIMATE_IDS.some(k => previous[k] !== c[k])) {
+        state.climateTests = state.climateTests.concat({ ...c }).slice(-30);
+      }
       setState(vals, true);
       if (window.CompanionPages) CompanionPages.go('bog'); else location.hash = 'bog';
       announce('The bog is set to ' + state.climate.year + ': ' + vals.co2 + ' ppm of CO₂ and a summer temperature of ' + vals.temp + ' degrees Celsius. ' + summaryText(cur));
@@ -939,7 +955,7 @@
     const m = L.model(state.S), who = reportIdentity(preservedSave);
     return { format: 'openscied-b2-peat-bog-lab-progress-v1', exportedAt: new Date().toISOString(), student: who, datasetId: window.Lab && Lab.identity && Lab.identity.datasetId ? Lab.identity.datasetId : null,
       dataNote: 'ALL NUMBERS IN THIS FILE ARE SIMULATED. Rates use a 0-100 teaching scale and are not measurements. The model is a simplified teaching model, not a forecast. This file can include the student name and class period. Share it only as your teacher directs.',
-      settings: state.S, climate: state.climate, current: { photosynthesis: Math.round(m.P), decomposition: Math.round(m.D), burning: Math.round(m.B), peatCarbon: Math.round(m.N), permafrostPercent: Math.round(m.perm * 100) },
+      settings: state.S, climate: state.climate, climateTests: state.climateTests, graphAnswer: state.graphAnswer, current: { photosynthesis: Math.round(m.P), decomposition: Math.round(m.D), burning: Math.round(m.B), peatCarbon: Math.round(m.N), permafrostPercent: Math.round(m.perm * 100) },
       trials: state.trials.map(function (t, i) { const r = L.trialRow(t, i + 1); return { trial: i + 1, label: r.label, inputs: { tilt: t.tilt, temp: t.temp, co2: t.co2, o2: t.o2, wet: t.wet, burn: t.burn }, outputs: L.trialOutputs(t), recordedAt: t.at ? new Date(t.at).toISOString() : null, simulated: true }; }),
       source: 'Peat Bog Carbon Lab, OpenSciEd Unit B.2 companion, https://biologylabbench.com/openscied-b2-peat-bog-lab' };
   }
@@ -949,6 +965,11 @@
     else if (!trials.some(t => L.VARS.some(v => t.inputs[v.key] !== trials[0].inputs[v.key]))) {
       missing.push('Change a setting and record another trial so you can compare the outcomes.');
     }
+    const answer = typeof data.graphAnswer === 'string' ? data.graphAnswer.trim() : '';
+    if (!answer) missing.push('Answer the question in Test one variable with evidence from the graph.');
+    else sections.push({ title: 'Test one variable', items: [{
+      type: 'answer', prompt: 'What changed when you tested one variable?', value: answer
+    }] });
     if (trials.length) {
       const table = (title, columns, rows) => ({ type: 'table', title, columns, rows });
       sections.push({ title: 'Recorded trials · simulated', items: [
@@ -963,10 +984,17 @@
       ] });
     }
     if (state.warmingUsed) {
-      const scenario = L.climate(data.climate.fossil, data.climate.forest).find(row => row.y === data.climate.year);
-      if (scenario) sections.push({ title: 'Current climate scenario · simulated', items: [{ type: 'table',
-        columns: ['Year', 'Fossil fuel input (Gt C/year)', 'Forests and peatlands (% of today)', 'Atmospheric CO₂ (ppm)', 'Modeled warming (°C)'],
-        rows: [[scenario.y, data.climate.fossil, data.climate.forest, +scenario.C.toFixed(1), +scenario.T.toFixed(2)]] }] });
+      const c = data.climate, rows = L.climate(c.fossil, c.forest);
+      const columns = ['Year', 'Fossil fuel input (Gt C/year)', 'Forests and peatlands (% of today)', 'Atmospheric CO₂ (ppm)', 'Modeled warming (°C)'];
+      const tableRow = (x, row) => [row.y, x.fossil, x.forest, +row.C.toFixed(1), +row.T.toFixed(2)];
+      const compare = rows.filter(row => [2050, 2100, c.year].includes(row.y)).map(row => tableRow(c, row));
+      const tested = (data.climateTests || []).map(x => {
+        const row = L.climate(x.fossil, x.forest).find(r => r.y === x.year);
+        return row ? tableRow(x, row) : null;
+      }).filter(Boolean);
+      sections.push({ title: 'Current climate scenario · simulated', items: [{
+        type: 'table', title: 'Current settings: benchmark years and selected year', columns, rows: compare
+      }, ...(tested.length ? [{ type: 'table', title: 'Scenarios sent to the bog', columns, rows: tested }] : [])] });
     }
     const last = trials.at(-1);
     return {
@@ -1053,6 +1081,11 @@
       notice.hidden = false;
     }
     buildSliders(); buildExplore(); buildBog(); wireZombie(); wireClimate(); wireTrials(); wireEnlarge();
+    const graphAnswer = byId('graph-answer');
+    if (graphAnswer) {
+      graphAnswer.value = state.graphAnswer;
+      graphAnswer.addEventListener('input', function () { state.graphAnswer = graphAnswer.value.slice(0, 4000); save(); });
+    }
     byId('motion-btn').addEventListener('click', function () { state.motionPaused = !state.motionPaused; syncMotionButton(); kick(); save(); announce(state.motionPaused ? 'Motion paused.' : 'Motion playing.'); });
     syncMotionButton();
     if (motionQuery && motionQuery.addEventListener) motionQuery.addEventListener('change', function () { syncMotionButton(); placeDots(); kick(); });

@@ -96,6 +96,7 @@ test('Burns: actual unique recorded fuels distinguish draft from final; written 
   assert.equal(item(report, 'Timing and mass').rows.length, 2);
   assert.match(JSON.stringify(report), /Smoke.*A reading.*An unsupported inference I selected.*A student/);
   assert.doesNotMatch(JSON.stringify(report), /incorrect|correct so far/);
+  assert.match(JSON.stringify(report), /Check feedback for: Which choice.*Review this selection against the evidence/);
   for (const fuel of Burn.FUEL_IDS.slice(1)) state.burn.records.push({ fuel, n: 1, obs: [] });
   f.box.answerStats = () => ({ answered: 30, total: 31 });
   assert.equal(f.report().status, 'draft');
@@ -152,6 +153,7 @@ test('Peat: sliders alone or duplicate trials cannot report full comparison; act
   const state = { warmingUsed: false };
   const f = fixture('peat-bog-lab', { L: Peat, state, payload: () => ({
     student: f.box.reportIdentity(f.box.preservedSave), trials,
+    graphAnswer: state.graphAnswer, climateTests: state.climateTests,
     climate: { fossil: 10, forest: 100, year: 2070 }
   }) });
   let report = f.report();
@@ -165,8 +167,15 @@ test('Peat: sliders alone or duplicate trials cannot report full comparison; act
   assert.equal(f.report().status, 'draft');
   trials[1] = testTrial(2, 15);
   state.warmingUsed = true;
+  assert.equal(f.report().status, 'draft');
+  assert.match(f.report().missing.join(' '), /Answer the question in Test one variable/);
+  state.graphAnswer = 'At the lower water level I saw faster decomposition.';
+  state.climateTests = [{ fossil: 12, forest: 90, year: 2100 }, { fossil: 10, forest: 100, year: 2050 }];
   report = f.report();
   assert.equal(report.status, 'final');
+  assert.match(JSON.stringify(report), /At the lower water level/);
+  assert.deepEqual(item(report, 'Current settings: benchmark years and selected year').rows.map(r => r[0]), [2050, 2070, 2100]);
+  assert.deepEqual(item(report, 'Scenarios sent to the bog').rows.map(r => r.slice(0,3)), [[2100,12,90], [2050,10,100]]);
   assert.equal(item(report, 'Trial setup continued').rows[1][2], 15);
   assert.equal(item(report, 'Modeled outcomes').rows[1][1], trials[1].outputs.N);
   assert.ok(named(report, 'Current climate scenario'));

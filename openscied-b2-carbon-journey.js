@@ -72,7 +72,18 @@
     }
   });
   let budgetUI;
+  const canOpenBudget = () => state.done || saveSession?.read(budgetKey) != null;
+  function updateBudgetGate() {
+    const budget = $('[data-page="budget"]'), hint = $('#budget-unlock');
+    budget.disabled = !canOpenBudget();
+    hint.hidden = !budget.disabled;
+  }
   function setPage(id, saveSection = true) {
+    if (id === 'budget' && !canOpenBudget()) {
+      id = 'play';
+      announce('Finish your carbon journey to unlock the optional Carbon & Energy Budget.');
+    }
+    updateBudgetGate();
     const budgeting = id === 'budget';
     if (!budgeting) {
       section = id;
@@ -228,17 +239,17 @@
     if (chart) chart.update(opts); else chart = Lab.chart($('#charts'), opts);
   }
   function render() {
-    updateRestart();
+    updateRestart(); updateBudgetGate();
     const pending = state.pending !== null, c = pending ? L.outcome(state) : null, n = state.rows.length;
     const missing = L.missingCoverage(state);
     const review = state.coverageCheckpoint ? missing[0] : null;
     $('#coverage-panel').hidden = $('#coverage-continue').hidden = !review;
     if (review) {
       $('#coverage-reason').textContent = state.coverageCheckpoint === 'repeat' ?
-        'This route has repeated several card events. Read a card from a route you did not draw before your next roll.' :
+        'Your atom has stayed in one place or repeated a route. Read a card from another part of the cycle before your next roll. This does not change your dice or journal.' :
         'Your rolls are complete. Review the missing station evidence before finishing (' + missing.length + ' to read).';
       $('#coverage-route').textContent = review.process + ': ' + name(review.from) + ' → ' + name(review.to);
-      $('#coverage-card').textContent = review.text;
+      $('#coverage-card').textContent = L.cardText(review.text) + ' ' + L.energyMeaning(review.energy);
       $('#coverage-continue').textContent = state.coverageCheckpoint === 'finish' && missing.length === 1 ?
         'Mark card read and finish' : 'Mark card read';
     }
@@ -260,8 +271,8 @@
       const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.dataset.guess = id;
       b.addEventListener('click', () => reveal(id)); $('#prediction-options').append(b);
     });
-    $('#official-card').textContent = c ? c.text : '';
-    $('#matter').textContent = c ? c.matter : 'Roll to reveal'; $('#energy').textContent = c ? c.energy : 'Roll to reveal';
+    $('#official-card').textContent = c ? L.cardText(c.text) : '';
+    $('#matter').textContent = c ? c.matter : 'Roll to reveal'; $('#energy').textContent = c ? L.energyMeaning(c.energy) : 'Roll to reveal';
     $('#destination').textContent = c ? name(c.to) : 'Roll to reveal';
     $('#prediction-feedback').textContent = c && revealed ? guess ? (guess === c.to ? 'Your prediction matches the card. ' : 'You predicted ' + name(guess) + '. ') + (c.to === L.current(state) ? 'Your atom stays here this turn.' : 'Your atom will travel to ' + name(c.to) + '.') : 'Follow this event from the official station card.' : '';
     $('#producer-rule').hidden = !pending || !revealed || (L.current(state) !== 'producers');
@@ -278,7 +289,7 @@
     renderQuestionTotals(totalGroups);
     showTotal();
     $('#journal').replaceChildren(); state.rows.forEach(r => {
-      const tr = document.createElement('tr'); [r.turn, name(r.from), r.die, r.prediction === null ? 'Skipped' : r.prediction ? name(r.prediction) : 'Not saved in earlier version', r.matter, r.energy, name(r.to), r.text || 'Earlier printed-card record', r.note].forEach(v => {
+      const tr = document.createElement('tr'); [r.turn, name(r.from), r.die, r.prediction === null ? 'Skipped' : r.prediction ? name(r.prediction) : 'Not saved in earlier version', r.matter, r.energy, name(r.to), L.cardText(r.text) || 'Earlier printed-card record', r.note].forEach(v => {
         const td = document.createElement('td'); td.textContent = v; tr.append(td);
       }); $('#journal').append(tr);
     });
@@ -287,7 +298,7 @@
     $('#story-strip').replaceChildren(); state.rows.forEach(r => {
       const turn = document.createElement('details'), summary = document.createElement('summary'), evidence = document.createElement('p');
       summary.textContent = r.turn + '. ' + name(r.from) + ' → ' + name(r.to);
-      evidence.textContent = 'Matter: ' + r.matter + '. Energy: ' + r.energy + (r.text ? ' Card: ' + r.text : '') + (r.note ? ' Your note: ' + r.note : '');
+      evidence.textContent = 'Matter: ' + r.matter + '. Energy: ' + r.energy + (r.text ? ' Card: ' + L.cardText(r.text) + ' ' + L.energyMeaning(r.energy) : '') + (r.note ? ' Your note: ' + r.note : '');
       turn.append(summary, evidence); $('#story-strip').append(turn);
     });
   }
@@ -362,7 +373,7 @@
             r.prediction ? name(r.prediction) : 'Not saved in earlier version', name(r.to)])),
         table('Matter and energy in recorded turns', ['Turn', 'Matter', 'Energy'], rolls.map(r => [r.turn, r.matter, r.energy])),
         ...rolls.filter(r => r.text || r.note).map(r => answer('Turn ' + r.turn + ' · card event and your note',
-          [r.text, r.note ? 'Your note: ' + r.note : ''].filter(Boolean).join('\n')))
+          [L.cardText(r.text), L.energyMeaning(r.energy), r.note ? 'Your note: ' + r.note : ''].filter(Boolean).join('\n')))
       ] });
       sections.push({ title: 'Journey totals · counts of recorded rolls', items: [
         table('Starting stations', ['Station', 'Roll count'], L.totals(state, 'from', L.stations.map(s => s[0])).map(r => [name(r.label), r.count])),
@@ -380,7 +391,7 @@
     }
     const reviewed = L.tour(state).filter(card => state.coverageReviewed.includes(card.from));
     if (reviewed.length) sections.push({ title: 'Reference cards you reviewed · not extra rolls', items: reviewed.map(card =>
-      answer(name(card.from) + ' → ' + name(card.to) + ' · ' + card.process, card.text)) });
+      answer(name(card.from) + ' → ' + name(card.to) + ' · ' + card.process, L.cardText(card.text) + ' ' + L.energyMeaning(card.energy))) });
     if (answered.length) sections.push({ title: 'Make sense responses', items: answered.map(([id, prompt]) => answer(prompt, state.answers[id])) });
 
     // Like the text recovery export, read only the editor's paired Budget snapshot (or its live in-memory work).
@@ -416,6 +427,7 @@
     const payload = backup ? null : {
       format: 'openscied-carbon-journey-v2', mode: 'official-station-cards', simulated: true,
       exportedAt: new Date().toISOString(), ...state, questions: Object.fromEntries(questions),
+      cardExplanations: state.rows.map(row => ({ turn: row.turn, card: L.cardText(row.text), energy: L.energyMeaning(row.energy) })),
       ...(student ? { student } : {}),
       pendingPresentation: state.pending === null ? null : { revealed, ...(revealed ? {prediction: guess} : {}), note: $('#note').value },
       referenceCardsReviewed: L.tour(state).filter(sample => state.coverageReviewed.includes(sample.from))

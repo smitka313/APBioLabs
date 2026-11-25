@@ -158,7 +158,7 @@
     return [table('Where you put the cards', ['Card', 'My choice', 'Check'], rows),
       el('p', 'small muted', r.solved ? 'Your cards show cellular respiration: ' + L.REACTION + '.' : r.right + ' of 5 cards match the reaction so far.')];
   }
-  function decompNodes(full) {
+  function decompNodes(full, includePrediction = true) {
     const st = state.decomp, rows = L.foamRows(st); if (!rows.length) return [];
     const temps = L.normalizeTemps(st.temps), last = L.lastRow(rows), out = [];
     if (full) {
@@ -167,7 +167,7 @@
     out.push(table('Foam at the last reading (' + last.t + ' min)', ['Beaker', 'Water temperature', 'Foam height (mm)', 'Carbon dioxide made (relative)'],
       temps.map(function (t, i) { return [L.BEAKER_NAMES[i], tempText(t), String(last.h[i]), L.co2Made(last.h[i]).toFixed(1)]; })));
     const pc = L.predictionCheck(($('#pred-fastest') || {}).value, st);
-    if (pc) out.push(el('p', 'small', L.predictionSentence(pc)));
+    if (pc && includePrediction) out.push(el('p', 'small', L.predictionSentence(pc)));
     out.push(el('p', 'small muted', 'SIMULATED foam. The foam is carbon dioxide gas, so relative carbon dioxide is foam height divided by 10. Not measurements from a real lab.'));
     return out;
   }
@@ -181,10 +181,16 @@
     });
     const head = ['Tube', 'Light', 'Light reaching the plant', 'BTB reading (1 deep blue to 6 yellow)', 'Carbon dioxide change (relative)'];
     if (st.starchDone) head.push('Iodine stain (starch)');
-    return [table('Simulated BTB tubes after the night', head, rows),
-      el('p', 'small muted', 'SIMULATED. The tubes started blue (2.0). Under 2 means less carbon dioxide, over 2 means more. Not measurements from a real lab.')];
+    const lit = res.filter(r => r.intensity > 0).sort((a, b) => b.intensity - a.intensity);
+    const highest = lit[0], lowest = lit.at(-1);
+    const compared = highest && lowest && highest.intensity > lowest.intensity;
+    const difference = compared ? el('p', 'small', 'Compare the numbers even if the colors look alike. Tube ' + highest.tube + ' received ' +
+      Math.round(highest.intensity * 100) + '% of direct light; Tube ' + lowest.tube + ' received ' + Math.round(lowest.intensity * 100) +
+      '%. Their relative CO₂ changes were ' + highest.net.toFixed(3) + ' and ' + lowest.net.toFixed(3) + ', respectively. The color names group close readings.') : null;
+    return [table('Simulated BTB tubes after the night', head, rows), ...(difference ? [difference] : []),
+      el('p', 'small muted', 'SIMULATED. Relative CO₂ change is modeled CO₂ released by respiration minus CO₂ removed by photosynthesis, adjusted for plant size. The tubes started blue (2.0). Under 2 means less CO₂; over 2 means more. These are not measurements from a real lab.')];
   }
-  const BOXES = [['#data-decomp-body', function () { return decompNodes(false); }], ['#data-sense-foam-body', function () { return decompNodes(false); }], ['#data-tilt-body', tiltNodes]];
+  const BOXES = [['#data-decomp-body', function () { return decompNodes(false); }], ['#data-sense-foam-body', function () { return decompNodes(false, false); }], ['#data-tilt-body', tiltNodes]];
   function renderData() {
     const e = L.sceneEvidence(state);
     BOXES.forEach(function (b) {
