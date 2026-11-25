@@ -67,7 +67,9 @@ async function hop(browser, base, os, mode, cleanRoute) {
       ]);
       // The first shared CSS request is still blocked. The destination's theme
       // must already be set without its own later inline script or lab.js.
-      await page.waitForFunction(wanted=>document.documentElement.getAttribute('data-theme')===wanted,mode,{timeout:5000});
+      // Poll on a timer, since animation-frame callbacks can stall while the
+      // first paint is deliberately blocked by the intercepted stylesheet.
+      await page.waitForFunction(wanted=>document.documentElement.getAttribute('data-theme')===wanted,mode,{polling:50,timeout:5000});
       ok(await page.evaluate(() => document.documentElement.getAttribute('data-theme')) === mode,
         mode+' applies in the incoming document before its first stylesheet ('+
         (cleanRoute?'clean URL redirect':'.html link')+')');
