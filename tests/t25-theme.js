@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const KEY = 'aplab:pref:theme';
-const PAGES = ['index.html', 'teachers.html', 'teacher-dashboard.html', ...T.LABS.map(l => l + '.html')];
+const PAGES = ['ap-biology.html', 'teachers.html', 'teacher-dashboard.html', ...T.LABS.map(l => l + '.html')];
 const attr = p => p.evaluate(() => document.documentElement.getAttribute('data-theme'));
 const pressed = p => p.evaluate(() => Array.from(document.querySelectorAll('.theme-switch button')).filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.dataset.mode));
 const stored = p => p.evaluate(k => localStorage.getItem(k), KEY);
@@ -39,7 +39,7 @@ async function themeContext(browser, options = {}) {
 
   console.log('Modes apply and persist');
   let ctx = await themeContext(b, { dark: false });
-  let p = await T.open(ctx, 'index.html', '', srv.url);
+  let p = await T.open(ctx, 'ap-biology.html', '', srv.url);
   T.ok(await p.locator('.theme-switch').count() === 1, 'switch on the home page');
   T.ok(await attr(p) === null && (await pressed(p)).join() === 'auto', 'default is Auto: no data-theme, Auto pressed');
   const bg = () => p.evaluate(() => getComputedStyle(document.body).backgroundColor);
@@ -78,7 +78,7 @@ async function themeContext(browser, options = {}) {
   console.log('No flash of the wrong theme');
   ctx = await themeContext(b, { dark: false });
   await ctx.addInitScript(k => { try { localStorage.setItem(k, 'dark'); } catch (e) { /* ignore */ } }, KEY);
-  for (const f of ['index.html', 'lab05.html', 'teachers.html', '404.html']) {
+  for (const f of ['ap-biology.html', 'lab05.html', 'teachers.html', '404.html']) {
     const pg = await ctx.newPage();
     await pg.route(/\/(lab\.js|style\.css)$/, r => r.abort());   // nothing but the inline head script can set it
     await pg.goto(srv.url + f, { waitUntil: 'domcontentloaded' });
@@ -108,7 +108,7 @@ async function themeContext(browser, options = {}) {
   for (const mode of ['signout', 'startover']) {
     ctx = await themeContext(b);
     await ctx.addInitScript(k => { try { if (!localStorage.getItem('__t')) { localStorage.setItem('__t', '1'); localStorage.setItem(k, 'dark'); localStorage.setItem('aplab:lab05:field:x', '"a"'); } } catch (e) { /* ignore */ } }, KEY);
-    p = await T.open(ctx, 'index.html', '', srv.url);
+    p = await T.open(ctx, 'ap-biology.html', '', srv.url);
     T.ok(await stored(p) === 'dark', mode + ': preference seeded');
     if (mode === 'signout') {
       await p.locator('.id-signout').click(); await p.locator('.dm-text').fill('Test');

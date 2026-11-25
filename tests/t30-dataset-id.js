@@ -32,7 +32,7 @@ const H = require('./_h');
   // The stored record does not make a lab count as started.
   const ctx2 = await H.ctxFor(b);
   await H.open(ctx2, 'lab13.html');
-  const p2 = await H.open(ctx2, 'index.html');
+  const p2 = await H.open(ctx2, 'ap-biology.html');
   H.ok(await p2.evaluate(() => !!localStorage.getItem('aplab:lab13:dataset') && Lab.data.labsWithWork().length === 0), 'a visited lab with no work is not "started"');
   H.ok(p.errors.length === 0, 'no console errors ' + p.errors.join(';'));
   await b.close(); H.done('t30-dataset-id');

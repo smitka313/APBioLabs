@@ -7,7 +7,7 @@ const SHARED = '.step-nav a, .theme-opt, .sound-toggle, .project-link, .lab-head
 (async () => {
   const b = await chromium.launch();
   const combos = [['iPhone 13', 'light', LABS], ['Pixel 7', 'dark', LABS], ['iPhone 13', 'dark', ['lab05', 'lab09']], ['Pixel 7', 'light', ['lab05', 'lab09']]];
-  const extra = ['index.html', 'teachers.html', 'teacher-dashboard.html', 'projector.html'];
+  const extra = ['ap-biology.html', 'teachers.html', 'teacher-dashboard.html', 'projector.html'];
   const labSpecific = new Set();
   for (const [dev, scheme, labs] of combos) {
     const ctx = await b.newContext({ ...devices[dev], colorScheme: scheme }); await routeLibs(ctx);

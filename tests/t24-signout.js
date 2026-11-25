@@ -130,7 +130,7 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
 
   await p.close();
   ctx = await ctxFor(b, { seed: base() });
-  p = await T.open(ctx, 'index.html', '', srv.url);
+  p = await T.open(ctx, 'ap-biology.html', '', srv.url);
   T.ok(await p.locator('#resume').isVisible(), '(control) the pick-up card shows before sign-out');
   await p.locator('#home-identity .id-signout').click();
   const homeTxt = await p.locator('.dm-card').innerText();
@@ -154,7 +154,7 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   p = await T.open(ctx, 'lab05.html', '', srv.url);
   const ds1 = (await p.locator('.ds-id').first().innerText()).trim();
   await p.evaluate(() => localStorage.setItem('aplab:progress:lab05', JSON.stringify({ done: 4, total: 6, sections: 8, t: Date.now() })));
-  await p.goto(srv.url + 'index.html'); await p.waitForTimeout(900);
+  await p.goto(srv.url + 'ap-biology.html'); await p.waitForTimeout(900);
   T.ok(/4 of 6 parts/.test(await p.locator('[data-lab-progress="lab05"]').innerText()), 'home card shows Lab 5 progress before');
   const snap2 = await dump(p);
   await p.locator('.manage-data summary').click();

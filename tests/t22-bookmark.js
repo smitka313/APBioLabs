@@ -54,14 +54,14 @@ const OUT = process.env.OUT || require('os').tmpdir();
 
   // ---- home uses the bookmark ----
   await p.locator('.pause-btn').click(); await p.keyboard.press('Escape');
-  const h = await T.open(ctx, 'index.html', '', srv.url);
+  const h = await T.open(ctx, 'ap-biology.html', '', srv.url);
   const hc = await h.evaluate(() => { const e = document.getElementById('resume'); return { hidden: e.hidden, text: e.innerText, href: e.querySelector('a.resume-link').getAttribute('href') }; });
   T.ok(!hc.hidden && /You paused at:\s*Float assay, step \d/.test(hc.text), 'home card names the bookmark: ' + hc.text.replace(/\n+/g, ' | ').slice(0, 130));
   T.ok(/Next:/.test(hc.text) && /lab05\.html#float-assay/.test(hc.href), 'home card has the Next hint and resumes at the part');
   await h.screenshot({ path: OUT + '/home-bookmark.png' });
   // moving on to another part afterwards: the card follows the newer part
   const p2 = await T.open(ctx, 'lab05.html', 'analyze', srv.url); await p2.waitForTimeout(500);
-  const h2 = await T.open(ctx, 'index.html', '', srv.url);
+  const h2 = await T.open(ctx, 'ap-biology.html', '', srv.url);
   const t2 = await h2.evaluate(() => document.getElementById('resume').innerText);
   T.ok(/Part:\s*Analyze/.test(t2) && !/paused at/i.test(t2), 'a newer part overrides an older bookmark');
   T.ok(p.errors.length === 0 && h.errors.length === 0, 'no errors ' + p.errors.concat(h.errors).join('|'));

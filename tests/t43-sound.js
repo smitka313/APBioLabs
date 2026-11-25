@@ -81,7 +81,7 @@ const get = p => p.evaluate(k => localStorage.getItem(k), KEY);
   await p.locator('.dm-confirm').click(); await nav; await p.waitForTimeout(900);
   T.ok(await get(p) === 'on' && await p.evaluate(() => localStorage.getItem('aplab:lab05:field:zz-test')) === null, 'Start over (lab): the lab is erased, sound stays on');
   // Start over (all labs), from home
-  await p.goto(srv.url + 'index.html'); await p.waitForTimeout(800);
+  await p.goto(srv.url + 'ap-biology.html'); await p.waitForTimeout(800);
   await p.locator('.manage-data summary').click(); await p.locator('#md-startover').click();
   await p.locator('.dm-text').fill('ERASE');
   nav = p.waitForNavigation({ waitUntil: 'load' }).catch(() => {});

@@ -28,7 +28,10 @@ def url(filename):
 
 def page_specs():
     specs = {
-        'index.html': ('Free AP Biology Virtual Labs | AP Bio Digital Lab Bench',
+        'index.html': ('Biology Lab Bench | AP Biology and OpenSciEd',
+                       'Choose free AP Biology virtual labs or interactive OpenSciEd high school biology companion activities. No account required.',
+                       'Biology Lab Bench'),
+        'ap-biology.html': ('Free AP Biology Virtual Labs | AP Bio Digital Lab Bench',
                        'Explore all 13 AP Biology virtual labs for free. Interactive simulations, data analysis, printable student directions, and teacher resources. No installation.',
                        'Free AP Biology virtual labs'),
         'teachers.html': ('Free AP Biology Virtual Labs for Teachers | Lab Bench',
@@ -139,8 +142,16 @@ def structured_data(filename, title, description, label):
     graph = [website, person, page]
     if filename == 'index.html':
         page['@type'] = 'CollectionPage'
+        page['hasPart'] = [{'@type': 'WebPage', 'name': 'AP Biology Virtual Labs', 'url': url('ap-biology.html')},
+                           {'@type': 'WebPage', 'name': 'OpenSciEd Biology Companion Activities', 'url': url('openscied-dashboard.html')}]
+    elif filename == 'ap-biology.html':
+        page['@type'] = 'CollectionPage'
         page['mainEntity'] = {'@id': canonical + '#labs'}
         graph.append(item_list(filename))
+        page['breadcrumb'] = {'@id': canonical + '#breadcrumb'}
+        graph.append({'@type': 'BreadcrumbList', '@id': canonical + '#breadcrumb', 'itemListElement': [
+            {'@type': 'ListItem', 'position': 1, 'name': 'Biology Lab Bench', 'item': ORIGIN + '/'},
+            {'@type': 'ListItem', 'position': 2, 'name': 'AP Biology', 'item': canonical}]})
     else:
         crumbs = [('All labs', ORIGIN + '/')]
         if filename.startswith('directions-lab'):
@@ -328,11 +339,11 @@ def build(check=False):
     outputs = {}
     for filename, spec in page_specs().items():
         html = (ROOT / filename).read_text()
-        if filename == 'index.html':
+        if filename == 'ap-biology.html':
             html, count = re.subn(r'<!-- lab-catalog:start -->.*?<!-- lab-catalog:end -->',
                                  lambda _: '<!-- lab-catalog:start -->\n' + cards() + '\n<!-- lab-catalog:end -->', html, flags=re.S)
             if count != 1:
-                raise ValueError('index.html: missing or duplicate static lab-catalog markers')
+                raise ValueError('ap-biology.html: missing or duplicate static lab-catalog markers')
         outputs[filename] = apply_metadata(filename, html, spec)
     for filename in UTILITIES:
         html = (ROOT / filename).read_text()

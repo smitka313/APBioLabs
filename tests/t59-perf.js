@@ -5,7 +5,7 @@
    Run: NODE_PATH=$(npm root -g) node tests/t59-perf.js */
 const T = require('./_h');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const PAGES = ['index.html', ...T.LABS.map(l => l + '.html')];
+const PAGES = ['ap-biology.html', ...T.LABS.map(l => l + '.html')];
 const CONFIGS = [{ name: '1366', width: 1366, height: 768, cpu: 1 }, { name: '375', width: 375, height: 812, cpu: 1, mobile: true }, { name: '375 cpu×4', width: 375, height: 812, cpu: 4, mobile: true }];
 
 (async () => {

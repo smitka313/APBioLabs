@@ -21,7 +21,7 @@ function axePath() {
     path.join(__dirname, '../node_modules/axe-core/axe.min.js')].filter(Boolean);
   return c.find(f => fs.existsSync(f));
 }
-const PAGES = ['index.html', 'teachers.html', 'teacher-dashboard.html', ...T.LABS.map(l => l + '.html')];
+const PAGES = ['ap-biology.html', 'teachers.html', 'teacher-dashboard.html', ...T.LABS.map(l => l + '.html')];
 const sectionIds = p => p.evaluate(() => [...document.querySelectorAll('section.step')].map(s => s.id).filter(Boolean));
 const goPart = (p, id) => p.evaluate(i => { Lab.pages.go(i); window.scrollTo(0, 0); }, id);
 
@@ -189,7 +189,7 @@ async function keyboard(b) {
     await ctx.close();
   }
   // The other pages: skip link first, and it lands in main
-  for (const [pg, sel] of [['index.html', 'main#labs'], ['teachers.html', 'main#main'], ['teacher-dashboard.html', 'main#main'], ['projector.html', 'main#setup']]) {
+  for (const [pg, sel] of [['ap-biology.html', 'main#labs'], ['teachers.html', 'main#main'], ['teacher-dashboard.html', 'main#main'], ['projector.html', 'main#setup']]) {
     const ctx = await T.ctxFor(b); await ctx.route(/gc\.zgo\.at/, r => r.abort());
     const p = await T.open(ctx, pg); await sleep(300);
     await p.evaluate(() => { document.activeElement && document.activeElement.blur(); window.scrollTo(0, 0); });

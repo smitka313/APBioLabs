@@ -9,7 +9,7 @@ const T = require('./_h');
     T.ok(await p.locator('.project-link').count() === 1 && p.errors.length === 0, `${lab}: exactly one, no errors`);
     await p.close();
   }
-  for (const f of ['index.html', 'teachers.html', 'teacher-dashboard.html', 'teacher-lab05.html']) {
+  for (const f of ['ap-biology.html', 'teachers.html', 'teacher-dashboard.html', 'teacher-lab05.html']) {
     const p = await T.open(ctx, f);
     T.ok(await p.locator('.project-link').count() === 0, `${f}: no "Project this lab" link`);
     await p.close();
@@ -19,8 +19,8 @@ const T = require('./_h');
   const txt = await p.locator('#projector').innerText();
   T.ok(/Open Projector mode/.test(txt) && /tick today/.test(txt) && /press F for full screen/.test(txt) && /Space starts or pauses/.test(txt) && /Esc goes back/.test(txt) && /projector\.html#lab05/.test(txt) && /remembers your last setup/.test(txt), 'teachers.html: Using projector mode section (3 steps, #lab05 bookmark, remembers setup)');
   T.ok(await p.locator('.toc a[href="#projector"]').count() === 1, 'teachers.html: in the contents list');
-  p = await T.open(ctx, 'index.html');
-  T.ok(await p.locator('.site-footer a[href="projector.html"]').count() === 1, 'index.html footer links to Projector mode');
+  p = await T.open(ctx, 'ap-biology.html');
+  T.ok(await p.locator('.site-footer a[href="projector.html"]').count() === 1, 'ap-biology.html footer links to Projector mode');
   p = await T.open(ctx, 'lab05.html');
   await p.click('.project-link'); await p.waitForTimeout(800);
   T.ok(/projector\.html#lab05$/.test(p.url()), 'the link opens projector.html#lab05: ' + p.url());

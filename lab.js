@@ -2766,7 +2766,7 @@
           IS_LAB ? h('button', { class: 'linkbtn pager-pause', type: 'button', 'aria-haspopup': 'dialog', onclick: ev => Lab.pause({ opener: ev.currentTarget }) }, 'Pause & bookmark') : null,
           h('span', { class: 'pager-tip' }, 'Tip: use ← → to move between parts')),
         next ? h('a', { class: 'btn btn--primary pager-next', href: '#' + next.id, rel: 'next' }, h('span', null, 'Next', h('span', { class: 'pager-name' }, ': ' + partName(next, i + 1))), h('span', { 'aria-hidden': 'true' }, '→'))
-          : h('a', { class: 'btn pager-next', href: 'index.html' }, h('span', null, 'All labs'), h('span', { 'aria-hidden': 'true' }, '→'))));
+          : h('a', { class: 'btn pager-next', href: 'ap-biology.html' }, h('span', null, 'All labs'), h('span', { 'aria-hidden': 'true' }, '→'))));
     });
     // Page scripts run after Lab.init; keep each pager last in its part.
     window.addEventListener('load', () => steps.forEach(s => { const p = $(':scope > .pager', s); if (p && p !== s.lastElementChild) s.append(p); }));
@@ -2898,7 +2898,7 @@
     last: () => gstore.get('last'),
   };
 
-  /* Home page (index.html): identity line, per-lab progress on [data-lab-progress] elements, resume link. */
+  /* AP directory (ap-biology.html): identity line, per-lab progress on [data-lab-progress] elements, resume link. */
   Lab.home = function (o = {}) {
     setTimeout(startOnboarding, 0);
     handleResumeHash();

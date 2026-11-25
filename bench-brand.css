@@ -1,0 +1,24 @@
+/* Shared Biology Lab Bench masthead for the welcome page and the two course entrances. */
+.bench-brandbar{background:var(--surface);color:var(--ink);border-bottom:1px solid var(--line)}
+.bench-brandbar-inner{display:flex;align-items:center;justify-content:space-between;gap:.65rem 1.25rem;padding-block:.8rem;min-width:0}
+.bench-logo{display:inline-block;flex:none;width:clamp(132px,18vw,174px);line-height:0}
+.bench-logo img{display:block;width:100%;height:auto}
+.bench-logo img.bench-logo-dark{display:none}
+:root[data-theme=dark] .bench-logo img.bench-logo-light{display:none}
+:root[data-theme=dark] .bench-logo img.bench-logo-dark{display:block}
+@media(prefers-color-scheme:dark){
+ :root:not([data-theme=light]) .bench-logo img.bench-logo-light{display:none}
+ :root:not([data-theme=light]) .bench-logo img.bench-logo-dark{display:block}
+}
+.bench-route-nav{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:.25rem .95rem;line-height:1.25;font-size:.87rem}
+.bench-route-nav a{display:inline-flex;align-items:center;min-height:30px;color:var(--ink);text-underline-offset:4px}
+.bench-route-nav [aria-current=page]{color:var(--accent);font-weight:750;text-decoration:none;border-bottom:2px solid var(--accent)}
+.bench-brandbar :focus-visible,.bench-portal :focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+@media(max-width:540px){.bench-brandbar-inner{gap:.45rem;align-items:center}.bench-route-nav{gap:.15rem .65rem}}
+.bench-brandbar.dashboard-masthead{background:var(--surface);border-bottom-color:var(--line)}
+.bench-brandbar .dashboard-topbar{min-height:65px;padding-block:.62rem;gap:.35rem 1.1rem}
+.bench-brandbar .dashboard-theme-label{color:var(--muted)}
+.bench-ap-hero h1,.dashboard-hero h1.dashboard-title{font-family:Georgia,'Times New Roman',serif;letter-spacing:-.04em}
+@media(max-width:640px){.bench-brandbar .dashboard-topbar .bench-route-nav{margin-left:auto}.bench-brandbar .dashboard-theme-controls{margin-left:auto}}
+.bench-route-nav a.bench-cross-route{background:var(--accent-soft);color:var(--ink);border:1px solid var(--line);min-height:40px;padding-inline:.6rem;border-radius:8px;font-weight:700;text-decoration:none}
+.bench-route-nav a.bench-cross-route:hover{text-decoration:underline}
