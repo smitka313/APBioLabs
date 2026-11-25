@@ -107,9 +107,16 @@
   function resetState(){ $('reset').disabled=!canSave()||!(Object.values(state.fields).some(v=>v.trim())||state.check||state.scaleCheck!==null||state.finished); }
   function save(){state.lastVisitedAt=Date.now();if(!canSave()||!session.write(KEY,JSON.stringify(state)).ok){tell('This tab could not save on this device. Preview a report to keep a copy.');resetState();return false;}resetState();return true;}
   const uiKey=id=>'aplab:ui:wapusk:disclosure:'+id;
+  let resetDisclosures=false;
+  function storeDisclosure(d){
+    if(!resetDisclosures)try{sessionStorage.setItem(uiKey(d.dataset.keepOpen),d.open?'yes':'no');}catch(_){}
+  }
+  // Native toggle can be queued until the next task. Capture the actual open state
+  // before navigation, including when a student reloads immediately after a click.
+  window.addEventListener('pagehide',()=>all('details[data-keep-open]').forEach(storeDisclosure));
   for(const d of all('details[data-keep-open]')){
     try{d.open=sessionStorage.getItem(uiKey(d.dataset.keepOpen))==='yes';}catch(_){}
-    d.addEventListener('toggle',()=>{try{sessionStorage.setItem(uiKey(d.dataset.keepOpen),d.open?'yes':'no');}catch(_){}});
+    d.addEventListener('toggle',()=>storeDisclosure(d));
   }
   function section(step,focus=true){
     for(const key of stages){$(key).hidden=key!==step;if(key!==step)for(const host of $(key).querySelectorAll('.wb-video'))pauseVideo(host);}
@@ -215,6 +222,7 @@
   $('reset-form').onsubmit=e=>{
     e.preventDefault();if($('reset-confirm').value!=='ERASE')return;
     if(!canSave()||!session.reset(KEY).ok){$('reset-error').textContent='Could not clear saved work from this tab. Reload and try again.';return;}
+    resetDisclosures=true;
     try{for(const d of all('details[data-keep-open]'))sessionStorage.removeItem(uiKey(d.dataset.keepOpen));}catch(_){}
     location.reload();
   };
