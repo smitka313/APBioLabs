@@ -5,19 +5,17 @@ function el(tag,text){const n=document.createElement(tag);if(text!==undefined)n.
 const KEY='aplab:openscied:b5-ancestry:v1', routes=['traits','dna','tree','explain'], station=['profile','skull','teeth','claw'];
 const bears={
  polar:{name:'Polar bear',file:'polar',data:'Polar_Bear',profile:'Long neck and small rounded ears. Hunts seals on sea ice.',skull:'A relatively long, low skull; notice the extended snout.',teeth:'Pointed canines and relatively sharp cheek teeth.',claw:'Thick, curved claw; useful for gripping.',mm:51},
- brown:{name:'Brown bear',file:'brown',data:'Brown_Bear',profile:'High shoulder hump. Eats a mix of plants and animals.',skull:'A broader, more robust skull; notice the change in slope above the snout.',teeth:'Pointed canines and broad crushing surfaces on the back teeth.',claw:'Longer, less curved front claw; useful for digging.',mm:82},
- black:{name:'American black bear',file:'black',data:'American_Black_Bear',profile:'No shoulder hump and relatively tall ears. Eats a mix of plants and animals.',skull:'A broad rear skull and straighter upper profile than the brown bear example.',teeth:'Pointed canines and broad crushing surfaces on the back teeth.',claw:'Shorter, more curved front claw; useful for climbing.',mm:39}
+ brown:{name:'Brown bear',file:'brown',data:'Brown_Bear',profile:'High shoulder hump. Eats a mix of plants and animals.',skull:'A broader, more robust skull; compare the steep rise above the snout with the black bear’s straighter slope.',teeth:'Broad crushing teeth. The last upper molar is widest toward the front in this example.',claw:'Longer, less curved front claw; useful for digging.',mm:82},
+ black:{name:'American black bear',file:'black',data:'American_Black_Bear',profile:'No shoulder hump and relatively tall ears. Eats a mix of plants and animals.',skull:'Compare the gently sloping forehead with the steeper brown bear profile.',teeth:'Broad crushing teeth. The last upper molar is widest near the middle in this example.',claw:'Shorter, more curved front claw; useful for climbing.',mm:39}
 };
 const ids=Object.keys(bears), pairs=[['polar','brown'],['polar','black'],['brown','black']];
 const short={polar:'Polar',brown:'Brown',black:'Black'}, pairLabel=i=>pairs[i].map(k=>short[k]).join(' + ');
 const DNA=window.BearAncestrySequences, letters=k=>DNA[bears[k].data].slice(0,72);
 const differences=pairs.map(([a,b])=>Array.from(letters(a),(x,i)=>x===letters(b)[i]?-1:i).filter(i=>i>=0));
-const fresh=()=>({v:1,id:Array.from(crypto.getRandomValues(new Uint8Array(4)),n=>n.toString(16).padStart(2,'0')).join('').toUpperCase(),step:'traits',lastSection:'traits',lastVisitedAt:0,notes:{},prediction:null,marks:[[],[],[]],checked:[],tips:['','',''],treeGood:false,answers:{}});
+const fresh=()=>({v:1,id:Array.from(crypto.getRandomValues(new Uint8Array(4)),n=>n.toString(16).padStart(2,'0')).join('').toUpperCase(),step:'traits',lastSection:'traits',lastVisitedAt:0,notes:{},prediction:null,marks:[[],[],[]],checked:[],explored:[],tips:['','',''],treeGood:false,answers:{}});
 const clean=v=>typeof v==='string'?v.slice(0,4000):'';
-const identical=(a,b)=>a.length===b.length&&a.every((x,i)=>x===b[i]);
-const matches=(arr,i)=>identical(arr,differences[i]);
 function validTree(t){return t[2]==='black'&&[t[0],t[1]].includes('polar')&&[t[0],t[1]].includes('brown');}
-let s=fresh(),session,failed=false,st='profile',p=0,dp=0,pending=null,selected='',zoom='',calc={},canSave;
+let s=fresh(),session,failed=false,st='profile',p=0,dp=0,pending=null,editing=false,selected='',zoom='',calc={},treeMismatch=false,canSave;
 try{
   session=window.OpenSciEdSaveSession?.open(localStorage,'b5-ancestry',[KEY]);
   const raw=localStorage.getItem(KEY);
@@ -27,9 +25,10 @@ try{
     for(const k of station)if(clean(v.notes?.[k]).trim())s.notes[k]=clean(v.notes[k]);
     s.prediction=Number.isInteger(v.prediction)&&pairs[v.prediction]&&Object.keys(s.notes).length?v.prediction:null;
     s.marks=s.marks.map((_,i)=>Array.isArray(v.marks?.[i])?[...new Set(v.marks[i].filter(n=>Number.isInteger(n)&&n>=0&&n<72))].sort((a,b)=>a-b):[]);
-    s.checked=[...new Set((Array.isArray(v.checked)?v.checked:[]).filter(i=>Number.isInteger(i)&&differences[i]&&matches(s.marks[i],i)))];
+    s.checked=[...new Set((Array.isArray(v.checked)?v.checked:[]).filter(i=>Number.isInteger(i)&&differences[i]))];
+    s.explored=(Array.isArray(v.explored)?v.explored:[]).filter(x=>typeof x==='string'&&x.split('|').length===2&&x.split('|').every(k=>Object.hasOwn(DNA,k))).slice(0,36);
     s.tips=s.tips.map((_,i)=>ids.includes(v.tips?.[i])&&v.tips.indexOf(v.tips[i])===i?v.tips[i]:'');
-    s.treeGood=v.treeGood===true&&validTree(s.tips);
+    s.treeGood=v.treeGood===true&&validTree(s.tips)&&s.checked.length===3;
     for(const k of ['conclusion','revise'])s.answers[k]=clean(v.answers?.[k]);
   }
 }catch(_){failed=true;}
@@ -40,12 +39,14 @@ function announce(t){$('status').textContent=t;}
 function save(){
   s.lastSection=s.step;s.lastVisitedAt=Date.now();
   if(!canSave()||!session.write(KEY,JSON.stringify(s)).ok)$('save').textContent='This tab cannot save. Preview your report to keep a copy.';
+  $('reset').disabled=!canSave()||!Object.keys(s.notes).length;
 }
 const stationNames={profile:'Bear profiles',skull:'Skulls',teeth:'Teeth',claw:'Claws'};
 const notesCount=()=>Object.values(s.notes).filter(v=>v.trim()).length;
 function gate(k){return k==='traits'||(s.prediction!==null&&(k==='dna'||s.checked.length===3&&(k==='tree'||s.treeGood)));}
 function nav(){
   const done=Number(s.prediction!==null)+Number(s.checked.length===3)+Number(s.treeGood)+Number(Boolean(s.answers.conclusion?.trim()&&s.answers.revise?.trim()));
+  $('reset').disabled=!canSave()||!Object.keys(s.notes).length;
   $('progress').textContent=done+' of 4 steps complete.'+(!gate('dna')?' Save a first guess to unlock DNA.':!gate('tree')?' Check all three DNA comparisons to unlock the tree.':!gate('explain')?' Check the tree to unlock Explain.':'');
   all('[data-step],[data-go]').forEach(b=>{const k=b.dataset.step||b.dataset.go;b.disabled=!gate(k);if(b.dataset.step&&k===s.step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');});
 }
@@ -72,8 +73,8 @@ function pressed(where,v){
 }
 const skulls={
  polar:'M22 113Q27 89 53 91L108 84Q133 74 146 48Q167 29 214 32Q249 34 269 55L275 80Q272 102 249 116L251 130Q231 147 209 133L168 120Q145 125 126 135L110 146L65 151Q41 155 23 144Z',
- brown:'M29 114Q33 89 73 90L100 91Q118 82 128 53Q144 19 199 24Q246 22 269 53L274 76Q273 102 251 118L252 135Q228 152 204 135L162 122Q145 128 124 141L102 151L59 154Q36 155 26 141Z',
- black:'M28 114Q35 94 72 93L114 84Q126 69 136 49Q156 26 204 32Q249 31 270 56L273 78Q272 98 250 116L251 133Q227 148 208 135L165 120Q146 126 126 139L106 149L59 150Q35 153 26 139Z'
+ brown:'M29 114Q33 89 73 90L104 91Q121 88 133 48Q151 12 195 20Q245 18 269 53L274 76Q273 102 251 118L252 135Q228 152 204 135L162 122Q145 128 124 141L102 151L59 154Q36 155 26 141Z',
+ black:'M28 114Q35 96 70 92L107 82Q138 65 159 49Q174 37 204 38Q251 36 270 57L273 78Q272 98 250 116L251 133Q227 148 208 135L165 120Q146 126 126 139L106 149L59 150Q35 153 26 139Z'
 };
 function art(k,type){
   if(type==='claw'){
@@ -82,7 +83,9 @@ function art(k,type){
   }
   if(type==='teeth'){
     const molar=k==='polar'?'q8-20 17-13l7-10 9 13 7-6 8 16-5 33q-9 8-17 0l-6-19-6 20q-7 4-12-3Z':'q4-14 16-17l16 0q15 0 17 13l-5 34q-8 8-16 1l-7-16-6 16q-6 7-14 0Z';
-    return '<svg viewBox="0 0 300 185" aria-hidden="true"><path d="M17 100Q16 75 38 66L266 51Q284 52 285 76L276 98Q210 117 153 115L36 137Z" fill="#c6ad7b" stroke="#786747" stroke-width="3"/><path d="M42 93Q62 73 84 88Q92 103 72 139Q67 155 59 153Q53 151 55 138Q54 119 44 118Z" fill="#fff1c7" stroke="#887649" stroke-width="2"/><g transform="translate(112 102)" fill="#fff1c7" stroke="#887649" stroke-width="2"><path d="M0 0'+molar+'"/><path d="M56 -6'+molar+'"/><path d="M111 -12'+molar+'"/></g><g fill="#365d4d" font-size="13" font-weight="700"><text x="32" y="43">Canine</text><text x="159" y="26">Cheek teeth</text></g><path d="M59 50V82M209 32v46" stroke="#4c6c58" stroke-width="2" stroke-dasharray="3 3"/></svg>';
+    const dorsal=k==='brown'?'M4 21Q1 39 13 42Q30 40 27 22Q28 10 21 3Q8 2 4 21Z':'M6 16Q-2 26 7 35Q15 45 23 36Q33 26 25 16Q22 7 15 4Q9 6 6 16Z';
+    const inset=k==='polar'?'':'<g transform="translate(11 8)"><rect x="0" y="0" width="79" height="42" rx="5" fill="#ebe1bb" stroke="#a49c79"/><path d="'+dorsal+'" transform="translate(4 1) scale(.77)" fill="#fbf0ce" stroke="#786747" stroke-width="2"/><path d="M12 10q7 5 4 18m-5-2 12-7" fill="none" stroke="#ad9062"/><text x="28" y="16" font-size="8.5" fill="#173a34">Last molar</text><text x="28" y="29" font-size="8.5" fill="#173a34">top view</text></g>';
+    return '<svg viewBox="0 0 300 185" aria-hidden="true"><path d="M17 100Q16 75 38 66L266 51Q284 52 285 76L276 98Q210 117 153 115L36 137Z" fill="#c6ad7b" stroke="#786747" stroke-width="3"/><path d="M42 93Q62 73 84 88Q92 103 72 139Q67 155 59 153Q53 151 55 138Q54 119 44 118Z" fill="#fff1c7" stroke="#887649" stroke-width="2"/><g transform="translate(112 102)" fill="#fff1c7" stroke="#887649" stroke-width="2"><path d="M0 0'+molar+'"/><path d="M56 -6'+molar+'"/><path d="M111 -12'+molar+'"/></g><g fill="#365d4d" font-size="13" font-weight="700"><text x="80" y="53">Canine</text><text x="159" y="26">Cheek teeth</text></g><path d="M92 55L66 84M209 32v46" stroke="#4c6c58" stroke-width="2" stroke-dasharray="3 3"/>'+inset+'</svg>';
   }
   return '<svg viewBox="0 0 300 185" aria-hidden="true"><path d="'+skulls[k]+'" fill="#dfca97" stroke="#746344" stroke-width="3"/><path d="M47 143q3 22 21 19l10-27m26 2 8 16 13-4 4-21m16-5 8 16 14-3 4-15" fill="#fbebc1" stroke="#8b7754" stroke-width="2"/><path d="M151 86q1-24 26-23 24 0 23 20-2 20-28 23-18-3-21-20Zm-112 25q23-13 31 2-12 15-31 12Z" fill="#526153"/><path d="M176 115q41 31 76-15m-77 35q46 31 75 5M66 102q24-8 47-7m96-53q33 3 48 25" fill="none" stroke="#a18e61" stroke-width="4"/><path d="M38 150q9 25 60 25l99-7q41-5 51-27-24 13-62 15L94 165q-36 5-56-15Z" fill="#dbc38e" stroke="#827050" stroke-width="2"/></svg>';
 }
@@ -98,22 +101,38 @@ function specimens(){
       const input=el('input'), label=el('label','Move the caliper to the tip'), value=el('output');
       label.htmlFor='ba-caliper-'+k;input.id=label.htmlFor;input.type='range';input.min=0;input.max=90;input.value=calc[k]||0;
       function measure(){const x=31+Number(input.value)*2.8,l=f.querySelector('.ba-jaw');l.setAttribute('x1',x);l.setAttribute('x2',x);const delta=Number(input.value)-bears[k].mm;value.value=input.value+' mm · '+(Math.abs(delta)<=2?'At the illustrated tip':delta<0?'Move right to reach the tip':'Move left to reach the tip');calc[k]=input.value;}
-      input.oninput=measure;f.append(label,input,value);measure();
+      input.oninput=measure;
+      let grip=null;
+      input.addEventListener('pointerdown',e=>{
+        if(e.button!==0)return;
+        e.preventDefault();input.focus();input.setPointerCapture(e.pointerId);
+        grip={id:e.pointerId,x:e.clientX,value:Number(input.value)};
+      });
+      input.addEventListener('pointermove',e=>{
+        if(!grip||e.pointerId!==grip.id||Math.abs(e.clientX-grip.x)<3)return;
+        const distance=e.clientX-grip.x, width=Math.max(1,input.getBoundingClientRect().width-16);
+        input.value=Math.max(0,Math.min(90,grip.value+Math.round(90*distance/width)));
+        measure();
+      });
+      input.addEventListener('lostpointercapture',()=>{grip=null;});
+      f.append(label,input,value);measure();
     }else{
       const z=btn(zoom===k?'Return to side-by-side':'Enlarge specimen');z.setAttribute('aria-label',z.textContent+': '+bears[k].name);z.onclick=()=>{zoom=zoom===k?'':k;specimens();$('specimens').querySelectorAll('button')[pairs[p].indexOf(k)].focus();};f.append(z);
     }
     return f;
   }));
-  $('station-note').textContent=st==='claw'?'Use the slider or arrow keys. The ruler shows centimeters; the reading gives millimeters. These are illustrated examples, not measurements from real individuals.':'Original illustrations emphasize visible traits; they are not to scale.';
+  $('station-note').textContent=st==='claw'?'Drag to move from the current reading, or use the arrow keys. A tap alone won’t move it. The ruler shows centimeters; the reading gives millimeters. These are illustrated examples, not measurements from real individuals.':'Original illustrations emphasize visible traits; they are not to scale.';
 }
 function noteUI(){
  $('note-label').textContent='Your observation · '+stationNames[st];
  $('note').value=s.notes[st]||'';$('note-count').textContent=notesCount()+' of 4 stations have observations.';
 }
 function predictUI(){
- $('lock').disabled=pending===null||!notesCount()||s.prediction!==null;
- all('#ba-hypotheses input').forEach((n,i)=>{n.checked=pending===i;n.disabled=s.prediction!==null;});
- $('lock-hint').textContent=s.prediction===null?'Save one observation and choose a pair. Your first guess does not have to be right.':'First guess saved: '+pairLabel(s.prediction)+'. You can revise it in Explain.';
+ const frozen=s.prediction!==null&&!editing;
+ $('lock').disabled=pending===null||!notesCount()||frozen;
+ $('edit-guess').hidden=s.prediction===null||s.checked.length>0||editing;
+ all('#ba-hypotheses input').forEach((n,i)=>{n.checked=pending===i;n.disabled=frozen;});
+ $('lock-hint').textContent=s.prediction===null||editing?'Save one observation and choose a pair. Your first guess does not have to be right.':'First guess saved: '+pairLabel(s.prediction)+'. '+(s.checked.length?'You can revise it in Explain.':'You can edit it until your first DNA comparison passes.');
  $('first-guess').textContent=s.prediction===null?'':'Your first guess: '+pairLabel(s.prediction)+'.';
  nav();
 }
@@ -124,7 +143,8 @@ $('note').oninput=e=>{
   if(clean(e.target.value).trim())s.notes[st]=clean(e.target.value);else if(s.prediction!==null&&notesCount()===1&&s.notes[st]){e.target.value=s.notes[st];announce('Keep at least one observation with your first guess. You can revise its wording.');return;}else delete s.notes[st];
   $('note-count').textContent=notesCount()+' of 4 stations have observations.';predictUI();save();
 };
-$('lock').onclick=()=>{if(pending===null||!notesCount())return;s.prediction=pending;predictUI();announce('First guess saved. Now compare the DNA.');save();};
+$('edit-guess').onclick=()=>{if(s.checked.length)return;editing=true;predictUI();$('hypotheses').querySelector('input:checked')?.focus();};
+$('lock').onclick=()=>{if(pending===null||!notesCount())return;s.prediction=pending;editing=false;predictUI();announce('First guess saved. Now compare the DNA.');save();};
 function dna(focus){
   const [a,b]=pairs[dp], aa=letters(a), bb=letters(b);
   pressed($('dna-pairs'),dp);$('dna-label').textContent=bears[a].name+' (top) · '+bears[b].name+' (bottom)';
@@ -142,35 +162,52 @@ function dna(focus){
     tile.onclick=()=>{
       const m=s.marks[dp],was=m.includes(i);
       s.marks[dp]=was?m.filter(x=>x!==i):[...m,i].sort((a,b)=>a-b);
-      s.checked=s.checked.filter(x=>x!==dp);s.treeGood=false;
-      tile.setAttribute('aria-pressed',!was);log($('table'));nav();save();if($('status').textContent)announce('');
+      tile.setAttribute('aria-pressed',!was);$('dna-feedback').textContent='';save();
     };return tile;
   }));
   if(focus)$('seq').children[0].focus();
   log($('table'));
 }
-buildPairButtons($('dna-pairs'),v=>{dp=v;dna();announce('');});
+buildPairButtons($('dna-pairs'),v=>{dp=v;dna();$('dna-feedback').textContent=s.checked.includes(dp)?'This pair already passed. Try it again without losing your recorded result.':'';announce('');});
 $('check').onclick=()=>{
   const got=s.marks[dp], want=differences[dp], extra=got.filter(i=>!want.includes(i)).length, missed=want.filter(i=>!got.includes(i)).length;
-  if(extra||missed){announce('Not yet. '+(extra?extra+' selected '+(extra===1?'column has':'columns have')+' matching letters. ':'')+(missed?missed+' '+(missed===1?'difference is':'differences are')+' still unmarked.':'').trimEnd());return;}
-  if(!s.checked.includes(dp))s.checked.push(dp);log($('table'));nav();save();
-  announce('Comparison saved: '+want.length+' '+(want.length===1?'difference':'differences')+' out of 72. '+(s.checked.length===3?'All three checked. Build your tree.':s.checked.length+' of 3 pairs checked.'));
+  if(extra||missed){$('dna-feedback').textContent=('Not yet. '+(extra?extra+' selected '+(extra===1?'column has':'columns have')+' matching letters. ':'')+(missed?missed+' '+(missed===1?'difference is':'differences are')+' still unmarked.':'')).trim()+(s.checked.includes(dp)?' Your earlier correct result and progress are still saved.':'');return;}
+  if(!s.checked.includes(dp)){s.checked.push(dp);editing=false;pending=s.prediction;predictUI();}
+  log($('table'));nav();save();
+  $('dna-feedback').textContent='Comparison saved: '+want.length+' '+(want.length===1?'difference':'differences')+' out of 72. '+(s.checked.length===3?'All three pairs checked.':s.checked.length+' of 3 pairs checked.');
 };
-function editDistance(a,b){
-  // Minimum number of unit-cost changes. Rolling rows keep the full comparison small.
-  let old=Uint16Array.from({length:b.length+1},(_,i)=>i), row=new Uint16Array(b.length+1);
-  for(let i=1;i<=a.length;i++){
-    row[0]=i;for(let j=1;j<=b.length;j++)row[j]=Math.min(old[j]+1,row[j-1]+1,old[j-1]+Number(a[i-1]!==b[j-1]));
-    [row,old]=[old,row];
+const alignmentCache=new Map();
+function aligned(ka,kb){
+  const key=ka+'|'+kb;
+  if(alignmentCache.has(key))return alignmentCache.get(key);
+  const a=DNA[ka],b=DNA[kb],stride=b.length+1,d=new Uint16Array((a.length+1)*stride);
+  for(let i=0;i<=a.length;i++)d[i*stride]=i;for(let j=0;j<=b.length;j++)d[j]=j;
+  // Keep a unit-cost alignment so the exact count is inspectable, not just an opaque score.
+  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++){const at=i*stride+j;d[at]=Math.min(d[at-stride]+1,d[at-1]+1,d[at-stride-1]+Number(a[i-1]!==b[j-1]));}
+  const top=[],bottom=[],middle=[];let i=a.length,j=b.length,subs=0,gaps=0;
+  while(i||j){
+   const at=i*stride+j;
+   if(i&&j&&d[at]===d[at-stride-1]+Number(a[i-1]!==b[j-1])){
+    const x=a[--i],y=b[--j];top.push(x);bottom.push(y);middle.push(x===y?'|':'×');subs+=Number(x!==y);
+   }else if(i&&d[at]===d[at-stride]+1){
+    top.push(a[--i]);bottom.push('–');middle.push('+');gaps++;
+   }else{
+    top.push('–');bottom.push(b[--j]);middle.push('+');gaps++;
+   }
   }
-  return old[b.length];
+  const row=seq=>seq.reverse().join('');
+  const result={score:d[d.length-1],subs,gaps,rows:[row(top),row(middle),row(bottom)]};
+  alignmentCache.set(key,result);return result;
 }
 const fullA=$('full-a'),fullB=$('full-b'),fullKeys=Object.keys(DNA),display=k=>k.replaceAll('_',' ').replace('Giant Panda Bear','Giant panda');
 for(const sel of [fullA,fullB])for(const k of fullKeys){const o=el('option',display(k));o.value=k;sel.append(o);}
 fullA.value='Polar_Bear';fullB.value='Brown_Bear';
 function full(){
- const ka=fullA.value,kb=fullB.value,a=DNA[ka],b=DNA[kb];
- $('full-stat').textContent=display(ka)+' and '+display(kb)+': '+editDistance(a,b)+' minimum single-base changes. Sequence lengths: '+a.length+' and '+b.length+' bases.';
+ const ka=fullA.value,kb=fullB.value,a=DNA[ka],b=DNA[kb],result=aligned(ka,kb);
+ $('full-stat').textContent=display(ka)+' and '+display(kb)+': '+result.score+' minimum single-base changes ('+result.subs+' substitutions + '+result.gaps+' gap bases). Sequence lengths: '+a.length+' and '+b.length+' bases.';
+ const chunks=[];for(let i=0;i<result.rows[0].length;i+=60)chunks.push('Columns '+(i+1)+'–'+Math.min(i+60,result.rows[0].length)+'\n'+result.rows.map(r=>r.slice(i,i+60)).join('\n'));
+ const pre=el('pre',chunks.join('\n\n'));pre.tabIndex=0;pre.setAttribute('aria-label','Alignment: '+display(ka)+' on top, '+display(kb)+' below');$('aligned').replaceChildren(pre);
+ if(ka!==kb){const key=[ka,kb].sort().join('|');if(!s.explored.includes(key)){s.explored.push(key);save();}}
  $('full-seq').replaceChildren(...[[ka,a],[kb,b]].map(([k,v])=>{const d=el('div'),c=el('code',v);c.tabIndex=0;c.setAttribute('aria-label',display(k)+' sequence');d.append(el('strong',display(k)),c);return d;}));
 }
 $('fasta').onclick=()=>{
@@ -181,7 +218,7 @@ $('fasta').onclick=()=>{
 fullA.onchange=full;fullB.onchange=full;$('full-a').closest('details').addEventListener('toggle',e=>{if(e.target.open)full();});
 function tree(){
  for(const b of all('[data-bear]'))b.setAttribute('aria-pressed',b.dataset.bear===selected);
- all('[data-tip]').forEach((b,i)=>{const k=s.tips[i],title='Tip '+(i+1);b.textContent=k?bears[k].name:title+' · empty';b.setAttribute('aria-label',title+': '+(k?bears[k].name:'empty'));b.dataset.filled=String(Boolean(k));});
+ all('[data-tip]').forEach((b,i)=>{const k=s.tips[i],title='Tip '+(i+1);b.textContent=k?bears[k].name:title+' · empty';b.setAttribute('aria-label',title+': '+(k?bears[k].name:'empty'));b.dataset.filled=String(Boolean(k));b.dataset.mismatch=String(treeMismatch&&i<2);});
 }
 for(const k of ids){
  const b=btn(''),img=el('img');img.src='assets/openscied-bear-profile-'+bears[k].file+'.svg';img.alt='';img.width=44;img.height=27;b.append(img,bears[k].name);b.draggable=true;b.dataset.bear=k;
@@ -189,11 +226,11 @@ for(const k of ids){
  b.ondragstart=e=>{selected=k;e.dataTransfer.setData('text/plain',k);e.dataTransfer.effectAllowed='move';tree();};$('tokens').append(b);
 }
 function place(i,k){
- if(!ids.includes(k)){announce('Choose a bear card, then choose a tip.');return;}
+ if(!ids.includes(k)){$('tree-feedback').textContent='Choose a bear card, then choose a tip.';return;}
  const from=s.tips.indexOf(k), prev=s.tips[i];
- if(from===i){announce(bears[k].name+' is already on that tip.');return;}
- if(from>=0)s.tips[from]=prev;s.tips[i]=k;s.treeGood=false;selected='';tree();nav();save();
- announce(bears[k].name+' placed on tip '+(i+1)+'.'+(from>=0&&prev?' The two bears swapped tips.':prev?' '+bears[prev].name+' returned to the card tray.':''));
+ if(from===i){$('tree-feedback').textContent=bears[k].name+' is already on that tip.';return;}
+ if(from>=0)s.tips[from]=prev;s.tips[i]=k;s.treeGood=false;treeMismatch=false;selected='';tree();nav();save();
+ $('tree-feedback').textContent=(bears[k].name+' placed on tip '+(i+1)+'.'+(from>=0&&prev?' The two bears swapped tips.':prev?' '+bears[prev].name+' returned to the card tray.':''));
 }
 all('[data-tip]').forEach((b,i)=>{
   b.onclick=()=>place(i,selected);
@@ -202,11 +239,16 @@ all('[data-tip]').forEach((b,i)=>{
   b.ondrop=e=>{e.preventDefault();delete b.dataset.drag;place(i,e.dataTransfer.getData('text/plain')||selected);};
 });
 $('tree-check').onclick=()=>{
- if(s.tips.some(x=>!x)){announce('Place all three bears before checking the tree.');return;}
- if(!validTree(s.tips)){announce('Follow tips 1 and 2 to the branch point they share. Compare that pair with the pair that had the fewest differences in your log.');return;}
- s.treeGood=true;nav();save();announce('Tree checked. Your closest DNA pair shares the newer branch point.');
+ if(s.tips.some(x=>!x)){$('tree-feedback').textContent='Place all three bears before checking the tree.';return;}
+ if(!validTree(s.tips)){
+  const pair=pairs.findIndex(q=>q.every(k=>s.tips.slice(0,2).includes(k)));
+  treeMismatch=true;tree();
+  $('tree-feedback').textContent='Not yet. Tips 1 and 2 show '+pairLabel(pair)+', with '+differences[pair].length+' differences. Look for the pair with the fewest differences in your log and move those bears to the highlighted tips.';
+  return;
+ }
+ s.treeGood=true;treeMismatch=false;tree();nav();save();$('tree-feedback').textContent='Tree checked. Your closest DNA pair shares the newer branch point.';
 };
-$('clear-tree').onclick=()=>{s.tips=['','',''];s.treeGood=false;selected='';tree();nav();save();announce('All three tips cleared.');};
+$('clear-tree').onclick=()=>{s.tips=['','',''];s.treeGood=false;treeMismatch=false;selected='';tree();nav();save();$('tree-feedback').textContent='All three tips cleared.';};
 function recap(){
  const box=$('recap');box.replaceChildren(el('p','First guess: '+pairLabel(s.prediction)+'.'),...Object.entries(s.notes).filter(([,v])=>v.trim()).map(([k,v])=>el('p',stationNames[k]+': '+v)),el('p','Tree tips 1 and 2: '+s.tips.slice(0,2).map(k=>bears[k]?.name||'Empty').join(' + ')+'.'));log($('explain-table'));
 }
@@ -214,15 +256,34 @@ for(const k of ['conclusion','revise']){
  const a=$(k);a.value=s.answers[k]||'';a.oninput=()=>{s.answers[k]=clean(a.value);nav();save();};
 }
 all('[data-step],[data-go]').forEach(b=>b.onclick=()=>step(b.dataset.step||b.dataset.go));
+window.Lab?.identity?.mount?.('#ba-identity',{compact:true,sharedDevice:true});
+$('reset').onclick=()=>{const input=$('reset-confirm');input.value='';$('reset-feedback').textContent='';$('clear-work').disabled=true;$('reset-dialog').showModal();};
+$('keep-work').onclick=()=>$('reset-dialog').close();
+$('reset-confirm').oninput=e=>{$('clear-work').disabled=e.target.value!=='ERASE';};
+$('reset-form').onsubmit=e=>{
+ e.preventDefault();if($('reset-confirm').value!=='ERASE')return;
+ if(!canSave()||!session.reset(KEY).ok){$('reset-feedback').textContent='Could not clear this tab’s work. Reload the current saved notebook, then try again.';return;}
+ history.replaceState(null,'',location.pathname+location.search);location.reload();
+};
 specimens();noteUI();predictUI();dna();tree();
 const hash=location.hash.slice(1), start=routes.includes(hash)&&gate(hash)?hash:gate(s.step)?s.step:routes.findLast(gate);step(start,false);
 if(!canSave())$('save').textContent='This browser could not open the saved notebook. You can still preview a report.';
 window.OpenSciEdSubmission?.mount({target:'#ba-report',filename:'bear-ancestry',collect:()=>{
  const q1='Which bears share a more recent common ancestor? Explain one branch point and cite a DNA comparison.',q2='Did you keep or revise your first guess? Explain what the trait evidence can and cannot tell you.';
+ const ordered=key=>key.split('|').sort().join('|');
+ const featured=pairs.map(pair=>ordered(pair.map(k=>bears[k].data).join('|')));
+ const reviewed=[...new Set([...featured,...s.explored])];
+ const fullRows=reviewed.map(row=>{const [a,b]=row.split('|'),r=aligned(a,b);return [display(a)+' + '+display(b),String(r.score),String(r.subs),String(r.gaps)];});
  const missing=[];if(!s.treeGood)missing.push('Check your bear tree.');if(!s.answers.conclusion?.trim())missing.push(q1);if(!s.answers.revise?.trim())missing.push(q2);
  return {title:'Bear Ancestry Lab',unit:'OpenSciEd B.5 · Lesson 3 companion',source:'OpenSciEd B.5 Lesson 3 Bear DNA Sequences. Guided counts are for positions 1–72 of one noncoding region of transthyretin; branch lengths do not show time.',status:!canSave()?'recovery':missing.length?'draft':'final',student:identity(),datasetId:'BA-'+s.id,missing,sections:[
  {title:'First look: trait evidence',items:[{type:'answer',prompt:'First guess',value:s.prediction===null?'':pairLabel(s.prediction)},...Object.entries(s.notes).map(([k,v])=>({type:'answer',prompt:stationNames[k],value:v}))]},
  {title:'DNA evidence and branching tree',items:[{type:'table',columns:['Bear pair','Differences out of 72'],rows:pairs.map((_,i)=>[pairLabel(i),s.checked.includes(i)?String(differences[i].length):'Not checked'])},{type:'answer',prompt:'Tips 1 and 2 share the newer branch point',value:s.tips.slice(0,2).map(k=>bears[k]?.name||'Empty').join(' + ')},{type:'answer',prompt:'Tip 3',value:bears[s.tips[2]]?.name||''}]},
+ {title:'Original dataset and what this model can show',items:[
+  {type:'text',text:'The original lesson’s eight-species MAFFT alignment groups polar and brown bears together. This three-tip model cannot date their split or predict what happens as the Arctic changes. The dataset contains no human DNA.'},
+  {type:'table',columns:['Original species','Sequence length (bases)'],rows:fullKeys.map(k=>[display(k),String(DNA[k].length)])},
+  {type:'text',text:'The table below includes the three featured full-sequence comparisons and any additional pairs you opened. A simple minimum-change count is not a multi-species phylogenetic analysis.'},
+  {type:'table',columns:['Full pair','Changes','Substitutions','Gap bases'],rows:fullRows}
+ ]},
  {title:'Explain and revise',items:[{type:'answer',prompt:q1,value:s.answers.conclusion},{type:'answer',prompt:q2,value:s.answers.revise}]}
  ]};
 }});

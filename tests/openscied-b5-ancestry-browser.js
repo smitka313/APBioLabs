@@ -35,6 +35,12 @@ async function run(){
    }
    assert(await visible('traits'));assert(await p.locator('[data-step="dna"]').isDisabled());
    assert(await at('lock').isDisabled());
+   assert(await at('reset').isDisabled());
+   await p.getByRole('button',{name:'Enter your name and class period'}).click();
+   await p.getByRole('textbox',{name:'Enter your name as your teacher knows it'}).fill('Avery Test');
+   await p.getByLabel('Class period',{exact:true}).selectOption('2');
+   await p.locator('#ba-identity').getByRole('button',{name:'Save',exact:true}).click();
+   assert.match(await at('identity').innerText(),/Avery Test.*Period 2/s);
    await p.locator('[data-station="skull"]').click();
    await p.getByRole('button',{name:'Enlarge specimen: Polar bear'}).click();
    assert(await p.locator('.ba-specimen[data-zoom="true"]').isVisible());
@@ -47,7 +53,14 @@ async function run(){
    assert.match(await p.locator('output').first().innerText(),/89 mm.*Move left/);
    await cal.evaluate(n=>{n.value=51;n.dispatchEvent(new Event('input',{bubbles:true}));});
    assert.match(await p.locator('output').first().innerText(),/51 mm.*At the illustrated tip/);
+   const cb=await cal.boundingBox();await cal.click({position:{x:8,y:cb.height/2}});
+   assert.equal(await cal.inputValue(),'51');
+   await p.mouse.move(cb.x+cb.width*.52,cb.y+cb.height/2);await p.mouse.down();await p.mouse.move(cb.x+cb.width*.75,cb.y+cb.height/2,{steps:5});await p.mouse.up();
+   assert(Number(await cal.inputValue())>60,'drag advances from the existing reading');
    await at('note').fill('The model brown claw reaches farther.');
+   await at('hypotheses').getByText('Polar + Brown').click();
+   await at('lock').click();
+   await at('edit-guess').click();
    await at('hypotheses').getByText('Brown + Black').click();
    await at('lock').click();
    await layout('traits');
@@ -56,10 +69,10 @@ async function run(){
    const tile=i=>p.locator('[data-base="'+i+'"]');
    await tile(0).focus();await tile(0).press('ArrowRight');assert(await tile(1).evaluate(n=>n===document.activeElement));
    await tile(1).press('Space');await at('check').click();
-   assert.match(await at('status').innerText(),/matching letters/);
+   assert.match(await at('dna-feedback').innerText(),/matching letters/);
    await tile(1).click();await at('check').click();
    await at('dna-pairs').getByText('Polar + Black').click();
-   await tile(3).click();await at('check').click();assert.match(await at('status').innerText(),/still unmarked/);
+   await tile(3).click();await at('check').click();assert.match(await at('dna-feedback').innerText(),/still unmarked/);
    await tile(65).click();await at('check').click();
    await at('dna-pairs').getByText('Brown + Black').click();
    await tile(3).click();await tile(65).click();await at('check').click();
@@ -70,24 +83,42 @@ async function run(){
     await at('full-a').selectOption('Brown_Bear');await at('full-b').selectOption('American_Black_Bear');
     assert.match(await at('full-stat').innerText(),/9 minimum single-base changes/);
     assert.equal(await at('full-a').locator('option').count(),8);
+    await p.getByText('Show how the full sequences line up',{exact:true}).click();
+    assert.match(await at('aligned').innerText(),/Columns 1–60/);
+    await at('full-a').selectOption('Giant_Panda_Bear');
+    await at('full-b').selectOption('Polar_Bear');
+    const blocks=(await at('aligned').innerText()).split('\n\n').map(b=>b.split('\n'));
+    const differences=blocks.reduce((n,b)=>n+[...b[2]].filter(x=>x==='×'||x==='+').length,0);
+    assert.equal(differences,273);
+    assert.match(await at('full-stat').innerText(),/273 minimum single-base changes/);
     const wait=p.waitForEvent('download');await at('fasta').click();const dl=await wait, fasta=fs.readFileSync(await dl.path(),'utf8');
     assert.equal(fasta.match(/^>/gm).length,8);assert.match(fasta,/>Polar_Bear\nGGCGAAGAA/);
    }
    await next('tree');
    const bear=k=>p.locator('[data-bear="'+k+'"]'), tip=i=>p.locator('[data-tip="'+i+'"]');
-   await at('tree-check').click();assert.match(await at('status').innerText(),/all three/);
+   await at('tree-check').click();assert.match(await at('tree-feedback').innerText(),/all three/);
    await bear('black').click();await tip(0).click();
    await bear('brown').click();await tip(1).click();
    await bear('polar').click();await tip(2).click();
-   await at('tree-check').click();assert.match(await at('status').innerText(),/fewest differences/);
+   await at('tree-check').click();assert.match(await at('tree-feedback').innerText(),/Brown \+ Black.*fewest differences/);
+   assert.equal(await tip(0).getAttribute('data-mismatch'),'true');
+   assert(await p.locator('[data-go=explain]').isDisabled());
    if(width===1366)await bear('polar').dragTo(tip(0));else{await bear('polar').click();await tip(0).click();}
    assert.match(await tip(2).innerText(),/American black bear/);
-   await at('tree-check').click();assert.match(await at('status').innerText(),/Tree checked/);
+   await at('tree-check').click();assert.match(await at('tree-feedback').innerText(),/Tree checked/);
    await layout('tree');
    await next('explain');
    assert.match(await at('recap').innerText(),/Brown \+ Black.*Polar bear skull.*Claws/s);
    await at('conclusion').fill('Polar and brown shared the newer branch point. They differed at zero of 72 positions.');
    await at('revise').fill('I revised my first guess because the skull alone cannot tell which pair split last.');
+   await p.locator('[data-step=dna]').click();
+   await at('dna-pairs').getByText('Polar + Brown').click();
+   await tile(1).click();await at('check').click();
+   assert.match(await at('dna-feedback').innerText(),/earlier correct result and progress are still saved/);
+   assert.match(await at('progress').innerText(),/4 of 4/);
+   await p.reload();
+   assert(await p.locator('[data-step=explain]').isEnabled());
+   await p.locator('[data-step=explain]').click();
    const id=await p.evaluate(()=>JSON.parse(localStorage.getItem('aplab:openscied:b5-ancestry:v1')).id);
    await p.reload();assert.equal(await at('revise').inputValue(),'I revised my first guess because the skull alone cannot tell which pair split last.');
    assert.match(await at('progress').innerText(),/4 of 4/);
@@ -95,6 +126,10 @@ async function run(){
    const report=await p.getByRole('dialog').filter({hasText:'Bear Ancestry Lab'}).innerText();
    assert.match(report,new RegExp('BA-'+id));assert.match(report,/zero of 72.*revised my first guess/s);
    assert.match(report,/The model brown claw reaches farther/);
+   assert.match(report,/Avery Test.*Class period.*2/s);
+   assert.match(report,/MAFFT alignment.*cannot date their split/s);
+   assert.match(report,/Giant panda.*Spectacled Bear/s);
+   if(width===1366)assert.match(report,/Giant panda \+ Polar Bear\s+273/);
    if(width===1366){
     await p.getByText('More formats',{exact:true}).click();
     const diagnostic=async()=>p.locator('dialog .osr-tools [role=status]').allTextContents();
@@ -109,6 +144,20 @@ async function run(){
     assert.equal(fs.readFileSync(await doc.path()).subarray(0,2).toString(),'PK');
    }
    await p.keyboard.press('Escape');await layout('explain');
+   await at('reset').click();
+   assert(await at('clear-work').isDisabled());
+   await at('keep-work').click();
+   assert.match(await at('progress').innerText(),/4 of 4/);
+   if(width===1366){
+    await p.evaluate(()=>localStorage.setItem('aplab:openscied:unrelated:v1','sibling survives'));
+    await at('reset').click();
+    await at('reset-confirm').fill('ERASE');
+    await Promise.all([p.waitForEvent('load'),at('clear-work').click()]);
+    assert(await visible('traits'));
+    assert.match(await at('progress').innerText(),/0 of 4/);
+    assert.match(await at('identity').innerText(),/Avery Test/);
+    assert.equal(await p.evaluate(()=>localStorage.getItem('aplab:openscied:unrelated:v1')),'sibling survives');
+   }
    assert.deepEqual(errs,[]);
    await c.close();console.log('Bear Ancestry '+width+'px: stations and caliper, real DNA, gated tree, persistence and report');
   }

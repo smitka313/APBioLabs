@@ -33,3 +33,11 @@
 .ba-shell footer{font-size:.82rem;padding:0 0 1rem}
 @media(max-width:760px){.ba-columns{grid-template-columns:minmax(0,1fr)}.ba-hero{background-position:75% center;min-height:200px}.ba-hero-copy{background:linear-gradient(90deg,#102e35 36%,#102e35c9 82%,transparent)}.ba-tree .ba-tip{inset-inline-start:59%;font-size:.79rem;padding:.25rem}.ba-full-seq{grid-template-columns:minmax(0,1fr)}}
 @media(prefers-reduced-motion:no-preference){.ba-tip[data-filled=true]{animation:ba-tip-in .21s ease-out}@keyframes ba-tip-in{from{opacity:.58;transform:translateY(-57%)}to{opacity:1;transform:translateY(-50%)}}}
+.ba-workspace{display:flex;align-items:flex-start;gap:.65rem 1rem;flex-wrap:wrap;justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:.45rem .75rem;background:var(--surface)}
+.ba-workspace #ba-identity{flex:1 1 280px;min-width:0}.ba-workspace .id-panel{margin:0}
+.ba-response:not(:empty){padding:.65rem .8rem;border:1px solid var(--line);border-inline-start:4px solid var(--accent);border-radius:8px;background:var(--surface-2);font-weight:650}
+.ba-tip[data-mismatch=true]{outline:3px dashed #ffd78a;outline-offset:-1px}.ba-tip[data-mismatch=true]::after{content:' · Check this pair'}
+.ba-alignment{margin:.5rem 0}.ba-alignment pre{overflow:auto;max-height:360px;line-height:1.2;font-size:.84rem;padding:.6rem;border:1px solid var(--line);border-radius:7px;color:var(--ink);background:var(--bg)}
+.ba-specimen input[type=range]{touch-action:none;cursor:ew-resize}
+#ba-reset-dialog{width:min(480px,calc(100% - 24px));max-height:calc(100% - 20px);background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:1rem}
+#ba-reset-dialog::backdrop{background:#061d25ba}#ba-reset-dialog label{display:block;font-weight:700}

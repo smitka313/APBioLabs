@@ -43,6 +43,7 @@
 <button type="button" class="btn" data-step="tree">3. Build a tree</button>
 <button type="button" class="btn" data-step="explain">4. Explain</button>
 </nav>
+<section class="ba-workspace" aria-label="Student workspace"><div id="ba-identity"></div><button type="button" class="btn" id="ba-reset" aria-haspopup="dialog" disabled>Start over…</button></section>
 <p class="ba-caption" id="ba-progress"></p>
 <div id="ba-status" class="ba-status" role="status"></div>
 <section class="ba-panel" id="traits" aria-labelledby="traits-title">
@@ -61,7 +62,7 @@
 <label id="ba-note-label" for="ba-note"></label><textarea id="ba-note" rows="3" maxlength="4000" placeholder="Record something you observed."></textarea>
 <p class="ba-caption" id="ba-note-count"></p>
 <fieldset><legend>Which pair is your first guess?</legend><div id="ba-hypotheses"></div></fieldset>
-<button type="button" class="btn btn--primary" id="ba-lock">Lock my first guess</button>
+<div class="ba-controls"><button type="button" class="btn btn--primary" id="ba-lock">Lock my first guess</button><button type="button" class="btn" id="ba-edit-guess" hidden>Edit first guess</button></div>
 <p class="ba-caption" id="ba-lock-hint">Save one observation and choose a pair. Your first guess does not have to be right.</p>
 </aside>
 </div>
@@ -77,12 +78,15 @@
 <div id="ba-seq" class="ba-seq" role="group" aria-labelledby="ba-dna-label"></div>
 <button type="button" class="btn btn--primary" id="ba-check">Check these positions</button>
 </div>
-<aside class="ba-card"><h3>Comparison log</h3><div id="ba-table"></div><p class="ba-caption">A match in this short stretch does not mean two bears have identical DNA. We are looking at one piece of one gene, not whole genomes.</p><p id="ba-first-guess"></p></aside>
+<aside class="ba-card"><h3>Comparison log</h3><div id="ba-table"></div><p id="ba-dna-feedback" class="ba-response" role="status"></p><p class="ba-caption">This dataset compares bears, not human ancestry. A match in this short stretch does not mean two bears have identical DNA. We are looking at one piece of one gene, not whole genomes.</p><p id="ba-first-guess"></p></aside>
 </div>
 <details class="ba-card ba-full"><summary>Explore the full eight-species dataset</summary>
 <p>Read all eight original sequences from the same noncoding region of the <em>transthyretin</em> gene. The full sequences differ in length; they need to be lined up with gap positions rather than compared letter-for-letter from the start.</p>
 <div class="ba-full-controls"><label>First bear <select id="ba-full-a"></select></label><label>Second bear <select id="ba-full-b"></select></label></div>
-<div id="ba-full-stat" class="ba-callout"></div><div id="ba-full-seq" class="ba-full-seq"></div><div class="ba-controls ba-data-actions"><button type="button" class="btn" id="ba-fasta">Download all 8 sequences (FASTA)</button><a href="https://www.ebi.ac.uk/jdispatcher/msa/mafft">Optional: align all 8 in MAFFT</a></div>
+<div id="ba-full-stat" class="ba-callout"></div>
+<details class="ba-alignment"><summary>Show how the full sequences line up</summary>
+<p class="ba-caption">| = matching bases · × = changed base · + = gap (a base is present in only one row). Positions here number aligned columns, not the ungapped source.</p><div id="ba-aligned"></div></details>
+<div id="ba-full-seq" class="ba-full-seq"></div><div class="ba-controls ba-data-actions"><button type="button" class="btn" id="ba-fasta">Download all 8 sequences (FASTA)</button><a href="https://www.ebi.ac.uk/jdispatcher/msa/mafft">Optional: align all 8 in MAFFT</a></div>
 <p class="ba-caption">The full comparison uses the fewest single-letter substitutions, insertions, or deletions to turn one sequence into the other. It is a simplified pair comparison, not the eight-species MAFFT tree used in the original lesson. The two methods can give different results: in the full raw data, this simple count ties for polar–brown and brown–American black. A tree-building analysis lines up all eight sequences and considers the pattern across species.</p>
 </details>
 <button type="button" class="btn btn--primary" data-go="tree">Next: Build a tree</button>
@@ -101,6 +105,7 @@
 <button type="button" class="btn ba-tip" data-tip="2">Tip 3 · empty</button>
 </div>
 <div class="ba-controls"><button type="button" class="btn btn--primary" id="ba-tree-check">Check my tree</button><button type="button" class="btn" id="ba-clear-tree">Clear the tips</button></div>
+<p class="ba-response" id="ba-tree-feedback" role="status"></p>
 </div>
 <aside class="ba-card"><h3>DNA evidence from your log</h3><div id="ba-tree-table"></div><p class="ba-caption">Follow where the branches join, not how close their labels look. Branch lengths here don’t represent years or amount of DNA change.</p></aside>
 </div>
@@ -118,10 +123,15 @@
 <aside class="ba-card"><h3>Your evidence so far</h3><div id="ba-recap"></div><div id="ba-explain-table"></div><p class="ba-caption">The original lesson’s eight-species alignment also groups polar and brown bears together. This three-tip model cannot date their split or predict what happens as the Arctic changes.</p></aside>
 </div>
 </section>
+<dialog id="ba-reset-dialog" aria-labelledby="ba-reset-title"><form id="ba-reset-form">
+<h2 id="ba-reset-title">Start over in Bear Ancestry?</h2><p>This clears this activity’s notebook, comparisons, tree, and answers in this browser. Save a report first if you want to keep a copy. Other activities and your saved name stay unchanged.</p>
+<label for="ba-reset-confirm">Type ERASE to confirm</label><input id="ba-reset-confirm" type="text" autocomplete="off" spellcheck="false" autofocus>
+<p id="ba-reset-feedback" role="status"></p><div class="ba-controls"><button class="btn" type="button" id="ba-keep-work">Keep working</button><button class="btn btn--danger" id="ba-clear-work" type="submit" disabled>Erase this activity</button></div>
+</form></dialog>
 <p class="ba-caption" id="ba-save">Your work stays in this browser. Use the report to keep a copy.</p>
 <details class="ba-sources"><summary>Sources and model limits</summary>
 <p>Adapted from <a href="https://openscied.org/instructional-materials/b-5-common-ancestry-speciation/">OpenSciEd B.5 Lesson 3</a>. Original eight-species DNA sequences are included. The digital bench uses original specimen illustrations, a short guided window, and a simplified three-tip tree rather than an external analysis service. Claw measurements are of illustrated examples, not field measurements or species averages.</p>
-<p>Illustration references: <a href="https://www.nps.gov/articles/bear-identification.htm">National Park Service bear identification</a>, <a href="https://www.fws.gov/story/drilling-down-bear-dentition">U.S. Fish &amp; Wildlife Service bear dentition</a>, and <a href="https://publications.gc.ca/collections/collection_2019/eccc/CW69-14-351-2019-eng.pdf">Canada’s polar bear status report</a>.</p>
+<p>Illustration references: <a href="https://www.nps.gov/articles/bear-identification.htm">National Park Service bear identification</a>, <a href="https://www.fws.gov/story/drilling-down-bear-dentition">U.S. Fish &amp; Wildlife Service bear dentition</a>, <a href="https://www.adfg.alaska.gov/static/home/library/pdfs/wildlife/research_pdfs/identifying_bear_cubs_staff_guide_5_1_24.pdf">Alaska Fish and Game skull and molar guide</a>, and <a href="https://publications.gc.ca/collections/collection_2019/eccc/CW69-14-351-2019-eng.pdf">Canada’s polar bear status report</a>.</p>
 </details>
 <footer>Created by Robert Smitka. <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">Site license: CC BY-NC-SA 4.0</a>. Adapted from <a href="https://www.openscied.org/">OpenSciEd</a> materials (<a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>); not affiliated with or endorsed by OpenSciEd. Student work and identity stay in this browser unless the student chooses to print or download.</footer>
 </main>
