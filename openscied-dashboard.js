@@ -370,7 +370,7 @@
     return { started, section: INH_SECTIONS.includes(saved.lastSection) ? saved.lastSection : fallback,
       visited: Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
       stepsDone:models,stepsTotal:6,stepsLabel:'Interactive models used',
-      summary: started ? models + ' of 6 interactive models used · ' + answers + ' of ' + ids.length + ' choices and written responses saved' : 'Not started' };
+      summary: started ? models + ' of 6 interactive models used · ' + answers + ' of ' + ids.length + ' answers saved (choices and writing)' : 'Not started' };
   }
   // Fires: Peat, Decomposition & Earth's Tilt (Unit B.2, Lessons 3 and 5): the activity saves the ids of every response; three scenes may save state.
   const B2_SECTIONS = ['overview', 'ideas', 'plan', 'yeast', 'cards', 'sense3', 'hypothesis', 'tilt', 'sense5', 'peat', 'wrapup'];

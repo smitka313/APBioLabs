@@ -126,9 +126,10 @@
         });
         const signature=data.some(Boolean) ? fingerprint(JSON.stringify(data)) : '';
         const previous=safeDate(old.changed,now);
-        const changed=signature ? old.signature===signature ? previous :
-          mode==='exit' && old.signature!==undefined ? Math.max(stamp,previous,now) : stamp : 0;
         const opened=mode==='open' ? now : safeDate(old.opened,now);
+        const changed=signature ? old.signature===signature ? previous :
+          (mode==='save'||mode==='exit') && old.signature!==undefined ? Math.max(stamp,previous,now) :
+          stamp || (old.signature==='' ? opened : 0) : 0;
         const next={signature,changed,opened,epoch};
         // Cards only read metadata: visiting or refreshing the dashboard cannot
         // turn an older observation into a new save or wake another dashboard up.
@@ -149,6 +150,7 @@
   if(!scope)return; // The dashboard calls snapshot for each card directly.
   let tracker;
   try { tracker=connect(root.localStorage,Date.now,{scope}); } catch (_) { return; }
+  root.OpenSciEdResume.recordSave=()=>tracker.snapshot(path,'save');
   const open=()=>tracker.snapshot(path,'open');
   const exit=()=>tracker.snapshot(path,'exit');
   open();

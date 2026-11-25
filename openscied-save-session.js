@@ -129,6 +129,9 @@
         storage.setItem(key, raw);
         state(key).raw = raw;
         clearWarning(key);
+        // Fresh evidence is observable even if the editor has not left the page.
+        // Resume bookkeeping failure must not demote a successful saved activity.
+        try { globalThis.OpenSciEdResume?.recordSave?.(); } catch (_) {}
         return success();
       } catch (_) { warn(key, 'unavailable'); return unavailable(); }
     }
