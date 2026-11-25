@@ -15,9 +15,14 @@ const T=require('./_h'),assert=require('node:assert/strict'),fs=require('node:fs
      assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),width+' '+k+' layout');
      const logo=p.locator('.bench-logo img:visible');assert.equal(await logo.count(),1);
      assert(await logo.evaluate(img=>img.decode().then(()=>img.naturalWidth>0)));
+     const brand=await logo.boundingBox();
+     const heading=await p.getByRole('heading',{level:1}).boundingBox();
+     const min=k==='welcome'?(width>=1366?380:200):(width>=1366?235:160);
+     assert(brand.width>=min && brand.y+brand.height<=heading.y,
+       width+' '+k+' logo and wordmark lead the page');
      if(shots)await p.screenshot({path:path.join(shots,width+'-'+k+'.png'),fullPage:k==='welcome',animations:'disabled'});
     };
-    assert.match(await p.getByRole('heading',{level:1}).textContent(),/Choose your lab bench/);
+    assert.match(await p.getByRole('heading',{level:1}).textContent(),/Choose your course/);
     assert.equal(await p.locator('.bench-choice').count(),2);assert.equal(await p.locator('.bench-choice-art').count(),2);
     const guides=await p.locator('.bench-guide').evaluateAll(l=>l.map(a=>a.getAttribute('href')));
     assert.deepEqual(guides,['teachers.html','openscied-teacher-guide.html']);
@@ -33,6 +38,12 @@ const T=require('./_h'),assert=require('node:assert/strict'),fs=require('node:fs
     assert.equal(await p.evaluate(()=>document.documentElement.dataset.theme),theme.toLowerCase());
     await p.getByRole('link',{name:'OpenSciEd',exact:true}).click();await p.waitForURL('**/openscied-dashboard.html');
     assert.equal(await p.locator('.dashboard-unit.current').count(),5);
+    const atlas=p.locator('.dashboard-hero-art');
+    assert.equal(await atlas.getAttribute('src'),'assets/bench-field-atlas.svg');
+    assert(await atlas.evaluate(async img=>{
+      await img.decode();
+      return img.width/img.height>=5 && img.height<220;
+    }),'OpenSciEd uses the compact field-guide plate instead of the full-height panorama');
     await layout('openscied');assert.equal(await p.evaluate(()=>document.documentElement.dataset.theme),theme.toLowerCase());
     await p.getByRole('link',{name:'Biology Lab Bench home'}).click();await p.waitForURL('**/index.html');
     const ose=p.getByRole('link',{name:/Explore OpenSciEd activities/});await ose.click();await p.waitForURL('**/openscied-dashboard.html');

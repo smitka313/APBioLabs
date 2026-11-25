@@ -9,6 +9,8 @@ on:
       - 'openscied-dashboard.html'
       - 'assets/biology-lab-bench-logo*.svg'
       - 'assets/bench-welcome-ap.svg'
+      - 'assets/bench-field-atlas.svg'
+      - 'openscied-dashboard.css'
       - 'tests/bench-course-entry-browser.js'
       - '.github/workflows/bench-course-entry.yml'
   workflow_dispatch:
