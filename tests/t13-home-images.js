@@ -7,7 +7,7 @@ const T = require('./_h');
     const ctx = await T.ctxFor(b, { width: w, height: h });
     const p = await ctx.newPage(); p.errors = [];
     p.on('pageerror', e => p.errors.push(e.message));
-    await p.goto('file://' + T.ROOT + '/index.html', { waitUntil: 'load' });
+    await p.goto('file://' + T.ROOT + '/ap-biology.html', { waitUntil: 'load' });
     await p.waitForTimeout(700);   // no scrolling at all
     const r = await p.evaluate(() => Array.from(document.querySelectorAll('img.thumb')).map(i => {
       const rc = i.getBoundingClientRect();

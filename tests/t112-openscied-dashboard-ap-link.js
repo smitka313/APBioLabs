@@ -11,9 +11,10 @@ const T = require('./_h');
         const p = await ctx.newPage();
         await p.route(/gc\.zgo\.at|fonts\./, r => r.fulfill({ status: 200, body: '' }));
         await p.goto(server.url + 'openscied-dashboard.html');
-        const back = p.locator('.dashboard-masthead a.dashboard-brand');
+        const back = p.locator('.dashboard-masthead a.bench-cross-route');
         await back.waitFor();
         await p.locator('.skip-link').focus();
+        await p.keyboard.press('Tab');
         await p.keyboard.press('Tab');
         const m = await back.evaluate(link => {
           const card = document.querySelector('.dashboard-aplink'), btn = card?.querySelector('a.btn--primary');
@@ -36,10 +37,10 @@ const T = require('./_h');
             heading:!!card?.querySelector('h2'), over:document.documentElement.scrollWidth-document.documentElement.clientWidth
           };
         });
-        T.ok(m.backHref === 'index.html' && m.backH >= 38 && m.contrast >= 4.5 && m.backInView,
+        T.ok(m.backHref === 'ap-biology.html' && m.backH >= 38 && m.contrast >= 4.5 && m.backInView,
           width + ' px: filled AP return is visible in the masthead (' + Math.round(m.backH) + ' px, ' + m.contrast.toFixed(2) + ':1 contrast)');
         T.ok(m.focused && m.beforeWorkspace, width + ' px: Tab reaches the AP return before the student workspace');
-        T.ok(m.cardHref === 'index.html' && /AP Bio/.test(m.cardText) && /13/.test(m.cardText) && m.heading && m.btnH >= 40 && m.belowActivities,
+        T.ok(m.cardHref === 'ap-biology.html' && /AP Bio/.test(m.cardText) && /13/.test(m.cardText) && m.heading && m.btnH >= 40 && m.belowActivities,
           width + ' px: below the activity grid, a dedicated card explains there are 13 AP labs and links to them');
         T.ok(m.over <= 0, width + ' px: no sideways scroll');
       } finally { await ctx.close(); }

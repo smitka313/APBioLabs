@@ -1,4 +1,4 @@
-/* Lab-bench scene on index.html: finished equipment is always visible, progress stays accurate, text remains readable, and phones crop gracefully.
+/* Lab-bench scene on ap-biology.html: finished equipment is always visible, progress stays accurate, text remains readable, and phones crop gracefully.
    Run: NODE_PATH=$(npm root -g) node tests/t46-bench-banner.js  (OUT=dir keeps screenshots) */
 const T = require('./_h');
 const OUT = process.env.OUT || '';
@@ -13,7 +13,7 @@ const item = (p, id) => p.evaluate(id => LabBench.items().find(i => i.id === id)
 (async () => {
   const srv = await T.serve(), b = await T.launch();
   let ctx = await T.ctxFor(b);
-  let p = await T.open(ctx, 'index.html', '', srv.url);
+  let p = await T.open(ctx, 'ap-biology.html', '', srv.url);
 
   console.log('Scene draws');
   const base = await p.evaluate(() => { const c = document.getElementById('bench-scene'); const r = c.getBoundingClientRect(); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let nz = 0, lum = 0; for (let i = 0; i < d.length; i += 40) { nz++; lum += d[i] + d[i + 1] + d[i + 2]; } return { w: r.width, h: r.height, avg: lum / nz / 3, ids: LabBench.items().map(i => i.id), label: c.getAttribute('aria-label') }; });
@@ -37,7 +37,7 @@ const item = (p, id) => p.evaluate(id => LabBench.items().find(i => i.id === id)
   for (const [id, labs] of cases) {
     const c2 = await T.ctxFor(b);
     await c2.addInitScript(arr => { arr.forEach(([k, v]) => { if (!localStorage.getItem('__bench_done')) localStorage.setItem(k, v); }); localStorage.setItem('__bench_done', '1'); }, labs.map(prog));
-    const q = await T.open(c2, 'index.html', '', srv.url);
+    const q = await T.open(c2, 'ap-biology.html', '', srv.url);
     const it = await item(q, id);
     T.ok(it.level === it.labs.length && JSON.stringify(await q.evaluate(() => LabBench.completed())) === JSON.stringify(labs), `${id}: icon stays finished while saved completion remains ${labs.join(', ')}`);
     for (const obj of await q.evaluate(() => LabBench.items())) {
@@ -52,7 +52,7 @@ const item = (p, id) => p.evaluate(id => LabBench.items().find(i => i.id === id)
   { // everything done
     const c2 = await T.ctxFor(b);
     await c2.addInitScript(arr => { if (!localStorage.getItem('__bench_done')) { arr.forEach(([k, v]) => localStorage.setItem(k, v)); localStorage.setItem('__bench_done', '1'); } }, ALL.map(prog));
-    const q = await T.open(c2, 'index.html', '', srv.url);
+    const q = await T.open(c2, 'ap-biology.html', '', srv.url);
     T.ok((await q.evaluate(() => LabBench.items())).every(i => i.level === i.labs.length), 'all objects retain their finished appearance when all labs are complete');
     T.ok(await q.evaluate(() => LabBench.completed().length) === 13, 'saved completion is still reported accurately');
     T.ok(await q.locator('#bench-note').count() === 0, 'the redundant note stays absent when all labs are complete');
@@ -77,7 +77,7 @@ const item = (p, id) => p.evaluate(id => LabBench.items().find(i => i.id === id)
   });
   for (const dark of [false, true]) {
     const c2 = await T.ctxFor(b, { dark });
-    const q = await T.open(c2, 'index.html', '', srv.url);
+    const q = await T.open(c2, 'ap-biology.html', '', srv.url);
     const cr = await contrast(q);
     T.ok(Object.values(cr).every(v => v >= 4.5), `${dark ? 'dark' : 'light'}: text vs. the brightest bench pixel behind it: ` + JSON.stringify(cr));
     T.ok(await q.evaluate(() => { const s = document.querySelector('.hero .home-status'); const bg = getComputedStyle(s).backgroundColor; return !/rgba\(0, 0, 0, 0\)/.test(bg); }), 'the sign-in panel has its own surface');
@@ -86,7 +86,7 @@ const item = (p, id) => p.evaluate(id => LabBench.items().find(i => i.id === id)
   { // pick-up card on top
     const c2 = await T.ctxFor(b, { dark: true });
     await c2.addInitScript(() => { if (!localStorage.getItem('__s')) { localStorage.setItem('aplab:last', JSON.stringify({ lab: 'lab05', step: 'float-assay', name: 'Float assay', title: 'Lab 5 · Photosynthesis', t: Date.now() })); localStorage.setItem('__s', '1'); } });
-    const q = await T.open(c2, 'index.html', '', srv.url);
+    const q = await T.open(c2, 'ap-biology.html', '', srv.url);
     T.ok(await q.locator('#resume').isVisible(), '"Pick up where you left off" shows over the bench');
     T.ok(await q.evaluate(() => { const r = document.querySelector('#resume').getBoundingClientRect(), it = LabBench.items(); return it.every(i => r.top >= i.y1 - 4 || r.left > i.x1 || r.right < i.x0); }), 'and does not sit on the equipment');
     if (OUT) await q.locator('.hero').screenshot({ path: OUT + '/t46-banner-pickup-dark.png' });
@@ -96,7 +96,7 @@ const item = (p, id) => p.evaluate(id => LabBench.items().find(i => i.id === id)
   console.log('Phone');
   for (const dark of [false, true]) {
     const c2 = await T.ctxFor(b, { width: 400, height: 800, dark });
-    const q = await T.open(c2, 'index.html', '', srv.url);
+    const q = await T.open(c2, 'ap-biology.html', '', srv.url);
     const info = await q.evaluate(() => ({ over: document.documentElement.scrollWidth - innerWidth, items: LabBench.items().map(i => [i.id, Math.round(i.x0), Math.round(i.x1), i.level]), w: innerWidth }));
     T.ok(info.over <= 0, 'no sideways scroll at 400 px');
     T.ok(info.items.length >= 4 && info.items.every(([, a, z]) => a >= 0 && z <= info.w), 'the scene scales: ' + info.items.length + ' objects, all inside the screen');
@@ -106,9 +106,9 @@ const item = (p, id) => p.evaluate(id => LabBench.items().find(i => i.id === id)
   }
 
   console.log('Reduced motion');
-  { const c2 = await T.ctxFor(b, { reduced: true }); const q = await T.open(c2, 'index.html', '', srv.url);
+  { const c2 = await T.ctxFor(b, { reduced: true }); const q = await T.open(c2, 'ap-biology.html', '', srv.url);
     T.ok(await q.evaluate(() => getComputedStyle(document.querySelector('.bench-sheen')).display) === 'none', 'the faint sheen is off'); await c2.close(); }
-  { const c2 = await T.ctxFor(b); const q = await T.open(c2, 'index.html', '', srv.url);
+  { const c2 = await T.ctxFor(b); const q = await T.open(c2, 'ap-biology.html', '', srv.url);
     T.ok(await q.evaluate(() => getComputedStyle(document.querySelector('.bench-sheen'), '::before').animationName) === 'bench-sheen', 'otherwise a very faint sheen drifts'); await c2.close(); }
 
   await b.close(); srv.close();

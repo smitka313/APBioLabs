@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parent.parent
 ORIGIN = 'https://biologylabbench.com'
-PUBLIC = ['index.html', 'teachers.html', 'getting-started.html', 'student-directions.html',
+PUBLIC = ['index.html', 'ap-biology.html', 'teachers.html', 'getting-started.html', 'student-directions.html',
           'openscied-teacher-guide.html', 'openscied-b4-hawksbeard.html', 'openscied-b4-rat-generations.html', 'openscied-b4-junco.html', 'openscied-b4-wildlife-corridor.html', 'openscied-b1-ripple.html', 'openscied-b3-screening.html', 'openscied-b5-wapusk.html', 'openscied-b5-thermoregulation.html', 'openscied-b5-ancestry.html', 'openscied-b5-speciation.html', 'openscied-b5-hybrid.html']
 PUBLIC += ['openscied-b3-cancer-rates.html', 'openscied-b3-cell-cycle.html', 'openscied-b3-dna-workshop.html', 'openscied-b3-dna-p53.html', 'openscied-b3-inheritance-environment.html', 'openscied-b2-fires.html', 'openscied-b2-peat-bog-lab.html', 'openscied-b2-burn-lab.html', 'openscied-b2-carbon-journey.html']
 PUBLIC += [f'{prefix}lab{i:02}.html' for prefix in ['', 'directions-'] for i in range(1, 14)]
@@ -142,8 +142,8 @@ class SearchContracts(unittest.TestCase):
         # A build timestamp would falsely imply all lessons changed on every rebuild.
         self.assertIsNone(doc.find('.//{http://www.sitemaps.org/schemas/sitemap/0.9}lastmod'))
 
-    def test_home_cards_are_real_html_with_progress_hooks_and_reserved_images(self):
-        p = Page('index.html')
+    def test_ap_directory_cards_are_real_html_with_progress_hooks_and_reserved_images(self):
+        p = Page('ap-biology.html')
         self.assertEqual(p.cards, [f'lab{i:02}.html' for i in range(1, 14)])
         self.assertEqual(p.progress, [f'lab{i:02}' for i in range(1, 14)])
         self.assertEqual(len(p.images), 13)
@@ -153,8 +153,8 @@ class SearchContracts(unittest.TestCase):
             self.assertTrue(image['alt'])
             if i <= 6:
                 self.assertNotEqual(image.get('loading'), 'lazy')
-        self.assertNotIn("document.getElementById('labs').innerHTML", (ROOT / 'index.html').read_text())
-        for name, prefix in [('index.html', ''), ('student-directions.html', 'directions-')]:
+        self.assertNotIn("document.getElementById('labs').innerHTML", (ROOT / 'ap-biology.html').read_text())
+        for name, prefix in [('ap-biology.html', ''), ('student-directions.html', 'directions-')]:
             graph = Page(name).graphs[0]['@graph']
             listing = next(n for n in graph if n['@type'] == 'ItemList')
             self.assertEqual(listing['numberOfItems'], 13)

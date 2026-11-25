@@ -13,7 +13,7 @@
   let LAB_ID = 'lab';
 
   /* ---------------- Page context ----------------
-     Detected from the filename (lab07.html → lab07, teacher-lab07.html → teacher page, index.html → home),
+     Detected from the filename (lab07.html → lab07, teacher-lab07.html → teacher page, ap-biology.html → lab directory),
      with the <title> as a fallback for hosts that rename files. */
   const FILE = (function () { try { return decodeURIComponent((location.pathname || '').split('/').pop() || '').toLowerCase(); } catch (e) { return ''; } })();
   const PAGE = (function () {
@@ -1308,7 +1308,7 @@
     memIdentity = lastStoredIdentity = lastEffectiveIdentity = null; memBackup = null;
     sessionSet(FLASH_KEY, 'signout');
     /* From a lab page go to the home page: reloading the lab would record a fresh "last visited" for nobody. */
-    if (IS_LAB) location.assign('index.html'); else location.reload();
+    if (IS_LAB) location.assign('ap-biology.html'); else location.reload();
   }
   function doStartOverAll(status) {
     const idn = storedIdentity();
@@ -2766,7 +2766,7 @@
           IS_LAB ? h('button', { class: 'linkbtn pager-pause', type: 'button', 'aria-haspopup': 'dialog', onclick: ev => Lab.pause({ opener: ev.currentTarget }) }, 'Pause & bookmark') : null,
           h('span', { class: 'pager-tip' }, 'Tip: use ← → to move between parts')),
         next ? h('a', { class: 'btn btn--primary pager-next', href: '#' + next.id, rel: 'next' }, h('span', null, 'Next', h('span', { class: 'pager-name' }, ': ' + partName(next, i + 1))), h('span', { 'aria-hidden': 'true' }, '→'))
-          : h('a', { class: 'btn pager-next', href: 'index.html' }, h('span', null, 'All labs'), h('span', { 'aria-hidden': 'true' }, '→'))));
+          : h('a', { class: 'btn pager-next', href: 'ap-biology.html' }, h('span', null, 'All labs'), h('span', { 'aria-hidden': 'true' }, '→'))));
     });
     // Page scripts run after Lab.init; keep each pager last in its part.
     window.addEventListener('load', () => steps.forEach(s => { const p = $(':scope > .pager', s); if (p && p !== s.lastElementChild) s.append(p); }));
@@ -2898,7 +2898,7 @@
     last: () => gstore.get('last'),
   };
 
-  /* Home page (index.html): identity line, per-lab progress on [data-lab-progress] elements, resume link. */
+  /* AP directory (ap-biology.html): identity line, per-lab progress on [data-lab-progress] elements, resume link. */
   Lab.home = function (o = {}) {
     setTimeout(startOnboarding, 0);
     handleResumeHash();
@@ -3792,12 +3792,12 @@
   Lab.color = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#888';
 
   /* ---------------- Theme switch: Light / Dark / Auto ----------------
-     The choice lives in localStorage 'aplab:pref:theme' ('light' | 'dark'; absent = Auto, follow the computer). It is a
+     The choice lives in localStorage 'aplab:pref:theme' ('light' | 'dark' | 'auto'). The course entrances set Dark on the first visit; an explicit Auto follows the computer. It is a
      preference, not personal data, so Sign out and Start over keep it. Every page's <head> sets data-theme from it before first paint:
      <script>try{var t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
      Lab.theme.get() gives 'light'|'dark'|'auto'; Lab.theme.set(mode); window event 'aplab:theme' fires after a change (token-driven canvases redraw). */
   const THEME_KEY = 'aplab:pref:theme';
-  let memTheme = 'auto';
+  let memTheme = document.documentElement?.dataset?.theme || 'auto';
   const themeGet = () => { try { const t = localStorage.getItem(THEME_KEY); return t === 'light' || t === 'dark' ? t : 'auto'; } catch (e) { return memTheme; } };
   function themeApply() {
     const m = themeGet(), root = document.documentElement;
@@ -3814,7 +3814,7 @@
   }
   function themeSet(m) {
     memTheme = m;
-    try { if (m === 'light' || m === 'dark') localStorage.setItem(THEME_KEY, m); else localStorage.removeItem(THEME_KEY); } catch (e) { /* blocked: this page only */ }
+    try { localStorage.setItem(THEME_KEY, m === 'light' || m === 'dark' ? m : 'auto'); } catch (e) { /* blocked: this page only */ }
     themeApply();
   }
   Lab.theme = { get: themeGet, set: themeSet };

@@ -11,7 +11,7 @@
   --h-link: #c4f5e3;
   position: relative;
   isolation: isolate;
-  background: #1b2024;
+  background: linear-gradient(140deg,#152e29,#1b2525 76%);
   color: var(--h-ink);
   border-bottom: 1px solid #0a0c0e;
 }
@@ -70,43 +70,25 @@
 .dashboard-theme-controls .theme-opt { min-width: 0; min-height: 0; padding-inline: .2em; }
 .dashboard-panorama {
   position: relative;
-  max-width: 1320px;
-  margin: 0 auto;
-  height: clamp(130px,24vw,285px);
+  width: min(1088px, calc(100% - 32px));
+  margin: clamp(.65rem,1.35vw,1.1rem) auto 0;
   overflow: hidden;
-  background: #172f37;
-}
-.dashboard-panorama::after {
-  position: absolute;
-  inset: 0;
-  content: "";
-  background: linear-gradient(0deg,#1b2024 0%,#1b202400 28%);
-  pointer-events: none;
+  border: 1px solid #426456;
+  border-radius: 12px;
+  background: #223b31;
 }
 .dashboard-hero-art {
   display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
   max-width: none;
-  object-fit: cover;
-  object-position: center 30%;
-}
-.dashboard-hero-caption {
-  position: absolute;
-  z-index: 1;
-  inset: auto max(16px, calc((100% - 1088px)/2)) .8rem auto;
-  color: var(--h-ink);
-  background: #152222d9;
-  border-radius: 4px;
-  padding: .16rem .4rem;
-  font-size: .69rem;
 }
 .dashboard-hero-grid {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0,1.05fr) minmax(0,.95fr);
   align-items: start;
-  padding: .38rem 0 1.1rem;
+  padding: clamp(.9rem,2vw,1.6rem) 0 1.1rem;
   gap: 1.05rem clamp(1.1rem,4vw,2.6rem);
 }
 .dashboard-hero-copy { min-width: 0; }
@@ -318,15 +300,12 @@ time.dashboard-last-opened:not([hidden]) { display: block; margin: .22rem 0 .45r
 }
 @media (max-width: 760px) {
   .dashboard-hero-grid { grid-template-columns: minmax(0,1fr); }
-  .dashboard-hero-caption { display: none; }
 }
 @media (max-width: 580px) {
   .dashboard-topbar { min-height: 47px; }
   .dashboard-nav { gap: 0 .72rem; }
   .dashboard-nav a { font-size: .79rem; min-height: 38px; }
-  .dashboard-panorama { height: auto; aspect-ratio: 2048/682; }
-  .dashboard-hero-art { object-fit: contain; }
-  .dashboard-hero-grid { padding-block: .16rem 1rem; gap: .64rem; }
+  .dashboard-hero-grid { padding-block: .85rem 1rem; gap: .64rem; }
   .dashboard-hero-copy .dashboard-title { font-size: clamp(1.85rem,7.5vw,2.45rem); }
   .dashboard-hero-copy .dashboard-intro { font-size: .91rem; }
   .dashboard-browse.btn { margin-block-start: .48rem; }

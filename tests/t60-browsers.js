@@ -14,7 +14,7 @@ const fs = require('fs'), os = require('os'), path = require('path'), { execFile
 const parts = process.argv.slice(2), want = n => !parts.length || parts.includes(n);
 const ENGINE = T.BROWSER;
 const withTimeout = (pr, ms, what) => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error(what + ': timed out after ' + ms / 1000 + ' s')), ms))]);
-const PAGES = ['index.html', 'teachers.html', 'teacher-dashboard.html', 'projector.html', ...T.LABS.map(l => l + '.html')];
+const PAGES = ['ap-biology.html', 'teachers.html', 'teacher-dashboard.html', 'projector.html', ...T.LABS.map(l => l + '.html')];
 
 (async () => {
   console.log(`Engine: ${ENGINE}`);

@@ -34,7 +34,7 @@ const OUT = process.env.OUT || require('os').tmpdir();
 
   // ---- home ----
   const ctx2 = await T.ctxFor(b);
-  let h = await T.open(ctx2, 'index.html');
+  let h = await T.open(ctx2, 'ap-biology.html');
   T.ok(await h.evaluate(() => document.getElementById('resume').hidden), 'new visitor: no pick-up card');
   await h.screenshot({ path: OUT + '/home-new.png' });
   await h.close();
@@ -43,7 +43,7 @@ const OUT = process.env.OUT || require('os').tmpdir();
   const hint = await lp.evaluate(() => { const e = document.querySelector('section.step.is-current .steps-next'); return e && e.textContent; });
   T.ok(!!hint, 'part has a Next hint: ' + hint);
   await lp.close();
-  h = await T.open(ctx2, 'index.html');
+  h = await T.open(ctx2, 'ap-biology.html');
   const card = await h.evaluate(() => { const e = document.getElementById('resume'); const a = e.querySelector('a.resume-link'); return { hidden: e.hidden, text: e.innerText, first: !!e.closest('.hero-actions') && e.parentElement.firstElementChild === e, href: a && a.getAttribute('href') }; });
   console.log(card.text.replace(/\n+/g, ' | '));
   T.ok(!card.hidden && card.first, 'card visible and first in hero');

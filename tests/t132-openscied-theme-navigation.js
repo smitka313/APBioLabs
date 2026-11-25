@@ -42,6 +42,10 @@ async function hop(browser, base, os, mode, cleanRoute) {
   try {
     const page = await context.newPage();
     await page.goto(base + DASHBOARD);
+    await themeState(page,'dark');
+    ok(await page.evaluate(key=>localStorage.getItem(key),KEY)==='dark',
+      'the fresh dashboard starts in Dark before a choice is made');
+    await control(page,'auto').click();
     await themeState(page,'auto');
     const switcher = control(page,mode);
     await switcher.click();
@@ -90,16 +94,16 @@ async function hop(browser, base, os, mode, cleanRoute) {
 
     await control(page,'auto').click();
     await themeState(page,'auto');
-    ok(await page.evaluate(key=>localStorage.getItem(key),KEY)===null &&
+    ok(await page.evaluate(key=>localStorage.getItem(key),KEY)==='auto' &&
       await page.evaluate(()=>getComputedStyle(document.documentElement).colorScheme.includes('dark'))===(os==='dark'),
-      'Auto removes the override and tracks the system appearance');
+      'Auto tracks the system appearance and persists as an explicit preference');
 
     await control(page,mode).click();
     await page.goto(base+'lab01.html');
     await themeState(page,mode);
     await control(page,'auto').click();
     await themeState(page,'auto');
-    ok(await page.evaluate(key=>localStorage.getItem(key),KEY)===null,
+    ok(await page.evaluate(key=>localStorage.getItem(key),KEY)==='auto',
       'the AP page still shares the same preference and retains its Light/Dark/Auto control');
   } finally {
     await context.close();

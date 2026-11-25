@@ -38,7 +38,7 @@ async function runLab(b, srv, lab, dir) {
   // 1. home page sign-in
   const ctx = await freshCtx(b);
   const home = watch(await ctx.newPage(), errors);
-  await home.goto(srv.url + 'index.html'); await sleep(700);
+  await home.goto(srv.url + 'ap-biology.html'); await sleep(700);
   if (!(await home.locator('.id-box form.id-panel').count())) await home.locator('.id-box .id-change').first().click();
   await home.locator('.id-box form.id-panel input[type=text]').first().fill(name);
   await home.locator('.id-box form.id-panel select').first().selectOption(period);

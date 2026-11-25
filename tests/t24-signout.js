@@ -12,7 +12,7 @@ async function ctxFor(b, o = {}) {
   await ctx.addInitScript(seed => { try {
     if (localStorage.getItem('__seeded')) return;
     localStorage.setItem('__seeded', '1');
-    Object.entries(seed).forEach(([k, v]) => localStorage.setItem(k, JSON.stringify(v)));
+    Object.entries(seed).forEach(([k, v]) => localStorage.setItem(k, k === 'aplab:pref:theme' ? v : JSON.stringify(v)));
   } catch (e) { /* ignore */ } }, o.seed || {});
   return ctx;
 }
@@ -108,7 +108,7 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   T.ok(after['aplab:ui:allParts'] === snap['aplab:ui:allParts'] && after['aplab:pref:theme'] === snap['aplab:pref:theme'], 'site-wide preferences (ui, theme) are kept');
   const extra = Object.keys(after).filter(k => !ALLOWED(k) && k !== 'aplab:anon');
   T.ok(extra.length === 0, 'nothing else left behind' + (extra.length ? ': ' + extra.join(', ') : ''));
-  T.ok(/index\.html$/.test(p.url()), 'lands on the home page: ' + p.url());
+  T.ok(/ap-biology\.html$/.test(p.url()), 'lands on the AP lab directory where the next student can sign in: ' + p.url());
   T.ok(beforeUnloadPrompts === 0 && !(await p.evaluate(() => Lab.backup.guardActive())), 'no leave-page prompt, no backup guard');
   T.ok(await p.locator('.backup-bar').count() === 0, 'no backup bar');
   T.ok(/Not signed in yet/.test(await p.locator('.id-line').first().innerText()), 'home shows the signed-out sign-in prompt');
@@ -130,7 +130,7 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
 
   await p.close();
   ctx = await ctxFor(b, { seed: base() });
-  p = await T.open(ctx, 'index.html', '', srv.url);
+  p = await T.open(ctx, 'ap-biology.html', '', srv.url);
   T.ok(await p.locator('#resume').isVisible(), '(control) the pick-up card shows before sign-out');
   await p.locator('#home-identity .id-signout').click();
   const homeTxt = await p.locator('.dm-card').innerText();
@@ -154,7 +154,7 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   p = await T.open(ctx, 'lab05.html', '', srv.url);
   const ds1 = (await p.locator('.ds-id').first().innerText()).trim();
   await p.evaluate(() => localStorage.setItem('aplab:progress:lab05', JSON.stringify({ done: 4, total: 6, sections: 8, t: Date.now() })));
-  await p.goto(srv.url + 'index.html'); await p.waitForTimeout(900);
+  await p.goto(srv.url + 'ap-biology.html'); await p.waitForTimeout(900);
   T.ok(/4 of 6 parts/.test(await p.locator('[data-lab-progress="lab05"]').innerText()), 'home card shows Lab 5 progress before');
   const snap2 = await dump(p);
   await p.locator('.manage-data summary').click();

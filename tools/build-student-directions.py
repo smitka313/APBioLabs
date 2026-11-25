@@ -91,7 +91,7 @@ for lab, custom in CONTENT.items():
     source.write_text(html)
     catalog.append('<li><a href="' + page + '">Lab ' + str(int(lab)) + ' · ' + escape(title) + '</a> <a class="catalog-pdf" href="' + pdf + '" download aria-label="Download Lab ' + str(int(lab)) + ' student directions as PDF">Download PDF</a></li>')
 
-index = '<nav class="screen-actions" aria-label="Navigation"><a href="index.html">All labs</a><a href="teachers.html#printing">Teacher guide</a></nav><header><p class="eyebrow">Biology Lab Bench</p><h1>Printable student directions</h1><p>Choose a lab for a numbered walkthrough, data-recording reminders, and submission checklist. Each guide can be printed or saved as PDF from your browser.</p></header><main id="directions"><ol class="catalog">' + ''.join(catalog) + '</ol></main>'
+index = '<nav class="screen-actions" aria-label="Navigation"><a href="ap-biology.html">All labs</a><a href="teachers.html#printing">Teacher guide</a></nav><header><p class="eyebrow">Biology Lab Bench</p><h1>Printable student directions</h1><p>Choose a lab for a numbered walkthrough, data-recording reminders, and submission checklist. Each guide can be printed or saved as PDF from your browser.</p></header><main id="directions"><ol class="catalog">' + ''.join(catalog) + '</ol></main>'
 (ROOT / 'student-directions.html').write_text(shell('Printable student directions', index))
 print('Built 13 lab guides, linked all Overview/Submit sections, and built the guide index.')
 

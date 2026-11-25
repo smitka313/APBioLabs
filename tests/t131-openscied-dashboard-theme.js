@@ -151,14 +151,18 @@ async function checkMixedVersionWorkspace(browser,site) {
         assert.equal(await p.locator('#download-openscied-results').isVisible(),true);
         assert.ok(await p.locator('#openscied-resume').evaluate(panel=>panel.hidden && panel.getClientRects().length===0),
           'fresh visit: the resume panel leaves no placeholder below unit shortcuts');
-        const brand=p.locator('.dashboard-brand');
+        const brand=p.locator('.dashboard-masthead .bench-logo');
         await brand.focus();
         await p.keyboard.press('Tab');
+        assert.equal(await p.evaluate(()=>document.activeElement.getAttribute('href')),'ap-biology.html');
+        await p.keyboard.press('Tab');
+        assert.equal(await p.evaluate(()=>document.activeElement.getAttribute('href')),'openscied-dashboard.html');
+        await p.keyboard.press('Tab');
         assert.equal(await p.locator('.dashboard-theme-controls').evaluate(el=>el.contains(document.activeElement)),true,
-          'the theme control immediately follows the Lab Bench link in the masthead tab order');
+          'the theme control follows the course links in the masthead tab order');
         assert.equal(await p.evaluate(()=>{
           const before=(a,b)=>Boolean(document.querySelector(a).compareDocumentPosition(document.querySelector(b))&Node.DOCUMENT_POSITION_FOLLOWING);
-          return before('.dashboard-brand','.dashboard-student')&&before('.dashboard-student','.dashboard-activity');
+          return before('.dashboard-masthead .bench-logo','.dashboard-student')&&before('.dashboard-student','.dashboard-activity');
         }),true,'return link and student workspace still come before activity cards');
         assert.equal(await p.locator('.dashboard-hero-art').evaluate(img=>img.complete&&img.naturalWidth>0),true);
         const unit1=p.locator('[aria-labelledby="unit1"]');

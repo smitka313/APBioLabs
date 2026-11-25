@@ -1,0 +1,42 @@
+name: Biology Lab Bench course entrances
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'ap-biology.html'
+      - 'bench-*.css'
+      - 'bench-welcome.js'
+      - 'bench-footer.js'
+      - 'domain-redirect.js'
+      - '404.html'
+      - 'openscied-dashboard.html'
+      - 'assets/biology-lab-bench-logo*.svg'
+      - 'assets/bench-welcome-*.svg'
+      - 'assets/bench-field-atlas.svg'
+      - 'openscied-dashboard.css'
+      - 'tests/bench-course-entry-browser.js'
+      - '.github/workflows/bench-course-entry.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  course-entry-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: python3 tools/build-seo.py --check && python3 tests/seo.test.py
+      - run: BENCH_SCREENSHOTS=/tmp/bench-courses node tests/bench-course-entry-browser.js
+      - run: node tests/t112-openscied-dashboard-ap-link.js && node tests/t113-home-openscied-link.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: course-entrance-visual-checks
+          path: /tmp/bench-courses
+          if-no-files-found: ignore

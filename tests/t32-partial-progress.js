@@ -26,7 +26,7 @@ const T = require('./_h');
   const stored = await p.evaluate(() => JSON.parse(localStorage.getItem('aplab:progress:lab05')));
   T.ok(stored.partial && stored.partial.name === target.name && stored.items.done >= 1, 'summary stored with partial part: ' + JSON.stringify(stored.partial));
   const h = await ctx.newPage();
-  await h.goto('file://' + T.ROOT + '/index.html'); await h.waitForTimeout(800);
+  await h.goto('file://' + T.ROOT + '/ap-biology.html'); await h.waitForTimeout(800);
   const card = (await h.textContent('[data-lab-progress="lab05"]')).trim();
   T.ok(new RegExp('^Started · ' + target.name + ' \\d+/\\d+ items$').test(card), 'home card: "' + card + '"');
   T.ok(!/0 of/.test(card), 'no "0 of N" on the card');

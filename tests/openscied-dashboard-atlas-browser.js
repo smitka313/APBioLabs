@@ -37,15 +37,17 @@ const keys = [
     for (const [width,height,theme] of [[390,844,'dark'],[768,910,'light'],[1366,900,'light'],[1920,1080,'light']]) {
       const context = await browser.newContext({viewport:{width,height},deviceScaleFactor:1,colorScheme:theme,reducedMotion:'reduce'});
       try {
+        await context.addInitScript(mode=>localStorage.setItem('aplab:pref:theme',mode),theme);
         await context.route(/https:\/\/(?:fonts\.(?:googleapis|gstatic)\.com|gc\.zgo\.at)\//,route=>route.abort());
         const page=await context.newPage();
         await page.goto(site.url+'openscied-dashboard.html');
         const panorama=await page.locator('.dashboard-hero-art').evaluate(async img=>{
           await img.decode();
-          return {src:img.currentSrc,alt:img.alt,loaded:img.naturalWidth>0};
+          return {src:img.currentSrc,alt:img.alt,loaded:img.naturalWidth>0,width:img.naturalWidth,height:img.naturalHeight};
         });
         assert.ok(panorama.loaded && /wildebeest.*polar bear/i.test(panorama.alt));
-        if(width===390)assert.match(panorama.src,/openscied-atlas-hero-small\.webp$/);
+        assert.match(panorama.src,/bench-field-atlas\.svg$/);
+        assert.deepEqual([panorama.width,panorama.height],[1200,226]);
         for (const key of keys) {
           const poster=page.locator('.dashboard-preview[href="openscied-'+key+'.html"] img');
           await poster.scrollIntoViewIfNeeded();
