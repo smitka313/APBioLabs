@@ -76,7 +76,7 @@ test('public activity index gives each guide card a direct jump and a collapsed 
 
 
 test('teachers can jump from the guide header to accessible collection instructions', () => {
-  const hero = guide.match(/<header class="ose-teacher-hero">([\s\S]*?)<\/header>/)?.[1];
+  const hero = guide.match(/<header class="[^"]*\bose-teacher-hero\b[^"]*">([\s\S]*?)<\/header>/)?.[1];
   assert.match(hero || '', /<a\b[^>]*href="#collect"[^>]*>Jump to collecting student work/);
   assert.match(guide, /<h2 id="collect" tabindex="-1">Collect student work<\/h2>/);
   const collection = guide.match(/<aside class="ose-teacher-callout" aria-labelledby="collect">([\s\S]*?)<\/aside>/)?.[1];
@@ -86,4 +86,19 @@ test('teachers can jump from the guide header to accessible collection instructi
   assert.match(collection || '', /Recovered work<\/strong> while keeping its original name, when known/);
   assert.match(guide, /A typed draft appears in the report under its month, but it counts as a notebook observation only after students save it/);
   assert.match(guide, /Repeating the same settings does not count as a comparison/);
+});
+
+test('dashboard and teacher guide offer the same masthead theme control and honest privacy copy', () => {
+  const ap = read('ap-biology.html');
+  for (const page of [ap, guide]) {
+    const masthead = page.match(/<div class="bench-appearance">([\s\S]*?)<\/div>/)?.[1];
+    assert.match(masthead || '', /data-ph="theme"/, 'theme control has a masthead slot');
+    assert.match(page, /src="lab\.js"/, 'shared theme controller');
+  }
+  assert.match(guide, /class="bench-logo" href="index\.html"/);
+  assert.match(guide, /class="ose-teacher-hero__art" src="assets\/bench-field-atlas\.svg"/);
+  for (const page of [ap, dashboard, read('index.html')]) {
+    assert.match(page, /counts anonymous page visits without cookies\. Nothing you type, including your name and answers, is sent anywhere/);
+  }
+  assert.match(read('style.css'), /neutral fill distinguishes disabled controls[\s\S]*?background: var\(--surface-2\);[\s\S]*?border: 1px solid/);
 });

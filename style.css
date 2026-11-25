@@ -155,6 +155,18 @@ input[type="text"], input[type="number"], select, textarea {
   border: 1px solid var(--line); border-radius: var(--r-sm); padding: 7px 10px; width: 100%;
 }
 textarea { min-height: 92px; resize: vertical; line-height: 1.45; }
+/* Give typed OpenSciEd evidence room to wrap and grow before it scrolls.
+   Cell Cycle already sizes its writing fields; table cells and exports stay unchanged. */
+@media screen {
+  @supports (field-sizing: content) {
+    html[data-openscied]:not(:has(link[href*="openscied-b3-cell-cycle.css"])) main
+      :where(textarea:not([readonly], [disabled], [hidden], table textarea)) {
+      field-sizing: content;
+      max-block-size: min(22rem, 55svh);
+      overflow: auto;
+    }
+  }
+}
 input[type="range"] { width: 100%; accent-color: var(--accent); }
 input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); width: 17px; height: 17px; }
 .check { display: flex; gap: 8px; align-items: center; font-size: .92rem; min-height: 24px; }
@@ -169,11 +181,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); width
 .btn--primary:hover { filter: brightness(1.08); }
 .btn--ghost { background: transparent; border-color: transparent; color: var(--muted); }
 .btn--danger { color: var(--bad); }
-.btn:disabled { opacity: .5; cursor: not-allowed; }
-/* Shared OpenSciEd controls. Use a neutral surface and text, not dimmed green. */
+/* A readable, neutral fill distinguishes disabled controls from enabled green actions. */
+.btn:is(:disabled, [aria-disabled="true"]),
 html[data-openscied] :is(.btn, nav[aria-label] button):is(:disabled, [aria-disabled="true"]) {
   opacity: 1; filter: none; cursor: not-allowed;
-  color: var(--muted); background: var(--surface-2); border: 1px dashed var(--muted);
+  color: var(--muted); background: var(--surface-2);
+  border: 1px solid color-mix(in srgb, var(--muted) 56%, var(--line));
 }
 html[data-openscied] nav[aria-label] button[data-ose-complete] span:first-child { font-size: 0; }
 html[data-openscied] nav[aria-label] button[data-ose-complete] span:first-child::before {
@@ -787,6 +800,12 @@ details.disclose > .inner > p { max-width: 68ch; }
 .pause-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .pause-actions .btn--lg { min-height: 52px; padding-inline: 28px; font-size: 1.1rem; font-weight: 700; }
 .pause-xfer .transfer { margin-top: 4px; }
+/* Before a code exists, this is a secondary action, not a full empty mint panel. */
+.pause-xfer .transfer:has(.transfer-out:empty) { padding: 0; border: 0; background: transparent; }
+.pause-xfer .transfer:has(.transfer-out:empty) .transfer-btn {
+  min-height: 44px; padding-inline: 14px; font-size: .97rem;
+  background: var(--surface-2); color: var(--ink); border-color: var(--line);
+}
 body.has-pause { overflow: hidden; }
 @media print { .pause-screen { display: none !important; } }
 
@@ -1121,4 +1140,18 @@ main#labs:empty { min-height: 100vh; }
 }
 @media screen and (min-width: 760px) and (max-width: 1199px) {
   .nav-end .nav-progress { width: 12em; }
+}
+
+/* Keep long AP part lists legible at laptop widths. Compact the gaps and tools
+   before a second row is needed; each label stays complete. */
+@media screen and (min-width:1180px) {
+  .step-nav[aria-label="Lab steps"] .has-progress:has(> ol > li:nth-child(10)) > ol a {
+    padding-inline: 5px; gap: 4px; font-size: .84rem;
+  }
+  .step-nav[aria-label="Lab steps"] .has-progress:has(> ol > li:nth-child(10)) > .nav-end {
+    gap: 5px;
+  }
+  .step-nav[aria-label="Lab steps"] .has-progress:has(> ol > li:nth-child(10)) .nav-progress {
+    width: 11em;
+  }
 }

@@ -93,8 +93,28 @@ const T=require('./_h'),assert=require('node:assert/strict'),fs=require('node:fs
     await p.waitForURL('**/ap-biology.html');assert.equal(await p.locator('main#labs .card').count(),13);
     await p.locator('#home-identity .id-box').waitFor({state:'attached'});await verifyFooter(!dark);await layout('ap');
     assert.equal(await p.evaluate(()=>document.documentElement.dataset.theme),theme.toLowerCase());
+    const headerAppearance=p.locator('.bench-brandbar').getByRole('group',{name:'Color theme',exact:true});
+    assert.equal(await headerAppearance.getByRole('button',{name:theme,exact:true}).getAttribute('aria-pressed'),'true');
+    if(width<=580){
+      const heights=await headerAppearance.getByRole('button').evaluateAll(buttons=>buttons.map(button=>button.getBoundingClientRect().height));
+      assert.equal(heights.length,3,'AP renders all three appearance choices');
+      assert(heights.every(height=>height>=44),`AP's phone theme buttons meet the 44px tap target: ${heights.join(', ')}`);
+    }
+    const courseType=await p.locator('.bench-ap-hero h1').evaluate(el=>getComputedStyle(el).fontFamily);
+    assert(await p.locator('.bench-brandbar .bench-route-nav [aria-current=page]').evaluate(el=>{
+      const peer=el.parentElement.querySelector('a:not([aria-current])');
+      return getComputedStyle(el).backgroundColor!==getComputedStyle(peer).backgroundColor &&
+        getComputedStyle(el).borderTopColor!=='rgba(0, 0, 0, 0)';
+    }), 'the current course, not the other course, has the filled pill treatment');
+    assert.equal(await p.locator('.card .thumb').first().evaluate(el=>getComputedStyle(el).filter.startsWith('brightness')),theme==='Dark');
     await p.getByRole('link',{name:'OpenSciEd',exact:true}).click();await p.waitForURL('**/openscied-dashboard.html');
     assert.equal(await p.locator('.dashboard-unit.current').count(),5);
+    assert.equal(await p.locator('.dashboard-title').evaluate(el=>getComputedStyle(el).fontFamily),courseType);
+    assert(await p.locator('#download-openscied-results').evaluate(el=>{
+      const css=getComputedStyle(el);
+      return el.disabled && css.opacity==='1' && css.borderTopStyle==='solid' &&
+        css.backgroundColor!=='rgba(0, 0, 0, 0)';
+    }),'disabled dashboard controls use a legible solid surface');
     const atlas=p.locator('.dashboard-hero-art');
     assert.equal(await atlas.getAttribute('src'),'assets/bench-field-atlas.svg');
     assert(await atlas.evaluate(async img=>{
@@ -113,6 +133,28 @@ const T=require('./_h'),assert=require('node:assert/strict'),fs=require('node:fs
       assert.deepEqual(v,[],'welcome accessibility');
     }
     if(width===1366){
+      await p.goto(site.url+"lab01.html");
+      const labTabs=await p.locator('nav[aria-label="Lab steps"] ol>li').evaluateAll(items=>
+        items.map(item=>Math.round(item.getBoundingClientRect().top)));
+      assert.equal(labTabs.length,10);
+      assert.equal(new Set(labTabs).size,1,'all ten Lab 1 step labels fit in one row on a laptop');
+      await p.locator('.step-nav .pause-btn:not([data-ph])').click();
+      const pause=p.getByRole('dialog').filter({has:p.locator('.pause-xfer')});
+      assert(await pause.locator('.pause-xfer .transfer').evaluate(el=>{
+        const css=getComputedStyle(el);
+        return css.backgroundColor==='rgba(0, 0, 0, 0)' && css.paddingTop==='0px';
+      }),'no empty full-size transfer panel before a code is generated');
+      await p.keyboard.press('Escape');
+      await p.goto(site.url+'openscied-b5-hybrid.html');
+      const writing=p.locator('#hy-prediction');
+      const before=await writing.boundingBox();
+      await writing.fill(Array.from({length:6},(_,i)=>'Evidence line '+(i+1)).join('\n'));
+      if(await p.evaluate(()=>CSS.supports('field-sizing','content'))){
+        const after=await writing.boundingBox();
+        assert(after.height>before.height+6,'a multi-line evidence response expands its writing field');
+        assert(await writing.evaluate(el=>el.scrollHeight<=el.clientHeight+1),
+          'all six response lines fit before inner scrolling is needed');
+      }
       for(const f of ['lab01.html','directions-lab01.html','teachers.html','teacher-notes.html','projector.html','404.html']){
         await p.goto(site.url+f);await verifyFooter();
         await p.emulateMedia({media:'print'});

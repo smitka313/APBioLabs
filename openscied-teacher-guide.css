@@ -81,3 +81,26 @@ p.teacher-guide-cue,.teacher-guide-cue>p{color:var(--muted)}
 .teacher-guide-launch{margin-top:5px}
 
 @media(min-width:681px) and (max-width:920px){:is(.teacher-guide-index-grid,.teacher-guide-index-groups){grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Public guide only. Do not change the layout of the locked notes shell. */
+.bench-guide-hero {grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);align-items:center;background:linear-gradient(140deg,#152e29,#1b2525 76%);color:#f3f8f5;border-color:#354c43}
+.bench-guide-hero p {color:#cddad4}
+.bench-guide-hero p.eyebrow {color:#f1c98c;letter-spacing:.1em}
+.bench-guide-hero .teacher-guide-collect-jump {color:#c4f5e3}
+.bench-guide-hero .teacher-guide-collect-jump:focus-visible {outline-color:#c4f5e3}
+.bench-guide-hero .ose-teacher-hero__art {display:block;min-height:0;width:calc(100% - 24px);height:auto;margin:12px;border:1px solid #637369;border-radius:10px;object-fit:contain}
+.bench-guide-hero + .teacher-guide-index > .teacher-guide-index-grid {grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (min-width:681px) and (max-width:940px){
+ .bench-guide-hero + .teacher-guide-index > .teacher-guide-index-grid {grid-template-columns:repeat(6,minmax(0,1fr))}
+ .bench-guide-hero + .teacher-guide-index > .teacher-guide-index-grid .teacher-guide-index-group {grid-column:span 2}
+ .bench-guide-hero + .teacher-guide-index > .teacher-guide-index-grid .teacher-guide-index-group:nth-last-child(-n+2) {grid-column:span 3}
+}
+@media (max-width:680px){
+ .bench-guide-hero,.bench-guide-hero + .teacher-guide-index > .teacher-guide-index-grid {grid-template-columns:minmax(0,1fr)}
+ .bench-guide-hero .ose-teacher-hero__art {margin-top:0}
+}
+@media print{
+ .bench-guide-hero {color:var(--ink);background:var(--surface);border-color:var(--line)}
+ .bench-guide-hero p,.bench-guide-hero p.eyebrow {color:var(--ink)}
+ .bench-guide-hero .ose-teacher-hero__art {display:none}
+}

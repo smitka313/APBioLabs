@@ -184,7 +184,34 @@ async function publicAndLock(browser, base, viewport, expectedCards) {
     await loaded(page, 'OpenSciEd Teacher Guide');
     const count = await page.locator('article[data-guide-for]').count();
     check(count === expectedCards, at + ' loads a guide card for every dashboard activity');
-    await fits(page, 'main, article[data-guide-for]', at + ' public guide');
+    await fits(page, 'main, article[data-guide-for], .bench-guide-masthead', at + ' public guide');
+    const appearance = page.getByRole('group', { name: 'Color theme', exact: true });
+    check(await appearance.count() === 1 &&
+      await appearance.evaluate(el => Boolean(el.closest('.bench-guide-masthead'))),
+      at + ' public guide puts the shared Appearance switch in the masthead');
+    check(await page.locator('.bench-guide-masthead .bench-logo img:visible').count() === 1,
+      at + ' exactly one theme-appropriate logo is visible');
+    check(await page.locator('.ose-teacher-hero__art').evaluate(img =>
+      img.decode().then(() => img.naturalWidth === 1200 && img.naturalHeight === 226)
+    ), at + ' editorial field atlas decodes at its intrinsic ratio');
+    const rows = await page.locator('.teacher-guide-index-grid .teacher-guide-index-group').evaluateAll(groups => {
+      const rows = new Map();
+      for (const card of groups) {
+        const top = Math.round(card.getBoundingClientRect().top);
+        rows.set(top, (rows.get(top) || 0) + 1);
+      }
+      return [...rows.values()];
+    });
+    assert.deepEqual(rows, viewport.width < 681 ? [1, 1, 1, 1, 1] : viewport.width <= 940 ? [3, 2] : [5],
+      at + ' all five units fit without an orphan column');
+    const mode = viewport.dark ? 'Light' : 'Dark';
+    await appearance.getByRole('button', { name: mode, exact: true }).press('Enter');
+    assert.equal(await page.locator('html').getAttribute('data-theme'), mode.toLowerCase());
+    await page.reload();
+    assert.equal(await appearance.getByRole('button', { name: mode, exact: true }).getAttribute('aria-pressed'),
+      'true', at + ' restores the guide theme choice');
+    await appearance.getByRole('button', { name: 'Auto', exact: true }).press('Enter');
+    check(await page.locator('html').getAttribute('data-theme') === null, at + ' Auto follows the operating system');
     await shot(page, at + '-guide');
     if (viewport.width === 390 || viewport.width === 1366) await axe(page, at + ' guide', 'main');
     await publicReading(page, viewport, at);
