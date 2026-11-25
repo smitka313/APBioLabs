@@ -129,6 +129,7 @@ async function run(){
    assert.match(report,/Avery Test.*Class period.*2/s);
    assert.match(report,/MAFFT alignment.*cannot date their split/s);
    assert.match(report,/Giant panda.*Spectacled Bear/s);
+   assert.match(report,/first 72 bases can give the same count.*full comparisons/s);
    if(width===1366)assert.match(report,/Giant panda \+ Polar Bear\s+273/);
    if(width===1366){
     await p.getByText('More formats',{exact:true}).click();
@@ -144,6 +145,19 @@ async function run(){
     assert.equal(fs.readFileSync(await doc.path()).subarray(0,2).toString(),'PK');
    }
    await p.keyboard.press('Escape');await layout('explain');
+   if(width===1366){
+    await p.getByText('Other report formats: HTML or JSON',{exact:true}).click();
+    let [file]=await Promise.all([p.waitForEvent('download'),at('save-json').click()]);
+    const json=JSON.parse(fs.readFileSync(await file.path(),'utf8'));
+    assert.deepEqual(json.student,{name:'Avery Test',period:'2'});assert.equal(json.datasetId,'BA-'+id);assert.equal(json.status,'final');
+    assert.equal(json.work,undefined);
+    assert.match(JSON.stringify(json.report),/first 72 bases can give the same count/);
+    assert.match(JSON.stringify(json.report),/Giant panda.*Polar Bear.*273/);
+    [file]=await Promise.all([p.waitForEvent('download'),at('save-html').click()]);
+    const html=fs.readFileSync(await file.path(),'utf8');
+    assert.match(html,/^<!doctype html>[\s\S]*Avery Test[\s\S]*BA-[A-F0-9]{8}[\s\S]*first 72 bases can give the same count[\s\S]*273/);
+    assert.doesNotMatch(html,/<script\b/i);
+   }
    await at('reset').click();
    assert(await at('clear-work').isDisabled());
    await at('keep-work').click();

@@ -24,7 +24,7 @@
   let s=fresh(),session,blocked=false,selected='',anim,timerTick;
   try{
     session=window.OpenSciEdSaveSession?.open(localStorage,'b5-thermoregulation',[KEY]);
-    const raw=localStorage.getItem(KEY);
+    const raw=session?.read(KEY);
     if(raw){
       const v=JSON.parse(raw);if(v?.v!==1||!/^[0-9A-F]{8}$/.test(v.id))throw Error('invalid saved data');
       s={...s,id:v.id,step:route.includes(v.step)?v.step:'field',pair:pairs.includes(v.pair)?v.pair:pairs[0],row:Number.isInteger(v.row)&&data[v.row]?v.row:0,check:checks.includes(v.check)?v.check:'',mode:v.mode==='practice'?'practice':'class',hum:s.hum.map((_,i)=>reading(clean(v.hum?.[i]))),lastVisitedAt:Number(v.lastVisitedAt)||0};
@@ -261,19 +261,20 @@
   const tableNote='Time on the treadmill is 360 minutes at 1.1 m/s and 375 minutes at the other speeds. The lesson handout does not explain the difference.';
   function humanRows(list){return times.map((minute,i)=>({minute,aC:list[i*2]===''?null:Number(list[i*2]),bC:list[i*2+1]===''?null:Number(list[i*2+1])}));}
   $('export-json').onclick=()=>{
-    const student=identity(),out={
-      format:'bear-thermoregulation-activity-v1',activity:'Bear Thermoregulation Lab',datasetId:'TH-'+s.id,student,
+    const r=collectReport(),student=r.student,out={
+      format:'bear-thermoregulation-activity-v1',activity:r.title,source:r.source,datasetId:r.datasetId,status:r.status,student,
       exportedAt:new Date().toISOString(),treadmill:{source:'OpenSciEd Lesson 2 / Best (1982)',timeNote:tableNote,
         breaks:data.map(([speedMps,timeOnMin,timeOffMin,breaks])=>({speedMps,timeOnMin,timeOffMin,breaks})),
         coreTemperatureApproximate:core.map(({speed,temp,edge})=>({speedMps:speed,temperatureC:temp,edge:!!edge})),graphNote},
-      surfaceTemperatures:{active:s.mode==='practice'?'practice-invented':'recorded',recorded:humanRows(s.ownHum),practiceInvented:humanRows(practice())},
+      surfaceTemperatures:{active:s.mode==='practice'?'practice-invented':'recorded',recorded:humanRows(s.ownHum),
+        ...(s.mode==='practice'?{practiceInvented:humanRows(s.hum)}:{})},
       matterAndEnergy:placements(),responses:{...s.fields}
     };
     const a=node('a'),url=URL.createObjectURL(new Blob([JSON.stringify(out,null,2)],{type:'application/json'}));
     a.hidden=true;a.href=url;a.download='bear-thermoregulation-'+out.datasetId+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
     $('json-status').textContent='Downloaded only this lab’s data. '+(student?'Includes the displayed name and class period.':'No saved name or class period was entered.');
   };
-  window.OpenSciEdSubmission?.mount({target:'#th-report',filename:'bear-thermoregulation',collect:()=>{
+  function collectReport(){
     const missing=fields.filter(k=>!s.fields[k]?.trim()).map(k=>qs[k]);
     if(!s.hum.some(Boolean))missing.push('Enter your readings or load the practice example.');
     if(Object.keys(s.sort).length<cards.length)missing.push('Place all six matter and energy cards.');
@@ -287,5 +288,8 @@
         ...humanSections,
         {title:'Matter, energy and explanation',items:[{type:'answer',prompt:'Cards placed',value:Object.keys(s.sort).length+' of '+cards.length},{type:'table',columns:['Card','Your placement'],rows:placements().map(r=>[r.card,r.placement||'Not placed'])},{type:'answer',prompt:qs.explain,value:s.fields.explain}]}
       ]};
-  }});
+  }
+  window.OpenSciEdSubmission?.mount({target:'#th-report',filename:'bear-thermoregulation',collect:collectReport});
+  window.OpenSciEdB5ReportFiles?.bindHTML($('export-html'),collectReport,'bear-thermoregulation',
+    message=>{$('json-status').textContent=message;});
 })();

@@ -159,8 +159,19 @@ function unzipWord(zip){
        const json=JSON.parse(fs.readFileSync(await d.path(),'utf8'));
        assert.match(json.datasetId,/^TH-[A-F0-9]{8}$/);assert.deepEqual(json.student,{name:'Avery Thermal',period:'2'});
        assert.deepEqual(json.treadmill.breaks.map(r=>r.breaks),[0,7,19,24]);
-       assert.equal(json.surfaceTemperatures.recorded[2].aC,33.2);assert.equal(json.matterAndEnergy.length,6);assert.equal(json.work,undefined);
+       assert.equal(json.surfaceTemperatures.recorded[2].aC,33.2);assert.equal(json.surfaceTemperatures.active,'recorded');
+       assert.equal(json.surfaceTemperatures.practiceInvented,undefined,'when own readings are displayed, do not silently export the invented practice data');
+       assert.equal(json.matterAndEnergy.length,6);assert.equal(json.work,undefined);
        if(width===1366){
+         let [file]=await Promise.all([p.waitForEvent('download'),by('export-html').click()]);
+         let html=fs.readFileSync(await file.path(),'utf8');
+         assert.match(html,/Recorded human surface temperatures/);assert.doesNotMatch(html,/Practice human surface temperatures/);
+         await tab('human').click();await by('sample').click();await tab('model').click();
+         [file]=await Promise.all([p.waitForEvent('download'),by('export-json').click()]);
+         const practice=JSON.parse(fs.readFileSync(await file.path(),'utf8')).surfaceTemperatures;
+         assert.equal(practice.active,'practice-invented');assert.equal(practice.recorded[2].aC,33.2);assert.notEqual(practice.practiceInvented[0].aC,practice.recorded[0].aC);
+         [file]=await Promise.all([p.waitForEvent('download'),by('export-html').click()]);
+         html=fs.readFileSync(await file.path(),'utf8');assert.match(html,/Practice human surface temperatures \(invented\)/);assert.match(html,/Your saved human readings/);
          await p.evaluate(()=>localStorage.setItem('aplab:openscied:neighbor:v1','Keep'));
          await by('reset').click();assert(await by('clear').isDisabled());await by('keep').click();
          assert.match(await by('explain').inputValue(),/Heat is plausible/);

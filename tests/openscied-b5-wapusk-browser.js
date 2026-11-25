@@ -10,6 +10,10 @@ const {chromium}=require('playwright'),{ROOT,serve}=require('./_h');
      const ctx=await browser.newContext({viewport:{width,height:900},colorScheme:width===375?'dark':'light',hasTouch:width===375});
      try{
        const origin=new URL(server.url).origin;await ctx.route('**/*',r=>new URL(r.request().url()).origin===origin?r.continue():r.abort());
+       if(width===1366){
+         const docx=await fs.readFile(path.join(path.dirname(require.resolve('docx')),'index.iife.js'),'utf8');
+         await ctx.route(/https:\/\/.*\/docx@[^/]+\/.*\.js$/,r=>r.fulfill({contentType:'application/javascript',body:docx+'\nwindow.docx = docx;'}));
+       }
        const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
        const by=id=>page.locator('#wb-'+id), tab=name=>page.locator('.wb-tabs [data-step="'+name+'"]');
        await page.goto(server.url+'openscied-b5-wapusk.html');
@@ -51,6 +55,7 @@ const {chromium}=require('playwright'),{ROOT,serve}=require('./_h');
        await page.getByRole('button',{name:'Check the claim'}).click();assert.match(await by('feedback').textContent(),/do not establish/);
        await page.locator('[name="overlap"][value="place"]').check();
        await page.getByRole('button',{name:'Check the claim'}).click();assert.match(await by('feedback').textContent(),/matches the evidence/);
+       const owlResult=await by('feedback').textContent();
        await by('observe').fill('The summer sightings include woodland.');
        const overflow=await page.evaluate(()=>[...document.body.querySelectorAll('*')].filter(e=>e.getClientRects().length&&e.getBoundingClientRect().right>innerWidth+1).map(e=>[e.tagName,String(e.className),e.id]).slice(0,12));
        assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),JSON.stringify(overflow));
@@ -75,7 +80,12 @@ const {chromium}=require('playwright'),{ROOT,serve}=require('./_h');
        await page.locator('[name=scale-match][value=camp]').check();
        await page.getByRole('button',{name:'Check the scales'}).click();assert.match(await by('scale-feedback').innerText(),/does not show the date/);
        await page.locator('[name=scale-match][value=camp]').uncheck();
-       for(const v of ['canada','bay','arctic'])await page.locator('[name=scale-match][value='+v+']').check();
+       for(const v of ['park','canada','bay','arctic'])await page.locator('[name=scale-match][value='+v+']').check();
+       if(width===1366){
+         await page.reload();
+         assert(await page.locator('[name=scale-match][value=park]').isChecked(),'unchecked draft choice survives reload');
+       }
+       const selected=await page.locator('[name=scale-match]:checked').evaluateAll(ns=>ns.map(n=>n.parentElement.textContent.trim()));
        await page.getByRole('button',{name:'Check the scales'}).click();assert.match(await by('scale-feedback').innerText(),/^Yes/);
        assert.match(await by('scale-recap').textContent(),/include woodland/);
        await by('scales').fill('Compare seasons locally and ice extent across years.');
@@ -102,20 +112,33 @@ const {chromium}=require('playwright'),{ROOT,serve}=require('./_h');
        const report=await page.getByRole('dialog').filter({hasText:'Three Bears in Wapusk'}).innerText();
        assert.match(report,/Convergent Ice.*Would the bears use the same places/s);
        assert.match(report,/Avery Wapusk.*Class period.*2/s);
-       assert.match(report,/Owl River claim verdict.*Supported.*different occasions/s);
+       assert.ok(report.includes(owlResult),'Owl River verdict must match the checked account on screen');
+       assert.ok(selected.every(label=>report.includes(label)),'report must include all submitted scale choices');
+       if(width===1366){
+         await page.getByText('More formats',{exact:true}).click();
+         const [word]=await Promise.all([page.waitForEvent('download'),page.getByRole('button',{name:/Download Word/}).click()]);
+         const xml=await (await require('jszip').loadAsync(await fs.readFile(await word.path()))).file('word/document.xml').async('string');
+         assert.ok(selected.every(label=>xml.includes(label)),'Word includes exact checked choices');
+       }
        await page.getByRole('button',{name:'Close report',exact:true}).click();
        await page.getByText('Other report formats: HTML or JSON',{exact:true}).click();
        let [file]=await Promise.all([page.waitForEvent('download'),by('save-html').click()]);
        const html=await fs.readFile(await file.path(),'utf8');assert.match(file.suggestedFilename(),/WB-[A-F0-9]{8}\.html$/);
-       assert.match(html,/Owl River claim verdict.*Supported.*different occasions/s);
+       assert.ok(html.includes(owlResult));
+       assert.ok(selected.every(label=>html.includes(label)));
        [file]=await Promise.all([page.waitForEvent('download'),by('save-json').click()]);
        const json=JSON.parse(await fs.readFile(await file.path(),'utf8'));
        assert.deepEqual(json.student,{name:'Avery Wapusk',period:'2'});assert.match(json.datasetId,/^WB-[A-F0-9]{8}$/);
        assert.equal(json.status,'final');assert.equal(json.conceptChecks.owlRiver.verdict,'Supported');
        assert.equal(json.conceptChecks.evidenceScale.verdict,'Correct');
+       assert.deepEqual(json.conceptChecks.evidenceScale.choices,selected);
+       assert.equal(json.conceptChecks.owlRiver.verdict+' · '+json.conceptChecks.owlRiver.answer+' '+json.conceptChecks.owlRiver.feedback,owlResult);
        assert.equal(json.seaIceMinimumExtent.values.find(x=>x.year===2012).extent,3.39);
        assert.equal(json.work,undefined);
        if(width===1366){
+         const chart=await ctx.newPage();await chart.goto(server.url+'openscied-b5-wapusk.html#wb-sea-ice');
+         assert(await chart.locator('#wb-sea-ice').isVisible(),'Lesson 6 link opens the extent chart without changing saved work');
+         assert.match(await chart.locator('#wb-sea-ice').innerText(),/uses|plots|extent/i);await chart.close();
          await page.evaluate(()=>localStorage.setItem('aplab:openscied:neighbor:v1','Keep'));
          await by('reset').click();assert(await by('clear').isDisabled());await by('keep').click();
          assert.match(await by('question').inputValue(),/Would the bears/);

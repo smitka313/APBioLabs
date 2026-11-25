@@ -82,6 +82,7 @@
 </div>
 <details class="ba-card ba-full"><summary>Explore the full eight-species dataset</summary>
 <p>Read all eight original sequences from the same noncoding region of the <em>transthyretin</em> gene. The full sequences differ in length; they need to be lined up with gap positions rather than compared letter-for-letter from the start.</p>
+<p class="ba-callout"><strong>Two lengths, two kinds of comparison.</strong> The guided worksheet counts substitutions across just the first 72 bases. Two pairs can tie there and differ once you count changes across the full pair, including gaps. The original eight-species alignment uses the pattern across all eight bears, not a single pair count.</p>
 <div class="ba-full-controls"><label>First bear <select id="ba-full-a"></select></label><label>Second bear <select id="ba-full-b"></select></label></div>
 <div id="ba-full-stat" class="ba-callout"></div>
 <details class="ba-alignment"><summary>Show how the full sequences line up</summary>
@@ -118,7 +119,7 @@
 <label for="ba-conclusion">Which two bears share a more recent common ancestor? Describe what one branch point means, and cite a number from your comparison log.</label><textarea id="ba-conclusion" rows="4" maxlength="4000"></textarea>
 <label for="ba-revise">Did you keep or revise your first guess? Use one trait observation. Explain why the appearance of a bear alone might not settle the question.</label><textarea id="ba-revise" rows="4" maxlength="4000"></textarea>
 <p class="ba-callout"><strong>Common ancestor</strong> means an earlier population that gave rise to later lineages. Neither modern bear on your tree descended from the other modern bear.</p>
-<div id="ba-report"></div>
+<div data-ose-report-final></div>
 </div>
 <aside class="ba-card"><h3>Your evidence so far</h3><div id="ba-recap"></div><div id="ba-explain-table"></div><p class="ba-caption">The original lesson’s eight-species alignment also groups polar and brown bears together. This three-tip model cannot date their split or predict what happens as the Arctic changes.</p></aside>
 </div>
@@ -128,6 +129,8 @@
 <label for="ba-reset-confirm">Type ERASE to confirm</label><input id="ba-reset-confirm" type="text" autocomplete="off" spellcheck="false" autofocus>
 <p id="ba-reset-feedback" role="status"></p><div class="ba-controls"><button class="btn" type="button" id="ba-keep-work">Keep working</button><button class="btn btn--danger" id="ba-clear-work" type="submit" disabled>Erase this activity</button></div>
 </form></dialog>
+<div id="ba-report"></div>
+<details class="ba-card"><summary>Other report formats: HTML or JSON</summary><p>These files contain this activity only, including the name, period, and Dataset ID in your report. The HTML file opens offline.</p><div class="ba-controls"><button type="button" class="btn" id="ba-save-html">Download report HTML</button><button type="button" class="btn" id="ba-save-json">Download this activity’s JSON</button></div></details>
 <p class="ba-caption" id="ba-save">Your work stays in this browser. Use the report to keep a copy.</p>
 <details class="ba-sources"><summary>Sources and model limits</summary>
 <p>Adapted from <a href="https://openscied.org/instructional-materials/b-5-common-ancestry-speciation/">OpenSciEd B.5 Lesson 3</a>. Original eight-species DNA sequences are included. The digital bench uses original specimen illustrations, a short guided window, and a simplified three-tip tree rather than an external analysis service. Claw measurements are of illustrated examples, not field measurements or species averages.</p>
@@ -138,6 +141,7 @@
 <script src="lab.js"></script>
 <script src="openscied-save-session.js"></script>
 <script src="openscied-submission-report.js"></script>
+<script src="openscied-b5-report-files.js"></script>
 <script src="openscied-b5-ancestry-data.js"></script>
 <script src="openscied-b5-ancestry.js"></script>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
