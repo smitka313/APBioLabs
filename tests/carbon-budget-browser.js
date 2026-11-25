@@ -7,6 +7,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { chromium } = require('playwright');
 const { serve, routeLibs } = require('./_h');
+const Journey = require('../openscied-b2-carbon-journey-logic.js');
 
 const FILE = 'openscied-b2-carbon-journey.html';
 const OUT = path.resolve(__dirname, '../artifacts/l9/budget');
@@ -24,6 +25,7 @@ const CARBON = ['air', 'ocean', 'plants', 'peat'];
 const ENERGY = ['plants', 'peat', 'heat', 'sunlight'];
 const BUDGET_END = 8;
 const JOURNEY_KEY = 'aplab:openscied:b2-carbon-journey:v1';
+const JOURNEY_ANSWER = 'My carbon atom started in atmospheric carbon dioxide.';
 
 let count = 0;
 function check(ok, message) {
@@ -112,25 +114,66 @@ async function withPage(browser, cfg, work) {
   }
 }
 
+const readJourney = p => p.evaluate(key => localStorage.getItem(key), JOURNEY_KEY);
+
+function completedJourneyFixture() {
+  let journey = Journey.initial(70);
+  for (let i = 0; i < 10; i++) journey = Journey.record({
+    ...journey, pending:Journey.die(journey.seed, i)
+  });
+  return {
+    ...journey, done:true,
+    coverageReviewed:Journey.missingCoverage(journey).map(card => card.from),
+    answers:{ q1:JOURNEY_ANSWER }, lastSection:'sense', lastVisitedAt:Date.now()
+  };
+}
+
 async function openBudget(p, url, keyboard = false) {
-  const response = await p.goto(url);
+  const response = await p.goto(keyboard ? new URL('#budget', url).href : url);
   assert.ok(response?.ok(), 'carbon journey page loads at the local origin');
-  let original;
-  if (keyboard) {
-    await p.locator('#roll').press('Enter');
-    await p.locator('#prediction-options button').first().waitFor({ state:'visible' });
-    original = {
-      die:await p.locator('#die').getAttribute('aria-label'),
-      save:await p.evaluate(key => localStorage.getItem(key), JOURNEY_KEY)
-    };
-    check(!!original.die && !!original.save, 'the original journey has a real pending roll and a saved record before using Budget');
-  }
   const tab = p.locator('button[data-page="budget"]');
+  if (keyboard) {
+    // Exercise the real prerequisite once, without delaying each viewport-only case.
+    await p.waitForURL(new URL('#play',url).href);
+    check(await tab.isDisabled() && await p.locator(HOST).isHidden(),
+      'a fresh Journey cannot bypass the Budget prerequisite by direct URL');
+    for (let i = 0; i < 10; i++) {
+      await p.locator('#roll').waitFor();
+      await p.locator('#roll').press('Enter');
+      await p.locator('#skip-prediction').waitFor();
+      await p.locator('#skip-prediction').press('Enter');
+      await p.locator('#record').waitFor();
+      await p.locator('#record').press('Enter');
+      if (await p.locator('#coverage-continue').isVisible()) await p.locator('#coverage-continue').press('Enter');
+    }
+    await p.locator('#finish').press('Enter');
+    while (await p.locator('#coverage-continue').isVisible()) await p.locator('#coverage-continue').press('Enter');
+    await p.locator('#analyze').press('Enter');
+    await p.locator('[data-page="sense"]').press('Enter');
+    await p.locator('#q1').fill(JOURNEY_ANSWER);
+  } else {
+    const fixture = completedJourneyFixture();
+    await p.evaluate(([key, save]) => localStorage.setItem(key, JSON.stringify(save)), [JOURNEY_KEY, fixture]);
+    await p.reload();
+  }
+  const save = await readJourney(p), parsed = Journey.readSaved(save);
+  check(parsed?.done && parsed.rows.length === 10 && parsed.answers.q1 === JOURNEY_ANSWER &&
+    Journey.missingCoverage(parsed).length === 0 && await tab.isEnabled(),
+    'the recorded Journey and reviewed references unlock Budget without losing Make Sense work');
+  const original = { die:await p.locator('#die').getAttribute('aria-label'), save, parsed };
   if (keyboard) await tab.press('Enter'); else await tab.click();
   await p.locator(HOST).waitFor({ state:'visible' });
   check(new URL(p.url()).hash === '#budget' && await p.locator('#roll').isHidden(),
     'Budget route opens the budget alone without changing the original journey UI');
   return original;
+}
+
+async function returnToJourney(p, original, message) {
+  await p.locator('button[data-page="play"]').press('Enter');
+  check(await p.locator('#die').getAttribute('aria-label') === original.die &&
+    await p.locator('#roll').isDisabled() &&
+    /^10 rolls · complete$/.test(await p.locator('#turns').textContent()) &&
+    same(Journey.readSaved(await readJourney(p)), original.parsed), message);
 }
 
 async function beginBudget(p) {
@@ -223,7 +266,7 @@ async function exerciseBudget(p, cfg, url) {
       await p.locator('#cb-explanation').inputValue() === EXPLANATION &&
       same(await ledgers(p), history.at(-1)),
       'reload in Budget restores both ledgers, the matched checkpoint, and both student responses');
-    check(await p.evaluate(key => localStorage.getItem(key), JOURNEY_KEY) === original.save,
+    check(await readJourney(p) === original.save,
       'Budget interaction leaves the pre-existing original journey record untouched');
     const dashboardResponse = await p.goto(new URL('openscied-dashboard.html', url).href);
     assert.ok(dashboardResponse?.ok(), 'OpenSciEd dashboard loads for a Budget resume');
@@ -235,10 +278,8 @@ async function exerciseBudget(p, cfg, url) {
     await stage(p, BUDGET_END);
     check(await p.locator('#cb-explanation').inputValue() === EXPLANATION,
       'keyboard dashboard Resume returns to the completed Budget evidence and writing');
-    await p.locator('button[data-page="play"]').press('Enter');
-    check(await p.locator('#die').getAttribute('aria-label') === original.die &&
-      await p.locator('#prediction-options button').count() === 7,
-      'returning to the original mode restores its pending roll and prediction choices');
+    await returnToJourney(p, original,
+      'returning to Journey restores its completed route, reviewed references, and student answer');
     await p.locator('button[data-page="budget"]').press('Enter');
     await stage(p, BUDGET_END);
     await verifyReportAndReset(p, original);
@@ -275,10 +316,8 @@ async function verifyReportAndReset(p, original) {
     await p.locator('#cb-start').evaluate(el => !el.hidden && document.activeElement === el) &&
     await p.locator('#cb-download').isDisabled(),
     'confirmed Budget reset clears only its checkpoints, predictions, and explanation');
-  await p.locator('button[data-page="play"]').press('Enter');
-  check(await p.locator('#die').getAttribute('aria-label') === original.die &&
-      await p.locator('#prediction-options button').count() === 7,
-    'Budget reset leaves the original pending Journey roll in place');
+  await returnToJourney(p, original,
+    'Budget reset leaves the completed Journey and its evidence in place');
 }
 
 (async () => {
