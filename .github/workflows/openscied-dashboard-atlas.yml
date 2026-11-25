@@ -1,0 +1,31 @@
+name: OpenSciEd Dashboard Atlas
+on:
+  pull_request:
+    paths:
+      - 'openscied-dashboard.html'
+      - 'assets/openscied-atlas-*'
+      - 'tests/openscied-dashboard-atlas-browser.js'
+      - '.github/workflows/openscied-dashboard-atlas.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dashboard-preview-art:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/openscied-dashboard-atlas-browser.js
+        env:
+          OPENSCIED_DASHBOARD_SCREENSHOTS: /tmp/openscied-dashboard-atlas
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: openscied-dashboard-atlas
+          path: /tmp/openscied-dashboard-atlas
