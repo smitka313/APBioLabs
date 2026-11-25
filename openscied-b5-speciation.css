@@ -107,3 +107,7 @@
 .ice-shell fieldset{min-width:0;border:0;padding:0;margin:.65rem 0 0}.ice-shell fieldset label{display:flex;align-items:flex-start;gap:.4rem;min-height:28px;font-weight:500}.ice-shell fieldset input{flex:none;margin:.3em 0 0}.ice-shell legend{font-weight:750}
 .ice-tray button{min-height:47px}
 @media(max-width:520px){.ice-timeline{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}.ice-timeline button{grid-column:var(--column);grid-row:1;min-width:24px;font-size:.69rem}.ice-timeline button[data-warm]{grid-row:2}}
+
+#ice-limit-feedback[data-result=incorrect],.ice-habitat [data-match=retry]{color:var(--bad);border-inline-start:3px solid var(--bad);padding-inline-start:.5rem}
+#ice-limit-feedback[data-result=correct],.ice-habitat [data-match=supported]{color:var(--ok);border-inline-start:3px solid var(--ok);padding-inline-start:.5rem}
+.ice-backup{max-width:62ch;background:var(--panel);border:1px solid var(--border);padding:.3rem .75rem .65rem;border-radius:12px}

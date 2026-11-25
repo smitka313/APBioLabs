@@ -12,9 +12,15 @@ for(let i=1;i<128;i++){
  const seed=i.toString(16).padStart(8,'0'),r=D.roster(seed);
  assert.deepEqual(D.roster(seed),r);
  assert.equal(r.length,6);
+ assert.equal(new Set(r.map(c=>c.variants.join(','))).size,6);
+ assert(r.some(c=>D.suitability('north',c).supported));
+ assert(r.some(c=>D.suitability('south',c).supported));
  assert.equal(r.some(c=>c.variants.every(Boolean)),true);
  assert.equal(r.some(c=>c.variants.every(n=>!n)),true);
  assert(r.every(c=>c.variants.length===3&&c.variants.every(n=>typeof n==='boolean')));
 }
 assert.notDeepEqual(D.roster('AAAAAAAB'),D.roster('23456789'));
+assert.deepEqual(D.roster('FE8D9975',1).map(c=>c.variants.map(Number).join('')),['000','111','100','111','010','101']); // existing notebooks keep their original cards
+assert.equal(D.suitability('north',{variants:[false,false,false]}).supported,false);
+assert.equal(D.suitability('south',{variants:[true,true,true]}).supported,false);
 console.log('B.5 Lesson 4 data: source intervals, generation calculations, all eight fossil ages and seeded model chips pass.');

@@ -10,7 +10,7 @@ const ids=Object.keys(D.habitats), phases=['cold','warm'];
 const clean=(text,k)=>typeof text==='string'?text.slice(0,k==='revised'?5000:3000):'';
 const array=(v,len,max)=>[...new Set(Array.isArray(v)?v.filter(x=>Number.isInteger(x)&&x>=0&&x<max):[])].slice(0,len);
 const pos=v=>[0,1,2].map(i=>ids.includes(v?.[i])?v[i]:null);
-const fresh=()=>({v:1,id:Array.from(crypto.getRandomValues(new Uint8Array(4)),n=>n.toString(16).padStart(2,'0')).join('').toUpperCase(),step:'cycles',lastVisitedAt:0,period:1,phase:'cold',moves:{cold:pos(),warm:pos()},mathDraft:['',''],mathChecked:false,locked:false,pins:[],genes:[],choices:{north:null,south:null},answers:{},limit:false,finished:false});
+const fresh=()=>({v:1,rosterVersion:2,id:Array.from(crypto.getRandomValues(new Uint8Array(4)),n=>n.toString(16).padStart(2,'0')).join('').toUpperCase(),step:'cycles',lastVisitedAt:0,period:1,phase:'cold',moves:{cold:pos(),warm:pos()},mathDraft:['',''],mathChecked:false,locked:false,pins:[],genes:[],choices:{north:null,south:null},answers:{},limit:false,limitChoice:null,finished:false});
 let s=fresh(),session,failed=false,selected=-1,selectedTrait=-1,site=0,videoLoaded=false,replayTimer,writingStarted=false;
 try{
  session=window.OpenSciEdSaveSession?.open(localStorage,'b5-speciation',[KEY]);
@@ -18,7 +18,7 @@ try{
  if(raw){
    const v=JSON.parse(raw);
    if(v?.v!==1||!/^[A-F0-9]{8}$/.test(v.id))throw Error('Invalid saved notebook');
-   s.id=v.id;s.step=routes.includes(v.step)?v.step:'cycles';s.lastVisitedAt=Number(v.lastVisitedAt)||0;
+   s.id=v.id;s.rosterVersion=v.rosterVersion===2?2:1;s.step=routes.includes(v.step)?v.step:'cycles';s.lastVisitedAt=Number(v.lastVisitedAt)||0;
    s.period=Number.isInteger(v.period)&&D.periods[v.period]?v.period:1;s.phase=phases.includes(v.phase)?v.phase:'cold';
    for(const phase of phases)s.moves[phase]=pos(v.moves?.[phase]);
    s.mathDraft=[0,1].map(i=>typeof v.mathDraft?.[i]==='string'&&/^\d{0,8}$/.test(v.mathDraft[i])?v.mathDraft[i]:'');
@@ -27,7 +27,9 @@ try{
    s.locked=v.locked===true&&readyCycles();
    s.pins=array(v.pins,8,8);s.genes=array(v.genes,3,3);
    for(const k of ['north','south']){const n=v.choices?.[k];s.choices[k]=Number.isInteger(n)&&n>=0&&n<6?n:null;}
-   s.limit=v.limit===true;s.finished=v.finished===true&&readyFinal();writingStarted=true;
+   s.limit=v.limit===true;
+   s.limitChoice=Object.hasOwn(D.conclusion.choices,v.limitChoice)?v.limitChoice:s.limit?'possible':null;
+   s.finished=v.finished===true&&readyFinal();writingStarted=true;
  }
 }catch(_){failed=true;}
 const readIdentity=window.OpenSciEdSaveSession?.reportIdentity?.(session,[KEY],()=>window.Lab?.identity?.get?.()??null)??(()=>null);
@@ -35,6 +37,7 @@ const canSave=()=>!failed&&session?.check(KEY).ok;
 const tell=t=>{$('status').textContent=t;};
 function save(){
  writingStarted=true;s.lastVisitedAt=Date.now();
+ s.matches={north:suitable('north'),south:suitable('south')};
  if(!canSave()||!session.write(KEY,JSON.stringify(s)).ok)$('save').textContent='This tab cannot save. Keep a copy of your report before closing.';
 }
 function workChanged(){s.finished=false;save();controls();}
@@ -44,7 +47,11 @@ function isMathCorrect(){return [false,true].every((warm,i)=>Number(s.mathDraft[
 function written(k){return Boolean(s.answers[k]?.trim());}
 function readyCycles(){return completePhase('cold')&&completePhase('warm')&&s.mathChecked&&written('first')&&written('needed');}
 function readyFossils(){return ['Polar','Brown'].every(b=>s.pins.some(i=>D.fossils[i].bear===b))&&written('fossilNote');}
-function readyTraits(){return s.genes.length===3&&s.choices.north!==null&&s.choices.south!==null&&written('traitNote');}
+function candidate(k){return s.choices[k]===null?null:D.roster(s.id,s.rosterVersion)[s.choices[k]];}
+function suitable(k){const c=candidate(k);return Boolean(c&&D.suitability(k,c).supported);}
+function readyTraits(){return s.genes.length===3&&written('traitNote')&&(
+ s.rosterVersion===1?s.choices.north!==null&&s.choices.south!==null:suitable('north')&&suitable('south'));}
+function doneCount(){return Number(s.locked)+Number(s.locked&&readyFossils())+Number(s.locked&&readyFossils()&&readyTraits())+Number(s.finished);}
 function readyFinal(){return s.locked&&readyFossils()&&readyTraits()&&s.limit&&written('revised')&&written('future');}
 function gate(route){
  const i=routes.indexOf(route);
@@ -57,15 +64,19 @@ function nextHint(){
  return 'Ready. Saving keeps this map and first argument as evidence for your revision.';
 }
 function controls(){
- const done=Number(s.locked)+Number(s.locked&&readyFossils())+Number(s.locked&&readyFossils()&&readyTraits())+Number(s.finished);
+ const done=doneCount();
  $('progress').textContent=done+' of 4 steps complete.'+(!s.locked?' Save your first argument to open the fossil archive.':!readyFossils()?' Pin both fossil types and write a comparison to unlock traits.':!readyTraits()?' Open all three gene cards and test both habitats to unlock revision.':s.finished?' Investigation complete. Your final report is ready.':'');
  all('[data-step]').forEach(b=>{b.disabled=!gate(b.dataset.step);if(b.dataset.step===s.step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');});
  all('[data-go]').forEach(b=>b.disabled=!gate(b.dataset.go));
  $('gate-cycles').textContent=s.locked?'First argument saved. To revise it, use Step 4.':nextHint();
  $('gate-fossils').textContent=readyFossils()?'':'Pin one polar bear fossil and one brown bear fossil, then write a comparison.';
- $('gate-traits').textContent=readyTraits()?'':'Open all three gene cards, place a bear in each habitat, and write your reasoning.';
- $('gate-argument').textContent=s.finished?'Investigation complete. Preview your final report below.':readyFinal()?'Ready to finish.':'Write your revision and Lesson 5 response, then answer the conclusion check correctly.';
+ $('gate-traits').textContent=readyTraits()?'':'Read the three cards, choose a bear with the model’s habitat clue on each side, and write your reasoning.';
+ $('gate-argument').textContent=s.finished?'Investigation complete. Preview your final report below. Use Edit saved work to make changes.':readyFinal()?'Ready to finish.':'Write your revision and Lesson 5 response, then answer the conclusion check correctly.';
  $('finish').disabled=!readyFinal()||s.finished;
+ $('finish').hidden=s.finished;$('edit').hidden=!s.finished;
+ $('backup').disabled=!writingStarted;
+ for(const k of ['revised','future'])$(k).readOnly=s.finished;
+ all('input[name=ice-limit]').forEach(n=>n.disabled=s.finished);
  $('reset').disabled=!canSave()||!writingStarted;
  $('lock').disabled=!s.locked&&!readyCycles();
  $('lock').textContent=s.locked?'Open my fossil archive →':'Save first argument and open fossils →';
@@ -185,9 +196,11 @@ function drawFossil(){
  const h=mk('h3',f.name),b=button(pin?'Remove pin':'Pin this site');
  b.id='ice-pin';b.setAttribute('aria-pressed',String(pin));
  b.onclick=()=>{
-  if(s.pins.includes(site))s.pins=s.pins.filter(i=>i!==site);else s.pins.push(site);
+  const replacing=s.pins.filter(i=>D.fossils[i].bear===f.bear&&i!==site);
+  if(pin)s.pins=s.pins.filter(i=>i!==site);
+  else s.pins=[...s.pins.filter(i=>D.fossils[i].bear!==f.bear),site];
   workChanged();drawFossil();$('pin').focus();
-  tell((pin?'Removed pin: ':'Pinned ')+f.name+'.');
+  tell((pin?'Removed pin: ':'Pinned ')+f.name+'.'+(!pin&&replacing.length?' This replaced the earlier '+f.bear.toLowerCase()+' bear pin.':''));
  };
  file.replaceChildren(art(f.bear.toLowerCase()),h,mk('p',f.bear+' bear fossil · '+f.age+' years old'),b);
  $('fossil-select').value=String(site);
@@ -207,7 +220,7 @@ D.fossils.forEach((f,i)=>{
  $('leaders').append(svg('line',{x1:f.x*9,y1:f.y*3.9,x2:f.px*9,y2:f.py*3.9}),svg('circle',{cx:f.x*9,cy:f.y*3.9,r:4}));
 });
 $('fossil-select').onchange=e=>{site=Number(e.target.value);drawFossil();};
-const roster=D.roster(s.id), labels={north:'Snowy coast · seal prey',south:'Southern land · varied foods'}, geneIcon={fur:'◒',food:'◆',heat:'✦'};
+const roster=D.roster(s.id,s.rosterVersion), labels={north:'Snowy coast · seal prey',south:'Southern land · varied foods'}, geneIcon={fur:'◒',food:'◆',heat:'✦'};
 D.genes.forEach((g,i)=>{
  const d=mk('details'),t=mk('summary'),icon=mk('span',geneIcon[g.icon],'ice-gene-icon');icon.setAttribute('aria-hidden','true');
  t.append(icon,g.id+' · '+g.trait);d.append(t,mk('p','Comparison: '+g.common+' / '+g.variant+'.'),mk('p',g.clue));
@@ -235,7 +248,9 @@ function drawTraits(){
   const scene=result.parentElement.querySelector('.ice-habitat-scene'),candidate=scene.firstChild;
   candidate.hidden=i===null;
   if(i!==null)candidate.src='assets/openscied-bear-profile-'+(roster[i].variants[0]?'polar':'brown')+'.svg';
-  result.textContent=i===null?'No candidate yet.':'Bear '+(i+1)+' · '+names(roster[i]).join(' · ')+'.';
+  const feedback=i===null?null:D.suitability(k,roster[i]);
+  result.textContent=i===null?'No candidate yet.':'Bear '+(i+1)+' · '+names(roster[i]).join(' · ')+'. '+feedback.note;
+  result.dataset.match=feedback===null?'':feedback.supported?'supported':'retry';
  }
 }
 function matchTrait(k,i){
@@ -243,7 +258,7 @@ function matchTrait(k,i){
  s.choices[k]=i;selectedTrait=-1;workChanged();drawTraits();
  const candidate=$('hab-'+k).parentElement.querySelector('.ice-habitat-scene img');
  if(!matchMedia('(prefers-reduced-motion: reduce)').matches)candidate.animate([{transform:'translateX(-28px)',opacity:.2},{transform:'translateX(0)',opacity:1}],{duration:460,easing:'ease-out'});
- tell('Bear '+(i+1)+' placed in '+labels[k]+'. Read its traits and decide which might matter here.');
+ tell('Bear '+(i+1)+' placed in '+labels[k]+'. '+D.suitability(k,roster[i]).note);
 }
 function recap(){
  $('first-recap').textContent=s.answers.first||'';
@@ -262,15 +277,24 @@ all('[data-answer]').forEach(n=>{
  const k=n.dataset.answer;n.value=s.answers[k]||'';
  n.oninput=()=>{s.answers[k]=clean(n.value,k);workChanged();};
 });
+function showVerdict(){
+ const out=$('limit-feedback');out.textContent=s.limitChoice?D.conclusion.feedback[s.limitChoice]:'';
+ out.dataset.result=s.limitChoice?(s.limit?'correct':'incorrect'):'';
+}
 all('input[name=ice-limit]').forEach(n=>{
- if(s.limit)n.checked=n.value==='possible';
+ n.checked=n.value===s.limitChoice;
  n.onchange=()=>{
-  s.limit=n.value==='possible';
-  const msg=s.limit?'Correct. Climate, fossils and gene variants tell us different things. Together they support possible explanations, not a single documented history.':n.value==='exact'?'A fossil is evidence that bears of that type already existed. It does not locate or date the split.':'A difference in one gene is one clue. It does not explain separation, reproduction and change across populations by itself.';
-  $('limit-feedback').textContent=msg;workChanged();tell(msg);
+  if(!n.checked||s.finished)return;
+  s.limitChoice=n.value;s.limit=n.value==='possible';showVerdict();workChanged();tell(D.conclusion.feedback[n.value]);
  };
 });
-$('finish').onclick=()=>{if(!readyFinal())return;s.finished=true;save();controls();tell('Investigation complete. Your final report is ready.');};
+showVerdict();
+$('finish').onclick=()=>{if(!readyFinal())return;s.finished=true;save();controls();$('edit').focus();tell('Investigation complete. Your final report is ready.');};
+$('edit').onclick=()=>{
+ if(!s.finished)return;
+ s.finished=false;save();controls();$('revised').focus();
+ tell('Editing reopened. Your work is still here. Edit this response, or use Find fossils or Test traits to update evidence. Finish again when you are ready.');
+};
 $('reset').onclick=()=>{$('confirm').value='';$('erase').disabled=true;$('reset-feedback').textContent='';$('reset-dialog').showModal();};
 $('cancel').onclick=()=>$('reset-dialog').close();
 $('confirm').oninput=e=>{$('erase').disabled=e.target.value!=='ERASE';};
@@ -285,12 +309,12 @@ drawFossil();drawTraits();updateDates();
 const hash=location.hash.slice(1);
 go(gate(hash)?hash:gate(s.step)?s.step:routes.findLast(gate),false);
 if(!canSave())$('save').textContent='This browser could not open a saved notebook. Save a copy of your report before closing.';
-window.OpenSciEdSubmission?.mount({target:'#ice-report',filename:'ice-age-bear-speciation',collect:()=>{
+function collectReport(){
  const missing=[];if(!s.locked)missing.push('Save first argument.');if(!readyFossils())missing.push('Compare two kinds of fossils.');if(!readyTraits())missing.push('Compare inherited traits in two habitats.');if(!s.finished)missing.push('Finish the investigation.');
  const response=k=>({type:'answer',prompt:prompts[k],value:s.answers[k]});
  return {title:'Ice Age Bear Speciation Explorer',unit:'OpenSciEd B.5 · Lesson 4 companion',source:'OpenSciEd B.5 Lesson 4: Glacial and Interglacial Periods, Bear Fossils Map and Genetic Bear Data. Only the habitat placements and trait-card combinations are simulated.',status:!canSave()?'recovery':s.finished?'final':'draft',student:readIdentity(),datasetId:'ICE-'+s.id,missing,sections:[
   {title:'Climate model and first argument',items:[
-   {type:'table',columns:['Phase','Selected interval','Years','Generations'],rows:phases.map(k=>[k==='cold'?'Glacial':'Interglacial',span(k==='warm'),D.fmt(D.years(p(),k==='warm')),s.mathChecked?D.fmt(D.generations(p(),k==='warm')):'Not checked'])},
+   {type:'table',columns:['Cycle','Phase','Selected interval','Years','Generations'],rows:phases.map(k=>[p().id,k==='cold'?'Glacial':'Interglacial',span(k==='warm'),D.fmt(D.years(p(),k==='warm')),s.mathChecked?D.fmt(D.generations(p(),k==='warm')):'Not checked'])},
    {type:'table',columns:['Model bear','Glacial placement','Interglacial placement'],rows:[0,1,2].map(i=>['Bear '+(i+1),...phases.map(k=>D.habitats[s.moves[k][i]]?.name||'Not placed')])},response('first'),response('needed')]},
   {title:'Fossil evidence',items:[
    {type:'table',columns:['Location','Bear','Estimated age (years)'],rows:s.pins.map(i=>{const f=D.fossils[i];return[f.name,f.bear,f.age];})},response('fossilNote')]},
@@ -298,8 +322,30 @@ window.OpenSciEdSubmission?.mount({target:'#ice-report',filename:'ice-age-bear-s
    ...s.genes.map(i=>({type:'text',text:D.genes[i].id+' — '+D.genes[i].clue})),
    ...Object.keys(labels).filter(k=>s.choices[k]!==null).map(k=>({type:'answer',prompt:labels[k],value:'Bear '+(s.choices[k]+1)+' · '+names(roster[s.choices[k]]).join(' · ')})),response('traitNote')]},
   {title:'Revision and next questions',items:[
-   response('revised'),response('future'),{type:'answer',prompt:'Evidence limits check',value:s.limit?'Several kinds of evidence support a possible explanation, not an exact split date or location.':''},
+   response('revised'),response('future'),{type:'answer',prompt:D.conclusion.question,value:s.limitChoice?D.conclusion.choices[s.limitChoice]+' '+D.conclusion.feedback[s.limitChoice]:''},
    {type:'text',text:'The map is schematic. Bear cards model possible effects on reproduction, not measured survival. Ancient DNA indicates later gene flow between the lineages.'}]}
  ]};
-}});
+}
+window.OpenSciEdSubmission?.mount({target:'#ice-report',filename:'ice-age-bear-speciation',collect:collectReport});
+$('backup').onclick=()=>{
+ if(!writingStarted)return;
+ const report=collectReport();
+ const payload={
+  format:'ice-age-bear-speciation-backup-v1',exportedAt:new Date().toISOString(),student:report.student,datasetId:report.datasetId,
+  progress:{completed:doneCount(),total:4,summary:doneCount()+' of 4 steps complete',status:report.status},
+  selectedCycle:p().id,climate:phases.map((k,i)=>({phase:k==='cold'?'Glacial':'Interglacial',
+   fromYearsAgo:date(i===1)[0]*1000,toYearsAgo:date(i===1)[1]*1000,years:D.years(p(),i===1),
+   generations:s.mathChecked?D.generations(p(),i===1):null,
+   placements:s.moves[k].map((v,i)=>({bear:'Bear '+(i+1),habitat:D.habitats[v]?.name??null}))})),
+  fossilPins:s.pins.map(i=>{const f=D.fossils[i];return {location:f.name,bear:f.bear,youngestYears:f.young,oldestYears:f.old};}),
+  conclusionCheck:{question:D.conclusion.question,response:s.limitChoice?D.conclusion.choices[s.limitChoice]:null,
+   verdict:s.limitChoice?(s.limit?'Correct':'Try again'):'Not answered',feedback:s.limitChoice?D.conclusion.feedback[s.limitChoice]:null},
+  report:report.sections,
+  work:{'aplab:openscied:b5-speciation:v1':JSON.stringify(s)}
+ };
+ const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));
+ const a=mk('a');a.href=url;a.download='ice-age-bear-speciation-backup.json';a.click();
+ setTimeout(()=>URL.revokeObjectURL(url),2000);
+ tell('Downloaded the JSON backup for this activity.');
+};
 })();

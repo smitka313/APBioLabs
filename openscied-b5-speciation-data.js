@@ -24,16 +24,39 @@
     {id:'ARID5B',trait:'Fat storage',icon:'heat',common:'Typical fat-cell growth',variant:'Possible change in fat-cell growth',clue:'This gene helps regulate fat-cell development. Differences could affect fat storage; fat can insulate a bear. This is a clue, not a measured survival advantage.'}
   ];
   const habitats={north:{name:'Greenland / Arctic coast',short:'Arctic coast',x:54,y:32},south:{name:'Southern mainland',short:'Southern land',x:23,y:72},edge:{name:'Northern mainland',short:'Northern land',x:23,y:35}};
-  function roster(seed){
+  function roster(seed,version=2){
     let n=Number.parseInt(seed,16)>>>0;
     const rand=()=>{n=(Math.imul(n,1664525)+1013904223)>>>0;return n;};
     // Three contrasts are guaranteed, along with three seeded mosaics. These are model chips,
     // not measured genotypes, allele frequencies, survival rates or biological fitness scores.
     const cards=[0,7,1];
-    for(let j=0;j<3;j++)cards.push((rand()>>>23)&7);
+    if(version===1){for(let j=0;j<3;j++)cards.push((rand()>>>23)&7);}
+    else {
+      const unused=[2,3,4,5,6];
+      for(let j=0;j<3;j++)cards.push(unused.splice((rand()>>>10)%unused.length,1)[0]);
+    }
     for(let j=cards.length-1;j>0;j--){let k=(rand()>>>10)%(j+1);[cards[j],cards[k]]=[cards[k],cards[j]];}
     return cards.map((n,i)=>({id:i,variants:genes.map((_,j)=>Boolean(n&(1<<j)))}));
   }
-  const api={periods,fmt,ranges,years,generations,fossils,genes,habitats,roster};
+  const conclusion={question:'Which conclusion does the evidence support?',choices:{
+    exact:'The fossils show the exact date and place of the split.',
+    single:'One gene change explains the whole split.',
+    possible:'Several kinds of evidence support a possible explanation, not an exact date or location.'
+  },feedback:{
+    exact:'Not yet. A fossil shows that bears of that type already existed. It does not locate or date the split.',
+    single:'Not yet. A difference in one gene is one clue. It does not explain separation and change across populations by itself.',
+    possible:'Correct. Climate, fossils and gene variants tell us different things. Together they support a possible explanation, not an exact history.'
+  }};
+  function suitability(habitat,bear){
+    const [coat,diet,storage]=bear.variants;
+    if(habitat==='north'){
+      const clues=[coat&&'lighter fur may blend with snow',diet&&'the APOB variant may help with a fat-rich seal diet',storage&&'the ARID5B variant may affect insulating fat stores'].filter(Boolean);
+      return clues.length?{supported:true,note:'Possible Arctic advantage: '+clues.join('; ')+'.'}:
+        {supported:false,note:'Try another bear. This card has none of the three Arctic clues. Look for a variant that could help with snow camouflage, a seal diet, or heat loss.'};
+    }
+    return coat?{supported:false,note:'Try another bear for this model comparison. Lighter fur can help on snow, but darker fur may blend in better on exposed land.'}:
+      {supported:true,note:'Possible land advantage: darker fur may blend into exposed ground. The other variants are not automatically harmful here.'};
+  }
+  const api={conclusion,suitability,periods,fmt,ranges,years,generations,fossils,genes,habitats,roster};
   if(typeof module==='object')module.exports=api;else root.IceAgeEvidence=api;
 })(typeof globalThis==='object'?globalThis:this);

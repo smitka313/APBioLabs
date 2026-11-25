@@ -86,7 +86,7 @@
 </section>
 <section class="ice-panel" id="fossils" aria-labelledby="fossils-title" hidden>
 <p class="ice-kicker">02 / Fossil archive</p><h2 id="fossils-title" tabindex="-1">Find bears in the fossil record</h2>
-<p>Open a numbered site to see which bear was found there and how old the fossil is. Pin a polar bear site and a brown bear site for your argument.</p>
+<p>Open a numbered site to see which bear was found there and how old the fossil is. Keep one polar bear site and one brown bear site for your argument. Pinning another fossil of the same type replaces the one you pinned.</p>
 <div class="ice-grid"><div>
 <div class="ice-fossil-map"><img src="assets/openscied-ice-age-fossils.svg" width="900" height="390" alt=""><svg viewBox="0 0 900 390" aria-hidden="true" id="ice-leaders"></svg><div id="ice-markers"></div></div>
 <div class="ice-legend"><span><i class="ice-polar-key"></i> Polar bear fossil</span><span><i class="ice-brown-key"></i> Brown bear fossil</span><span>Locations are approximate</span></div>
@@ -102,7 +102,7 @@
 </section>
 <section class="ice-panel" id="traits" aria-labelledby="traits-title" hidden>
 <p class="ice-kicker">03 / Inherited-trait workbench</p><h2 id="traits-title" tabindex="-1">Match traits to habitats</h2>
-<p>A <strong>variant</strong> is a version of a gene. Open the three evidence cards to see what researchers learned. Then choose one model bear for each habitat and explain why it might be more likely to survive and have offspring there.</p>
+<p>A <strong>variant</strong> is a version of a gene. Open the three evidence cards to see what researchers learned. Then choose one bear with at least one of the three Arctic clues for the snowy coast, and a bear with darker pigmentation for exposed southern land. Explain why one trait could affect reproduction in that habitat.</p>
 <div id="ice-genes" class="ice-genes"></div>
 <div class="ice-grid"><div>
 <div class="ice-selection"><p class="ice-kicker">Ancestral population / Simulated cards</p><h3>Who might leave more offspring?</h3>
@@ -126,14 +126,15 @@
 <label><input type="radio" name="ice-limit" value="exact"> The fossils show the exact date and place of the split.</label>
 <label><input type="radio" name="ice-limit" value="single"> One gene change explains the whole split.</label>
 <label><input type="radio" name="ice-limit" value="possible"> Several kinds of evidence support a possible explanation, not an exact date or location.</label>
-</fieldset><p id="ice-limit-feedback" class="ice-feedback"></p>
-<button type="button" class="btn btn--primary" id="ice-finish" disabled>Finish investigation</button>
+</fieldset><p id="ice-limit-feedback" class="ice-feedback" aria-describedby="ice-limit-check"></p>
+<div class="ice-row"><button type="button" class="btn btn--primary" id="ice-finish" disabled>Finish investigation</button><button type="button" class="btn" id="ice-edit" hidden>Edit saved work</button></div>
 <p id="ice-gate-argument" class="ice-note"></p>
 </div><aside class="ice-notebook ice-recap"><p class="ice-kicker">Evidence beside your claim</p><h3>Your first argument</h3><p id="ice-first-recap"></p><div id="ice-evidence-recap"></div>
 <p class="ice-note">The evidence does not pin down an exact split or show no contact ever happened again. Ancient DNA indicates that the two lineages later exchanged genes.</p></aside>
 </div></section>
 <dialog id="ice-reset-dialog" aria-labelledby="ice-reset-title"><form id="ice-reset-form"><h2 id="ice-reset-title">Start this investigation over?</h2><p>This clears only your Ice Age bear maps, evidence pins, and responses on this device. Save a report first if you want a copy.</p><label for="ice-confirm">Type ERASE to confirm</label><input id="ice-confirm" type="text" autocomplete="off" autofocus><p id="ice-reset-feedback"></p><div class="ice-row"><button class="btn" type="button" id="ice-cancel">Keep working</button><button type="submit" class="btn btn--danger" id="ice-erase" disabled>Erase this activity</button></div></form></dialog>
 <div id="ice-report"></div>
+<details class="ice-backup"><summary>Keep a backup of this activity</summary><p>This JSON includes your Ice Age work and the same name, class period, and Dataset ID as your report. The dashboard’s device backup is anonymous and is not a classroom report.</p><button id="ice-backup" class="btn" type="button" disabled>Download this activity’s JSON</button></details>
 <p id="ice-save" class="ice-caption">Your work is saved in this browser. Use the report to keep a copy.</p>
 <details><summary>Sources and model limits</summary><p>Adapted from OpenSciEd B.5 Lesson 4: Glacial and Interglacial Periods, Bears and Glacial Cycles, Bear Fossils Map, Genetic Bear Data, and Developing an Argument. The bridge draws on the Lesson 5 Student Procedure. The digital maps and tokens are original, schematic illustrations. Token placements and trait combinations are simulated; the published fossil ages are approximate estimates reproduced from the lesson map. We use three variants from the genetic handout; the original chip exercise also draws on the NOS3 clue from Lesson 2.</p><p>Original genetics research: <a href="https://doi.org/10.1016/j.cell.2014.03.054" target="_blank" rel="noopener noreferrer">Liu et al. (2014)</a>; ancient gene flow: <a href="https://pubmed.ncbi.nlm.nih.gov/35711062/" target="_blank" rel="noopener noreferrer">Wang et al. (2022)</a>. Fossil map sources credited by OpenSciEd: Cahill et al. (2018), Harington et al. (2014), Marciszak et al. (2015), Segawa et al. (2021), Villalba de Alvarado et al. (2022), and Wang et al. (2022).</p></details>
 <footer>Created by Robert Smitka. <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">Site license: CC BY-NC-SA 4.0</a>. Adapted from <a href="https://www.openscied.org/instructional-materials/b-5-common-ancestry-speciation/">OpenSciEd</a> materials (<a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>); not affiliated with or endorsed by OpenSciEd. Student work and identity stay in this browser unless the student chooses to print or download.</footer>

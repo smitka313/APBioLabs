@@ -916,5 +916,9 @@ test('Ice Age Bear Speciation derives completion from saved evidence and gates r
   assert.match(draft.el('#bear-speciation-open').href,/openscied-b5-speciation\.html#fossils$/);
   const finished=setup(false,{[key]:JSON.stringify({...base,answers:{first:'Ice could separate populations.',fossilNote:'A minimum age.',traitNote:'Fur could affect camouflage.',revised:'Several lines of evidence.',future:'Seals depend on ice.'},locked:true,finished:true,limit:true,pins:[0,4],genes:[0,1,2],choices:{north:0,south:1}})});
   assert.equal(finished.el('#bear-speciation-progress').textContent,'4 of 4 investigation steps complete');
+  const edited=JSON.parse(finished.data[key]);edited.rosterVersion=2;edited.matches={north:false,south:true};
+  const retry=setup(false,{[key]:JSON.stringify(edited)});
+  assert.equal(retry.el('#bear-speciation-progress').textContent,'2 of 4 investigation steps complete');
+  assert.match(retry.el('#bear-speciation-open').href,/#traits$/);
   assert.match(finished.el('#bear-speciation-open').href,/openscied-b5-speciation\.html#argument$/);
 });

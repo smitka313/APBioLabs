@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),http=require('node:http'),path=require('node:path');
-const {chromium}=require('playwright');
+const {chromium}=require('playwright'),D=require('../openscied-b5-speciation-data.js');
 const root=path.join(__dirname,'..'),type={'.html':'text/html','.css':'text/css','.js':'application/javascript','.svg':'image/svg+xml'};
 const server=http.createServer((req,res)=>{
  const f=path.resolve(root,'.'+new URL(req.url,'http://localhost').pathname);
@@ -67,30 +67,61 @@ const server=http.createServer((req,res)=>{
    await p.locator('.ice-marker').nth(1).click();assert.match(await at('fossil-file').innerText(),/110,000–130,000/);await at('pin').click();
    assert(await go('traits').isDisabled());
    await at('fossil-select').selectOption('4');assert.match(await at('fossil-file').innerText(),/550,000/);await at('pin').click();
+   await at('fossil-select').selectOption('0');await at('pin').click();
+   assert.match(await at('status').innerText(),/replaced the earlier polar bear pin/);
+   assert.deepEqual((await save()).pins,[4,0]);
+   await at('fossil-select').selectOption('1');await at('pin').click();
+   assert.deepEqual((await save()).pins,[4,1]);
    await at('fossil-note').fill('The Norway fossil and older France fossil support presence in different places, not a date of speciation.');
    await layout('fossils');await go('traits').click();
    for(const n of await p.locator('#ice-genes summary').all())await n.click();
    const roster=at('roster').locator('button'),hab=at('trait-destinations').locator('button');
-   await roster.first().click();await hab.first().click();
-   if(width===1366)await roster.nth(1).dragTo(hab.last());
-   else {await roster.nth(1).click();await hab.last().click();}
+   const cards=D.roster(before.id),noClue=cards.findIndex(c=>!c.variants.some(Boolean)),snow=cards.findIndex(c=>c.variants.every(Boolean)),land=noClue;
+   await roster.nth(noClue).click();await hab.first().click();
+   assert.match(await at('hab-north').innerText(),/none of the three Arctic clues/);
+   await roster.nth(snow).click();await hab.last().click();
+   assert.match(await at('hab-south').innerText(),/darker fur may blend in better/);
    await at('trait-note').fill('Lighter pigment could help a bear blend into snow. More offspring could inherit it over many generations.');
+   assert(await go('argument').isDisabled());
+   await roster.nth(snow).click();await hab.first().click();
+   if(width===1366)await roster.nth(land).dragTo(hab.last());
+   else {await roster.nth(land).click();await hab.last().click();}
+   assert.match(await at('hab-north').innerText(),/Possible Arctic advantage/);
+   assert.match(await at('hab-south').innerText(),/Possible land advantage/);
    await layout('traits');await go('argument').click();
    assert.match(await at('first-recap').innerText(),/During G6/);assert.match(await at('evidence-recap').innerText(),/France.*550,000/);
    await at('revised').fill('Temperatures and isolation may have changed reproduction. France and Norway fossils show minimum times. APOB is a clue, not a date of speciation.');
    await at('future').fill('Model access to seals. When do bears lose enough ice days for that to matter?');
    await p.locator('input[value="exact"]').check();assert.match(await at('limit-feedback').innerText(),/does not locate or date/);
    assert(await at('finish').isDisabled());
+   if(width===1366){
+    await p.reload();assert(await p.locator('input[value="exact"]').isChecked());
+    assert.match(await at('limit-feedback').innerText(),/does not locate or date/);
+   }
    await p.locator('input[value="possible"]').check();await at('finish').click();
    assert.match(await at('progress').innerText(),/4 of 4/);await layout('report');
    if(width===1366){
+    await at('edit').click();assert.match(await at('status').innerText(),/Editing reopened/);
+    assert.equal((await save()).finished,false);
+    assert.equal(await at('revised').evaluate(n=>n.readOnly),false);
+    const oldText=await at('revised').inputValue();await at('revised').fill(oldText+' I can edit after finishing.');
+    await at('finish').click();assert.equal((await save()).finished,true);
+    await p.getByText('Keep a backup of this activity',{exact:true}).click();
+    const json=p.waitForEvent('download');await at('backup').click();
+    const backup=JSON.parse(fs.readFileSync(await (await json).path(),'utf8'));
+    assert.equal(backup.student.name,'Avery Ice');assert.equal(String(backup.student.period),'2');
+    assert.equal(backup.datasetId,'ICE-'+before.id);assert.equal(backup.progress.summary,'4 of 4 steps complete');
+    assert.equal(backup.selectedCycle,'G6');assert.deepEqual(backup.climate.map(x=>[x.years,x.generations]),[[15000,1322],[65000,5727]]);
+    assert.deepEqual(backup.fossilPins.map(f=>f.location),['France','Norway (Svalbard)']);
+    assert.equal(backup.conclusionCheck.question,D.conclusion.question);assert.equal(backup.conclusionCheck.verdict,'Correct');
+    assert.equal(Object.keys(backup.work).length,1);
     await p.getByRole('button',{name:'Preview report'}).click();
     await p.getByText('More formats',{exact:true}).click();
     const word=p.waitForEvent('download');await p.getByRole('button',{name:/Download Word/i}).click();const d=await word;
     assert.match(d.suggestedFilename(),/ice-age-bear-speciation.*\.docx$/);
     const jszip=require('jszip'),z=await jszip.loadAsync(fs.readFileSync(await d.path()));
     const xml=await z.file('word/document.xml').async('string');
-    for(const pattern of [/Avery Ice/,/ICE-[0-9A-F]{8}/,/First argument/,/Norway/,/550,000/,/APOB/,/Driving Question Board/])assert.match(xml,pattern);
+    for(const pattern of [/Avery Ice/,/ICE-[0-9A-F]{8}/,/First argument/,/Norway/,/550,000/,/APOB/,/Driving Question Board/,/Which conclusion does the evidence support/,/>G6</,/edit after finishing/])assert.match(xml,pattern);
     const dpage=await c.newPage();await dpage.goto(base+'openscied-dashboard.html');
     assert.match(await dpage.locator('#bear-speciation-progress').innerText(),/4 of 4/);
     assert.match(await dpage.locator('#openscied-resume-link').getAttribute('href'),/speciation.*argument/);

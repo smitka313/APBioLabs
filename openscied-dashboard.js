@@ -588,7 +588,7 @@
     if(!started)return blank;
     const map=s.locked===true;
     const fossil=map&&Array.isArray(s.pins)&&s.pins.some(i=>[0,1].includes(i))&&s.pins.some(i=>[2,3,4,5,6,7].includes(i))&&written(a,'fossilNote');
-    const trait=fossil&&[0,1,2].every(i=>Array.isArray(s.genes)&&s.genes.includes(i))&&Number.isInteger(s.choices?.north)&&Number.isInteger(s.choices?.south)&&written(a,'traitNote');
+    const trait=fossil&&[0,1,2].every(i=>Array.isArray(s.genes)&&s.genes.includes(i))&&Number.isInteger(s.choices?.north)&&Number.isInteger(s.choices?.south)&&(s.rosterVersion!==2||s.matches?.north===true&&s.matches?.south===true)&&written(a,'traitNote');
     const finish=trait&&s.finished===true&&s.limit===true&&written(a,'revised')&&written(a,'future');
     const n=[map,fossil,trait,finish].filter(Boolean).length;
     const allowed=['cycles',...(map?['fossils']:[]),...(fossil?['traits']:[]),...(trait?['argument']:[])];
