@@ -788,7 +788,10 @@ async function exercise(browser, base, size) {
       await report(page,size,pair,michigan);
     }
     if (size.width===1366) {
-      await invoke(view(page,'cr-reset'),size);
+      // Report closure restores the underlying document in the dialog's close event.
+      await page.locator('dialog.osr-dialog').waitFor({state:'hidden'});
+      await page.locator('body.openscied-report-print').waitFor({state:'detached'});
+      await view(page,'cr-reset').click();
       await view(page,'cr-reset-confirm').waitFor({state:'visible'});
       check((await record(page))?.completed===true,'opening reset confirmation does not erase work');
       await invoke(view(page,'cr-reset-confirm'),size);
