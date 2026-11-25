@@ -2,7 +2,7 @@
 ((root)=>{
   // Approximate OpenSciEd B.5 Lesson 4 slide J teaching intervals, not a modern ice-extent reconstruction.
   const periods=[
-    {id:'G7',from:680,end:626,next:550},{id:'G6',from:550,end:535,next:470},
+    {id:'G7',from:680,end:625,next:550},{id:'G6',from:550,end:535,next:470},
     {id:'G5',from:470,end:425,next:380},{id:'G4',from:380,end:335,next:285},
     {id:'G3',from:285,end:245,next:190},{id:'G2',from:190,end:135,next:75},
     {id:'G1',from:75,end:15,next:0}

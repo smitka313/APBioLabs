@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),D=require('../openscied-b5-speciation-data.js');
-assert.deepEqual(D.periods.map(p=>[p.from,p.end,p.next]),[[680,626,550],[550,535,470],[470,425,380],[380,335,285],[285,245,190],[190,135,75],[75,15,0]]);
+assert.deepEqual(D.periods.map(p=>[p.from,p.end,p.next]),[[680,625,550],[550,535,470],[470,425,380],[380,335,285],[285,245,190],[190,135,75],[75,15,0]]);
 assert.equal(D.years(D.periods[1]),15000);
 assert.equal(D.years(D.periods[1],true),65000);
 assert.equal(D.generations(D.periods[1]),1322);
