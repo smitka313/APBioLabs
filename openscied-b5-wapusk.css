@@ -44,3 +44,16 @@
 .wb-model-persistent .wb-kicker{background:#e2dab5;color:#493c21}
 @media(max-width:440px){.wb-shell{width:calc(100% - 20px);max-width:calc(100% - 20px)}.wb-shell .btn{white-space:normal}.wb-video-prompt{align-items:flex-start;flex-direction:column}}
 @media(prefers-reduced-motion:reduce){.wb-map .wb-ice{transition:none}}
+
+/* Shared Lesson 2 portraits in the Lesson 1 field guide and selected sightings. */
+.wb-field-key{margin:.6rem 0;padding:.65rem;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.wb-field-key summary{font-weight:750;cursor:pointer;min-height:28px}
+.wb-field-profiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem;margin:.45rem 0}
+.wb-field-profiles figure{margin:0;overflow:hidden;border-radius:9px;border:1px solid var(--line);background:var(--surface)}
+.wb-field-profiles img,.wb-evidence-profile{display:block;width:100%;height:auto;aspect-ratio:5/3;object-fit:cover}
+.wb-field-profiles figcaption{padding:.38rem .5rem}.wb-field-profiles figcaption span{display:block;font-size:.84rem}
+.wb-evidence-with-profile{display:grid;grid-template-columns:minmax(0,1fr) clamp(100px,22vw,175px);gap:.25rem .75rem;align-items:start}
+.wb-evidence-with-profile h3{grid-column:1;grid-row:1;margin:0}
+.wb-evidence-with-profile p{grid-column:1;grid-row:2;margin:0}
+.wb-evidence-profile{grid-column:2;grid-row:1/span 2;border-radius:7px}
+@media(max-width:560px){.wb-field-profiles{grid-template-columns:minmax(0,1fr)}.wb-field-profiles figure{display:grid;grid-template-columns:minmax(92px,37%) minmax(0,1fr);align-items:center}.wb-evidence-with-profile{grid-template-columns:minmax(0,1fr) 94px}.wb-evidence-with-profile h3{grid-column:1/-1}.wb-evidence-profile{grid-row:2}}

@@ -22,7 +22,18 @@ const {chromium}=require('playwright'),{ROOT,serve}=require('./_h');
        assert.match(await by('evidence').innerText(),/four female polar bears/);
        await page.getByRole('button',{name:'Summer',exact:true}).click();
        assert.equal(await by('markers').locator('button').count(),5);
+       for(const [label,profile] of [['Polar bear sightings','polar'],['Brown bear sightings','brown'],['Black bear sightings','black']]){
+         await page.getByRole('button',{name:label,exact:true}).click();
+         const img=by('evidence').locator('.wb-evidence-profile');
+         assert.ok(await img.isVisible());assert.ok((await img.getAttribute('src')).endsWith(profile+'.svg'));
+         await img.evaluate(n=>n.decode());
+       }
+       await page.getByText('Compare the three bear profiles',{exact:true}).click();
+       const guide=page.locator('.wb-field-profiles');
+       await guide.locator('img').evaluateAll(ns=>Promise.all(ns.map(n=>n.decode())));
+       assert.deepEqual(await guide.locator('figcaption strong').allTextContents(),['△ Polar bear','◆ Brown bear (grizzly)','⬟ American black bear']);
        await page.getByRole('button',{name:'Shared Owl River location'}).click();
+       assert.equal(await by('evidence').locator('img').count(),0);
        assert.match(await by('evidence').innerText(),/different occasions/);
        await page.locator('[name="overlap"][value="meeting"]').check();
        await page.getByRole('button',{name:'Check the claim'}).click();assert.match(await by('feedback').textContent(),/do not establish/);
