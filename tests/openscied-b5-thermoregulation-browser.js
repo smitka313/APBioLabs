@@ -58,7 +58,16 @@ const {chromium}=require('playwright'),{serve}=require('./_h');
        assert.match(await p.locator('#human').innerText(),/skin surface.*core temperature/s);
        assert.doesNotMatch(await p.locator('#human').innerText(),/teacher.supervised|homework/i);
        await by('sample').click();assert.match(await by('human-status').innerText(),/invented/);assert.equal(await by('human-plot').locator('circle,rect').count(),10);
-       await by('edit').click();await p.getByLabel('Participant A at 0 minutes (°C)',{exact:true}).fill('32.8');
+       await by('edit').click();
+       await tab('model').click();
+       assert.match(await by('recap').innerText(),/No readings saved yet/);
+       await tab('human').click();
+       await p.getByLabel('Participant B at 4 minutes (°C)',{exact:true}).fill('34.1');
+       await tab('model').click();
+       assert.match(await by('recap').innerText(),/Participant B: 4 min: 34\.1°C/);
+       assert.doesNotMatch(await by('recap').innerText(),/Participant A|No readings saved yet/);
+       await tab('human').click();
+       await p.getByLabel('Participant A at 0 minutes (°C)',{exact:true}).fill('32.8');
        await p.getByLabel('Participant A at 4 minutes (°C)',{exact:true}).fill('33.2');
        assert.equal(await by('human-plot').locator('circle').count(),2);
        assert.equal(await by('human-plot').locator('line').count(),0,'gap must not be imputed');
@@ -77,12 +86,12 @@ const {chromium}=require('playwright'),{serve}=require('./_h');
          else{await p.locator('[data-card="'+c+'"]').click();await p.locator('[data-zone="'+z+'"]').click();}
        }
        assert.match(await by('sort-status').innerText(),/All six cards placed/);
-       assert.match(await by('recap').innerText(),/97 of 137.*24.*33\.2/s);
+       assert.match(await by('recap').innerText(),/97 of 137.*24.*Participant A.*33\.2.*Participant B.*34\.1/s);
        await by('explain').fill('Heat is plausible. Measure heat and behavior in comparable wild encounters.');
        await fit('Model');
        await p.getByRole('button',{name:'Preview report',exact:true}).click();
        const report=await p.getByRole('dialog').filter({hasText:'Bear Thermoregulation Lab'}).innerText();
-       assert.match(report,/117.*33\.2.*6 of 6.*Heat is plausible/s);
+       assert.match(report,/117.*33\.2.*34\.1.*6 of 6.*Heat is plausible/s);
        assert.deepEqual(errors,[]);
        console.log('Thermoregulation '+width+'px: original graph, speed data, class measurements, card sort, persistence, report');
      }finally{await ctx.close();}

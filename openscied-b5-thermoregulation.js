@@ -159,7 +159,15 @@
     $('zones').append(b);
   }
   function recap(){
-    const rows=[['Field comparison','At the Barter Island site, 97 of 137 polar–brown encounters involved a nonaggressive grizzly approach and a polar bear giving way.'],['Treadmill comparison','At 1.1 m/s the bear took 0 breaks; at 2.2 m/s it took 24. One bear’s data cannot tell us why a wild bear leaves food.'],['Your human table',s.hum.some(Boolean)?(s.mode==='practice'?'Practice':'Recorded')+' surface data: '+times.map((t,i)=>s.hum[2*i]===''?'':t+' min: '+s.hum[2*i]+'°C (A)').filter(Boolean).join(' · '):'No readings saved yet.']];
+    const rows=[['Field comparison','At the Barter Island site, 97 of 137 polar–brown encounters involved a nonaggressive grizzly approach and a polar bear giving way.'],['Treadmill comparison','At 1.1 m/s the bear took 0 breaks; at 2.2 m/s it took 24. One bear’s data cannot tell us why a wild bear leaves food.']];
+    const humanRows=['A','B'].flatMap((participant,col)=>{
+      const values=times.flatMap((t,i)=>{
+        const measurement=s.hum[2*i+col];
+        return measurement===''?[]:[t+' min: '+measurement+'°C'];
+      });
+      return values.length?[[(s.mode==='practice'?'Practice surface data':'Recorded surface data')+' · Participant '+participant,values.join(' · ')]]:[];
+    });
+    rows.push(...(humanRows.length?humanRows:[['Your human table','No readings saved yet.']]));
     $('recap').replaceChildren(node('h3','Evidence beside your explanation'),...rows.map(([k,v])=>{const p=node('p');p.append(node('strong',k+': '),v);return p;}));
   }
   function step(name,persist=true){
