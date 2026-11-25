@@ -142,8 +142,17 @@ const out=path.join(ROOT,'artifacts','screening');
     assert.equal(await id('clinic-gauge').getAttribute('data-over'),'true');
     assert.ok(await id('popup-seal').locator('svg').isVisible());
     assert.match(await id('popup-evidence').textContent(),/Ride program.*95 cr/);
+    // Wait for the native close event and the dialog's focus restoration before
+    // selecting a tool and its destination with the keyboard.
+    await id('mission-dialog').evaluate(dialog=>{
+      dialog.dataset.testClosed='false';
+      dialog.addEventListener('close',()=>{dialog.dataset.testClosed='true';},{once:true});
+    });
     await id('popup-close').click();
+    await p.locator('#sd-mission-dialog[data-test-closed="true"]:not([open])').waitFor({state:'attached'});
     await id('tool-rides').press('Enter');await site('rack').press('Enter');
+    assert.doesNotMatch(await id('mobile-items').textContent(),/Rides/);
+    assert.ok(await id('run').isEnabled(),'removing the vouchers makes the revised plan runnable');
     await id('run').click();
     await id('advanced').locator('summary').click();
     const saved=await p.evaluate(()=>JSON.parse(localStorage.getItem('aplab:openscied:b3-screening:v1')));
