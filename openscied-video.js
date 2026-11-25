@@ -29,6 +29,7 @@
   const observer = new MutationObserver(refresh);
   const watched = new Set();
   for (const { panel } of videos) {
+    panel.addEventListener('toggle', refresh);
     for (let ancestor = panel; ancestor; ancestor = ancestor.parentElement) {
       if (watched.has(ancestor)) break;
       watched.add(ancestor);

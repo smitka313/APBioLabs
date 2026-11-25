@@ -40,10 +40,16 @@ async function setUp(page, file) {
           assert.equal(await cards.locator('iframe').count(), 0, 'no player loads without choosing a clip');
           for (const [i, id] of ids.entries()) {
             const card = cards.nth(i), summary = card.locator('summary'), oldRequests = requests.length;
-            await summary.focus();
-            await summary.press('Enter');
+            await summary.scrollIntoViewIfNeeded();
+            const keyboard = file === 'openscied-b1-migration.html';
+            if (keyboard) await summary.press('Enter');
+            else await summary.click();
             const frame = card.locator('iframe');
-            await frame.waitFor();
+            try { await frame.waitFor({ timeout: 8000 }); }
+            catch (error) {
+              const state=await card.evaluate(node=>({ open:node.open, hidden:!!node.closest('[hidden],[inert],dialog:not([open])'), rects:node.getClientRects().length, active:document.activeElement?.tagName }));
+              throw new Error(width+'px '+file+' clip '+id+' did not open: '+JSON.stringify(state),{cause:error});
+            }
             await card.frameLocator('iframe').getByRole('button', {name:'Play video'}).waitFor();
             assert.equal(requests.length, oldRequests + 1);
             assert.equal(requests.at(-1), '/embed/' + id);
@@ -51,7 +57,7 @@ async function setUp(page, file) {
             assert.ok(box && box.x >= 0 && box.x + box.width <= width + 1 && box.height >= 200, 'player fits viewport');
             assert.ok(await card.locator('a[target="_blank"]').isVisible(), 'fallback is visible');
             if (i + 1 < ids.length) {
-              await summary.press('Enter');
+              await summary.click();
               await frame.waitFor({state:'detached'});
             }
           }
