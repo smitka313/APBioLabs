@@ -13,12 +13,29 @@ const {chromium}=require('playwright'),{serve}=require('./_h');
        const by=id=>p.locator('#th-'+id), tab=name=>p.locator('.th-tabs [data-step="'+name+'"]');
        const fit=async stage=>assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),stage+' overflows at '+width);
        await p.goto(server.url+'openscied-b5-thermoregulation.html');
+       await p.locator('.th-bear-guide img').evaluate(n=>n.decode());
+       assert.match(await p.locator('.th-bear-guide figcaption').innerText(),/Polar.*Brown.*Black/s);
        await by('predict').fill('The polar bear could leave when a brown bear arrives.');
        await p.getByRole('button',{name:'Polar + black',exact:true}).click(); assert.match(await by('case').innerText(),/not provide direct interaction data/);
        await p.getByRole('button',{name:'Polar + brown',exact:true}).click(); assert.match(await by('case').innerText(),/137.*97/s);
        await by('field').fill('The field observation did not measure core temperature.');
        await fit('Field');
        await tab('treadmill').click();
+       await p.locator('[data-row="3"]').click();
+       const fast=await by('scene').evaluate(n=>parseFloat(n.style.getPropertyValue('--cadence')));
+       if(width===375){
+         assert.ok(await by('walk').isDisabled());
+         assert.equal(await by('scene').getAttribute('data-running'),'false');
+       }else{
+         assert.equal(await by('scene').getAttribute('data-running'),'true');
+         const leg=by('scene').locator('.th-hind-near');
+         const initial=await leg.evaluate(n=>getComputedStyle(n).transform);
+         await p.waitForFunction(old=>getComputedStyle(document.querySelector('.th-hind-near')).transform!==old,initial);
+         assert.equal(await by('scene').locator('.th-belt-lines').evaluate(n=>getComputedStyle(n).animationName),'th-belt-motion');
+         await by('walk').click();assert.equal(await by('scene').getAttribute('data-running'),'false');
+       }
+       await p.locator('[data-row="0"]').click();
+       assert.ok((await by('scene').evaluate(n=>parseFloat(n.style.getPropertyValue('--cadence'))))>fast);
        await p.locator('[data-row="3"]').click();
        assert.match(await by('reading').innerText(),/117\.0 minutes.*24 breaks/);
        assert.deepEqual(await by('bear-data').locator('tr[data-active=true] :is(th,td)').allTextContents(),['2.2','375','117.0','24']);
@@ -30,7 +47,7 @@ const {chromium}=require('playwright'),{serve}=require('./_h');
        await p.locator('[data-check="breaks"]').click();assert.match(await by('check').innerText(),/^Yes/);
        await by('pattern').fill('From 0 to 24 breaks from 1.1 to 2.2 m/s.');
        await fit('Treadmill');
-       await tab('human').click();assert.equal(await p.locator('iframe').count(),0);
+       await tab('human').click();assert.equal(await p.locator('iframe').count(),0);assert.equal(await by('scene').getAttribute('data-running'),'false');
        await by('sample').click();assert.match(await by('human-status').innerText(),/invented/);assert.equal(await by('human-plot').locator('circle,rect').count(),10);
        await by('edit').click();await p.getByLabel('Participant A at 0 minutes (°C)',{exact:true}).fill('32.8');
        await p.getByLabel('Participant A at 4 minutes (°C)',{exact:true}).fill('33.2');

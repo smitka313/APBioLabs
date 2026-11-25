@@ -4,6 +4,7 @@ on:
     paths:
       - 'openscied-b5-thermoregulation*'
       - 'assets/openscied-bear-thermoregulation.svg'
+      - 'assets/openscied-bear-field-profiles.svg'
       - 'assets/openscied-b5-treadmill-source.webp'
       - 'tests/openscied-b5-thermoregulation*'
       - '.github/workflows/openscied-thermoregulation.yml'

@@ -11,10 +11,23 @@
 .th-evidence,.th-chart{margin:.7rem 0;padding:.75rem;background:var(--surface-2);border:1px solid var(--line);border-radius:9px}
 .th-evidence summary{cursor:pointer;font-weight:700}.th-evidence iframe{display:block;width:100%;height:auto;aspect-ratio:16/9;border:0;margin-top:.6rem}
 .th-scene{position:relative;margin:.65rem 0;border-radius:12px;overflow:hidden;background:#10293a;color:#fff4d9;isolation:isolate}
-.th-scene img{display:block;width:100%;height:auto;aspect-ratio:1000/480}
-.th-scene figcaption{padding:.44rem .7rem;font-size:.85rem}.th-belt{position:absolute;left:23%;top:69%;width:58%;height:3%;border-radius:5px;background:repeating-linear-gradient(105deg,#bcd7d7 0 5px,#315264 5px 18px);animation:th-belt var(--speed,1.2s) linear infinite;animation-play-state:paused}
-.th-scene[data-running=true] .th-belt{animation-play-state:running}.th-snow{position:absolute;right:3%;top:52%;color:#fff;background:#143449;border:1px solid #c1e8f6;padding:.2rem .55rem;border-radius:4px;opacity:0}.th-scene[data-breaks=true] .th-snow{opacity:1}
-@keyframes th-belt{to{background-position:-40px 0}}
+.th-treadmill-art{display:block;width:100%;height:auto;aspect-ratio:1000/480}
+.th-scene figcaption{padding:.5rem .7rem;font-size:.88rem}
+.th-motion-controls p{margin:0;font-size:.9rem;color:var(--muted)}
+.th-polar-bear,.th-leg,.th-belt-lines{transform-box:view-box}
+.th-hind-far{transform-origin:44.3% 53.3%}.th-fore-far{transform-origin:63.1% 53.3%}
+.th-hind-near{transform-origin:41.5% 52.1%}.th-fore-near{transform-origin:62.5% 51.7%}
+.th-scene[data-running=true] .th-polar-bear{animation:th-body-rise var(--cadence) ease-in-out infinite}
+.th-scene[data-running=true] .th-leg{animation:th-stride var(--cadence) ease-in-out infinite}
+.th-scene[data-running=true] :is(.th-fore-near,.th-hind-far){animation-delay:var(--opposite)}
+.th-scene[data-running=true] .th-belt-lines{animation:th-belt-motion var(--belt-rate) linear infinite}
+@keyframes th-stride{0%,100%{transform:translate(0,0) rotate(-8deg)}25%{transform:translate(1px,-4px) rotate(0)}50%{transform:rotate(8deg)}75%{transform:translate(0,1px) rotate(0)}}
+@keyframes th-body-rise{0%,50%,100%{transform:translateY(0)}25%,75%{transform:translateY(-2px)}}
+@keyframes th-belt-motion{to{transform:translateX(-23px)}}
+.th-bear-guide{margin:.75rem 0;padding:.58rem;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.th-bear-guide img{display:block;width:100%;height:auto;aspect-ratio:900/240;border-radius:8px}
+.th-bear-guide figcaption{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem;padding:.4rem .2rem;font-size:.95rem}
+.th-bear-guide figcaption span{border-bottom:1px solid var(--line);padding:.25rem 0}.th-bear-guide small{display:block;font-size:.83rem}.th-bear-guide p{font-size:.88rem;margin:.35rem .2rem .1rem}
 .th-bar-row{display:grid;grid-template-columns:3.9rem minmax(0,1fr) 4rem;align-items:center;gap:.4rem;margin:.42rem 0;font-size:.87rem}
 .th-track{height:1.12rem;background:var(--surface);border:1px solid var(--line);border-radius:4px}.th-bar{height:100%;background:var(--accent);border-radius:3px}.th-bar-row[data-active=true]{font-weight:800}.th-bar-row[data-active=true] .th-track{outline:2px dashed var(--accent);outline-offset:2px}
 .th-table{width:100%;table-layout:fixed;border-collapse:collapse;margin:.9rem 0}.th-table caption{text-align:left;font-weight:750}.th-table :is(th,td){padding:.4rem .32rem;text-align:left;border-bottom:1px solid var(--line)}.th-table tr[data-active=true]{background:var(--accent-soft)}
@@ -24,7 +37,7 @@
 .th-zones{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem}.th-zones .btn{min-height:66px;text-align:left;justify-content:flex-start}.th-zones small{font-weight:450;display:block}.th-palette button[draggable=true]{cursor:grab}
 #th-save,.th-shell footer{font-size:.9rem;margin:.8rem 0}
 @media(max-width:560px){.th-shell{width:calc(100% - 20px)}.th-hero{background-position:64% center}.th-table{font-size:.86rem}.th-zones{grid-template-columns:1fr}}
-@media(prefers-reduced-motion:reduce){.th-belt{animation:none}}
+@media(prefers-reduced-motion:reduce){.th-scene[data-running=true] :is(.th-polar-bear,.th-leg,.th-belt-lines){animation:none}}
 
 .th-source img,#th-visual img{display:block;width:100%;height:auto;max-width:655px;margin:.6rem auto;background:#fff;border-radius:5px}
 #th-visual{width:min(820px,calc(100% - 20px));max-height:93vh;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px}

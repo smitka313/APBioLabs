@@ -59,10 +59,24 @@
       const bar=node('div');bar.className='th-bar';bar.style.width=(off/120*100)+'%';track.append(bar);
       row.append(node('span',speed.toFixed(1)+' m/s'),track,node('span',off.toFixed(1)+' min'));return row;
     }));
-    const scene=$('scene');clearTimeout(anim);scene.dataset.running=replay;scene.dataset.breaks=n>0;
-    scene.style.setProperty('--speed',(1.7/speed)+'s');
-    if(replay)anim=setTimeout(()=>{scene.dataset.running='false';},1900);
+    const scene=$('scene'),cadence=1.42/speed;
+    scene.style.setProperty('--cadence',cadence.toFixed(3)+'s');
+    scene.style.setProperty('--opposite',(-cadence/2).toFixed(3)+'s');
+    scene.style.setProperty('--belt-rate',(0.46/speed).toFixed(3)+'s');
+    walk(replay);
   }
+  const motion=window.matchMedia('(prefers-reduced-motion: reduce)');
+  function walk(play){
+    clearTimeout(anim);
+    const button=$('walk'),playing=play&&!motion.matches;
+    $('scene').dataset.running=String(playing);
+    button.textContent=playing?'Stop walk':'Play walk';
+    button.disabled=motion.matches;
+    $('motion-note').textContent=motion.matches?'Motion is off because this device prefers reduced motion.':data[s.row][0].toFixed(1)+' m/s selected. Faster settings show a quicker stride.';
+    if(playing)anim=setTimeout(()=>walk(false),5000);
+  }
+  motion.addEventListener('change',()=>walk(false));
+  $('walk').onclick=()=>walk($('scene').dataset.running!=='true');
   const feedback={
     breaks:'Yes. Faster trials in this table had more breaks and more time off, consistent with a need to cool down.',
     core:'The table gives break counts and minutes off, not a core temperature for each speed.',
@@ -154,6 +168,7 @@
     for(const id of route)document.getElementById(id).hidden=id!==name;
     all('[data-step]').forEach(b=>{if(b.dataset.step===name)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');});
     for(const f of all('iframe[data-lesson-video]'))if(f.closest('section').id!==name){f.parentElement.querySelector('[data-video]').hidden=false;f.remove();}
+    if(name!=='treadmill')walk(false);
     if(name==='model')recap();
     if(persist){save();history.replaceState(null,'','#'+name);document.getElementById(name+'-title').focus();}
   }

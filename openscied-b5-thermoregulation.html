@@ -41,6 +41,9 @@
 <p class="th-tag">Field notebook</p><h2 id="field-title" tabindex="-1">Who gives up the food?</h2>
 <p>In Lesson 1, the Wapusk sightings showed where bears were reported. Now examine what bears actually did when they shared a food source at a different site.</p>
 <label for="th-predict">Predict: If a brown bear approaches a polar bear at a food source, what might happen? Why?</label><textarea id="th-predict" data-field="predict"></textarea>
+<figure class="th-bear-guide"><img src="assets/openscied-bear-field-profiles.svg" width="900" height="240" alt="Illustrations distinguish the polar bear’s long neck, the brown bear’s shoulder hump, and the black bear’s taller ears and lack of a hump.">
+<figcaption><span><strong>Polar</strong><small>Long neck, small ears</small></span><span><strong>Brown</strong><small>High shoulder hump</small></span><span><strong>Black</strong><small>Taller ears, no hump</small></span></figcaption>
+<p>Illustrations are not to scale. Black and brown bears can overlap in fur color; body shape is a better clue. <a href="https://www.nps.gov/articles/bear-identification.htm">Bear identification (National Park Service)</a></p></figure>
 <h3>Open the field cases</h3>
 <div class="th-actions" role="group" aria-label="Which bear pair"><button type="button" class="btn" data-pair="polar-brown">Polar + brown</button><button type="button" class="btn" data-pair="brown-black">Brown + black</button><button type="button" class="btn" data-pair="polar-black">Polar + black</button></div>
 <div class="th-evidence" id="th-case" aria-live="polite"></div>
@@ -52,7 +55,63 @@
 <p><strong>Thermoregulation</strong> means keeping body temperature in a workable range. Scientists studied two trained polar bears indoors; the values here are from one bear. The treadmill was stopped at 40°C when the bears showed heat stress. That is the study’s stopping point, not a temperature reading for each row in the table.</p>
 <details class="th-evidence"><summary>Watch the Oregon Zoo treadmill clip</summary><p>This video shows what a bear treadmill looks like. It is not footage from Best’s study.</p><button type="button" class="btn" data-video="lff3Sca8g9M" data-start="17" data-title="Oregon Zoo polar bear treadmill">Play clip</button> <a href="https://www.youtube.com/watch?v=lff3Sca8g9M&amp;t=17s">Open on YouTube</a></details>
 <div class="th-actions" role="group" aria-label="Walking speed"><span>Choose a speed:</span><button type="button" class="btn" data-row="0">1.1 m/s</button><button type="button" class="btn" data-row="1">1.6 m/s</button><button type="button" class="btn" data-row="2">2.0 m/s</button><button type="button" class="btn" data-row="3">2.2 m/s</button></div>
-<figure class="th-scene" id="th-scene"><img src="assets/openscied-bear-thermoregulation.svg" alt="Illustration of a polar bear on a treadmill, with a separate snow platform." width="1000" height="480"><span class="th-belt" aria-hidden="true"></span><div class="th-snow" aria-hidden="true">✦ &nbsp; ❄ &nbsp; ✦</div><figcaption>Illustration only. Animation does not show the timing of breaks.</figcaption></figure>
+<figure class="th-scene" id="th-scene">
+<svg class="th-treadmill-art" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 480" width="1000" height="480" role="img" aria-labelledby="th-art-title th-art-desc">
+<title id="th-art-title">Polar bear walking on a laboratory treadmill</title><desc id="th-art-desc">A long-necked polar bear with small rounded ears walks toward a separate snow platform beside the treadmill. The walk is an illustration, not research footage.</desc>
+<defs>
+<linearGradient id="th-wall" x2="0" y2="1"><stop stop-color="#122838"/><stop offset=".68" stop-color="#35576a"/><stop offset="1" stop-color="#5f7c82"/></linearGradient>
+<linearGradient id="th-floor" x2="0" y2="1"><stop stop-color="#243d4a"/><stop offset="1" stop-color="#142a39"/></linearGradient>
+<linearGradient id="th-fur" x1=".2" y1="0" x2=".28" y2="1"><stop stop-color="#fff7e8"/><stop offset=".46" stop-color="#f0e5d1"/><stop offset=".76" stop-color="#c9c7b7"/><stop offset="1" stop-color="#a6b4af"/></linearGradient>
+<linearGradient id="th-leg" x2=".31" y2="1"><stop stop-color="#f0e5d2"/><stop offset=".65" stop-color="#ccc8b7"/><stop offset="1" stop-color="#a5b0a9"/></linearGradient>
+<linearGradient id="th-window" x2=".15" y2="1"><stop stop-color="#4a8299"/><stop offset="1" stop-color="#b4d9d5"/></linearGradient>
+<linearGradient id="th-metal" x2="0" y2="1"><stop stop-color="#698790"/><stop offset=".55" stop-color="#2d4654"/><stop offset="1" stop-color="#243641"/></linearGradient>
+<radialGradient id="th-lamp"><stop stop-color="#d7e9d5" stop-opacity=".45"/><stop offset="1" stop-color="#adc6bc" stop-opacity="0"/></radialGradient>
+<clipPath id="th-window-clip"><rect x="53" y="66" width="291" height="152" rx="10"/></clipPath>
+<clipPath id="th-belt-clip"><path d="M191 346h605l42 25H172z"/></clipPath>
+<pattern id="th-ridges" width="23" height="31" patternUnits="userSpaceOnUse"><path d="M13 0 3 31M17 0 7 31" stroke="#8ba8ac" opacity=".55" stroke-width="1.5"/></pattern>
+</defs>
+<path d="M0 0h1000v480H0z" fill="url(#th-wall)"/>
+<ellipse cx="550" cy="153" rx="470" ry="185" fill="url(#th-lamp)"/>
+<path d="M0 326h1000v154H0z" fill="url(#th-floor)"/>
+<path d="M0 326h1000M0 397h1000M0 447h1000M356 326l-67 154m-89-154L56 480m464-154 16 154m128-154 91 154m72-154 155 154" fill="none" stroke="#8aa6ae" stroke-opacity=".17" stroke-width="2"/>
+<rect x="43" y="56" width="311" height="173" rx="15" fill="#0d2433" stroke="#779ca6" stroke-width="3"/>
+<g clip-path="url(#th-window-clip)"><path d="M53 66h291v152H53z" fill="url(#th-window)"/><path d="m48 178 70-77 59 66 42-55 37 28 22-48 70 90v36H48z" fill="#527984"/><path d="m99 123 19-22 29 32-20-8-9 5-7-9zm100 15 20-26 37 28-18-5-10 8-10-15zm67-15 12-31 31 39-16-7-13 5-5-11z" fill="#e5edda"/><path d="M40 186q65-20 131 7t179-6v37H42z" fill="#9ab3ac"/><path d="M138 66v152m104-152v152M53 156h291" stroke="#2d4e61" stroke-width="5"/></g>
+<path d="M396 52h322m-308 7h292" stroke="#a1c1c2" stroke-opacity=".55" stroke-width="3"/>
+<path d="M110 301v31m-20-42h44m-37 1v40m30-40v40" fill="none" stroke="#83a6a9" stroke-width="4"/>
+<rect x="800" y="66" width="139" height="100" rx="10" fill="#182d3a" stroke="#a0c0c2" stroke-width="3"/><rect x="813" y="78" width="113" height="73" rx="4" fill="#203d47"/>
+<path d="M820 128h99m-99-21h99m-91 26 13-12 17 4 14-14 14 4 23-22" fill="none" stroke="#8fd7bd" stroke-opacity=".7" stroke-width="3"/><circle cx="823" cy="87" r="3.6" fill="#f2bb66"/>
+<ellipse cx="507" cy="413" rx="349" ry="27" fill="#0c1c27" opacity=".62"/>
+<path d="M189 346h608l44 29-17 18H178l-16-18z" fill="url(#th-metal)" stroke="#adc4c5" stroke-width="2.4"/>
+<path d="M191 346h605l42 25H172z" fill="#193038"/>
+<g clip-path="url(#th-belt-clip)"><path class="th-belt-lines" d="M169 345h702v28H169z" fill="url(#th-ridges)"/></g>
+<path d="M174 372h664m-644 13h616" stroke="#a6b9b8" stroke-opacity=".52" stroke-width="2"/>
+<path d="M201 394h37v11h-37zm565 0h37v11h-37z" fill="#90a8aa"/>
+<ellipse cx="541" cy="350" rx="200" ry="9" fill="#182c34" opacity=".63"/>
+<path d="M855 354h131v37H847l-10-16z" fill="#4c7383" stroke="#a1c1c5" stroke-width="2"/>
+<path d="M841 352q10-12 29-8 16-14 38-7 21-14 42-7 23-5 36 1v27H842z" fill="#ebf6eb"/>
+<path d="M847 352q49-8 80-4m6-12 4-4m-39 13 8-6m55 11 9-6" fill="none" stroke="#a9c7ca" stroke-width="1.6"/>
+<g class="th-polar-bear" stroke-linejoin="round" stroke-linecap="round">
+<g fill="#91a4a2" stroke="#4c6571" stroke-width="2.5">
+<path class="th-leg th-hind-far" d="M443 240q29 0 49 29l-22 42-11 18 9 12q2 10-14 10h-27q-13 0-10-11l14-33 7-29z"/>
+<path class="th-leg th-fore-far" d="M623 240q23-6 41 10l-4 36 8 40 11 11q3 9-7 12h-28q-12 0-15-9l-6-33-14-45z"/>
+</g>
+<path class="th-body" d="M360 231q-14 2-18 14 0 8 14 9 8-2 13-6 20 31 54 33 29 12 52 7 61 18 111-6 12-3 26-1 49 1 73-25 13-13 34-20l29 1 52-15 15-10-2-12-25-7-38-23q-14-10-29-7l-25 5q-23 1-43-10-52-30-107-23-49-8-92-2-47 2-78 40-9 16-10 29z" fill="url(#th-fur)" stroke="#62747a" stroke-width="2.6"/>
+<path d="M388 190q22-24 51-34 39-12 89-4 67-1 106 21 27 14 48 11m-287 30q8-23 25-30m81-24q27-1 56 5m25 3q33 2 54 16m-255 49 12 16m207-6q37-3 64-34" stroke="#fff9e9" stroke-opacity=".62" stroke-width="2.4" fill="none"/>
+<path d="M445 218q-17-2-26 15-10 15-8 29m39-28q6 39 30 58m118-65q3 29 17 44m-93-98q21 3 48 8m121 28q22-8 34-3" fill="none" stroke="#9a9d90" stroke-opacity=".5" stroke-width="2.2"/>
+<g fill="url(#th-leg)" stroke="#6b7a7b" stroke-width="2.5">
+<path class="th-leg th-hind-near" d="M415 225q17 5 32 29l-5 33-17 31 3 14 14 7q5 8-2 13h-39q-11-2-11-10l6-23 4-33-9-25q-3-19 24-36z"/>
+<path class="th-leg th-fore-near" d="M615 222q30 0 41 28l-5 39 8 40 16 9q4 8-5 14h-36q-9-2-10-11l-2-18-8-23-13-37q-9-21 14-41z"/>
+</g>
+<g class="th-head">
+<path d="M724 174q-8-9-5-20 4-10 14-8 12 1 17 17-12 0-26 11z" fill="#d6cbb7" stroke="#6b7776" stroke-width="2.3"/>
+<path d="M725 160q3-8 10-5 5 1 7 7m25 29q6-4 13-1m-1 35q17-4 25-9" stroke="#59676b" stroke-width="2.4" fill="none"/>
+<circle cx="764" cy="191" r="2.9" fill="#263138"/><circle cx="764.7" cy="190.1" r=".7" fill="#fff7e8"/>
+<path d="m799 193 14 6 2 13-9 5-7-6-3-12z" fill="#283740"/><path d="m801 198 8 3" stroke="#788584" stroke-width="1.3"/>
+</g>
+</g>
+</svg>
+<figcaption>Illustration only. Watch the bear’s stride and moving belt. This animation does not show the timing of breaks.</figcaption></figure>
+<div class="th-actions th-motion-controls"><button type="button" class="btn" id="th-walk">Play walk</button><p id="th-motion-note"></p></div>
 <div id="th-reading" class="th-evidence" aria-live="polite"></div>
 <figure class="th-chart"><figcaption><strong>Minutes off the treadmill by walking speed</strong></figcaption><div id="th-bars"></div></figure>
 <table class="th-table"><caption>Original Lesson 2 table: one polar bear <a href="https://doi.org/10.1007/BF00688718">(Best, 1982)</a></caption><thead><tr><th scope="col">Speed (m/s)</th><th scope="col">Time on (min)</th><th scope="col">Time off (min)</th><th scope="col">Breaks</th></tr></thead><tbody id="th-bear-data"></tbody></table>
