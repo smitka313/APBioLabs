@@ -218,3 +218,7 @@ fieldset.src[hidden] { display: none; }
 
 /* Key ideas list: how the student sorted each one */
 .key-mine { display: block; margin-top: 2px; font-size: .88rem; font-weight: 650; color: var(--muted); }
+
+@supports (field-sizing: content) {
+  main textarea:not([readonly]) { field-sizing:content; height:auto; max-height:none; }
+}

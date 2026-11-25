@@ -529,3 +529,10 @@ main > .step > .step-body:not(.split) { grid-template-columns:minmax(0,1fr); }
 @media(max-height:820px){ .checkpoint-card-band { padding-top:9px; padding-bottom:8px; } .checkpoint-card-p53 { width:56px; } .checkpoint-card-face { margin-top:10px; padding-top:9px; padding-bottom:9px; } .checkpoint-card-subhead { margin-top:9px; } }
 @media(prefers-reduced-motion:no-preference){ .checkpoint-card-panel { animation:checkpoint-flip .38s ease-out both; } @keyframes checkpoint-flip { from { opacity:0; transform:perspective(900px) rotateY(-24deg) translateY(14px) scale(.95); } to { opacity:1; transform:none; } } }
 @media print { .checkpoint-reveal { display:none!important; } }
+
+.making-sense table :is(th,td) { min-inline-size:0; overflow-wrap:anywhere; }
+.making-sense textarea { min-inline-size:0; }
+#age-number { width:6.2rem; min-height:2.5rem; }
+
+.making-sense { grid-template-columns:minmax(0,1fr); }
+.making-sense > .table-wrap { min-inline-size:0; }

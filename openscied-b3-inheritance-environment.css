@@ -36,8 +36,10 @@ fieldset.field > .field { margin: 0 0 8px 28px; }
 .scene-notice[hidden] { display: none; }
 
 /* "Your data" boxes */
-.your-data { display: grid; gap: 10px; border-left: 4px solid var(--accent); }
+.your-data { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; border-left: 4px solid var(--accent); }
 .your-data h3, .your-data h4 { margin: 0; }
+/* Keep wide recorded evidence scrollable inside its panel on phones. */
+.your-data-body, .your-data .table-wrap { min-inline-size: 0; max-inline-size: 100%; }
 .your-data p { margin: 0; }
 .your-data table.data { font-size: .88rem; }
 .your-data table.data th, .your-data table.data td { white-space: normal; }
@@ -46,6 +48,7 @@ fieldset.field > .field { margin: 0 0 8px 28px; }
 
 /* Tables with writing in them */
 .table-wrap { max-width: 100%; overflow-x: auto; }
+.table-wrap:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .checklist-table, .map-table, .progress-table, .rubric-table { width: 100%; table-layout: fixed; }
 .checklist-table th, .checklist-table td, .map-table th, .map-table td, .progress-table th, .progress-table td, .rubric-table th, .rubric-table td { white-space: normal; vertical-align: top; white-space: normal; }
 .checklist-table th[scope=row], .map-table th[scope=row], .progress-table th[scope=row], .rubric-table th[scope=row] { width: 21%; text-align: left; font-weight: 650; background: var(--surface-2); }
@@ -194,3 +197,7 @@ details.more summary { cursor: pointer; font-weight: 600; min-height: 24px; colo
 
 .ev-note { margin: -2px 0 4px 12px; font-size: .9rem; font-weight: 600; }
 .ev-note:empty { display: none; }
+
+@supports (field-sizing: content) {
+  main textarea:not([readonly]) { field-sizing:content; height:auto; max-height:none; inline-size:100%; min-inline-size:0; max-inline-size:100%; box-sizing:border-box; }
+}

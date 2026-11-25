@@ -57,7 +57,7 @@ for (const [name, spec] of Object.entries(setup)) {
       window:{ localStorage:storage,OpenSciEdSaveSession:Save,addEventListener(t,fn){handlers[t]=fn;},location:{reload(){reloads++;}}},
       history:{replaceState(){}},location:{hash:'',pathname:'/',search:'',reload(){reloads++;}},
       state,D:CancerRatesData,L:CancerRatesLogic,ready:true, cleared:false, hadSaved:false, invalid:false, blocked:false, RESPONSE_IDS:[spec.field],SCENE_IDS:[],SECTIONS:[],
-      $:element, $$:sel=>sel.startsWith('input[type=radio]:checked')?[field]:[], collectFields:()=>({[spec.field]:field.value}),
+      $:element, $$:sel=>sel.startsWith('input[type=radio]:checked')?[field]:[], collectFields:()=>({[spec.field]:field.value}), picks:()=>[{id:spec.field,value:field.value}],
       renderReport(){}, renderBaselineEcho(){}, refreshAll(){}, fresh(){return {};}, syncCasefile(){},syncIdentity(){},text(){},render(){},announce(){}
     };
     vm.createContext(context);

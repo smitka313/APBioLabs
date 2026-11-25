@@ -213,7 +213,7 @@
     const rules=node('div','','dw-key-items');
     for(const item of items)rules.append(node('span',item,'dw-key-rule'));
     host.append(title,rules);
-    if(step==='chain')host.append(node('small',practice?'The first AUG starts translation and adds methionine (Met). Look up the other codons using the wheel. R on a tile marks a side chain in a simplified sketch.':'This saved workshop uses the original short message.'));
+    if(step==='chain')host.append(node('small',practice?'Place Start + Met under the first AUG. AUG starts translation and adds methionine (Met). Use the wheel for the other codons. R on a tile marks a side chain in a simplified sketch.':'This saved workshop uses the original short message.'));
   }
   function strand(row,step){
     const track=node('section','','dw-track');

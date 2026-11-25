@@ -18,15 +18,29 @@ const configuration = [
     const state={prediction:{locked:false,choice:'a',reason:answer},casework,evidence:[],claim:'',limits:'',design:{}};
     const qualifyingPins=()=>state.evidence.filter(pin=>L.isNumericComparison(L.comparison(D,pin)));
     const canFinish=()=>casework.opened&&qualifyingPins().length>0&&!!state.claim&&!!state.limits&&!L.hasPendingQuestion(casework);
+    const exhibits={
+      access:{options:[{value:'falling',textContent:'It generally goes down'}],rows:[['Under $25,000','29.3%'],['$50,000–$74,999','12.6%']]},
+      diagnosis:{options:[{value:'rising',textContent:'Less common in neighborhoods with persistent poverty'}],rows:[['Persistent poverty','46.6%'],['Other neighborhoods','58.2%']]},
+      'test-cost':{options:[{value:'longer',textContent:'Greater delay'}],rows:[['First event','1.0 mo']]}
+    };
+    const element=id=>{
+      if (id === 'test-cost-source') return {href:D.types.source};
+      const [,key,select] = /^income-(access|diagnosis|test-cost)(-answer)?$/.exec(id);
+      const exhibit=exhibits[key];
+      return select ? {options:exhibit.options} : {
+        querySelectorAll:()=>exhibit.rows.map(([g,v])=>({querySelector:tag=>({textContent:tag==='strong'?v:g})})),
+        querySelector:()=>({textContent:'Published exhibit'})
+      };
+    };
     return {state,ctx:{
       invalid:false,blocked:false,caseMarks:()=>Array(6).fill(casework.opened),qualifyingPins,canFinish,isComplete:()=>state.completed&&canFinish(),
       displayIdentity:()=>({name:'Custom name',period:'2'}),predictions:{a:'Different'},
-      lessonNotes:['diagnoses','deaths','map'],testCostRows:[{label:'First event',value:1}],$(){return {href:D.types.source};},
+      lessonNotes:['diagnoses','deaths','map'],testCostRows:[{label:'First event',value:1}],$:element,
       designItems:{access:'Access evidence'},formatPair:(row,measure)=>Number.isFinite(row[measure])?row[measure]+' per 100,000':'Not reported',evidenceText:()=> 'Published result',
       L,D,spec:{types:{title:'Ranking'}},labels:{incidence:'Diagnosis rate'}
     },finish(){
       Object.assign(state,{completed:true,claim:answer,limits:'Association is not causation.'});
-      Object.assign(casework,{opened:true,question:answer,questionDraft:'Pending student question','test-cost':true});
+      Object.assign(casework,{opened:true,question:answer,questionDraft:'Pending student question',access:'falling',diagnosis:'rising','test-cost':'longer'});
       state.prediction.locked=true;
       state.evidence.push({view:'types',measure:'incidence',a:'pancreas',b:'breast'}); // Pancreas diagnosis is not reported in this table.
     },
@@ -37,7 +51,9 @@ const configuration = [
       state.evidence=[{view:'types',measure:'incidence',a:'breast',b:'lung'}];
     },
     specific:s=>s.student.name==='Custom name' && s.keyResults.some(k=>k.label==='Comparisons with reported values'&&k.value===1) &&
-      JSON.stringify(s.sections).includes('per 100,000') && !JSON.stringify(s.sections).includes('Pending student question')};
+      JSON.stringify(s.sections).includes('per 100,000') && !JSON.stringify(s.sections).includes('Pending student question') &&
+      ['It generally goes down','Less common in neighborhoods with persistent poverty','29.3%','12.6%','46.6%','58.2%']
+        .every(value=>JSON.stringify(s.sections).includes(value))};
   }],
   ['cell-cycle','download-work',() => {
     const state={game:{roundResults:{}},quick:'Recorded',mechanism:'Recorded'};
@@ -122,7 +138,14 @@ for (const [activity,legacy,fixture] of configuration) {
     KEY:'test',saveSession:{check:()=>({ok:current,reason:current?null:'erased'})},studentIdentity:()=>({name:'Trusted fallback',period:'2'}),
     state:config.state,...config.ctx
   };
-  vm.createContext(sandbox);vm.runInContext(source.slice(ctor,mount),sandbox);
+  vm.createContext(sandbox);
+  if (activity==='cancer-rates') {
+    const start=source.indexOf('  function checkedCaseNotes()');
+    const end=source.indexOf('  function report()',start);
+    check(start>=0 && end>start,'loads the production checked exhibit formatter into the report fixture');
+    vm.runInContext(source.slice(start,end),sandbox);
+  }
+  vm.runInContext(source.slice(ctor,mount),sandbox);
   const initial=sandbox.submissionReport();
   check(initial.status===draft && initial.missing.length>0 && JSON.stringify(initial.sections).includes(answer),'retains actual partial work in a draft: '+activity);
   config.finish();

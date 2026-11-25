@@ -890,3 +890,10 @@
   flex-direction:column;
   border:2px dashed currentColor;
 }
+
+/* Keep the end marker clear of the dashed strand border. */
+.dw-translation-scroll .dw-end[data-dw-end=start] { inset-inline-start:.22rem; }
+
+@supports (field-sizing: content) {
+  main textarea:not([readonly]) { field-sizing:content; height:auto; max-height:none; }
+}

@@ -86,9 +86,10 @@
      <h5>Can this patient make it to care?</h5>
      <p>Choose a plan and try booking each needed visit. Watch the budget go down as you book.</p>
      <label for="sd-pay-plan">Plan to try</label>
+     <p class="small muted">Practice bookings are separate from the recorded redesign. To move screening in your redesign, move the screening team on the map, then run that plan.</p>
      <select id="sd-pay-plan"><option value="base">Hospital plan</option><option value="trial">Mobile ultrasound · hospital screening</option><option value="local">Mobile screening + ultrasound practice</option></select>
      <div id="sd-wallet"></div>
-     <div class="sd-pay-actions"><button class="btn btn--primary" type="button" id="sd-book"></button><button class="btn" type="button" id="sd-pay-reset">Reset practice</button></div>
+     <div class="sd-pay-actions"><button class="btn btn--primary" type="button" id="sd-book"></button><strong id="sd-path-complete" hidden>Care pathway complete.</strong><button class="btn" type="button" id="sd-pay-reset">Reset practice</button></div>
      <p id="sd-pay-result" role="status"></p>
      <p class="sd-hint">Practice only. This does not change your district plan or its results.</p>
    </div>
@@ -205,7 +206,8 @@
 <div class="sd-grid"><div><div id="sd-evidence"></div><h3>Evidence from your three patients</h3><div id="sd-case-evidence"></div></div><div>
  <label for="sd-claim"><strong>Which plan would you fund?</strong> Compare one outcome and one cost from the table. Explain what you give up in return.</label><textarea id="sd-claim" rows="4" maxlength="1800"></textarea>
  <label for="sd-limit"><strong>Who might still get left out?</strong> Use one of your three patient comparisons or an area’s results to propose one change and explain why it might help.</label><textarea id="sd-limit" rows="4" maxlength="1800"></textarea>
- <button type="button" class="btn" id="sd-finish" disabled>Finish investigation</button><p id="sd-finished"></p><div data-ose-report-final></div>
+ <p class="small muted">Three milestones: run the hospital plan, test and compare a redesign, then finish your recommendation. The two tabs group those milestones.</p>
+ <button type="button" class="btn btn--primary" id="sd-finish" disabled>Finish investigation</button> <button type="button" class="btn" id="sd-edit-recommendation" hidden>Edit recommendation</button><p id="sd-finished" tabindex="-1"></p><div data-ose-report-final></div>
 </div></div>
 </section>
 <details class="sd-panel"><summary>What this model leaves out</summary>

@@ -142,8 +142,17 @@ const out=path.join(ROOT,'artifacts','screening');
     assert.equal(await id('clinic-gauge').getAttribute('data-over'),'true');
     assert.ok(await id('popup-seal').locator('svg').isVisible());
     assert.match(await id('popup-evidence').textContent(),/Ride program.*95 cr/);
+    // Wait for the native close event and the dialog's focus restoration before
+    // selecting a tool and its destination with the keyboard.
+    await id('mission-dialog').evaluate(dialog=>{
+      dialog.dataset.testClosed='false';
+      dialog.addEventListener('close',()=>{dialog.dataset.testClosed='true';},{once:true});
+    });
     await id('popup-close').click();
+    await p.locator('#sd-mission-dialog[data-test-closed="true"]:not([open])').waitFor({state:'attached'});
     await id('tool-rides').press('Enter');await site('rack').press('Enter');
+    assert.doesNotMatch(await id('mobile-items').textContent(),/Rides/);
+    assert.ok(await id('run').isEnabled(),'removing the vouchers makes the revised plan runnable');
     await id('run').click();
     await id('advanced').locator('summary').click();
     const saved=await p.evaluate(()=>JSON.parse(localStorage.getItem('aplab:openscied:b3-screening:v1')));
@@ -189,6 +198,13 @@ const out=path.join(ROOT,'artifacts','screening');
     assert.match(await id('case-evidence').innerText(),/Hospital plan:.*Redesign:/s);
     await id('claim').fill('The redesign costs more in exchange for more completed ultrasound visits.');
     await id('limit').fill('Vouchers could help with the price of a trip, but cannot create more time.');
+    assert.equal(await id('finish').isEnabled(),true);
+    await id('finish').click();
+    assert.equal(await id('finish').isHidden(),true);
+    assert.match(await id('finished').textContent(),/Nothing is sent automatically/);
+    await id('edit-recommendation').click();
+    assert.equal(await id('claim').getAttribute('readonly'),null);
+    assert.equal(await id('finish').isEnabled(),true);
     await id('finish').click();await p.reload();
     assert.match(await id('finished').textContent(),/Investigation complete/);
     assert.match(await id('claim').inputValue(),/redesign/);

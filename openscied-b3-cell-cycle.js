@@ -37,7 +37,7 @@
   const $$=function(s,root){return Array.from((root||document).querySelectorAll(s));};
   function blankGame(){return {schema:3,mode:'solo',players:1,round:0,active:0,turns:0,complete:false,playersState:[],chanceDeck:[],logs:[],lastDice:[],lastRollSummary:'',roundResults:{},chanceNotice:null,checkpointNotice:null,event:{title:'Your cell is ready',copy:'Choose your players and start Round 1 to begin.',icon:'🧬',kicker:'Cell cycle'}};}
   const SECTIONS=['overview','background','cell-game','growth-model','analyze','submit'];
-  const state={game:blankGame(),trials:[],fields:{},quick:'',mechanism:'',lastSection:'overview'};
+  const state={game:blankGame(),trials:[],fields:{},quick:'',mechanism:'',lastSection:'overview',comparisonChosen:false};
   function studentIdentity(){return reportStudent?.() ?? null;}
   const ANALYSIS_PROMPTS=[
     ['My starting idea (before running the model)','model-baseline'],
@@ -69,7 +69,7 @@
     try{const d=JSON.parse((saveSession?.read(KEY) ?? null)||'null');if(d&&d.v===1){hadSaved=true;if(d.game&&d.game.schema===3){state.game=Object.assign(blankGame(),d.game);(state.game.playersState||[]).forEach(function(p){p.score=p.score||zeroScore();});}
       // Games saved under the earlier rules (schema 2) used a different board. Keep which rounds were completed, marked
       // as earlier results, and start the board fresh.
-      else if(d.game&&d.game.schema===2){const old=d.game.roundResults||{},kept={};for(const n of [1,2])if(old[n])kept[n]={legacy:true};state.game=Object.assign(blankGame(),{mode:d.game.mode||'solo',players:d.game.players||1,roundResults:kept});}if(Array.isArray(d.trials))state.trials=d.trials;if(d.fields)state.fields=d.fields;if(d.quick)state.quick=d.quick;if(d.mechanism)state.mechanism=d.mechanism;if(SECTIONS.includes(d.lastSection))state.lastSection=d.lastSection;}}
+      else if(d.game&&d.game.schema===2){const old=d.game.roundResults||{},kept={};for(const n of [1,2])if(old[n])kept[n]={legacy:true};state.game=Object.assign(blankGame(),{mode:d.game.mode||'solo',players:d.game.players||1,roundResults:kept});}if(Array.isArray(d.trials))state.trials=d.trials;if(d.fields)state.fields=d.fields;if(d.quick)state.quick=d.quick;if(d.mechanism)state.mechanism=d.mechanism;if(SECTIONS.includes(d.lastSection))state.lastSection=d.lastSection;state.comparisonChosen=d.comparisonChosen===true;}}
     catch(e){}
   }
   let cleared=false,hadSaved=false;
@@ -84,10 +84,10 @@
         else state.fields[el.id]=el.value;
       });
       const section=location.hash.slice(1);if(SECTIONS.includes(section))state.lastSection=section;
-      const result=saveSession?.write(KEY,JSON.stringify({v:1,game:state.game,trials:state.trials,fields:state.fields,responseIds:RESPONSE_IDS,quick:state.quick,mechanism:state.mechanism,lastSection:state.lastSection,lastVisitedAt:Date.now()})) ?? unavailableSave;
+      const result=saveSession?.write(KEY,JSON.stringify({v:1,game:state.game,trials:state.trials,fields:state.fields,responseIds:RESPONSE_IDS,comparisonChosen:state.comparisonChosen,quick:state.quick,mechanism:state.mechanism,lastSection:state.lastSection,lastVisitedAt:Date.now()})) ?? unavailableSave;
       if(result.ok)clearSaveProblem();
       $('#save-status').textContent=result.ok?'Saved on this device.':showSaveProblem(result);
-      renderReport();renderBaselineEcho();
+      renderReport();renderBaselineEcho();updateAnalysisControls();
     }catch(e){$('#save-status').textContent='This browser could not save your work. Download a copy before leaving.';}
   }
   function restoreFields(){
@@ -104,6 +104,7 @@
     $('#group-size-wrap').hidden=!mode||mode.value!=='group';
     if(state.quick)$('#background-feedback').textContent=state.quick;
     if(state.mechanism)$('#mechanism-feedback').textContent=state.mechanism;
+    $('#age-number').value=$('#age-slider').value;
     $('#age-value').textContent=$('#age-slider').value;
   }
   // Board: the OpenSciEd B.3 Lesson 3 game board, in order. START, 6 G1, G1 Checkpoint, 8 S, 8 G2, G2 Checkpoint,
@@ -835,6 +836,14 @@
     el.disabled=groups.length===0;
     if(groups.length)el.value=groups.some(g=>g.id===current)?current:String(fallback);
   }
+  const comparisonKeys=['age','size','tissue'];
+  function controlledPair(groups, changedKey) {
+    for(let i=0;i<groups.length;i++)for(let j=i+1;j<groups.length;j++){
+      const a=groups[i],b=groups[j];
+      if(comparisonKeys.every(key=>key===changedKey?a[key]!==b[key]:a[key]===b[key]))return [a,b];
+    }
+    return null;
+  }
   function renderTrials(){
     const body=$('#trial-rows'),groups=trialGroups();body.innerHTML='';
     if(!state.trials.length)body.innerHTML='<tr><td colspan="8">Run trials to collect results.</td></tr>';
@@ -847,7 +856,13 @@
     renderChangesText(groups);
     const last=groups[groups.length-1];
     $('#set-summary').textContent=last?setLabel(last)+': '+last.trials.map(t=>t.divisions).join(', ')+' divisions. Mean '+last.mean.toFixed(1)+'; range '+last.min+'–'+last.max+'.'+(last.trials.every(t=>t.modelVersion===2)?' Cancer-state units by trial: '+last.trials.map(t=>t.cancerCount).join(', ')+'.':' Cancerous state was not tracked in these earlier trials.')+' Control changes (mutations) by trial: '+last.changes.map(n=>n===null?'not recorded':n).join(', ')+(last.changeMean===null?'.':'; mean '+last.changeMean.toFixed(1)+'.'):'Run a set to begin your comparison.';
-    fillSelect($('#compare-a'),groups,0);fillSelect($('#compare-b'),groups,Math.max(0,groups.length-1));
+    const pair=comparisonKeys.map(key=>controlledPair(groups,key)).find(Boolean);
+    const a=$('#compare-a'),b=$('#compare-b');
+    fillSelect(a,groups,0);fillSelect(b,groups,Math.max(0,groups.length-1));
+    if(!state.comparisonChosen&&groups.length){
+      a.value=pair?.[0].id??groups[0].id;
+      b.value=pair?.[1].id??groups[Math.min(1,groups.length-1)].id;
+    }
     fillSelect($('#replay-set'),groups,Math.max(0,groups.length-1));
     fillTrialSelect();
     $('#replay-growth').disabled=!groups.length;
@@ -919,7 +934,20 @@
     $$('#analyze [data-analysis-page]').forEach(el=>{el.hidden=Number(el.dataset.analysisPage)!==analysisPage;});
     $('#analysis-page-status').textContent='Part '+(analysisPage+1)+' of 4 · '+['Compare data','Look for patterns','Explain mechanisms','Revise your model'][analysisPage];
     for(const id of ['analysis-prev','analysis-prev-bottom'])$('#'+id).disabled=analysisPage===0;
-    for(const id of ['analysis-next','analysis-next-bottom']){$('#'+id).disabled=analysisPage===3;}
+    updateAnalysisControls();
+  }
+  function updateAnalysisControls(){
+    const last=analysisPage===3;
+    const ids=['model-revision','model-limit','model-prediction'];
+    const empty=ids.filter(id=>!$('#'+id).value.trim()).length;
+    for(const id of ['analysis-next','analysis-next-bottom']){
+      const button=$('#'+id);
+      button.textContent=last?'Go to Wrap up →':'Next →';
+      button.disabled=last&&empty>0;
+    }
+    const hint=$('#analysis-finish-hint');
+    hint.hidden=!last;
+    hint.textContent=empty?'Complete your model revision, choose a limit, and write a new prediction to continue.':'Your revision is recorded. Go to Wrap up to review it.';
   }
   /* "Your data" beside each Analyze question: the exact recorded numbers that question asks students to use. */
   function renderQuestionEvidence(){
@@ -994,7 +1022,10 @@
     const groups=trialGroups(),a=groups[Number($('#compare-a').value)],b=groups[Number($('#compare-b').value)],out=$('#comparison-evidence');
     renderQuestionEvidence();
     out.innerHTML='';
-    $('#sentence-evidence').textContent='Sentence starter: “When I changed ___, the mean changed from ___ to ___ divisions. This matters because ___.”';
+    const agePair=controlledPair(groups,'age');
+    $('#sentence-evidence').textContent=agePair?
+      'Use your age-only pair: Set '+agePair[0].index+' (mean '+agePair[0].mean.toFixed(1)+') and Set '+agePair[1].index+' (mean '+agePair[1].mean.toFixed(1)+'). Both sets use the same cell type and body size.':
+      'Choose two sets that differ only in age. Sentence starter: “When I changed age from ___ to ___, the mean changed from ___ to ___ divisions.”';
     function para(text,className){const p=document.createElement('p');if(className)p.className=className;p.textContent=text;out.appendChild(p);}
     if(groups.length<2||!a||!b){para('Collect two sets to reveal your evidence comparison.');return;}
     if(a.id===b.id){para('Choose two different sets to compare.');return;}
@@ -1009,8 +1040,7 @@
     else if(!changed.length)para('Repeated trials vary even with identical settings. That is why we compare several trials.');
     else if(a.min<=b.max&&b.min<=a.max)para('The trial ranges overlap. These recorded results show variation; collect more evidence before deciding how clear the pattern is.');
     else para('The recorded trial ranges do not overlap in this comparison. Use the numbers as evidence, and remember that three trials are a small sample.');
-    $('#sentence-evidence').textContent='Use your evidence: “'+(changed.length===1?'When I changed '+names[changed[0]]:'Between Set '+a.index+' and Set '+b.index)+', the mean changed from '+a.mean.toFixed(1)+' to '+b.mean.toFixed(1)+' divisions. Each division creates another opportunity to copy DNA, so…”';
-    if(changed.length===1&&changed[0]==='tissue')$('#sentence-evidence').textContent='These sets compare cell types (Question 3). For Questions 4a and 4b, choose two sets that change only age, or only body size, while keeping the other settings the same.';
+
   }
   function renderReport(){
     const report=$('#investigation-report');if(!report)return;
@@ -1041,7 +1071,7 @@
     const s=settings(),trials=[];
     for(let i=0;i<3;i++){const t=simulateOne(s.age,s.size,s.tissue);t.controlChanges=changeCount(t);trials.push(t);}
     state.trials.push(...trials);renderTrials();
-    const last=String(trialGroups().length-1);$('#replay-set').value=last;$('#compare-b').value=last;fillTrialSelect();
+    const last=String(trialGroups().length-1);$('#replay-set').value=last;fillTrialSelect();
     renderComparison();save();
     if(window.GrowthModelScene)window.GrowthModelScene.play(trials);
   }
@@ -1096,7 +1126,14 @@
       });
       else if(id==='round-end-new')closeRoundEnd(resetGame);
     });
-    $('#age-slider').addEventListener('input',function(){$('#age-value').textContent=this.value;if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());save();});
+    const ageSlider=$('#age-slider'),ageNumber=$('#age-number');
+    ageSlider.addEventListener('input',function(){ageNumber.value=this.value;$('#age-value').textContent=this.value;if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());save();});
+    ageNumber.addEventListener('change',()=>{
+      if(Number.isFinite(ageNumber.valueAsNumber))ageSlider.value=String(Math.round(ageNumber.valueAsNumber));
+      ageNumber.value=ageSlider.value;$('#age-value').textContent=ageSlider.value;
+      if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());
+      save();
+    });
     ['body-size','tissue-rate'].forEach(id=>$('#'+id).addEventListener('change',function(){renderCellType();if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());}));
     if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());
     $('#growth-scene').addEventListener('growth-playback',function(event){
@@ -1135,7 +1172,7 @@
     });
     $('#replay-set').addEventListener('change',fillTrialSelect);
     $('#jump-cancer').addEventListener('click',jumpToCancer);
-    ['compare-a','compare-b'].forEach(id=>$('#'+id).addEventListener('change',function(){renderComparison();save();}));
+    ['compare-a','compare-b'].forEach(id=>$('#'+id).addEventListener('change',function(){state.comparisonChosen=true;renderComparison();save();}));
     $$('input[name="game-mode"]').forEach(function(el){el.addEventListener('change',function(){$('#group-size-wrap').hidden=this.value!=='group';save();});});
     $('#start-round1').addEventListener('click',function(){startRound(1);});
     $('#start-round2').addEventListener('click',function(){startRound(2);});
@@ -1164,9 +1201,13 @@
     // The bottom buttons also bring the start of the new part into view, so students never scroll back up to find it.
     const toPartTop=()=>{const nav=$('#analysis-page-status').closest('.analysis-page-nav');if(nav)nav.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});};
     $('#analysis-prev').addEventListener('click',()=>showAnalysisPage(analysisPage-1));
-    $('#analysis-next').addEventListener('click',()=>showAnalysisPage(analysisPage+1));
+    const nextAnalysis=()=>{
+      if(analysisPage===3){if(!$('#analysis-next').disabled){save();location.hash='submit';}return;}
+      showAnalysisPage(analysisPage+1);toPartTop();
+    };
+    $('#analysis-next').addEventListener('click',nextAnalysis);
     $('#analysis-prev-bottom').addEventListener('click',()=>{showAnalysisPage(analysisPage-1);toPartTop();});
-    $('#analysis-next-bottom').addEventListener('click',()=>{showAnalysisPage(analysisPage+1);toPartTop();});
+    $('#analysis-next-bottom').addEventListener('click',nextAnalysis);
     // Phones: the evidence panel starts folded so the questions come first; wide screens keep it open beside them.
     const refToggle=$('#analysis-reference-toggle');if(refToggle&&matchMedia('(max-width: 850px)').matches)refToggle.open=false;
     $('#run-trials').addEventListener('click',runTrials);
