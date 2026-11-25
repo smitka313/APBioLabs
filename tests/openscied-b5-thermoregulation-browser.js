@@ -16,7 +16,7 @@ const {chromium}=require('playwright'),{serve}=require('./_h');
        const portraits=p.locator('.th-bear-profiles img');
        assert.equal(await portraits.count(),3);
        await portraits.evaluateAll(ns=>Promise.all(ns.map(n=>n.decode())));
-       assert.match((await p.locator('.th-bear-profiles figcaption').allTextContents()).join(' '),/Polar.*Brown.*Black/s);
+       assert.deepEqual(await p.locator('.th-bear-profiles figcaption strong').allTextContents(),['Polar bear','Brown bear (grizzly)','American black bear']);
        assert.equal(await p.locator('iframe[data-lesson-video][src]').count(),0);
        await by('predict').fill('The polar bear could leave when a brown bear arrives.');
        await p.getByRole('button',{name:'Polar + black',exact:true}).click(); assert.match(await by('case').innerText(),/not provide direct interaction data/);
