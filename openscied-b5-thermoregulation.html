@@ -35,7 +35,8 @@
 <body><a class="skip-link" href="#main">Skip to the investigation</a>
 <main id="main" class="th-shell">
 <nav class="th-links" aria-label="Lesson links"><a href="openscied-dashboard.html#unit5">← Unit 5 activities</a><a href="openscied-b5-wapusk.html">Lesson 1: Three Bears in Wapusk</a><a href="openscied-teacher-guide.html#guide-b5-thermoregulation">Teacher guide</a></nav>
-<header class="th-hero"><p class="th-tag">Arctic field station · Unit 5 · Lesson 2</p><h1>Bear Thermoregulation Lab</h1><p>Could overheating help explain why a polar bear gives up food to a brown bear?</p></header>
+<header class="th-hero"><p class="th-tag">Arctic field station · Unit 5 · Lesson 2</p><h1>Bear <span>Thermoregulation</span> Lab</h1><p>Could overheating help explain why a polar bear gives up food to a brown bear?</p></header>
+<section class="th-workspace" aria-label="Student workspace"><div id="th-identity"></div><div class="th-workspace-tools"><button type="button" class="btn" id="th-reset" aria-haspopup="dialog" disabled>Start over…</button><p class="th-identity-hint">Shared device? If the name is not yours, choose Switch student before you start.</p></div></section>
 <nav class="th-tabs" aria-label="Investigation steps"><button type="button" class="btn" data-step="field">1. Field evidence</button><button type="button" class="btn" data-step="treadmill">2. Treadmill</button><button type="button" class="btn" data-step="human">3. Human comparison</button><button type="button" class="btn" data-step="model">4. Explain</button></nav>
 <section class="th-panel" id="field" aria-labelledby="field-title">
 <p class="th-tag">Field notebook</p><h2 id="field-title" tabindex="-1">Who gives up the food?</h2>
@@ -50,6 +51,7 @@
 </div>
 <p>Illustrations are not to scale. Black and brown bears can overlap in fur color. Compare their shapes instead. <a href="https://www.nps.gov/articles/bear-identification.htm">Bear identification (National Park Service)</a></p></section>
 <h3>Open the field cases</h3>
+<p>These cases use different places, foods, and kinds of evidence. They are clues, not three controlled tests you can rank against each other.</p>
 <div class="th-actions" role="group" aria-label="Which bear pair"><button type="button" class="btn" data-pair="polar-brown">Polar + brown</button><button type="button" class="btn" data-pair="brown-black">Brown + black</button><button type="button" class="btn" data-pair="polar-black">Polar + black</button></div>
 <div class="th-evidence" id="th-case" aria-live="polite"></div>
 <label for="th-field">Revise your prediction. Use one observation and name one thing that the study did not measure.</label><textarea id="th-field" data-field="field"></textarea>
@@ -124,29 +126,37 @@
 <div id="th-reading" class="th-evidence" aria-live="polite"></div>
 <figure class="th-chart"><figcaption><strong>Minutes off the treadmill by walking speed</strong></figcaption><div id="th-bars"></div></figure>
 <table class="th-table"><caption>Original Lesson 2 table: one polar bear <a href="https://doi.org/10.1007/BF00688718">(Best, 1982)</a></caption><thead><tr><th scope="col">Speed (m/s)</th><th scope="col">Time on (min)</th><th scope="col">Time off (min)</th><th scope="col">Breaks</th></tr></thead><tbody id="th-bear-data"></tbody></table>
+<p class="th-evidence"><strong>Check the time on the treadmill.</strong> The original table lists 360 minutes at 1.1 m/s and 375 at the other speeds. The lesson source does not explain the difference. For a comparison with equal time on, use 2.0 and 2.2 m/s.</p>
 <figure class="th-chart th-source"><figcaption><strong>Original lesson graph: core temperature at different walking speeds</strong></figcaption>
 <button type="button" class="btn" id="th-enlarge">Enlarge original graph</button>
-<img src="assets/openscied-b5-treadmill-source.webp" loading="lazy" width="655" height="420" alt="Core temperature in degrees Celsius increases as walking speed in meters per second increases. The graph’s speeds do not exactly match the table rows.">
-<p>The horizontal axis is walking speed, not elapsed time. The vertical axis is temperature inside the bear. The graph and the break table show different measurements. Graph reproduced from OpenSciEd’s Lesson 2 handout (CC BY-NC 4.0); source data: Best (1982).</p></figure>
-<dialog id="th-visual" aria-label="Original treadmill core-temperature graph"><form method="dialog"><button class="btn">Close graph</button></form><img src="assets/openscied-b5-treadmill-source.webp" width="655" height="420" alt="Core temperature rises with walking speed."></dialog>
+<div class="th-core-graph" id="th-core"></div>
+<p>The horizontal axis is walking speed, not elapsed time. The vertical axis is temperature inside the bear. Labels are approximate readings of the printed line, not separate trial measurements. The graph covers about 1.4–2.1 m/s; the table covers 1.1–2.2 m/s and reports breaks, not core temperatures.</p>
+<p>From the labeled 1.4 and 2.0 m/s points, the line rises by about 2.0°C. Using the far right edge instead gives about 3.1°C over a different speed range. Always name the two speeds you compared.</p>
+<p class="th-small">Original graph: OpenSciEd’s Lesson 2 handout (CC BY-NC 4.0); source data: Best (1982).</p></figure>
+<dialog id="th-visual" aria-label="Original treadmill core-temperature graph"><form method="dialog"><button class="btn">Close graph</button></form><div class="th-core-graph" id="th-core-large"></div></dialog>
 <fieldset><legend>Quick check: Which conclusion fits these data?</legend><div class="th-actions"><button type="button" class="btn" data-check="breaks">Faster trials had more time off</button><button type="button" class="btn" data-check="core">The break table gives a core temperature for each trial</button><button type="button" class="btn" data-check="wild">This proves why wild bears leave</button></div><p id="th-check" role="status"></p></fieldset>
 <label for="th-pattern">Compare two speeds using numbers. How does this evidence change your overheating claim?</label><textarea id="th-pattern" data-field="pattern"></textarea>
 <button type="button" class="btn btn--primary" data-go="human">Next: Compare with humans</button>
 </section>
 <section class="th-panel" id="human" aria-labelledby="human-title" hidden>
 <p class="th-tag">Human investigation · 0–8 min</p><h2 id="human-title" tabindex="-1">Compare a human cooling response</h2>
-<p>Use a timer and an infrared thermometer designed to measure skin temperature. You can collect your own readings, or use the <strong>practice example</strong> if you don’t have a thermometer or prefer not to exercise. The practice readings are invented.</p>
+<p><strong>What you need for your own readings:</strong> an infrared thermometer designed for skin and the timer below (or a separate timer). No phone is required. Use the <strong>practice example</strong> if you don’t have a thermometer or prefer not to exercise. The practice readings are invented.</p>
 <div class="th-procedure" aria-labelledby="th-procedure-title">
 <h3 id="th-procedure-title">Exercise and take readings</h3>
 <ol>
 <li><strong>Before you move (0 min):</strong> Clear space around you. Follow the thermometer’s instructions and choose one skin spot to measure, such as your forehead if the device is designed for it. Record the starting temperature in °C under Participant A.</li>
-<li><strong>Move for 2 minutes:</strong> Do jumping jacks or step jacks at a comfortable, steady pace. Pause the timer and take a reading right after you stop. Use the same thermometer, spot, and distance each time. Enter the result in the 2-minute row.</li>
-<li><strong>Repeat:</strong> Resume the timer and do the same movement for another 2 minutes. Repeat until you’ve recorded the 4-, 6-, and 8-minute readings. Count movement time only. Use Participant B only if you have a second set of readings.</li>
+<li><strong>Move for 2 minutes:</strong> Do jumping jacks or step jacks at a comfortable, steady pace. The built-in timer pauses at the end of each block. Stop and take a reading right away. If you use your own timer, pause it for the reading. Use the same thermometer, spot, and distance each time. Enter the result in the 2-minute row.</li>
+<li><strong>Repeat:</strong> Start the next block and do the same movement for another 2 minutes. Repeat until you’ve recorded the 4-, 6-, and 8-minute readings. Count movement time only. Use Participant B only if you have a second set of readings.</li>
 </ol>
 <p>Stop if you feel dizzy, overheated, or unwell. You can switch to the practice example at any point.</p>
 </div>
 <p><strong>Compare the patterns, not the exact temperatures.</strong> Your thermometer measures skin <strong>surface</strong> temperature. The bear’s implanted sensor measured <strong>core</strong> temperature inside its body.</p>
-<div class="th-actions"><button type="button" class="btn" id="th-sample">Load practice example</button><button type="button" class="btn" id="th-edit">Enter your readings</button></div>
+<section class="th-evidence th-timer" aria-labelledby="th-timer-title">
+<h3 id="th-timer-title">Optional 2-minute movement timer</h3>
+<div class="th-timer-dial"><span id="th-timer-read">2:00</span><progress id="th-timer-progress" max="120" value="0" aria-label="Seconds elapsed in this block"></progress></div>
+<div class="th-actions"><button type="button" class="btn btn--primary" id="th-timer-start">Start first block</button><button type="button" class="btn" id="th-timer-clear">Reset timer only</button></div><p id="th-timer-status" role="status">Take the 0-minute reading before starting.</p>
+</section>
+<div class="th-actions" role="group" aria-label="Readings to display"><button type="button" class="btn" id="th-edit" aria-pressed="true">Enter your readings</button><button type="button" class="btn" id="th-sample" aria-pressed="false">Show practice example</button></div>
 <p id="th-human-status" class="th-evidence" role="status"></p>
 <table class="th-table"><caption>Human surface temperature (°C)</caption><thead><tr><th scope="col">Time (min)</th><th scope="col">Participant A</th><th scope="col">Participant B (optional)</th></tr></thead><tbody id="th-human-data"></tbody></table>
 <figure class="th-chart"><figcaption><strong>Human surface temperature by time</strong></figcaption><svg id="th-human-plot" viewBox="0 0 460 200" role="img" aria-label="Temperature over time; exact readings in the table"></svg><p>A: circle and solid line. B: square and dashed line. Blank readings are not plotted.</p></figure>
@@ -166,7 +176,13 @@
 <aside class="th-evidence" id="th-recap" aria-label="Your evidence so far"></aside>
 <label for="th-explain">Is overheating a possible explanation for polar bears giving up food? Use field and lab evidence, then explain what would test the idea in the wild.</label><textarea id="th-explain" data-field="explain"></textarea>
 <div id="th-report"></div>
+<details class="th-evidence"><summary>Export data from this activity only</summary><p>This JSON file includes this activity’s evidence, your responses, and the name and period shown above. It does not include anything from your other activities. Use the report for normal submission.</p><button type="button" class="btn" id="th-export-json">Download this lab’s data (JSON)</button><p id="th-json-status" role="status"></p></details>
 </section>
+<dialog id="th-reset-dialog" aria-labelledby="th-reset-title"><form id="th-reset-form">
+<h2 id="th-reset-title">Start over in this lab?</h2><p>This clears only this activity’s work on this device. Other activities and your saved name remain. Use Switch student above if someone else is taking over.</p>
+<label for="th-reset-confirm">Type ERASE to confirm</label><input id="th-reset-confirm" autocomplete="off" spellcheck="false" autofocus>
+<p id="th-reset-error" role="status"></p><div class="th-actions"><button type="button" class="btn" id="th-keep">Keep working</button><button type="submit" class="btn btn--danger" id="th-clear" disabled>Erase this activity</button></div>
+</form></dialog>
 <p id="th-save" role="status">Work stays in this browser. Preview your report to keep a copy.</p>
 <footer>Independent companion adapted from <a href="https://openscied.org/instructional-materials/b-5-common-ancestry-speciation/">OpenSciEd B.5 Lesson 2</a> (CC BY-NC 4.0). The scientific studies and clips retain their own credits.</footer>
 </main>

@@ -336,7 +336,7 @@
     ];
     if (stamp && D.ImageRun) {
       content.push(new Paragraph({ children: [new D.ImageRun({ type: 'png', data: stamp.bytes,
-        transformation: { width: 90, height: 90 }, altText: { name: 'Activity complete', title: 'Activity complete', description: 'Required work is included. Not a grade or an authenticity check.' } })] }));
+        transformation: { width: 90, height: 90 }, altText: { name: 'Activity complete', title: 'Activity complete', description: words.final } })] }));
     }
     identityRows(r).forEach(([key, value]) => content.push(new Paragraph({ children: [run(key + ': ', { bold: true }), run(value)] })));
     content.push(p(words[r.status], { spacing: { before: 130, after: 90 } }, { italics: true }));
