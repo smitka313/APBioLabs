@@ -489,3 +489,7 @@
 #sg-finish:has(> #sg-finish-details[open]) #sg-finish-totals :is(.sg-season-change-label,.sg-totals),
 #sg-evidence:has(> #sg-evidence-maps[open]) .sg-evidence-totals {display:none;}
 #sg-evidence:has(> #sg-evidence-maps[open]) #sg-evidence-body {grid-template-columns:minmax(0,1fr);}
+
+.sg-board-header > div {min-width:0;}
+.sg-board-header .sg-model-tag {flex:none;}
+.sg-stat span,#sg-finish-totals>p {white-space:normal;overflow-wrap:break-word;}

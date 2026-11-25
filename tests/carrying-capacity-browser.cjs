@@ -1009,6 +1009,14 @@ async function followWorkflow(browser, url) {
     await rangeKeyboard(p, 8);
     await rangeLock(p).press('Enter');
     check(await confirmedBand(p, 7, 9), '50% grass comparison accepts estimated 8 and explains the repeated 7–9 band');
+    const exact=p.locator('#cc-range-number');
+    await exact.fill('7.5');
+    check(await p.locator('#cc-range-slider').inputValue()==='7.5'&&
+      /7\.5/.test(await p.locator('#cc-range-line-value').textContent()),
+      'typing a half-step synchronizes the slider and graph without clicking or dragging a track');
+    await exact.fill('8');
+    await rangeLock(p).click();
+    check(await confirmedBand(p, 7, 9), 'the typed estimate uses the same lock and evidence band');
     await p.locator('#cc-range-estimate').fill(RANGE_NOTE);
     await shot(p, '1366-light-range-comparison', true);
     check(compared.length === 12 && compared[0][1] === baseline[0][1] &&
@@ -1046,6 +1054,9 @@ async function followWorkflow(browser, url) {
     await compactExplain(p, 'desktop Explain', 430);
     const picker = explainPicker(p), prevPrompt = explainPrev(p), nextPrompt = explainNext(p);
     const questionPos = p.locator('#cc-explain-position');
+    check((await p.locator('#cc-writing-prediction').textContent()).includes(TEXT.prediction) &&
+      /revise about your prediction/i.test(await p.locator('#cc-hint-claim').textContent()),
+      'Explain brings the student’s actual prediction beside the first response without adding a required question');
     const chosenEvidence = () => p.locator('#cc-explain details[data-cc-evidence][open]')
       .evaluateAll(details => details.map(el => el.dataset.ccEvidence));
     check(await picker.inputValue() === 'claim' && await prevPrompt.isDisabled() &&
@@ -1100,6 +1111,20 @@ async function followWorkflow(browser, url) {
       'progress recognizes all five required responses while the optional habitat answer remains blank');
     await go(p, 'run');
     check(await p.locator('#cc-prediction').inputValue() === TEXT.prediction, 'switching sections preserves student work');
+    const records=()=>p.evaluate(()=>Object.fromEntries(Object.keys(localStorage)
+      .filter(k=>/aplab:openscied(-|:)b1-carrying-capacity/.test(k)).map(k=>[k,localStorage.getItem(k)])));
+    const beforeReplay=await records();
+    await p.locator('#cc-replay-grass').selectOption('75');
+    await p.locator('#cc-replay').click();
+    check(/Replay.*75%/.test(await p.locator('#cc-scenario').textContent()), 'the alternate practice setting is visible on the board');
+    await rounds(p, 0);
+    await next.click();
+    await rounds(p, 1);
+    check(JSON.stringify(await records())===JSON.stringify(beforeReplay),
+      'replaying a comparison leaves both recorded runs, responses and estimates byte-for-byte unchanged');
+    await p.locator('#cc-stop-replay').click();
+    await rounds(p, 12);
+    check(JSON.stringify(await openHistory())===JSON.stringify(compared), 'closing replay restores the recorded comparison');
     await go(p, 'explain');
     await axeAudit(p, 'desktop Explain');
     await shot(p, '1366-light-explain', true);

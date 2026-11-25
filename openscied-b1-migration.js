@@ -313,8 +313,17 @@
   $('#play').onclick=()=>{if(timer){pause();return;}if(state.month===11)changeMonth(0);observeMonth();$('#play').textContent='Pause year';$('#play').setAttribute('aria-pressed','true');timer=setInterval(()=>{if(!timer)return;if(document.activeElement===observation){pauseForObservation();return;}if(state.month>=11){pause();say('Year complete. Compare your observations and investigate the evidence.');return;}changeMonth(state.month+1);if(state.month===11){pause();say('Year complete. Compare your observations and investigate the evidence.');}},1800);};
   document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
   $('#weather').onchange=e=>{state.weather=e.target.checked;renderMonth();save();};
-  observation.addEventListener('pointerdown',pauseForObservation);
-  observation.addEventListener('focus',pauseForObservation);
+  const noteArea=$('.mx-record');
+  noteArea.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')pauseForObservation();});
+  noteArea.addEventListener('pointerdown',pauseForObservation);
+  noteArea.addEventListener('focusin',pauseForObservation);
+  const noteShortcut=$('#pause-and-note');
+  noteShortcut.addEventListener('pointerdown',pauseForObservation);
+  noteShortcut.addEventListener('click',()=>{
+    pauseForObservation();
+    view('field');
+    observation.focus();
+  });
   observation.addEventListener('input',()=>{pauseForObservation();keepDraft();renderNoteProgress();save();});
   $('#record').onclick=()=>{
     pauseForObservation();

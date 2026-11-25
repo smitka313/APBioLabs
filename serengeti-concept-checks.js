@@ -23,7 +23,7 @@
       choices: [
         ['remove-group', 'Remove a small-group token instead.', 'A small-group token is not an individual. Look for the exact type the card names.'],
         ['replace', 'Split a herd so there is an individual to remove.', 'The card does not instruct you to split a herd. Only the specified change is allowed.'],
-        ['no-target', 'Continue without removing a token.', 'Yes. There is no legal target. That card leaves the board and the modeled wildebeest population unchanged.']
+        ['no-target', 'Continue without removing a token.', 'Yes. This card leaves the board and population unchanged. A successful hunt is different: its rules explicitly allow splitting a small group when no individual token is left.']
       ],
       correct: 'no-target'
     },

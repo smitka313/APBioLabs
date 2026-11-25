@@ -79,7 +79,9 @@
     $('#cc-save-status').textContent = result?.ok ? 'Work saves on this device' : showSaveConflict(result);
   };
   const speak = (text) => { $('#cc-status').textContent = text; };
-  const current = () => state[state.selected];
+  // The models are deterministic. Replay is a review copy, never a replacement for assessed work.
+  let comparisonReplay = null;
+  const current = () => (state.selected === 'comparison' && comparisonReplay) || state[state.selected];
   const rounds = (s) => [{x:0,y:s.startingPopulation}, ...s.rows.map((r) => ({x:r.round,y:r.ending}))];
   const escapeText = (value) => String(value ?? '').replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const tableRow = (values) => '<tr><th scope="row">'+escapeText(values[0])+'</th>'+values.slice(1).map((x)=>'<td>'+escapeText(x)+'</td>').join('')+'</tr>';
@@ -96,7 +98,8 @@
   };
   const compareText = () => {
     if (!state.comparison || state.comparison.round < ROUNDS) return '';
-    return 'In rounds 7–12, the herd ranged from '+lateRange(state.baseline)+' in the baseline and '+lateRange(state.comparison)+' with '+state.comparison.grassPercent+'% grass available. Compare the range and repeating values, not just the last point.';
+    return 'In rounds 7–12, the herd ranged from '+lateRange(state.baseline)+' in the baseline and '+lateRange(state.comparison)+' with '+state.comparison.grassPercent+'% grass available. Compare the range and repeating values, not just the last point.'+
+      (state.comparison.grassPercent===50?' Here, half the grass roles did not produce half the herd size. Use the records of survivors and calves to explain why.':'');
   };
   const scene = window.CarryingScene.mount($('#cc-board'));
   const habitat = window.CarryingHabitatUI.mount($('#cc-habitat-app'), {announce:speak,getSaveSession,onSaveConflict:showSaveConflict});
@@ -108,7 +111,9 @@
   const field = window.CarryingField.mount($('#cc-field-app'),{announce:speak,getSaveSession,onSaveConflict:showSaveConflict});
   function renderLab() {
     const s = current(), last = s.rows.at(-1), done = s.round === ROUNDS, compared = !!state.comparison;
-    const scenario = state.selected === 'baseline' ? 'Baseline · All grass available' : 'Comparison · '+s.grassPercent+'% grass available';
+    const replaying = comparisonReplay!==null && state.selected==='comparison';
+    const scenario = state.selected === 'baseline' ? 'Baseline · All grass available' :
+      (replaying?'Replay · ':'Comparison · ')+s.grassPercent+'% grass available';
     $('#cc-scenario').textContent = scenario;
     $('#cc-round').textContent = 'Round '+s.round+' of '+ROUNDS;
     $('#cc-board-phase').textContent = done ? 'End of run' : 'Before round '+(s.round+1);
@@ -119,16 +124,20 @@
     $('#cc-range-jump').hidden = !done;
     $('#cc-history tbody').innerHTML = s.rows.map((r)=>tableRow([r.round,r.starting,r.grassAvailable,r.survivors,r.births,r.deaths,r.ending])).join('');
     const ready = state.baseline.round === ROUNDS;
-    $('#cc-compare-hint').textContent = compared ? 'Both runs stay on the graph. Choose which run to show on the board and in the table.' : ready ? 'Baseline complete. Choose how much grass will be available in the second run.' : 'Finish the baseline to unlock the comparison.';
+    $('#cc-replay-controls').hidden = state.comparison?.round !== ROUNDS;
+    $('#cc-replay').hidden = replaying;
+    $('#cc-replay-setting').hidden = replaying;
+    $('#cc-stop-replay').hidden = !replaying;
+    $('#cc-compare-hint').textContent = replaying ? 'Practice replay · not recorded. Your saved comparison, prediction, estimates and written work are unchanged.' : compared ? 'Both runs stay on the graph. Choose which run to show on the board and in the table.' : ready ? 'Baseline complete. Choose how much grass will be available in the second run.' : 'Finish the baseline to unlock the comparison.';
     $('#cc-compare-controls').hidden = !ready || compared;
     $('#cc-run-switches').hidden = !compared;
     $('#cc-view-baseline').setAttribute('aria-pressed',String(state.selected === 'baseline'));
     $('#cc-view-comparison').setAttribute('aria-pressed',String(state.selected === 'comparison'));
     $('#cc-comparison-result').textContent = compareText();
-    $('#cc-comparison-result').hidden = !compareText();
+    $('#cc-comparison-result').hidden = replaying || !compareText();
     if (state.page === 'run') {
       const series = [{name:'Baseline · 100% grass',line:true,dots:true,points:rounds(state.baseline)}];
-      if (compared) series.push({name:'Comparison · '+state.comparison.grassPercent+'% grass',line:true,dots:true,dash:[6,4],points:rounds(state.comparison)});
+      if (compared) series.push({name:(replaying?'Practice replay':'Comparison')+' · '+(replaying?comparisonReplay:state.comparison).grassPercent+'% grass',line:true,dots:true,dash:[6,4],points:rounds(replaying?comparisonReplay:state.comparison)});
       const spec = {responsive:true,height:300,xLabel:'Round',yLabel:'Wildebeest (model individuals)',xMin:0,xMax:ROUNDS,yMin:0,yMax:L.BASELINE.roleSlots,series,simTag:false,hLines:marks};
       if (chart) chart.update(spec); else chart = Lab.chart('#cc-chart',spec);
     }
@@ -171,7 +180,7 @@
     $('#cc-explain-trial').value = state.evidenceTrial;
     $('#cc-explain-round').innerHTML = trial.rows.map(r=>'<option value="'+r.round+'">Round '+r.round+'</option>').join('');
     $('#cc-explain-round').value = shown.round;
-    const rows = [['start','Starting herd',shown.starting],['grass','Grass units',shown.grassAvailable],['survived','Survived',shown.survivors],['births','Births',shown.births],['deaths','Deaths',shown.deaths],['end','Ending herd',shown.ending]];
+    const rows = [['start','Starting herd',shown.starting],['grass','Grass units',shown.grassAvailable],['survived','Survived',shown.survivors],['births','Births',shown.births],['deaths','Left herd (unfed)',shown.deaths],['end','Ending herd',shown.ending]];
     $('#cc-explain-round-data').innerHTML = rows.map(([key,label,value])=>'<div><dt>'+label+'</dt><dd data-cc-stat="'+key+'">'+value+'</dd></div>').join('');
   }
   $('#cc-explain-trial').addEventListener('change',e=>{
@@ -198,6 +207,7 @@
   }
   function renderWriting() {
     const items = [state.baseline,state.comparison].filter((s)=>s?.round).map((s)=>'At round '+s.round+', the '+(s.grassPercent === 100?'baseline':s.grassPercent+'% grass comparison')+' ended with '+plural(s.population,'wildebeest','wildebeest')+'.');
+    $('#cc-writing-prediction').textContent = 'My starting prediction: '+(state.answers.prediction?.trim() || 'Not recorded.');
     $('#cc-writing-evidence').textContent = [...items,compareText()].filter(Boolean).join(' ') || 'No model rounds yet. Return to the model to collect data.';
     $('#cc-writing-habitat').textContent = habitat.report() || 'No completed habitat runs yet.';
     $('#cc-writing-range').textContent = range.report() || 'No fluctuation range recorded yet.';
@@ -216,8 +226,9 @@
     if (current().round >= ROUNDS) return;
     let s = L.step(current());
     if (end) while (s.round < ROUNDS) s = L.step(s);
-    state[state.selected] = s;
-    save(); renderLab();
+    if (comparisonReplay && state.selected === 'comparison') comparisonReplay = s;
+    else { state[state.selected] = s; save(); }
+    renderLab();
     if (s.round === ROUNDS) {
       const target = $('#cc-range-jump');
       if (!target.hidden) { if (target.tagName !== 'BUTTON') target.tabIndex = -1; target.focus({preventScroll:true}); }
@@ -236,7 +247,7 @@
     const written=requiredQuestions.filter(id=>state.answers[id]?.trim()).length;
     if(written<requiredQuestions.length)missing.push('Answer the required Explain questions ('+written+' of '+requiredQuestions.length+').');
     const trialItems=trials.map(([label,trial])=>trial?.round?{
-      type:'table',title:label+' (simulated)',columns:['Round','Starting herd','Grass units','Survivors','Births','Deaths','Ending herd'],
+      type:'table',title:label+' (simulated)',columns:['Round','Starting herd','Grass units','Survivors','Births','Left herd (unfed)','Ending herd'],
       rows:trial.rows.map(r=>[r.round,r.starting,r.grassAvailable,r.survivors,r.births,r.deaths,r.ending])}:
       {type:'text',text:label+': no rounds recorded.'});
     if(compareText())trialItems.push({type:'text',text:compareText()});
@@ -283,15 +294,29 @@
     target.tabIndex = -1; target.focus({preventScroll:true}); target.scrollIntoView({block:'start'});
   });
   $('#cc-grass').value = state.grass;
+  $('#cc-replay-grass').value = state.grass;
   $('#cc-grass').addEventListener('change',(e)=>{ state.grass = Number(e.target.value); save(); });
   $('#cc-compare').addEventListener('click',()=>{
     if (state.baseline.round !== ROUNDS || state.comparison) return;
     state.comparison = L.create({grassPercent:state.grass});
+    $('#cc-replay-grass').value=state.grass;
     state.selected = 'comparison'; save(); renderLab(); $('#cc-next').focus(); speak('Comparison ready. Starting with the same herd and '+state.grass+'% of grass roles available.');
+  });
+  $('#cc-replay').addEventListener('click',()=>{
+    if(state.comparison?.round !== ROUNDS)return;
+    const grassPercent=Number($('#cc-replay-grass').value);
+    if(![50,75].includes(grassPercent))return;
+    comparisonReplay = L.create({grassPercent});
+    state.selected='comparison';renderLab();$('#cc-next').focus();
+    speak('Practice comparison ready with '+grassPercent+'% grass. Your recorded work is unchanged.');
+  });
+  $('#cc-stop-replay').addEventListener('click',()=>{
+    comparisonReplay=null;renderLab();$('#cc-replay').focus();
+    speak('Showing the recorded comparison.');
   });
   for (const mode of ['baseline','comparison']) $('#cc-view-'+mode).addEventListener('click',()=>{
     if (!state[mode]) return;
-    state.selected = mode; save(); renderLab();
+    comparisonReplay=null;state.selected = mode; save(); renderLab();
     speak((mode === 'baseline' ? 'Baseline' : 'Comparison')+' selected. '+outcome(current().rows.at(-1)));
   });
   for (const id of strings) {
@@ -329,7 +354,7 @@
     $('#cc-reset-dialog').close();
     if (!result?.ok) { showSaveConflict(conflict || result); return; }
     saveSession = reopen(); reportIdentity = captureReportIdentity(); preservedSave = false; $('#save-conflict').hidden = true;
-    state=fresh(); habitat.reset(true); range.reset(); field.reset(); $('#cc-grass').value='50';
+    comparisonReplay=null;state=fresh(); habitat.reset(true); range.reset(); field.reset(); $('#cc-grass').value='50'; $('#cc-replay-grass').value='50';
     for (const id of strings) $('#cc-'+id).value='';
     $$('input[type="radio"]').forEach((el)=>{el.checked=false;});
     for (const id of ['cc-feedback','cc-field-feedback']) {$('#'+id).hidden=true;$('#'+id).textContent='';}

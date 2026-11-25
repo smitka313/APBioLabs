@@ -33,6 +33,9 @@ function fixture(withIndividual){
     for(const withIndividual of [false,true]){
       const {before,after,prey,predator}=fixture(withIndividual);
       await set(before);
+      await page.locator('#sg-help').click();
+      assert.match(await page.locator('#sg-help-hunt-loss').textContent(),/from anywhere on the board.*no individual tokens remain.*two individual tokens.*A card/s);
+      await page.getByRole('button',{name:'Close instructions'}).click();
       await page.locator('#sg-board-open').click();
       const dlg=page.locator('#sg-board-dialog');
       await dlg.locator('#sg-expanded-next[data-action="roll"]').click();
@@ -45,7 +48,7 @@ function fixture(withIndividual){
       assert.equal(await dlg.locator('[data-change-cell="'+removed.cell.x+':'+removed.cell.y+'"][data-change-kind="removed"]').count(),1);
       if(withIndividual){
         assert((await record.textContent()).includes('individual at square '+coords(removed.cell)));
-        assert.match(await record.textContent(),/The attacked token stayed/);
+        assert.match(await record.textContent(),/The attacked token stayed.*any square.*not another attack site/);
       }else{
         assert.match(await record.textContent(),/small-group token/);
         assert.match(await record.textContent(),/\(\+1\)/);
@@ -57,6 +60,19 @@ function fixture(withIndividual){
       assert.deepEqual(await read(),after,'acknowledging the final roll does not roll again');
       assert(await page.locator('#sg-next').getAttribute('data-action')!=='huntReview');
     }
+    const base=fixture(true).before;
+    let tied;
+    for(let rng=10000;rng<10300&&!tied;rng++){
+      const candidate=L.act({...base,rng},{type:'roll'});
+      if(candidate.battle?.rounds?.at(-1)?.pairs?.[0]?.winner==='tie')tied=candidate;
+    }
+    assert.ok(tied,'seeded fixture has a one-to-one tie');
+    let expected=tied;
+    do { expected=L.act(expected,{type:'roll'}); } while(expected.log.length===tied.log.length);
+    await set(tied);
+    await page.locator('#sg-roll-ties').click();
+    await page.locator('#sg-next[data-action="huntReview"]').waitFor();
+    assert.deepEqual(await read(),expected,'fast tie resolution keeps every seeded reroll and stops before the next hunt');
     let flooded=L.act(L.create(256),{type:'migrate'});
     const card=L.CARDS.find(c=>c.effect==='removePride');
     flooded.deck=[card.id,...flooded.deck.filter(id=>id!==card.id)];

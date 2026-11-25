@@ -55,7 +55,9 @@ async function download(page, button, filename) {
         assert.match(report,/SIMULATED/);
         assert.match(report,/Season totals\nWinter/);
         assert.match(report,/Event and hunt history\nWinter · Winter setup[^\n]*\nWinter · A hyena cub survives/);
-        assert.match(report,/Investigation question: A fictional question\./);
+        assert.match(report,/Model investigation question: How do event cards and hunts/);
+        assert.match(report,/Our investigation question: A fictional question\./);
+        assert.match(report,/Group record · Recorded by: .*\nClass period: /);
         assert.match(report,/Evidence: Cumulative change: 0 → 0/);
         assert.match(report,/Explanation: A fictional explanation with numbers\./);
         assert.match(report,/Further test: A fictional next test\./);

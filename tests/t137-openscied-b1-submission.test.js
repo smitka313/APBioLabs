@@ -190,6 +190,7 @@ test('Serengeti needs the four-season run, valid selected evidence and both expl
   assert.equal(r.status,'final');assert.equal(r.student,null);assert.equal(r.datasetId,undefined);
   assert.equal(r.allowIdentityEdit,false);
   assert.match(r.sections[0].items[0].text,/group record/);
+  assert.match(r.sections[0].items[0].text,/Recorded by: Device student · Class period: 3/);
   assert.equal(r.sections[3].items[0].value,'Selected evidence Lion hunt');
   assert.equal(r.sections[2].items[0].rows[0][4],'Simulated capture');
   ctx.roleSetup.mode='solo';

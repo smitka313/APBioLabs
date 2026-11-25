@@ -45,7 +45,9 @@ async function auditNotesAndRain(browser,base){
     const field=p.locator('#observation'),play=p.locator('#play');
     await play.tap();
     ok(await play.getAttribute('aria-pressed')==='true','the year starts before note editing');
-    await field.tap();
+    await p.locator('#pause-and-note').tap();
+    ok(await field.evaluate(input=>input===document.activeElement)&&await p.locator('#month-note-month').textContent()==='May',
+      'the stable map shortcut pauses the displayed month and focuses its note on touch');
     await field.fill('May draft belongs with May.');
     ok(await play.getAttribute('aria-pressed')==='false','touching or typing in the note stops autoplay');
     await p.waitForTimeout(1850);
@@ -85,6 +87,8 @@ async function auditNotesAndRain(browser,base){
     const limits=await p.locator('.mx-evidence-intro').textContent();
     ok(/group averages for sampled male wildebeest/.test(limits)&&/several studies/.test(limits)&&/outbreak year/.test(limits)&&/whole herd/.test(limits),
       'sex, time/sample limits, and outbreak context are visible beside the field cards');
+    ok(/90% bone-marrow fat in May and 23% in August/.test(limits)&&/different sampled groups/.test(limits)&&/do not report group sample sizes/.test(limits),
+      'field cards explain the apparent swing without inventing sample sizes or tracking the same animals');
     await p.locator('[data-collection="rainfall"]').tap();
     ok(await darkGraph('#collection-rainfall .mx-rain-grid > :last-child'),'Investigate adapts its source image to dark mode too');
     await p.evaluate(()=>delete document.documentElement.dataset.theme);
