@@ -33,7 +33,8 @@ for (const [name, spec] of Object.entries(cases)) {
     : excerpt(source,'  const saveScope','  const unavailableSave');
   const readIdentity = spec.workshop ? excerpt(source,'  const sharedIdentity','  function refreshIdentity(')
     : excerpt(source,'  function '+spec.identity+'(', '\n  '+(spec.constNext ? 'const ' : 'function ')+spec.identityNext);
-  const builder = excerpt(source,'  function '+spec.build+'(', spec.end || '  function '+spec.next+'(');
+  const builder = (isCancer ? excerpt(source,'  function checkedCaseNotes()','  function report()') : '') +
+    excerpt(source,'  function '+spec.build+'(', spec.end || '  function '+spec.next+'(');
   function makeTab(initialPerson, override = {}) {
     let identity = initialPerson, exportText = '';
     const disk = new Map([[key, '{"test":"old saved work"}']]);

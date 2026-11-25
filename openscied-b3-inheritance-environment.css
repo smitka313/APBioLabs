@@ -36,8 +36,10 @@ fieldset.field > .field { margin: 0 0 8px 28px; }
 .scene-notice[hidden] { display: none; }
 
 /* "Your data" boxes */
-.your-data { display: grid; gap: 10px; border-left: 4px solid var(--accent); }
+.your-data { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; border-left: 4px solid var(--accent); }
 .your-data h3, .your-data h4 { margin: 0; }
+/* Keep wide recorded evidence scrollable inside its panel on phones. */
+.your-data-body, .your-data .table-wrap { min-inline-size: 0; max-inline-size: 100%; }
 .your-data p { margin: 0; }
 .your-data table.data { font-size: .88rem; }
 .your-data table.data th, .your-data table.data td { white-space: normal; }
@@ -196,5 +198,5 @@ details.more summary { cursor: pointer; font-weight: 600; min-height: 24px; colo
 .ev-note:empty { display: none; }
 
 @supports (field-sizing: content) {
-  main textarea:not([readonly]) { field-sizing:content; height:auto; max-height:none; }
+  main textarea:not([readonly]) { field-sizing:content; height:auto; max-height:none; inline-size:100%; min-inline-size:0; max-inline-size:100%; box-sizing:border-box; }
 }
