@@ -18,10 +18,13 @@ async function run(){
  try{
   for(const width of [390,768,1366,1920]){
    const c=await browser.newContext({viewport:{width,height:920},colorScheme:width===390?'dark':'light',reducedMotion:width===768?'reduce':'no-preference'});
-   if(width===1366)await c.addInitScript({path:path.join(path.dirname(require.resolve('docx')),'index.iife.js')});
    const p=await c.newPage(),errs=[];
    p.on('pageerror',e=>errs.push(e.message));
    await p.route('https://**/*',route=>route.abort());
+   if(width===1366){
+    const fixture=fs.readFileSync(path.join(path.dirname(require.resolve('docx')),'index.iife.js'),'utf8')+"\nconst baDocx = docx; window.docx = {...baDocx, Packer: {toBlob: async (...args) => {try {return await baDocx.Packer.toBlob(...args);} catch(err) {window.__baWordError=String(err);throw err;}}}};";
+    await p.route(/https:\/\/.*\/docx@[^/]+\/.*\.js$/,route=>route.fulfill({contentType:'application/javascript',body:fixture}));
+   }
    await p.goto(base+pathname+'#explain');
    const visible=id=>p.locator('#'+id).isVisible();
    const at=q=>p.locator('#ba-'+q);
@@ -94,7 +97,14 @@ async function run(){
    assert.match(report,/The model brown claw reaches farther/);
    if(width===1366){
     await p.getByText('More formats',{exact:true}).click();
-    const [doc]=await Promise.all([p.waitForEvent('download'),p.getByRole('button',{name:/Download.*Word/}).click()]);
+    const diagnostic=async()=>p.locator('dialog .osr-tools [role=status]').allTextContents();
+    let doc;
+    try{
+     [doc]=await Promise.all([p.waitForEvent('download',{timeout:12000}),p.getByRole('button',{name:/Download.*Word/}).click()]);
+    }catch(err){
+     const state=await p.evaluate(()=>({packer:typeof window.docx?.Packer?.toBlob,packingError:window.__baWordError,report:document.querySelector('dialog .osr-tools [role="status"]')?.textContent}));
+     throw new Error('Word download: '+JSON.stringify({state,feedback:await diagnostic(),errs}),{cause:err});
+    }
     assert.equal(doc.suggestedFilename(),'bear-ancestry-submission.docx');
     assert.equal(fs.readFileSync(await doc.path()).subarray(0,2).toString(),'PK');
    }
