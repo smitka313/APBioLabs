@@ -97,6 +97,11 @@ const CORRIDOR_PREVIEW='assets/openscied-wildlife-corridor-preview.svg';
         carrying.img.w===960 && carrying.img.h===600 && carrying.img.alt==='' &&
         carrying.label === 'Open activity: Carrying Capacity',
         width + ' px: second card has the original carrying capacity illustration and a named link');
+      const wapusk = m.find(x=>x.img?.src==='assets/openscied-wapusk-card.svg');
+      T.ok(wapusk?.img?.complete && wapusk.img.w===960 && wapusk.img.h===600 &&
+        wapusk.img.widthAttr==='960' && wapusk.img.heightAttr==='600' &&
+        wapusk.label==='Open activity: Three Bears in Wapusk',
+        width + ' px: Wapusk uses the dedicated 8:5 preview of the detailed field-profile bears');
       const hawksbeard = m.find(x=>x.img?.src===HAWKSBEARD_PREVIEW);
       T.ok(hawksbeard?.img?.complete && hawksbeard.img.src===HAWKSBEARD_PREVIEW &&
         hawksbeard.img.w===960 && hawksbeard.img.h===600 && hawksbeard.img.alt==='' &&
