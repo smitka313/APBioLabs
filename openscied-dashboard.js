@@ -29,7 +29,8 @@
     { id: 'rat-generations', name: 'Rat Generations', file: 'openscied-b4-rat-generations.html', key: PREFIX + 'b4-rat-generations:v1', clears: 'model generations, prediction, and written responses', progress: ratGenerationsProgress, ids: ratGenerationsResponseIds, answers: true },
     { id: 'junco', name: 'Junco Investigation', file: 'openscied-b4-junco.html', key: PREFIX + 'b4-junco:v1', clears: 'prediction, investigation progress, and written responses', progress: juncoProgress, ids: juncoResponseIds },
     { id: 'wildlife-corridor', name: 'Wildlife Corridor Lab', file: 'openscied-b4-wildlife-corridor.html', key: PREFIX + 'b4-wildlife-corridor:v1', clears: 'prediction, crossing design, model runs, and written responses', progress: wildlifeCorridorProgress, ids: wildlifeCorridorResponseIds },
-    { id:'wapusk', name:'Three Bears in Wapusk', file: 'openscied-b5-wapusk.html', key:PREFIX + 'b5-wapusk:v1', clears:'evidence notebook and comparison answers', progress:wapuskProgress, ids:wapuskIds }
+    { id:'wapusk', name:'Three Bears in Wapusk', file: 'openscied-b5-wapusk.html', key:PREFIX + 'b5-wapusk:v1', clears:'evidence notebook and comparison answers', progress:wapuskProgress, ids:wapuskIds },
+    { id:'thermoregulation', name:'Bear Thermoregulation Lab', file:'openscied-b5-thermoregulation.html', key:PREFIX+'b5-thermoregulation:v1', clears:'treadmill notebook, human readings, and matter and energy cards', progress:thermProgress, ids:thermIds }
   ];
   const SECTIONS = ['overview', 'background', 'cell-game', 'growth-model', 'analyze', 'submit'];
   // Written-response fields. The activity saves the ids of every response field it has (saved.responseIds), so the
@@ -550,6 +551,17 @@
     return {started,section:'',visited:Number(s.lastVisitedAt)||0,stepsDone:n,stepsTotal:6,stepsLabel:'Notebook responses saved',
       summary:n===6&&s.finished===true?'Notebook complete':n+' of 6 notebook responses saved'};
   }
+  function thermIds(){return ['predict','field','pattern','human','explain'];}
+  function thermProgress(raw){
+    const blank={summary:'Not started',started:false,section:'',visited:0};
+    let s;try{s=JSON.parse(raw);}catch(_){return blank;}
+    if(s?.v!==1||!/^[A-F0-9]{8}$/.test(s.id))return blank;
+    const n=thermIds().filter(id=>written(s.fields||{},id)).length;
+    const started=n>0||['breaks','core','wild'].includes(s.check)||s.hum?.some?.(v=>typeof v==='string'&&v.trim())||Object.keys(s.sort||{}).length>0;
+    if(!started)return blank;
+    const section=['field','treadmill','human','model'].includes(s.step)?s.step:'field';
+    return {started,section,visited:Number(s.lastVisitedAt)||0,stepsDone:n,stepsTotal:5,stepsLabel:'Notebook responses saved',summary:n+' of 5 notebook responses saved'};
+  }
   // Published, fixed denominators. A zero is meaningful even before a student starts.
   const STEP_SCALES = {
     migration:[12,'Months with saved observations'],carrying:[12,'Population model rounds'],
@@ -558,7 +570,7 @@
     'cell-cycle':[2,'Cell game rounds completed'],'dna-workshop':[6,'Workshop practices completed'],
     'dna-p53':[2,'Interactive models used'],'inh-env':[6,'Interactive models used'],
     hawksbeard:[5,'Plant pairs released'],'rat-generations':[4,'Investigation parts completed'],junco:[3,'Investigation steps completed'],
-    'wildlife-corridor':[4,'Investigation steps completed'],wapusk:[6,'Notebook responses saved']
+    'wildlife-corridor':[4,'Investigation steps completed'],wapusk:[6,'Notebook responses saved'],thermoregulation:[5,'Notebook responses saved']
   };
   function init() {
     $('[data-ph="dashboard-identity"]')?.remove();

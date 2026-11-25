@@ -34,7 +34,8 @@
     'b4-rat-generations': [[pref+'b4-rat-generations:v1','prediction action answers crosses analysisChecked']],
     'b4-junco': [[pref+'b4-junco:v1','prediction revealed reason observation claim limits sim']],
     'b4-wildlife-corridor': [[pref+'b4-wildlife-corridor:v1','prediction generations crossing claim limits finished']],
-    'b5-wapusk': [[pref+'b5-wapusk:v1','fields check finished']]
+    'b5-wapusk': [[pref+'b5-wapusk:v1','fields check finished']],
+    'b5-thermoregulation': [[pref+'b5-thermoregulation:v1','fields check hum sort']]
   };
   const record = value => value && typeof value === 'object' && !Array.isArray(value);
   const safeDate = (n, now) => Number.isFinite(n) && n > 0 && n <= now ? n : 0;
@@ -59,6 +60,7 @@
       if (k==='fields' && Array.isArray(saved.responseIds) && saved.responseIds.length && value) {
         value=Object.fromEntries([...new Set([...saved.responseIds,...extraFields])].filter(id=>typeof id==='string' && Object.hasOwn(value,id)).map(id=>[id,value[id]]));
       }
+      if (k==='hum' && Array.isArray(value) && !value.some(v=>typeof v==='string'&&v.trim())) value=undefined;
       if (k==='casework' && value) {
         const { opened, ...evidence }=value;
         value=evidence;

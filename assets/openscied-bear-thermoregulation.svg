@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 480" role="img" aria-labelledby="title desc">
+<title id="title">Polar bear thermoregulation field station</title><desc id="desc">An ivory polar bear walks on a charcoal treadmill in a lab. Snow sits on a separate blue platform beside it.</desc>
+<defs>
+<linearGradient id="wall" x2="0" y2="1"><stop stop-color="#17354a"/><stop offset="1" stop-color="#537982"/></linearGradient>
+<linearGradient id="fur" x2=".25" y2="1"><stop stop-color="#fff7df"/><stop offset=".58" stop-color="#e9e0cb"/><stop offset="1" stop-color="#9db3b3"/></linearGradient>
+<linearGradient id="glass" x2="0" y2="1"><stop stop-color="#6cb0ba"/><stop offset="1" stop-color="#c4e5dc"/></linearGradient>
+<pattern id="floor" width="75" height="38" patternUnits="userSpaceOnUse"><path d="M0 0h75M0 0v38" stroke="#698789" opacity=".3"/></pattern>
+<pattern id="belt" width="21" height="20" patternUnits="userSpaceOnUse"><path d="M7 0 2 20m20-20-5 20" stroke="#6e9299" opacity=".6" stroke-width="2"/></pattern>
+</defs>
+<path fill="url(#wall)" d="M0 0h1000v480H0z"/>
+<path d="M0 320h1000v160H0z" fill="#203b4a"/><path d="M0 320h1000v160H0z" fill="url(#floor)"/>
+<rect x="55" y="57" width="319" height="151" rx="14" fill="#162936" stroke="#9fbdbe" stroke-width="4"/>
+<rect x="66" y="68" width="297" height="129" rx="7" fill="url(#glass)"/>
+<path d="m67 167 71-70 46 45 41-56 94 81h44v30H66z" fill="#7b9da7"/><path d="m109 126 29-29 30 29-17-5-13 8-11-9zm84 4 32-44 52 45-26-7-18 5-9-15-12 20z" fill="#f3f4df"/><path d="M215 68v128" stroke="#496a75" stroke-width="5"/>
+<rect x="807" y="63" width="137" height="112" rx="8" fill="#182d3b" stroke="#93b7c0" stroke-width="3"/>
+<path d="M823 141h102M824 103h102m-95 33 17-14 15 4 18-28 13 5 20-19" fill="none" stroke="#7bc8b1" stroke-width="3"/>
+<circle cx="827" cy="82" r="4" fill="#ebc477"/><path d="M390 52h366M414 61h318" stroke="#a2b9b9" stroke-width="2" opacity=".4"/>
+<ellipse cx="577" cy="382" rx="357" ry="31" fill="#0c2233" opacity=".57"/>
+<path d="M225 324h575l40 24-31 38H214l-17-26z" fill="#263d4e" stroke="#91aeb0" stroke-width="3"/>
+<path d="M217 323h583l37 26H199z" fill="#162731"/><path d="M217 323h583l37 26H199z" fill="url(#belt)"/>
+<path d="M233 385v15m542-15v15" stroke="#a1babc" stroke-width="9"/><path d="M218 367h584" stroke="#68a6a5" stroke-width="3"/>
+<path d="M845 363h155v33H845l-14-15z" fill="#537d8e"/><path d="M839 364q12-20 40-10 23-18 49-7 25-12 72-3v23H840z" fill="#ebf7ef"/><path d="m872 360 7-8m19 6 8-5m43 9 9-5m28 3 9-4" stroke="#a6c8cf" stroke-width="2"/>
+<g stroke="#53696c" stroke-width="3" stroke-linejoin="round">
+<path d="M471 259q-10 20-15 44l-20 26q7 10 31 6l36-37 9-34M638 257l25 55-4 19q10 11 35 3l-7-47-13-33" fill="#9fb2ad"/>
+<path d="M377 209q10-18 37-15 35-42 95-43 57-7 114 4 45 7 74 41l29 14 30 4 26 19 29 8 6 13-21 12-43 1q-12 13-40 11l-19-5-12 34 3 22q-3 10-33 10l-13-5 2-18-15-39q-49 17-112 3l-24 34 2 20q-7 7-37 4l-11-8 10-27 2-36q-46-8-61-38-19 1-27-14z" fill="url(#fur)"/>
+<path d="M754 220q-12-30 6-32 16-1 22 24" fill="#f0e8d3"/>
+<path d="M796 239l15 3 6 12-11 5-12-9z" fill="#2b383e"/>
+<path d="M726 238q11 5 26 2m-54 19q-8 10-17 15" fill="none" opacity=".6"/>
+<circle cx="773" cy="231" r="3.7" fill="#233239" stroke="none"/>
+<path d="m489 332 7-3m-26 5 5-3m190 2 7-2m6 1 6-3" stroke-width="1.4"/>
+</g>
+<g fill="none" stroke="#faf5e3" opacity=".51" stroke-width="2"><path d="M427 206q35-35 99-37 67-3 127 26"/><path d="M437 217q30-25 68-30m140 17q33 14 47 36"/></g>
+<path d="M878 260v67m-18-48 32 25m-31 0 31-27" stroke="#b9e0df" stroke-width="2" opacity=".6"/>
+</svg>
