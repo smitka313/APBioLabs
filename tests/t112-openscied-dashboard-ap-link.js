@@ -1,4 +1,4 @@
-/* OpenSciEd has a filled AP Lab Bench return in the masthead and an explanatory
+/* OpenSciEd has a visible AP Lab Bench return in the masthead and an explanatory
    reciprocal AP card after the activity grid.
    Run: NODE_PATH=$(npm root -g) node tests/t112-openscied-dashboard-ap-link.js */
 const T = require('./_h');
@@ -26,9 +26,14 @@ const T = require('./_h');
             return n.slice(0,3).map(v=>v/255).map(v=>v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4))
               .reduce((total,v,i)=>total+v*[.2126,.7152,.0722][i],0);
           };
-          const a=lum(style.backgroundColor), b=lum(style.color);
+          // The non-current course is an ordinary link on the masthead background.
+          const current = link.closest('nav').querySelector('[aria-current="page"]');
+          const masthead = link.closest('.dashboard-masthead');
+          const a=lum(style.backgroundColor) ?? lum(getComputedStyle(masthead).backgroundColor), b=lum(style.color);
           const contrast = a===null||b===null ? 0 : (Math.max(a,b)+.05)/(Math.min(a,b)+.05);
           return {
+            activeTreatment:current && current.textContent==='OpenSciEd' &&
+              lum(style.backgroundColor)===null && lum(getComputedStyle(current).backgroundColor)!==null,
             backHref:link.getAttribute('href'), backH:r(link).height, contrast, focused:document.activeElement===link,
             backInView:r(link).top>=0 && r(link).bottom<=innerHeight,
             beforeWorkspace:!!(ws && (link.compareDocumentPosition(ws)&Node.DOCUMENT_POSITION_FOLLOWING)),
@@ -38,7 +43,8 @@ const T = require('./_h');
           };
         });
         T.ok(m.backHref === 'ap-biology.html' && m.backH >= 38 && m.contrast >= 4.5 && m.backInView,
-          width + ' px: filled AP return is visible in the masthead (' + Math.round(m.backH) + ' px, ' + m.contrast.toFixed(2) + ':1 contrast)');
+          width + ' px: AP return is visible in the masthead (' + Math.round(m.backH) + ' px, ' + m.contrast.toFixed(2) + ':1 contrast)');
+        T.ok(m.activeTreatment, width + ' px: only the current course has a filled pill');
         T.ok(m.focused && m.beforeWorkspace, width + ' px: Tab reaches the AP return before the student workspace');
         T.ok(m.cardHref === 'ap-biology.html' && /AP Bio/.test(m.cardText) && /13/.test(m.cardText) && m.heading && m.btnH >= 40 && m.belowActivities,
           width + ' px: below the activity grid, a dedicated card explains there are 13 AP labs and links to them');
