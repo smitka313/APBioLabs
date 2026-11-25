@@ -41,7 +41,8 @@ const {chromium}=require('playwright'),{serve}=require('./_h');
        await p.reload();assert.equal(await p.getByLabel('Participant A at 4 minutes (°C)',{exact:true}).inputValue(),'33.2');
        await tab('model').click();
        await p.locator('[data-card="heat"]').click();await p.locator('[data-zone="matterOut"]').click();assert.match(await by('sort-status').innerText(),/try again/);
-       for(const [c,z] of Object.entries({heat:'energy',oxygen:'matterIn',water:'matterOut',usable:'energy',glucose:'matterIn',carbon:'matterOut'})){
+       await p.locator('[data-zone="energy"]').click();assert.match(await by('sort-status').innerText(),/Heat transferred placed/);
+       for(const [c,z] of Object.entries({oxygen:'matterIn',water:'matterOut',usable:'energy',glucose:'matterIn',carbon:'matterOut'})){
          if(c==='carbon')await p.locator('[data-card="'+c+'"]').dragTo(p.locator('[data-zone="'+z+'"]'));
          else{await p.locator('[data-card="'+c+'"]').click();await p.locator('[data-zone="'+z+'"]').click();}
        }
