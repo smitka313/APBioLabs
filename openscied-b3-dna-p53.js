@@ -483,14 +483,15 @@
   }
 
   /* ---------- progress per section ---------- */
+  const optionalPeer = el => Boolean(el.closest('[data-optional-peer]'));
   function sectionItems(id) {
     const sec = byId(id), items = [];
     if (!sec) return items;
     if (id === 'fork') return [!!L.forkSummary(state.fork)];
-    if (id === 'expression') return [state.expression.runs.length > 0, !!byId('expr-sentence').value.trim()];
-    $$('.qcard', sec).forEach(c => items.push(cardAnswered(c)));
+    if (id === 'expression') return [...['A','B','C'].map(strand=>state.expression.runs.some(run=>run?.strand===strand)), !!byId('expr-sentence').value.trim()];
+    $$('.qcard', sec).filter(c=>!optionalPeer(c)).forEach(c => items.push(cardAnswered(c)));
     CHECK_ROWS.forEach(function (k) { if ($('#cl-row-' + k, sec)) items.push(rowDone(k)); });
-    $$('textarea', sec).filter(t => !t.readOnly && !t.closest('.write-more')).forEach(t => items.push(!!t.value.trim()));
+    $$('textarea', sec).filter(t => !t.readOnly && !t.closest('.write-more') && !optionalPeer(t)).forEach(t => items.push(!!t.value.trim()));
     return items;
   }
   function renderProgress() {
@@ -535,7 +536,13 @@
   }
   function sources(k) { return $$('#cl-row-' + k + ' input[type=checkbox]').filter(c => c.checked).map(c => oneLine(c.closest('label').textContent)); }
   function written(id) { const e = byId(id); return !!(e && e.value && e.value.trim()); }
-  function optionalWriting() { return $$('main .write-more textarea').filter(t => t.value.trim()).map(t => [labelFor(t.id), t.value.trim(), t.id]); }
+  function optionalWriting() {
+    const writing = $$('main .write-more textarea, main [data-optional-peer] textarea')
+      .filter(t => t.value.trim()).map(t => [labelFor(t.id), t.value.trim(), t.id]);
+    const peer=answerFor('p-peer');
+    if(peer)writing.push([labelFor('p-peer'),peer,'p-peer']);
+    return writing;
+  }
   function renderReport() {
     const report = $('#investigation-report'); if (!report) return;
     report.replaceChildren();
@@ -658,6 +665,7 @@
   function responseIds() {
     const ids = [];
     $$('main .qcard, main .cl-row, main #sentence-check, main textarea').forEach(function (e) {
+      if (optionalPeer(e)) return;
       if (e.matches('.qcard')) ids.push(e.dataset.q);
       else if (e.matches('.cl-row')) ids.push('cl-' + e.dataset.row + '-status');
       else if (e.id === 'sentence-check') ids.push('expr-sentence');

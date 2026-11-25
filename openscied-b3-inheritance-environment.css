@@ -194,3 +194,7 @@ details.more summary { cursor: pointer; font-weight: 600; min-height: 24px; colo
 
 .ev-note { margin: -2px 0 4px 12px; font-size: .9rem; font-weight: 600; }
 .ev-note:empty { display: none; }
+
+@supports (field-sizing: content) {
+  main textarea:not([readonly]) { field-sizing:content; height:auto; max-height:none; }
+}

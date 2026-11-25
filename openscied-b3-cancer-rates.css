@@ -263,3 +263,7 @@ body:has(.cr-case-modal[open]){overflow:hidden}
 .cr-evidence-confirm[hidden]{display:none}
 .cr-evidence-confirm input{flex:none;margin:.16rem 0 0}
 #cr-view-help{margin:.32rem 0}
+
+@supports (field-sizing: content) {
+  main textarea:not([readonly]) { field-sizing:content; height:auto; max-height:none; }
+}

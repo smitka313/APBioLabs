@@ -9,7 +9,8 @@
   const cleanPlan=p=>Object.fromEntries(M.pieces.map(k=>[k,M.zones.includes(p?.[k])?p[k]:null]));
   const str=x=>typeof x==='string'?x.slice(0,1800):'';
   const ready=()=>!!s.trial&&cases.every(p=>s.caseChecks.includes(p.id));
-  const complete=()=>ready()&&s.claim.trim()&&s.limit.trim()&&s.finished;
+  const hasRecommendation=()=>Boolean(s.claim.trim()&&s.limit.trim());
+  const complete=()=>ready()&&hasRecommendation()&&s.finished;
   let s=fresh(), session, recovery=false, selected='', view='base', patient=1, animation=0;
   const same=(a,b)=>M.pieces.every(k=>a[k]===b[k]);
   try{
@@ -253,6 +254,9 @@
   }
   function drawWallet(animate=false){
     const p=quoteCase, next=needKinds(p)[wallet.next], plan=plansForPractice()[$('pay-plan').value];
+    const trialOption=$('pay-plan').querySelector('option[value=trial]');
+    trialOption.textContent=s.trial?'Recorded redesign · '+label(s.trial.screen)+' screening · '+label(s.trial.machine)+' ultrasound':
+      'Mobile ultrasound · hospital screening';
     const bar=el('div'), fill=el('span');
     bar.className='sd-wallet-bar';bar.setAttribute('aria-hidden','true');bar.append(fill);
     const percent=(v)=>100*v/p.means+'%';
@@ -261,8 +265,10 @@
     if(animate)requestAnimationFrame(()=>requestAnimationFrame(()=>fill.style.setProperty('--balance',target)));
     const balance=el('p',cost(wallet.credits)+' of '+cost(p.means)+' left');balance.className='sd-balance';
     $('wallet').replaceChildren(balance,bar,el('p',(next?'Next: '+label(visitQuote(p,next,plan).place)+' · ':'')+p.hours+' h available per visit'));
+    $('book').hidden=!next;
     $('book').disabled=!next;
-    $('book').textContent=next?'Try booking '+visits[next].toLowerCase():'Care pathway complete';
+    $('book').textContent=next?'Try booking '+visits[next].toLowerCase():'';
+    $('path-complete').hidden=!!next;
   }
   function loadWallet(note=''){
     const p=quoteCase, plan=practicePlan(), k=walletKey(), steps=s.practice[k];
@@ -501,7 +507,11 @@
     host.replaceChildren(el('h4','Patient '+id+' · '+a.place));
     if(profile)host.append(el('p',need(profile)+' · Income: '+income(profile)+' · Care budget: '+cost(profile.means)),el('p','One way: '+profile.distances.hub+' mi to hospital · '+profile.distances.mobile+' mi to mobile clinic'));
     host.append(line('Hospital plan',a));
-    if(b)host.append(line('Redesign',b));
+    if(b){
+      host.append(line('Redesign',b));
+      const screen=label(s.trial.screen), scan=label(s.trial.machine);
+      host.append(el('p','Recorded redesign: screening at '+screen+'; ultrasound follow-up at '+scan+'. The practice cost sheet is a separate what-if and does not move either service in the recorded plan.'));
+    }
     if(profile){
       host.append(itemizedQuote(profile,M.baseline,'Hospital plan: itemized visit costs'));
       if(b)host.append(itemizedQuote(profile,s.trial,'Redesign: itemized visit costs'));
@@ -524,9 +534,17 @@
         d.append(el('summary','Case '+(i+1)+' · '+p.place),body);return d;
       }));
     }
-    $('finish').disabled=!(ready()&&s.claim.trim()&&s.limit.trim())||!!complete();
-    $('finished').textContent=complete()?'Investigation complete. Preview your report before submitting it.':'Write both responses to finish.';
+    renderFinish();
     drawSetup();
+  }
+  function renderFinish(){
+    const done=complete(), canFinish=ready()&&hasRecommendation();
+    $('finish').hidden=done;
+    $('finish').disabled=!canFinish||done;
+    $('edit-recommendation').hidden=!done;
+    for(const k of ['claim','limit'])$(k).readOnly=done;
+    $('finished').textContent=done?'Investigation complete. Preview and download your report to turn in. Nothing is sent automatically.':
+      canFinish?'Ready to finish. Finish investigation saves your completed report.':'Write both responses to finish.';
   }
   function nav(step){
     if(step==='explain'&&!ready())return;
@@ -575,8 +593,18 @@
   };
   for(const b of document.querySelectorAll('[data-sd-step]'))b.onclick=()=>nav(b.dataset.sdStep);
   $('to-explain').onclick=()=>nav('explain');
-  for(const k of ['claim','limit']){$(k).value=s[k];$(k).oninput=()=>{s[k]=str($(k).value);s.finished=false;save();$('finish').disabled=!(ready()&&s.claim.trim()&&s.limit.trim());$('finished').textContent='Write both responses to finish.';};}
-  $('finish').onclick=()=>{if($('finish').disabled)return;s.finished=true;save();render();saySafe('Report ready.');};
+  for(const k of ['claim','limit']){$(k).value=s[k];$(k).oninput=()=>{s[k]=str($(k).value);s.finished=false;save();renderFinish();};}
+  $('finish').onclick=()=>{
+    if(!ready()||!hasRecommendation()||complete())return;
+    s.finished=true;
+    const ok=save();
+    if(!ok)s.finished=false;
+    renderFinish();
+    if(ok)$('finished').focus();
+  };
+  $('edit-recommendation').onclick=()=>{
+    s.finished=false;save();renderFinish();$('claim').focus();
+  };
   $('reset').onclick=()=>$('dialog').showModal();
   $('clear').onclick=()=>{const r=session?.reset(KEY,JSON.stringify({v:1,seed:newSeed(),caseMode:'equity'}));if(r?.ok)location.reload();else{$('dialog').close();say('Could not reset this activity from this tab.');}};
   window.addEventListener('storage',notice);window.addEventListener('pageshow',notice);

@@ -3360,5 +3360,14 @@
     ]
   }
 };
+  // The same two groups and all-diagnosed denominators shown in Exhibit E, not a county-level data set.
+  data.stage={
+    period:'California Cancer Registry, 2006–2020',
+    source:'https://pmc.ncbi.nlm.nih.gov/articles/PMC13151751/',
+    rows:[
+      {id:'persistent',name:'Neighborhoods with persistent poverty','early-share':46.6,diagnosed:101820},
+      {id:'other',name:'Other neighborhoods','early-share':58.2,diagnosed:1604753}
+    ]
+  };
   if(typeof module==="object"&&module.exports)module.exports=data;else root.CancerRatesData=data;
 })(typeof globalThis==="object"?globalThis:this);

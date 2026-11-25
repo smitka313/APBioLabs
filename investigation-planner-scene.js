@@ -113,7 +113,7 @@
     if (wrong.length) add('held', 'warn', 'You change ' + (iv === 'time' ? 'UV time' : 'the cover') + ', so it cannot stay the same in every dish.');
     else if (!held.length) add('held', 'warn', 'Tap what must stay the same in every dish.');
     else if (missing.length) add('held', 'warn', 'Still to keep the same: ' + missing.map(nm).join(', ') + '.');
-    else add('held', 'ok', 'Everything else is kept the same.');
+    else add('held', 'ok', 'Everything else is kept the same across the exposed dishes. The dark control gets no UV.');
     return out;
   }
   const isReady = checks => checks.every(x => x.level !== 'warn');

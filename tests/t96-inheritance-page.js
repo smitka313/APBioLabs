@@ -194,8 +194,11 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
 
     // --- Lesson 9 report excludes untouched Lesson 8 work, and labels actual earlier work ---
     await p.evaluate(() => B3Inh.saveState('skin', { viewed: { white: true } }));
-    await p.evaluate(() => B3Inh.saveState('planner', { ready: true, iv: 'time', dv: 'colonies',
+    await p.evaluate(() => B3Inh.saveState('planner', { ready: true, iv: 'spf', dv: 'colonies', controls:['yeast','distance','days','agar','time'],
       conditions: [{ group: 1, label: 'Dark control', dark: true, minutes: 0 }] }));
+    await p.evaluate(() => B3Inh.saveState('meiosis', {runs:[
+      {crossing:false, gametes:['AC','BD']},{crossing:true,gametes:['AC','AD','BC','BD']}
+    ]}));
     await go(p, 'plan');
     T.ok(/seven UV-exposed dishes plus one dark control/.test(await p.locator('#planner-scene canvas').getAttribute('aria-label')) &&
       /plus one dark control/.test(await p.locator('#planner-desc').textContent()), 'the class preset distinguishes seven UV dishes from one dark control');
@@ -207,6 +210,10 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
     const exportedText=await paper.innerText();
     T.ok(/Earlier Lesson 8 work · not part of this assignment/i.test(exportedText) && /My meiosis order/.test(exportedText),
       'prior completed Lesson 8 responses remain available under a separate heading');
+    T.ok(/UV time \(among exposed dishes\)/.test(exportedText) && /Relative UV dose/.test(exportedText) && /0\.50/.test(exportedText),
+      'the Word report preview preserves the selected fair-test constant and the actual modeled UV doses');
+    T.ok(/Gamete set A · without crossing over/.test(exportedText) && /Gamete set B · with crossing over/.test(exportedText),
+      'the Word report preview preserves both previously recorded gamete sets');
     T.ok(!/Lakita’s pedigree|Two-gene inheritance/.test(exportedText),
       'the Lesson 9 report omits untouched family models rather than labeling them missing');
     await scopedReport.getByRole('button',{name:'Close report'}).click();

@@ -41,17 +41,18 @@
     states:{title:'New cancer diagnoses by state',caption:'2019–2023 average annual counts and age-adjusted diagnosis rates. All cancer sites, ages, races and ethnicities, and both sexes.',pair:['CA','KY'],measures:['incidence','count']},
     poverty:{title:'Cancer rates and socioeconomic data',caption:'Each point is a state or D.C. Diagnosis rates are from 2019–2023; poverty and income are Census estimates for 2023. A pattern across states does not establish a cause or describe any individual.',pair:['KY','NM'],measures:['incidence','poverty','income']},
     michigan:{title:'Michigan: screening and diagnosis',caption:'County mammography estimates describe women ages 50–74 who reported a mammogram in the past two years. Cancer rates cover females of all ages. These are different populations, not matched patient records.',pair:['26125','26163'],measures:['late-rate','late-share','screening','incidence','income']},
+    stage:{title:'Early-stage diagnosis by neighborhood',caption:'Exhibit E · California Cancer Registry, 2006–2020. Percent of all diagnosed patients in each group, including unknown stage. These two groups do not measure individual income or show cause.',pair:['persistent','other'],measures:['early-share','diagnosed']},
     race:{title:'Cancer rates by race and ethnicity',caption:'2018–2022, U.S. registries, age-adjusted annual rates. These are reporting groups, not genetic categories. The American Indian / Alaska Native diagnosis rate covers designated counties, while its death rate has nationwide coverage and a correction for misclassification.',pair:['white','black'],measures:['incidence','mortality']}
   };
-  const labels={incidence:'Diagnosis rate',mortality:'Death rate',count:'Avg. annual diagnoses',poverty:'Poverty rate',income:'Median household income','late-rate':'Late-stage rate','late-share':'Share diagnosed late',screening:'Mammography use'};
-  const unit={incidence:'per 100,000',mortality:'per 100,000',count:'diagnoses per year',poverty:'of people below poverty',income:'2023 dollars','late-rate':'per 100,000 females','late-share':'of diagnosed cases',screening:'of women ages 50–74'};
+  const labels={incidence:'Diagnosis rate',mortality:'Death rate',count:'Avg. annual diagnoses',poverty:'Poverty rate',income:'Median household income','late-rate':'Late-stage rate','late-share':'Share diagnosed late',screening:'Mammography use','early-share':'Diagnosed at an early stage',diagnosed:'All diagnosed patients'};
+  const unit={incidence:'per 100,000',mortality:'per 100,000',count:'diagnoses per year',poverty:'of people below poverty',income:'2023 dollars','late-rate':'per 100,000 females','late-share':'of diagnosed cases',screening:'of women ages 50–74','early-share':'of diagnosed patients',diagnosed:'patients'};
   const predictions={same:'I predicted the same cancer would lead both rankings.',different:'I predicted different cancers would lead.',unsure:'I was not sure whether the rankings would match.'};
   const str=(v,n)=>typeof v==='string'?v.slice(0,n):'';
   const number=(v,precision=0)=>v.toLocaleString('en-US',{minimumFractionDigits:precision,maximumFractionDigits:precision});
-  const value=(v,key)=>!finite(v)?(['late-rate','late-share','screening','income','incidence'].includes(key)&&state.view==='michigan'?'Unavailable':'Not in top 10'):['poverty','late-share','screening'].includes(key)?number(v,1)+'%':key==='income'?'$'+number(v):number(v,key==='count'?0:1);
+  const value=(v,key)=>!finite(v)?(['late-rate','late-share','screening','income','incidence'].includes(key)&&state.view==='michigan'?'Unavailable':'Not in top 10'):['poverty','early-share','late-share','screening'].includes(key)?number(v,1)+'%':key==='income'?'$'+number(v):number(v,['count','diagnosed'].includes(key)?0:1);
   const full=(v,key)=>!finite(v)?value(v,key):value(v,key)+' '+unit[key];
   const rowBatch=()=>window.matchMedia('(max-width: 600px)').matches?6:12;
-  const newSetting=view=>({measure:view==='michigan'?'late-rate':'incidence',a:spec[view].pair[0],b:spec[view].pair[1],sort:view==='michigan'?'late-rate':'incidence',dir:'desc',query:'',rows:rowBatch(),region:'all',x:'screening'});
+  const newSetting=view=>({measure:view==='stage'?'early-share':view==='michigan'?'late-rate':'incidence',a:spec[view].pair[0],b:spec[view].pair[1],sort:view==='stage'?'early-share':view==='michigan'?'late-rate':'incidence',dir:'desc',query:'',rows:rowBatch(),region:'all',x:'screening'});
   const defaults={labels:true,marks:true,benchmark:true,'pair-only':false,trend:false};
   const designItems={access:'Access evidence',cost:'Prototype cost ($)',visible:'Trials with visible target',trials:'Total trials',quality:'Image quality',durability:'Durability',recommendation:'Design recommendation and remaining evidence'};
   const lessonNotes=['diagnoses','deaths','map'];
@@ -113,6 +114,7 @@
   }
   function suggestedDataset(questionText){
     const q=questionText.toLowerCase();
+    if (/\bearly.stage\b/.test(q)&&!/\b(michigan|rural|urban|count(?:y|ies))\b/.test(q)) return {view:'stage'};
     if (/\b(michigan|count(?:y|ies)|mammogra\w*|rural|urban|screening|late.stag\w*)\b/.test(q)) return {view:'michigan',x:/\bincome\b/.test(q)?'income':'screening'};
     if (/\b(poverty|income|socioeconomic)\b/.test(q)) return {view:'poverty',x:/\bincome\b/.test(q)&&!/\bpoverty\b/.test(q)?'income':'poverty'};
     if (/\b(race|racial|ethnic\w*)\b/.test(q)) return {view:'race'};
@@ -139,7 +141,7 @@
   const scatterView=()=>state.view==='poverty'||isMI();
   const miMeasures=()=>spec.michigan.measures.filter(k=>D.michigan.rows.some(r=>finite(r[k])));
   const inRegion=(rows,s)=>!isMI()||s.region==='all'?rows:rows.filter(r=>r.region?.toLowerCase()===s.region);
-  const other=()=>({types:'mortality',states:'count',poverty:state.socio,race:'mortality'}[state.view]);
+  const other=()=>({types:'mortality',states:'count',poverty:state.socio,race:'mortality',stage:'diagnosed'}[state.view]);
   const text=(id,s)=>{const e=$(id);if(e.textContent!==s)e.textContent=s;};
   const announce=s=>text('status',s);
   function source(el,prefix,links,suffix=''){
@@ -243,7 +245,7 @@
     text('chart-unit',v==='poverty'?'Diagnosis rate per 100,000':unit[s.measure]);
     for(const k of Object.keys(defaults))$(k).checked=state.layer[k];
     $('trend').parentElement.hidden=!scatterView()||(isMI()&&s.measure===(miMeasures().includes('income')?s.x:'screening'));
-    $('benchmark').parentElement.hidden=isMI()||v==='types'||(v==='states'&&s.measure==='count');
+    $('benchmark').parentElement.hidden=isMI()||v==='types'||v==='stage'||(v==='states'&&s.measure==='count');
     text('chart-key','● A and ◆ B are your picks. '+(v==='poverty'?'Use the table for exact values. A trend line summarizes the visible dots, not a cause.':'Bars start at zero. Your picks stay visible while you search. Use the table for the complete list.'));
     renderChart();renderPair();renderTable();
     $('to-explain').disabled=!state.evidence.length;
@@ -281,7 +283,7 @@
     text('inspect','');
     if(!rows.length){box.replaceChildren(node('p','No points or bars match this search. Clear the search to see the data.','cr-chart-hint'));return;}
     if(scatterView()){scatter(box,rows,base);return;}
-    const m=s.measure,max=Math.max(1,finite(base)?base:0,...D[v].rows.map(r=>finite(r[m])?r[m]:0));
+    const m=s.measure,max=Math.max(m==='early-share'?100:1,finite(base)?base:0,...D[v].rows.map(r=>finite(r[m])?r[m]:0));
     const ul=node('ul',undefined,'cr-bars');
     for(const r of rows){
       const li=node('li'),b=node('button',undefined,'cr-bar');b.type='button';b.dataset.chartRow=r.id;
@@ -389,7 +391,8 @@
         if(r.lateCI?.every(finite))el.append(node('p','Late-stage rate range (95% CI): '+r.lateCI.map(n=>number(n,1)).join('–')+'.','cr-muted'));
         if(r.incomeCI?.every(finite))el.append(node('p','Income estimate range (90% CI): $'+r.incomeCI.map(n=>number(n)).join('–$')+'.','cr-muted'));
         if(r.screeningCI?.every(finite))el.append(node('p','Mammography range (95% CI): '+r.screeningCI.map(n=>number(n,1)).join('–')+'%.','cr-muted'));
-      }else el.append(node('p',labels.incidence+': '+formatPair(r,'incidence',v)),node('p',labels[second]+': '+formatPair(r,second,v)));
+      }else if(v==='stage')el.append(...spec.stage.measures.map(k=>node('p',labels[k]+': '+formatPair(r,k,v))));
+      else el.append(node('p',labels.incidence+': '+formatPair(r,'incidence',v)),node('p',labels[second]+': '+formatPair(r,second,v)));
       if(v==='poverty'){const margin=second==='income'?'$'+number(r.incomeMarginOfError):number(r.povertyMarginOfError,1)+' percentage points';el.append(node('p','Census margin of error: ±'+margin+'.','cr-muted'));}
       if(v==='race'&&r.id==='ai-an')el.append(node('p',aiCaveat,'cr-muted'));
       return el;
@@ -397,7 +400,7 @@
     const comparison=L.comparison(D,{view:v,measure:s.measure,a:s.a,b:s.b});
     const gap=comparison?.difference;
     let msg=!comparison?'Choose two different rows to pin.':(gap===null?'At least one source value is missing. Do not treat the missing rate as zero.':'');
-    if(finite(gap))msg=labels[s.measure]+' gap: '+(['poverty','late-share','screening'].includes(s.measure)?number(gap,1)+' percentage points':full(gap,s.measure))+'.';
+    if(finite(gap))msg=labels[s.measure]+' gap: '+(['poverty','early-share','late-share','screening'].includes(s.measure)?number(gap,1)+' percentage points':full(gap,s.measure))+'.';
     if(comparison&&v==='types'&&picks[0].group!==picks[1].group&&finite(gap))msg+=' Read the population labels before comparing rates.';
     holder.replaceChildren(...cards,node('p',msg,'cr-gap'));
     const duplicate=state.evidence.some(p=>p.view===v&&p.measure===s.measure&&[p.a,p.b].includes(s.a)&&[p.a,p.b].includes(s.b));
@@ -406,7 +409,7 @@
     $('pin').textContent=missingValue?'Choose two reported values':duplicate?'Comparison already pinned':state.evidence.length>=8?'Notebook full (8 pins)':'Pin this comparison';
   }
   function renderTable(){
-    const v=state.view,s=current(),rows=inRegion(D[v].rows,s),k=isMI()?'late-share':other(),first=isMI()?(['incidence','income'].includes(s.measure)?s.measure:'late-rate'):'incidence',ranks=L.rankRows(rows,s.measure);
+    const v=state.view,s=current(),rows=inRegion(D[v].rows,s),k=isMI()?'late-share':other(),first=isMI()?(['incidence','income'].includes(s.measure)?s.measure:'late-rate'):v==='stage'?'early-share':'incidence',ranks=L.rankRows(rows,s.measure);
     $('third-head').hidden=!isMI();$('first-sort').dataset.sort=first;text('first-label',labels[first]);
     $('other-sort').dataset.sort=k;text('other-label',labels[k]); 
     for(const b of all('#cr-table [data-sort]')){
@@ -458,6 +461,7 @@
       }else viewNote=' This older pin did not record which horizontal axis was shown.';
       return spec.michigan.title+' · '+D.michigan.period+' Pinned by '+labels[p.measure].toLowerCase()+'. '+readings(pair.a)+' | '+readings(pair.b)+'.'+viewNote+noPair+' County comparisons cannot measure individual access or prove a cause.';
     }
+    if(p.view==='stage')extra=' · Exhibit E uses all diagnosed patients, including unknown stage. This comparison does not show cause. Source: '+D.stage.source;
     if(p.view==='poverty'){
       const co=cleanContext(p.context,p.view),x=co.x;
       extra=' · Scatterplot: '+pair.a.name+' '+full(pair.a[x],x)+' and '+pair.b.name+' '+full(pair.b[x],x)+'; diagnoses '+full(pair.a.incidence,'incidence')+' and '+full(pair.b.incidence,'incidence')+'.';
@@ -506,11 +510,27 @@
       !qualifyingPins().length?'Return to Explore and pin a comparison with two reported values.':!claim&&!limits?'Write both responses to unlock Finish investigation.':!claim?'Add a claim to unlock Finish investigation.':!limits?'Add a limit to unlock Finish investigation.':!reviewReady()?'Check that your comparison answers your question and that you cited both values.':'Select Finish investigation to mark your work complete.');
     renderSteps();
   }
+  function checkedCaseNotes(){
+    return [['access','D','Delayed care by household income'],['diagnosis','E','Stage at diagnosis by neighborhood'],['test-cost','F','The cost of getting tested']].flatMap(([key,letter,title])=>{
+      const selected=state.casework[key];
+      if(!selected)return [];
+      const panel=$('income-'+key),select=$('income-'+key+'-answer');
+      const answer=Array.from(select.options).find(option=>option.value===selected)?.textContent.trim();
+      if(!answer)return [];
+      const rows=[...panel.querySelectorAll('.cr-income-bar')].map(row=>[
+        row.querySelector('span').textContent.trim(),row.querySelector('strong').textContent.trim()
+      ]);
+      return [{letter,title,answer,rows,source:panel.querySelector('.cr-source')?.textContent.trim()||''}];
+    });
+  }
   function report(){
     const person=displayIdentity();
     const lines=['Cancer Rates Data Dive — Investigation','Name: '+person.name,'Class period: '+person.period,'Status: '+(isComplete()?'Complete':'In progress'),'','PREDICTION',predictions[state.prediction.choice]||'Not recorded',state.prediction.reason,state.prediction.locked?firstResult():'',...(state.casework.opened?['','INVESTIGATION QUESTION',state.casework.question]:[]),...(L.hasPendingQuestion(state.casework)?['','QUESTION DRAFT (NOT SUBMITTED)',state.casework.questionDraft || '(blank)']:[]),...(lessonNotes.some(k=>state.casework.notes[k])?[
       '','LESSON 1 EVIDENCE OBSERVATIONS',...lessonNotes.flatMap((key,i)=>state.casework.notes[key]?['Exhibit '+'ABC'[i]+': '+state.casework.notes[key]]:[])
-    ]:[]),...(state.casework['test-cost']?[
+    ]:[]),...checkedCaseNotes().flatMap(note=>[
+      '', 'Exhibit '+note.letter+': '+note.title, 'My checked answer: '+note.answer,
+      ...(note.letter==='F'?[]:note.rows.map(([group,amount])=>group+': '+amount)),note.source
+    ]),...(state.casework['test-cost']?[
       '','EXHIBIT F: THE COST OF GETTING TESTED',
       'Estimated extra months after a switch to higher deductibles versus matched women staying on lower-deductible plans; higher-poverty U.S. neighborhoods, 2004–2014.',
       ...testCostRows.map(testCostEvidence),
@@ -788,6 +808,11 @@
       ]},
       {title:'Exhibits and pinned comparisons',items:[
         ...lessonNotes.map((k,i) => answer('Exhibit ' + notes[i] + ' observation',state.casework.notes[k])),
+        ...checkedCaseNotes().flatMap(note=>[
+          answer('Exhibit '+note.letter+' · '+note.title+' · My checked answer',note.answer),
+          ...(note.letter==='F'?[]:[{type:'table',title:'Exhibit '+note.letter+' · Chart evidence',columns:['Group','Published value'],rows:note.rows}]),
+          {type:'text',text:note.source}
+        ]),
         ...(state.casework['test-cost'] ? [{type:'table',title:'Exhibit F: diagnostic delays in a published comparison',columns:['Benchmark','Estimated additional months'],
           rows:testCostRows.map(row => [row.label,row.value])},
           {type:'text',text:'Higher-poverty U.S. neighborhoods, 2004–2014. Higher-deductible plans versus matched lower-deductible plans. Source: ' + $('test-cost-source').href}] : []),
@@ -804,6 +829,7 @@
     sections.push({title:'Sources and limits',items:[
       {type:'text',text:'Published population statistics show patterns, not individual risk, a diagnosis, or proof of what caused a difference. Screening, diagnosis, and deaths are separate measures.'},
       ...[D.types.source,D.states.source,D.poverty.source,D.poverty.incomeSource.source,D.race.incidence.url,D.race.mortality.url,
+        ...(state.evidence.some(p => p.view === 'stage') ? [D.stage.source] : []),
         ...(state.evidence.some(p => p.view === 'michigan') ? Object.values(D.michigan.sources) : [])].map(text => ({type:'text',text}))
     ]});
     return {title:'Cancer Rates Data Dive',unit:'OpenSciEd Biology B.3',source:'OpenSciEd lesson evidence and published population data. Prototype results, if entered, are classroom observations.',

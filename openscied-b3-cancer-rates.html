@@ -136,9 +136,9 @@
         <figure class="cr-lesson-graph cr-lesson-map">
           <div class="cr-map-tools"><button class="btn" id="cr-lesson1-map-zoom" type="button" aria-controls="cr-lesson1-map-scroll" aria-pressed="false">Zoom map</button></div>
           <div id="cr-lesson1-map-scroll" class="cr-map-window" role="region" aria-label="Original map of new cancer rates by state">
-          <img width="1700" height="1220" loading="lazy" src="assets/cancer-rates-lesson1-state-map.webp" alt="Map of 2021 new cancer rates by state. Four blue shades indicate increasing rates. See the readable map key below.">
+          <img width="1700" height="1220" decoding="async" src="assets/cancer-rates-lesson1-state-map.webp" alt="Map of 2021 new cancer rates by state. Four blue shades indicate increasing rates. See the readable map key below.">
           </div>
-          <figcaption>OpenSciEd Lesson 1, <i>US Cancer Data</i>, Figure 3. Source: U.S. Cancer Statistics (CDC and NCI). <a href="assets/cancer-rates-lesson1-state-map.webp">Open the full-size map</a>.</figcaption>
+          <figcaption>OpenSciEd Lesson 1, <i>US Cancer Data</i>, Figure 3. Source: U.S. Cancer Statistics (CDC and NCI). This map shows 2021 only; the Explore state comparison uses 2019–2023, so its values can differ. <a href="assets/cancer-rates-lesson1-state-map.webp">Open the full-size map</a>.</figcaption>
         </figure>
         <details class="cr-case-debrief"><summary>Readable map key</summary>
           <p>Rates are new diagnoses per 100,000 people. From light to dark the map bins are 342.2–419.5, 421.2–441.2, 442.1–469.7 and 470.2–509.9. California and Texas are in the lightest bin; Kentucky and Iowa are in the darkest. Michigan is in the second-lightest bin. Hatching means no data shown, not zero. Indiana is hatched.</p>
@@ -356,7 +356,7 @@
     <button type="button" class="btn btn--sm" id="cr-revise-question">Revise my question</button>
     <p id="cr-verdict" class="cr-verdict"></p>
     <div class="cr-tools">
-      <label for="cr-view">Data view<select id="cr-view" aria-describedby="cr-view-help"><option value="types">Cancer types · United States</option><option value="states">Cancer diagnoses by state</option><option value="poverty">State poverty, income and cancer</option><option value="race">Race and ethnicity · U.S. registries</option><option value="michigan">Michigan · screening and diagnosis</option></select></label>
+      <label for="cr-view">Data view<select id="cr-view" aria-describedby="cr-view-help"><option value="types">Cancer types · United States</option><option value="states">Cancer diagnoses by state</option><option value="poverty">State poverty, income and cancer</option><option value="race">Race and ethnicity · U.S. registries</option><option value="michigan">Michigan · screening and diagnosis</option><option value="stage">California · early stage by neighborhood</option></select></label>
       <label for="cr-measure"><span id="cr-measure-label">Graph and rank by</span><select id="cr-measure"></select></label>
       <label id="cr-socio-control" for="cr-socio" hidden>Scatterplot x-axis<select id="cr-socio"><option value="poverty">Poverty rate</option><option value="income">Median household income</option></select></label>
       <label id="cr-mi-x-label" for="cr-mi-x" hidden>Scatterplot x-axis<select id="cr-mi-x"><option value="screening">Mammography use</option><option value="income">Median household income</option></select></label>
@@ -422,7 +422,7 @@
         <label for="cr-limits">What can’t the chart tell you? What other evidence would you want?</label>
         <p id="cr-limits-help" class="cr-muted">Correlation means two measures tend to vary together. It does not prove that one caused the other.</p>
         <textarea id="cr-limits" rows="3" maxlength="1600" placeholder="These group statistics don’t show…" aria-describedby="cr-limits-help"></textarea>
-        <label class="cr-evidence-confirm" id="cr-evidence-review" for="cr-evidence-confirm"><input type="checkbox" id="cr-evidence-confirm"> I checked that my pinned comparison answers my question and that I cited both values.</label>
+        <label class="cr-evidence-confirm" id="cr-evidence-review" for="cr-evidence-confirm"><input type="checkbox" id="cr-evidence-confirm"> I compared the two values I pinned and explained what they can and cannot tell me about my question.</label>
         <p id="cr-finish-hint" class="cr-muted">Write both responses to unlock Finish investigation.</p>
         <button class="btn btn--primary" type="button" id="cr-finish" aria-describedby="cr-finish-hint" disabled>Finish investigation</button>
         <div data-ose-report-final></div>

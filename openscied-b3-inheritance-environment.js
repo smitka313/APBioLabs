@@ -128,7 +128,7 @@
       state.fields = collectFields();
       const section = location.hash.slice(1);
       if (SECTIONS.includes(section)) state.lastSection = section;
-      const rec = { v: 1, question: state.question, fields: state.fields, responseIds: RESPONSE_IDS, lastSection: state.lastSection, lastVisitedAt: Date.now() };
+      const rec = { v: 1, question: state.question, fields: state.fields, responseIds: RESPONSE_IDS, choiceResponseIds:picks().map(x=>x.id), lastSection: state.lastSection, lastVisitedAt: Date.now() };
       SCENE_IDS.forEach(function (id) { rec[id] = state[id]; });
       const result = saveSession?.write(KEY, JSON.stringify(rec)) ?? unavailableSave;
       if (result.ok) clearSaveProblem();
@@ -190,8 +190,8 @@
     if (!runs.length) return [];
     const types = function (c) { return Array.from(new Set([].concat.apply([], runs.filter(function (r) { return !!r.crossing === c; }).map(function (r) { return r.gametes; })))).sort(); };
     const a = types(false), b = types(true), rows = [];
-    if (a.length) rows.push(['Gamete set A · without crossing over', a.join(', '), String(a.length)]);
-    if (b.length) rows.push(['Gamete set B · with crossing over', b.join(', '), String(b.length)]);
+    rows.push(['Gamete set A · without crossing over', a.length?a.join(', '):'No run recorded', a.length?String(a.length):'—']);
+    rows.push(['Gamete set B · with crossing over', b.length?b.join(', '):'No run recorded', b.length?String(b.length):'—']);
     return [table('Kinds of gametes you made', ['Run', 'Gametes seen', 'Kinds'], rows), el('p', 'small muted', 'Simulated gametes from the meiosis model.')];
   }
   function skinNodes() {
@@ -206,13 +206,18 @@
     const c = state.planner && Array.isArray(state.planner.conditions) ? state.planner.conditions : [];
     if (!c.length) return [];
     const rows = c.map(function (d) { return ['Dish ' + d.group, d.label || '', d.dark ? 'Dark' : (num(d.minutes) ? d.minutes + ' min UV' : '—'), d.foil ? 'Foil' : (num(d.spf) ? 'SPF ' + d.spf : 'No sunscreen')]; });
-    return [table('Your dishes', ['Dish', 'Condition', 'Light', 'Cover'], rows)];
+    const labels={yeast:'Kind and amount of yeast',distance:'Distance from the lamp',days:'Days of growing',
+      agar:'Dish and food (agar)',time:'UV time (among exposed dishes)',cover:'Cover (sunscreen or foil)'};
+    const controls=Array.isArray(state.planner.controls)?state.planner.controls.map(k=>labels[k]).filter(Boolean):[];
+    return [table('Your dishes', ['Dish', 'Condition', 'Light', 'Cover'], rows),
+      ...(controls.length?[el('p','small','Fair-test constants selected: '+controls.join('; ')+'. The dark control receives no UV.')]:[])];
   }
   function yeastNodes() {
     const d = state.yeast && Array.isArray(state.yeast.dishes) ? state.yeast.dishes.filter(function (x) { return x && num(x.colonies); }) : [];
     if (!d.length) return [];
-    const rows = d.map(function (x) { return ['Dish ' + x.group, x.label || '', String(Math.max(0, Math.round(x.colonies))), x.rating || 'not rated yet']; });
-    return [table('Simulated yeast dishes', ['Dish', 'Condition', 'Colonies', 'Growth'], rows), el('p', 'small muted', 'SIMULATED. Not measurements from a real lab.')];
+    const rows = d.map(function (x) { return ['Dish ' + x.group, x.strain==='wild'?'Wild-type':x.strain==='sensitive'?'UV-sensitive':'—',
+      x.label || '',num(x.dose)?x.dose.toFixed(2):'Not recorded',String(Math.max(0, Math.round(x.colonies))),x.rating || 'not rated yet']; });
+    return [table('Simulated yeast dishes', ['Dish', 'Yeast strain', 'Condition', 'Relative UV dose (model units)', 'Colonies', 'Growth'], rows), el('p', 'small muted', 'SIMULATED. Not measurements from a real lab.')];
   }
   const BOXES = [['#data-pedigree-body', pedigreeNodes], ['#data-twogene-body', twoGeneNodes], ['#data-meiosis-body', meiosisNodes], ['#data-skin-body', skinNodes], ['#data-planner-body', plannerNodes], ['#data-yeast-body', yeastNodes]];
   function renderData() {
@@ -298,7 +303,7 @@
   }
 
   /* ---------- claim self-check and C-to-T ---------- */
-  const CLAIM_TEXT = { none: 'Pick a claim to begin. This is your own check, not a grade.', foundational: 'Foundational: add evidence and reasoning next.', linked: 'Linked: your claim has evidence. Add the reasoning and what the evidence cannot show.', organized: 'Organized: claim, evidence from your dishes and from the study or reading, reasoning, and a limit. (This is your own check, not a grade.)' };
+  const CLAIM_TEXT = { none: 'Pick a claim to begin. This is your own check, not a grade.', foundational: 'Foundational: add evidence and reasoning next.', linked: 'Linked: your claim has evidence. Add the reasoning and what the evidence cannot show.', organized: 'Organized: claim, evidence from your dishes and from the study or reading, reasoning, and a limit. (This checks how your response is organized, not whether each evidence choice is correct.)' };
   // Evidence chips about "my dishes" are checked against the student's own yeast table, so a statement the data do not show earns no credit.
   const EV_KEY = { 'cer-ev-1': 'more', 'cer-ev-2': 'dark', 'cer-ev-3': 'spf' };
   function whose(id) { const b = EV_KEY[id] === 'dark' ? null : L.evidenceBasis(state.yeast && state.yeast.dishes)[EV_KEY[id]]; return b === 'sensitive' ? 'Your UV-sensitive dishes' : b === 'wild' ? 'Your wild-type dishes' : 'Your dishes'; }
@@ -351,7 +356,7 @@
     const p = picks(), answered = p.filter(function (x) { return x.value; }), good = p.filter(function (x) { return x.result === 'correct'; });
     const graded = $$('main fieldset.mcq[data-correct], main fieldset.mcq[data-exit]').length;
     const ul = el('ul', 'report-checks');
-    [answered.length + ' of ' + p.length + ' choice questions answered', good.length + ' of ' + graded + ' checkable questions correct so far',
+    [answered.length + ' of ' + p.length + ' choice questions answered (the dashboard also counts writing and ordering)', good.length + ' of ' + graded + ' checkable questions correct so far',
       SCENE_IDS.filter(function (id) { return state[id]; }).length + ' of 6 interactive models used',
       state.question ? 'My question: ' + state.question.text : 'My question: not built yet'].forEach(function (t) { ul.appendChild(el('li', '', t)); });
     report.appendChild(ul);

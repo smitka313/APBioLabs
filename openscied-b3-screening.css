@@ -131,3 +131,10 @@
 
 .sd-dispatch-popup form{display:flex;gap:.45rem;flex-wrap:wrap}
 #sd-probe-position{display:inline-block;margin-right:.42rem;font-variant-numeric:tabular-nums}
+
+@supports (field-sizing: content) {
+  main textarea:not([readonly]) { field-sizing:content; height:auto; max-height:none; }
+}
+
+/* Keep facility names legible as a patient marker passes behind them. */
+.sd-board .sd-site { z-index:5; } .sd-board .sd-map-event { z-index:6; }

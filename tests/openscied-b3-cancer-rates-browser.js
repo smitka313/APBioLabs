@@ -465,7 +465,12 @@ async function followupPath(page,size) {
   await followResume(resume,'#explore');
   await visible(page,'explore');
   const datasets=await view(page,'cr-view').locator('option').evaluateAll(options=>options.map(el=>el.value));
-  check(['types','states','poverty','race','michigan'].every(x=>datasets.includes(x)),'after saving Predict and completing the case file, all five data views are available');
+  check(['types','states','poverty','race','michigan','stage'].every(x=>datasets.includes(x)),'the case file unlocks all six data views');
+  const dataView=view(page,'cr-view'), previousView=await dataView.inputValue();
+  await dataView.selectOption('stage');
+  check(/46.6%.*58.2%.*11.6 percentage points/s.test(await view(page,'cr-pair-values').innerText()) &&
+    await view(page,'cr-pin').isEnabled(),'the exact Stage at diagnosis comparison from Exhibit E can be pinned');
+  await dataView.selectOption(previousView);
   check((await view(page,'cr-question-explore').textContent()).includes(investigation),'student question is next to the exploratory data');
   await invoke(view(page,'cr-pin'),size);
   await invoke(view(page,'cr-to-explain'),size);
@@ -620,6 +625,15 @@ async function report(page, size, pair, michigan) {
     'download carries the student’s exact selected groups and rates');
   check(/100,?000/.test(file) && /2019.*2023/.test(file),
     'download identifies comparison units and source period even when read away from the site');
+  for(const token of ['Exhibit D','Exhibit E','It generally goes down.','Less common in neighborhoods with persistent poverty.','29.3%','12.6%','46.6%','58.2%']){
+    check(file.includes(token),'text report includes '+token);
+  }
+  await invoke(page.getByRole('button',{name:'Preview report',exact:true}),size);
+  const dialog=page.locator('dialog.osr-dialog');
+  const wordSource=await dialog.locator('article').innerText();
+  check(['Exhibit D','Exhibit E','It generally goes down.','Less common in neighborhoods with persistent poverty.','29.3%','12.6%','46.6%','58.2%'].every(x=>wordSource.includes(x)),
+    'the same exhibits and exact selected answers appear in the Word report preview');
+  await invoke(dialog.getByRole('button',{name:'Close report',exact:true}),size);
   if (michigan) {
     check(michigan.names.every((name,i)=>file.includes(name)&&valueAppears(file,michigan.pair[i].lateRate)),
       'download retains the named Michigan areas and the selected late-stage evidence');
