@@ -4,6 +4,7 @@ on:
     paths:
       - 'openscied-b5-wapusk*'
       - 'assets/openscied-wapusk.svg'
+      - 'assets/wapusk-*.webp'
       - 'tests/openscied-b5-wapusk*'
       - '.github/workflows/openscied-wapusk.yml'
   workflow_dispatch:

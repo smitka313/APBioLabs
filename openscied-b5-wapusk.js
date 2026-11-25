@@ -6,6 +6,26 @@
   const clean=x=>typeof x==='string'?x.slice(0,1600):'';
   const el=(tag,value)=>Object.assign(document.createElement(tag),{textContent:value??''});
   const tell=t=>{$('status').textContent=t;};
+  const figures=[
+    ['Canada annual temperature change, 1948–2022','Scatter plot of yearly values and a fitted trend line.','Government of Canada','What is the long-term pattern? Which years depart from it?'],
+    ['Western Hudson Bay sea-ice breakup date','Scatter plot of dates of sea-ice breakup over several decades.','Walsh et al. (2022)','Read dates on the vertical axis. If breakup happens earlier, what might that mean for time spent on sea ice?'],
+    ['Arctic annual minimum sea ice, 1979–2022','A polar view of Arctic sea ice with the annual minimum area chart overlaid.','NASA Scientific Visualization Studio','Compare years, not months. What can this Arctic-wide minimum tell you about one bay?'],
+    ['Observed Arctic tundra greening and browning','Satellite-based map of areas that show more vegetation, less vegetation, or little change.','Mekonnen et al. (2021); Ponomarenko et al. (2014)','Find the Wapusk marker. What varies across the map?']
+  ];
+  function enlarge(img,caption){
+    const target=$('visual-image');target.src=img.getAttribute('src');target.alt=img.alt;
+    $('visual-caption').textContent=caption;$('visual-dialog').showModal();
+  }
+  function drawFigure(i){
+    const row=figures[i],img=$('scale-image');img.src='assets/wapusk-scale-'+(i+1)+'.webp';img.alt=row[1];
+    $('scale-caption').textContent=row[0]+' · '+row[2];$('scale-prompt').textContent=row[3];
+    $('nasa').hidden=i!==2;
+    if(i!==2)pauseVideo($('nasa'));
+    for(const b of all('[data-figure]'))b.setAttribute('aria-pressed',String(Number(b.dataset.figure)===i));
+  }
+  function pauseVideo(host){
+    host.querySelector('iframe')?.remove();const button=host.querySelector('[data-video]');if(button)button.hidden=false;
+  }
   const regions={
     seasonal:{name:'Seasonal Ice',ice:'Sea ice forms and melts each year. Around Hudson Bay, polar bears typically come ashore when it melts and wait for ice to reform.',rows:[['Baffin Bay','Decline','Decline'],['Davis Strait','Decline','Decline'],['Foxe Basin','Uncertain','Stable'],['Southern Hudson Bay','Decline','Stable'],['Western Hudson Bay','Decline','Decline']],source:'Seasonal Ice Visual Inquiry'},
     convergent:{name:'Convergent Ice',ice:'Currents push floating ice toward northern Canadian and Greenland shores. Ice accumulating near shore can provide hunting habitat through summer.',rows:[['East Greenland','Uncertain','Uncertain'],['Northern Beaufort Sea','Uncertain','Stable']],source:'Convergent Ice Visual Inquiry'},
@@ -43,7 +63,7 @@
   const canSave=()=>!recovery&&session?.check(KEY).ok;
   function save(){state.lastVisitedAt=Date.now();if(!canSave()||!session.write(KEY,JSON.stringify(state)).ok){tell('This tab could not save on this device. Preview a report to keep a copy.');return false;}return true;}
   function section(step,focus=true){
-    for(const key of stages)$(key).hidden=key!==step;
+    for(const key of stages){$(key).hidden=key!==step;if(key!==step)for(const host of $(key).querySelectorAll('.wb-video'))pauseVideo(host);}
     for(const button of all('.wb-tabs [data-step]')){
       if(button.dataset.step===step)button.setAttribute('aria-current','step');else button.removeAttribute('aria-current');
     }
@@ -72,6 +92,12 @@
     const r=regions[state.region], panel=$('region');
     panel.replaceChildren(el('h3',r.name),el('p',r.ice));
     if(r.rows.length){
+      const f=el('figure'),img=el('img'),caption=el('figcaption',r.name+' · Original OpenSciEd visual inquiry map (CC BY-NC 4.0); source credits remain on the slide.');
+      f.className='wb-source-figure wb-region-figure';img.src='assets/wapusk-'+state.region+'-map.webp';
+      img.alt='Map and legend for polar bear population estimates and short-term trends in '+r.name;
+      img.width=1100;img.height=825;img.loading='lazy';
+      const zoom=el('button','Enlarge regional map');zoom.className='btn';zoom.type='button';zoom.onclick=()=>enlarge(img,caption.textContent);
+      f.append(img,caption,zoom);panel.append(f);
       const table=el('table'), thead=el('thead'), head=el('tr'),body=el('tbody');table.className='wb-table';
       for(const title of ['Polar bear population','Body condition','Reproduction']){
         const th=el('th',title);th.scope='col';head.append(th);
@@ -84,8 +110,7 @@
     }else{
       panel.append(el('p','The transcript describes the ice pattern but does not supply this region’s body condition or reproduction table. Don’t infer a trend from missing data.'));
     }
-    const a=el('a','Watch the original sea ice ecoregions video');a.href='https://www.youtube.com/watch?v=7VFJ4osSY_A';
-    panel.append(el('p','Source: OpenSciEd '+r.source+'.'),a);
+    panel.append(el('p','Source: OpenSciEd '+r.source+'.'));
   }
   function drawRecap(){
     const p=$('recap');p.replaceChildren(el('h3','Bring your earlier evidence forward'));
@@ -97,6 +122,16 @@
     $('feedback').textContent=state.check==='place'?'That matches the evidence. The photos show one location used on different occasions, not a meeting.':state.check==='meeting'?'Look at the difference between place and time. The photographs do not establish an encounter.':'';
     for(const b of all('[name="overlap"]'))b.checked=b.value===state.check;
   }
+  for(const b of all('[data-figure]'))b.onclick=()=>drawFigure(Number(b.dataset.figure));
+  $('enlarge-scale').onclick=()=>enlarge($('scale-image'),$('scale-caption').textContent);
+  for(const b of all('[data-video]'))b.onclick=()=>{
+    const frame=el('iframe'),host=b.closest('.wb-video');
+    frame.src='https://www.youtube-nocookie.com/embed/'+b.dataset.video+'?autoplay=1&rel=0';
+    frame.title=b.dataset.videoTitle;frame.setAttribute('allow','autoplay; encrypted-media; picture-in-picture; fullscreen');
+    frame.setAttribute('allowfullscreen','');frame.referrerPolicy='strict-origin-when-cross-origin';
+    host.prepend(frame);b.hidden=true;frame.focus();
+  };
+  drawFigure(0);
   for(const b of all('[data-step]'))b.onclick=()=>section(b.dataset.step);
   for(const b of all('[data-season]'))b.onclick=()=>{state.season=b.dataset.season;picked=-1;drawSeason();save();};
   for(const [key,r] of Object.entries(regions)){
