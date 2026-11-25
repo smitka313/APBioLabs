@@ -74,14 +74,31 @@ class Page(HTMLParser):
             self.json += text
 
 
+class AnalyticsScripts(HTMLParser):
+    def __init__(self, html):
+        super().__init__()
+        self.trackers = []
+        self.feed(html)
+
+    def handle_starttag(self, tag, attrs):
+        if tag != 'script':
+            return
+        a = dict(attrs)
+        if 'data-goatcounter' in a or a.get('src') == 'https://gc.zgo.at/count.js':
+            self.trackers.append([a.get('data-goatcounter'), a.get('src'), 'async' in a])
+
+
 class SearchContracts(unittest.TestCase):
     def test_goatcounter_is_loaded_once_on_every_site_page(self):
-        pages = PUBLIC + PRIVATE + UTILITIES
-        tracker = '<script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>'
-        for filename in pages:
-            with self.subTest(page=filename):
-                html = (ROOT / filename).read_text()
-                self.assertEqual(html.count(tracker), 1)
+        # Track every deployed root HTML page, including non-indexed activities,
+        # utility pages, and newly added activities not yet in the SEO lists.
+        pages = sorted(ROOT.glob('*.html'))
+        self.assertGreaterEqual(len(pages), len(PUBLIC) + len(PRIVATE) + len(UTILITIES))
+        expected = [['https://smitka313.goatcounter.com/count', 'https://gc.zgo.at/count.js', True]]
+        for page in pages:
+            with self.subTest(page=page.name):
+                parser = AnalyticsScripts(page.read_text())
+                self.assertEqual(parser.trackers, expected)
     def test_public_pages_have_one_consistent_search_identity(self):
         titles, descriptions, urls = [], [], []
         for filename in PUBLIC:
