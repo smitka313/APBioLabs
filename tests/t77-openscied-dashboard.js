@@ -135,7 +135,20 @@ const fs = require('node:fs');
       assert.equal(beforeSwitch.responses.junco.claim, 'Example evidence for this test');
       await switchDialog.getByRole('button', { name: 'Cancel', exact: true }).click();
       assert.equal(await p.evaluate(key=>localStorage.getItem(key), juncoKey), fictional);
-      assert.equal(await p.locator('.dashboard-hero-art').evaluate(el => el.complete && el.naturalWidth === 2048), true);
+      // Responsive source selection can change naturalWidth (it is density-corrected).
+      // Check the actual decoded asset dimensions, not the rendered CSS width.
+      const art = await p.locator('.dashboard-hero-art').evaluate(async el => {
+        await el.decode();
+        const response = await fetch(el.currentSrc);
+        const bitmap = await createImageBitmap(await response.blob());
+        try { return { path: new URL(el.currentSrc).pathname, width: bitmap.width, height: bitmap.height }; }
+        finally { bitmap.close(); }
+      });
+      if (width === 390) {
+        assert.deepEqual(art, { path: '/assets/openscied-atlas-hero-small.webp', width: 1024, height: 341 });
+      } else {
+        assert.deepEqual(art, { path: '/assets/openscied-banner.jpg', width: 2048, height: 682 });
+      }
       assert.equal(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       assert.deepEqual(p.errors, []);
       T.ok(true, width + 'px: Light/Dark/Auto, theme persistence, sign-in, backup, clear, and AP work preservation');

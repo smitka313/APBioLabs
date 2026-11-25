@@ -692,11 +692,11 @@ async function dashboardLinks(page, base) {
   check(await artwork.getAttribute('aria-hidden') === 'true',
     'the decorative artwork does not supply a second accessible link');
   check(await artwork.getAttribute('tabindex') === '-1', 'the artwork adds no keyboard stop');
-  const illustration = artwork.locator('img[src="assets/hawksbeard-preview.svg"]');
-  check(await illustration.count() === 1, 'the card keeps its original illustration');
+  const illustration = artwork.locator('img[src="assets/openscied-atlas-b4-hawksbeard.svg"]');
+  check(await illustration.count() === 1, 'the card shows its revised illustration');
   await page.waitForFunction(src => [...document.images].some(img =>
     img.getAttribute('src') === src && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0
-  ), 'assets/hawksbeard-preview.svg');
+  ), 'assets/openscied-atlas-b4-hawksbeard.svg');
   const artHref = await artwork.getAttribute('href');
   const actionHref = await action.getAttribute('href');
   check(artHref && actionHref && new URL(artHref, page.url()).href === new URL(actionHref, page.url()).href,
