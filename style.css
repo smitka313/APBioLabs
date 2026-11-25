@@ -169,11 +169,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); width
 .btn--primary:hover { filter: brightness(1.08); }
 .btn--ghost { background: transparent; border-color: transparent; color: var(--muted); }
 .btn--danger { color: var(--bad); }
-.btn:disabled { opacity: .5; cursor: not-allowed; }
-/* Shared OpenSciEd controls. Use a neutral surface and text, not dimmed green. */
+/* A readable, neutral fill distinguishes disabled controls from enabled green actions. */
+.btn:is(:disabled, [aria-disabled="true"]),
 html[data-openscied] :is(.btn, nav[aria-label] button):is(:disabled, [aria-disabled="true"]) {
   opacity: 1; filter: none; cursor: not-allowed;
-  color: var(--muted); background: var(--surface-2); border: 1px dashed var(--muted);
+  color: var(--muted); background: var(--surface-2);
+  border: 1px solid color-mix(in srgb, var(--muted) 56%, var(--line));
 }
 html[data-openscied] nav[aria-label] button[data-ose-complete] span:first-child { font-size: 0; }
 html[data-openscied] nav[aria-label] button[data-ose-complete] span:first-child::before {

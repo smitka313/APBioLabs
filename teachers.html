@@ -72,8 +72,8 @@
   .labs-table tbody th a { text-decoration: none; color: var(--ink); }
   .labs-table tbody th a:hover { color: var(--accent); text-decoration: underline; }
   .labs-table td.num { text-align: left; font-family: var(--f-mono); font-size: .85rem; white-space: nowrap; }
-  .labs-table td.parts { display: flex; flex-wrap: wrap; gap: 4px 6px; border-bottom: 1px solid var(--line); }
-  .labs-table td.parts a { display: inline-block; padding: 1px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-size: .84rem; white-space: nowrap; }
+  .labs-table td.parts { white-space: normal; border-bottom: 1px solid var(--line); }
+  .labs-table td.parts a { display: inline-flex; align-items: center; min-height: 26px; margin: 0 3px 5px 0; padding: 1px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-size: .84rem; white-space: normal; }
   .labs-table td.parts a:hover { border-color: var(--accent); color: var(--accent); }
   .labs-table td.stuck { font-size: .86rem; min-width: 30ch; width: 38%; }
   .labs-table td.stuck ul { margin: 0; padding-left: 1.1em; display: grid; gap: .35em; list-style: disc; }
@@ -84,7 +84,7 @@
     .labs-table, .labs-table tbody, .labs-table tr { display: block; }
     .labs-table tr { padding: 10px 12px; border-bottom: 1px solid var(--line); }
     .labs-table th, .labs-table td { display: block; padding: 2px 0; border: 0 !important; }
-    .labs-table td.parts { display: flex; padding-top: 6px; }
+    .labs-table td.parts { padding-top: 6px; }
     .labs-table td.num { color: var(--muted); padding-top: 4px; }
     .labs-table td.stuck { width: auto; min-width: 0; padding-top: 8px; }
     .labs-table td.stuck::before { content: "Where students get stuck"; display: block; font-size: .78rem; font-weight: 700; color: var(--muted); margin-bottom: 2px; }
@@ -126,7 +126,7 @@
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="t-hero">
   <div class="wrap wrap--wide gutter">
-    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>For teachers</span></nav>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="ap-biology.html">All labs</a><span>For teachers</span></nav>
     <div class="eyebrow">AP Biology · Teacher guide</div>
     <h1>For teachers</h1>
     <p class="lede">What the Lab Bench is, how your students will use it, how they hand work in, and what stays on their computer. It takes about five minutes to read.</p>
@@ -152,7 +152,6 @@
       <li><a href="#tips">Tips</a></li>
       <li><a href="#dashboard">Class dashboard</a></li>
       <li><a href="#lab-table">All 13 labs, parts and sticking points</a></li>
-      <li><a href="#coffee">Buy me a coffee</a></li>
     </ol>
   </nav>
 
@@ -164,7 +163,7 @@
         <li><strong>Pick the lab and tick today&rsquo;s parts.</strong> The timer fills in from the parts&rsquo; time estimates, and you can add a due date or a note.</li>
         <li><strong>Click Start, then press F for full screen.</strong> Space starts or pauses the timer; Esc goes back to setup.</li>
       </ol>
-      <p><a href="projector.html#lab05"><code>projector.html#lab05</code></a> opens a lab directly (use the lab&rsquo;s number), which makes a handy bookmark. The page remembers your last setup on that computer. Each lab page also has a small &ldquo;Project this lab&rdquo; link in its header.</p>
+      <p>To bookmark a specific lab, copy its projector link. For example, <a href="projector.html#lab05">open Lab 5 in projector mode</a>. The page remembers your last setup on that computer. Each lab page also has a small &ldquo;Project this lab&rdquo; link in its header.</p>
     </section>
 
     <section class="tsec" id="what" aria-labelledby="h-what">
@@ -221,7 +220,7 @@
     <section class="tsec" id="datasets" aria-labelledby="h-data">
       <h2 id="h-data">Per-student data and Dataset IDs</h2>
       <p>The simulations do not give every student the same numbers. Each student&rsquo;s data is generated from their name, class period, the lab and a dataset number, so a student gets the same numbers every time they reopen the lab, and a different student gets different ones. Two students who sit side by side and run the same settings will still see different results, which is what real replicates look like.</p>
-      <p>Each report prints a <strong>Dataset ID</strong> such as <code>K7M-4QX</code>, shown in the sign-in line and on the report. How it helps:</p>
+      <p>Each report prints a <strong>Dataset ID</strong> such as <code>K7M-4QX</code>, shown in the sign-in line and on the report. This identifies one lab’s data, so the same student normally has a different ID in each lab. How it helps:</p>
       <ul>
         <li>It is tied to the student&rsquo;s name, period and lab. A report handed in under another student&rsquo;s name will carry the wrong ID for that student.</li>
         <li>If two reports have identical data tables, the two students did not each run their own simulation. A progress file copied from a classmate loads that classmate&rsquo;s name and Dataset ID along with the data, so it does not pass as the student&rsquo;s own.</li>
@@ -233,9 +232,9 @@
     <section class="tsec" id="links" aria-labelledby="h-links">
       <h2 id="h-links">Linking to one part</h2>
       <p>Every part has its own web address. Each part heading has a <strong>Copy link</strong> button that copies it, and you can also write one yourself: take the lab page and add <code>#</code> and the part name, lower-case, with dashes between words. For example, this opens Lab 5 straight to the float assay:</p>
-      <span class="eg"><a href="lab05.html#float-assay">lab05.html#float-assay</a></span>
-      <p>Put these links in an assignment so students land on exactly the part you want that day. Other examples: <a href="lab05.html#pre-lab"><code>lab05.html#pre-lab</code></a>, <a href="lab09.html#run-a-gel"><code>lab09.html#run-a-gel</code></a>, <a href="lab13.html#submit"><code>lab13.html#submit</code></a>. The table at the end of this page lists the parts of all 13 labs as links.</p>
-      <p class="muted small">Add the full web address of the site in front of the file name when you paste a link into an LMS or an email.</p>
+      <span class="eg"><a href="lab05.html#float-assay">Lab 5 · Float assay</a></span>
+      <p>Put these links in an assignment so students land on exactly the part you want that day. Other examples: <a href="lab05.html#pre-lab">Lab 5 · Pre-lab</a>, <a href="lab09.html#run-a-gel">Lab 9 · Run a gel</a>, <a href="lab13.html#submit">Lab 13 · Submit</a>. The table at the end of this page lists the parts of all 13 labs as links.</p>
+      <p class="muted small">To paste into an LMS or email, use Copy link in the lab or copy the example link’s address.</p>
     </section>
 
     <section class="tsec" id="printing" aria-labelledby="h-print">
@@ -256,7 +255,7 @@
       <h2 id="h-privacy">Privacy</h2>
       <ul>
         <li><strong>Nothing students type leaves their browser.</strong> Names, class periods, answers and data tables are kept in the browser on that computer. There are no accounts and no student records on a server.</li>
-        <li><strong>Anonymous page views only.</strong> The site counts how many times each page is opened using GoatCounter, which sets no cookies and records no names or answers.</li>
+        <li><strong>Anonymous page views only.</strong> The site counts how many times each page is opened without cookies or recording student names or answers.</li>
         <li><strong>Reports are made on the student&rsquo;s computer.</strong> The .docx and PDF are built in the browser. (The .docx tool is fetched from a public code library the first time it is needed, so that download needs an internet connection; Save as PDF does not.)</li>
       </ul>
     </section>
@@ -304,12 +303,7 @@
         </tbody>
       </table>
       </div>
-      <p class="t-foot-link"><a href="index.html">&larr; Back to all labs</a></p>
-    </section>
-    <section class="tsec" id="coffee" aria-labelledby="h-coffee">
-      <h2 id="h-coffee">Buy me a coffee ☕</h2>
-      <p>The Lab Bench is free for every teacher and student. If it saved you some prep time and you'd like to say thanks, you can buy me a coffee. It's completely optional.</p>
-      <p><a class="btn btn--primary" href="https://venmo.com/u/Smitka313" target="_blank" rel="noopener">Buy me a coffee on Venmo<span class="sr-only"> (opens in a new tab)</span></a></p>
+      <p class="t-foot-link"><a href="ap-biology.html">&larr; Back to all labs</a></p>
     </section>
   </div>
 </div>
@@ -319,7 +313,8 @@
   <p class="credit"><strong>Created by Robert Smitka.</strong> © 2026 Robert Smitka. Licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license">CC BY-NC-SA 4.0</a>: share and adapt for non-commercial use with credit, under the same license.</p>
   <p>Adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and do not replace wet-lab work where it is available.</p>
   <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
-  <p>This site counts anonymous page visits with GoatCounter (no cookies). Nothing you type, including your name and answers, is sent anywhere.</p>
+  <p>This site counts anonymous page visits without cookies. Your name, answers, and lab data stay on your device unless you choose to export them.</p>
+  <p id="coffee"><a href="https://venmo.com/u/Smitka313" target="_blank" rel="noopener">Support the free Lab Bench on Venmo<span class="sr-only"> (opens in a new tab)</span></a></p>
 </div></footer>
 
 <script src="lab.js"></script>

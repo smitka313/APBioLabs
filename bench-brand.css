@@ -1,4 +1,4 @@
-/* Shared Biology Lab Bench masthead for the welcome page and the two course entrances. */
+/* Shared Biology Lab Bench masthead for the welcome page, course entrances and teacher guide. */
 .bench-brandbar{background:var(--surface);color:var(--ink);border-bottom:1px solid var(--line)}
 .bench-brandbar-inner{display:flex;align-items:center;justify-content:space-between;gap:.65rem 1.25rem;padding-block:1.05rem;min-width:0}
 .bench-logo{display:inline-block;flex:none;width:clamp(166px,23vw,252px);line-height:0}
@@ -11,17 +11,24 @@
  :root:not([data-theme=light]) .bench-logo img.bench-logo-dark{display:block}
 }
 .bench-route-nav{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:.25rem .95rem;line-height:1.25;font-size:.87rem}
-.bench-route-nav a{display:inline-flex;align-items:center;min-height:30px;color:var(--ink);text-underline-offset:4px}
-.bench-route-nav [aria-current=page]{color:var(--accent);font-weight:750;text-decoration:none;border-bottom:2px solid var(--accent)}
+.bench-route-nav a{display:inline-flex;align-items:center;min-height:40px;padding-inline:.6rem;color:var(--ink);text-underline-offset:4px;border:1px solid transparent;border-radius:8px}
+.bench-route-nav [aria-current=page]{background:var(--accent-soft);color:var(--ink);border-color:var(--accent);font-weight:750;text-decoration:none}
 .bench-brandbar :focus-visible,.bench-portal :focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 @media(max-width:540px){.bench-brandbar-inner{gap:.45rem;align-items:center}.bench-route-nav{gap:.15rem .65rem}}
 .bench-brandbar.dashboard-masthead{background:var(--surface);border-bottom-color:var(--line)}
 .bench-brandbar .dashboard-topbar{min-height:77px;padding-block:.8rem;gap:.35rem 1.1rem}
 .bench-brandbar .dashboard-theme-label{color:var(--muted)}
-.bench-ap-hero h1,.dashboard-hero h1.dashboard-title{font-family:Georgia,'Times New Roman',serif;letter-spacing:-.04em}
+.bench-ap-hero h1,.dashboard-hero h1.dashboard-title,.bench-guide-hero h1{font-family:Georgia,'Times New Roman',serif;letter-spacing:-.036em}
 @media(max-width:640px){.bench-brandbar .dashboard-topbar .bench-route-nav{margin-left:auto}.bench-brandbar .dashboard-theme-controls{margin-left:auto}}
-.bench-route-nav a.bench-cross-route{background:var(--accent-soft);color:var(--ink);border:1px solid var(--line);min-height:40px;padding-inline:.6rem;border-radius:8px;font-weight:700;text-decoration:none}
-.bench-route-nav a.bench-cross-route:hover{text-decoration:underline}
+.bench-route-nav a.bench-cross-route{font-weight:650}
+.bench-brandbar .bench-control-bar{flex-wrap:wrap}
+.bench-brandbar .bench-appearance{display:flex;align-items:center;justify-content:flex-end;gap:.4rem;margin-inline-start:auto;color:var(--muted);font-size:.8rem}
+.bench-appearance :is([data-ph="theme"],.theme-switch){inline-size:168px;max-inline-size:100%;block-size:36px}
+.bench-appearance:has([data-ph="theme"]) > span:first-child{visibility:hidden}
+.bench-appearance .theme-switch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.bench-appearance .theme-opt{min-width:0;min-height:0;padding-inline:.2em}
+@media (max-width:580px){.bench-control-bar .bench-route-nav{margin-inline-start:auto}.bench-control-bar .bench-route-nav a{padding-inline:.35rem}.bench-appearance .theme-switch,.bench-appearance [data-ph="theme"]{block-size:40px}}
+@media print{.bench-appearance,.bench-guide-masthead{display:none!important}}
 
 /* A larger signature leads the welcome page. The two course headers share a smaller lockup. */
 .bench-ap-hero .eyebrow,.dashboard-hero .dashboard-hero-copy .dashboard-eyebrow{color:#f1c98c;letter-spacing:.1em}

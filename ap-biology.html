@@ -64,12 +64,9 @@
   .hero .openscied-teaser { margin-top: 14px; max-width: 100%; white-space: normal; line-height: 1.25; text-align: center; min-height: 44px; padding: 10px 18px; font-size: 1rem; font-weight: 700; color: #0b2a21; background: #c4f5e3; border-color: #c4f5e3; text-shadow: none; box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
   .hero .openscied-teaser:hover { background: #ffffff; border-color: #ffffff; }
   .hero .openscied-teaser:focus-visible { outline: 3px solid var(--h-link); outline-offset: 3px; }
-  .hero-preferences { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; color: var(--h-muted); }
-  .hero-preferences:has([data-ph="theme"]) { display: none; }
   @media (max-width: 640px) {
     .hero .hero-links { gap: 4px 12px; }
     .hero .hero-links a { min-height: 44px; padding: 8px 4px; box-sizing: border-box; }
-    .hero-preferences .theme-opt { min-width: 44px; min-height: 44px; }
   }
   @media (max-width: 640px) { .hero { padding-block: 150px 24px; } }
   .os-band { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px; margin-block: 34px 6px; padding: 20px 22px; border: 1px solid var(--line); border-left: 6px solid var(--accent); border-radius: var(--r); background: var(--surface); }
@@ -88,7 +85,13 @@
   .card:hover { border-color: var(--accent); transform: translateY(-2px); }
   .card .num { font-family: var(--f-mono); font-size: .78rem; color: var(--accent); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
   .card h3 { font-size: 1.22rem; }
-  .card .dq { color: var(--muted); font-style: italic; font-size: .96rem; }
+  .card .dq { color: var(--muted); font-style: italic; font-size: .96rem; overflow-wrap: anywhere; }
+  /* Cool the paper-like illustration backgrounds without flattening the diagrams. */
+  :root[data-theme="dark"] .card .thumb { filter: brightness(.82) saturate(.94); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .card .thumb { filter: brightness(.82) saturate(.94); }
+  }
+  @media print { :root .card .thumb { filter: none !important; } }
   .card .meta { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 6px; }
   .card .sim-line { font-size: .88rem; color: var(--ink); }
   .icon { width: 44px; height: 44px; }
@@ -132,13 +135,14 @@
 
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
-<noscript><style>.home-status { display: none !important; } .nojs-labs { padding-block: 32px 40px; }</style></noscript>
+<noscript><style>.home-status, .bench-appearance { display: none !important; } .nojs-labs { padding-block: 32px 40px; }</style></noscript>
 </head>
 <body>
 <a class="skip-link" href="#labs">Skip to content</a>
 <header>
-<div class="bench-brandbar"><div class="bench-brandbar-inner wrap wrap--wide gutter"><a class="bench-logo" href="index.html" aria-label="Biology Lab Bench home"><img class="bench-logo-light" src="assets/biology-lab-bench-logo.svg" width="550" height="144" alt=""><img class="bench-logo-dark" src="assets/biology-lab-bench-logo-dark.svg" width="550" height="144" alt=""></a>
+<div class="bench-brandbar"><div class="bench-brandbar-inner bench-control-bar wrap wrap--wide gutter"><a class="bench-logo" href="index.html" aria-label="Biology Lab Bench home"><img class="bench-logo-light" src="assets/biology-lab-bench-logo.svg" width="550" height="144" alt=""><img class="bench-logo-dark" src="assets/biology-lab-bench-logo-dark.svg" width="550" height="144" alt=""></a>
 <nav class="bench-route-nav" aria-label="Course collections"><a href="ap-biology.html" aria-current="page">AP Biology</a><a class="bench-cross-route" href="openscied-dashboard.html">OpenSciEd</a></nav>
+<div class="bench-appearance"><span aria-hidden="true">Appearance</span><span data-ph="theme" aria-hidden="true"></span></div>
 </div></div>
 <div class="hero bench-ap-hero">
   <canvas class="bench-scene" id="bench-scene" role="img" aria-label="A dark lab bench with equipment along the back."></canvas>
@@ -155,7 +159,6 @@
           <a href="student-directions.html">Printable student directions</a>
           <a href="teacher-notes.html" aria-label="Teacher notes (password required)">Teacher notes <span aria-hidden="true">🔒</span></a>
         </nav>
-        <div class="hero-preferences small"><span>Theme</span><span data-ph="theme" hidden></span></div>
       </div>
       <div class="hero-actions"><section class="pickup" id="resume" hidden></section><div class="home-status"><div id="home-identity"></div></div><a class="hero-browse" href="#labs">Explore all 13 investigations ↓</a></div>
     </div>
@@ -322,7 +325,7 @@
   <p>Adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and do not replace wet-lab work where it is available.</p>
   <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
   <p><a href="teachers.html">For teachers</a> · <a href="projector.html">Projector mode</a>: how the site works, handing in work, privacy and linking to a part. <a href="teacher-notes.html">Teacher notes (password)</a>.</p>
-  <p>This site counts anonymous page visits with GoatCounter (no cookies). Nothing you type, including your name and answers, is sent anywhere.</p>
+  <p>This site counts anonymous page visits without cookies. Your name, answers, and lab data stay on your device unless you choose to export them.</p>
 </div></footer>
 
 <script src="lab.js"></script>

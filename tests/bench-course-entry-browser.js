@@ -93,8 +93,23 @@ const T=require('./_h'),assert=require('node:assert/strict'),fs=require('node:fs
     await p.waitForURL('**/ap-biology.html');assert.equal(await p.locator('main#labs .card').count(),13);
     await p.locator('#home-identity .id-box').waitFor({state:'attached'});await verifyFooter(!dark);await layout('ap');
     assert.equal(await p.evaluate(()=>document.documentElement.dataset.theme),theme.toLowerCase());
+    const headerAppearance=p.locator('.bench-brandbar').getByRole('group',{name:'Color theme',exact:true});
+    assert.equal(await headerAppearance.getByRole('button',{name:theme,exact:true}).getAttribute('aria-pressed'),'true');
+    const courseType=await p.locator('.bench-ap-hero h1').evaluate(el=>getComputedStyle(el).fontFamily);
+    assert(await p.locator('.bench-brandbar .bench-route-nav [aria-current=page]').evaluate(el=>{
+      const peer=el.parentElement.querySelector('a:not([aria-current])');
+      return getComputedStyle(el).backgroundColor!==getComputedStyle(peer).backgroundColor &&
+        getComputedStyle(el).borderTopColor!=='rgba(0, 0, 0, 0)';
+    }), 'the current course, not the other course, has the filled pill treatment');
+    assert.equal(await p.locator('.card .thumb').first().evaluate(el=>getComputedStyle(el).filter.startsWith('brightness')),theme==='Dark');
     await p.getByRole('link',{name:'OpenSciEd',exact:true}).click();await p.waitForURL('**/openscied-dashboard.html');
     assert.equal(await p.locator('.dashboard-unit.current').count(),5);
+    assert.equal(await p.locator('.dashboard-title').evaluate(el=>getComputedStyle(el).fontFamily),courseType);
+    assert(await p.locator('#download-openscied-results').evaluate(el=>{
+      const css=getComputedStyle(el);
+      return el.disabled && css.opacity==='1' && css.borderTopStyle==='solid' &&
+        css.backgroundColor!=='rgba(0, 0, 0, 0)';
+    }),'disabled dashboard controls use a legible solid surface');
     const atlas=p.locator('.dashboard-hero-art');
     assert.equal(await atlas.getAttribute('src'),'assets/bench-field-atlas.svg');
     assert(await atlas.evaluate(async img=>{

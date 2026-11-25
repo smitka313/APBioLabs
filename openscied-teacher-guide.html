@@ -29,19 +29,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>try{const t=localStorage.getItem("aplab:pref:theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="bench-brand.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="openscied-teacher-guide.css">
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
+<header class="bench-brandbar bench-guide-masthead">
+<div class="bench-brandbar-inner bench-control-bar wrap wrap--wide gutter">
+<a class="bench-logo" href="index.html" aria-label="Biology Lab Bench home"><img class="bench-logo-light" src="assets/biology-lab-bench-logo.svg" width="550" height="144" alt=""><img class="bench-logo-dark" src="assets/biology-lab-bench-logo-dark.svg" width="550" height="144" alt=""></a>
+<nav class="bench-route-nav" aria-label="Course collections"><a href="ap-biology.html">AP Biology</a><a href="openscied-dashboard.html">OpenSciEd</a></nav>
+<div class="bench-appearance"><span aria-hidden="true">Appearance</span><span data-ph="theme" aria-hidden="true"></span></div>
+</div>
+</header>
 <main id="main" class="ose-teacher-shell">
 <nav class="ose-teacher-top" aria-label="Site navigation"><a href="openscied-dashboard.html">← Biology Companion Activities</a><a href="teachers.html">AP Bio Lab Bench teacher page</a></nav>
-<header class="ose-teacher-hero"><div class="ose-teacher-hero__copy">
+<header class="ose-teacher-hero bench-guide-hero"><div class="ose-teacher-hero__copy">
 <p class="eyebrow">Biology Companion Activities · Teacher resources</p>
 <h1>OpenSciEd Teacher Guide</h1>
 <p>Plan the sequence, pick what to project, and know what to listen for across Units 1–5.</p>
 <a class="teacher-guide-collect-jump" href="#collect">Jump to collecting student work ↓</a></div>
-<img class="ose-teacher-hero__art" src="assets/openscied-banner.jpg" alt="" width="2048" height="682">
+<img class="ose-teacher-hero__art" src="assets/bench-field-atlas.svg" alt="" width="1200" height="226">
 </header>
 <nav id="guide-index" class="teacher-guide-index" aria-labelledby="guide-index-title" tabindex="-1">
 <h2 id="guide-index-title">Find an activity</h2>
@@ -348,7 +357,7 @@
 <dt>Listen for</dt><dd>A crossing can let animals move and reproduce on the other side, allowing gene versions to mix. An animal moving alone is not enough to demonstrate gene flow. Similar frequencies across habitats do not automatically mean greater diversity within both habitats. The model uses fictional diploid populations (two copies of the gene per individual), fixed population sizes, and two alleles that do not change survival or reproduction. It is not an estimate of real crossing use, population growth, or genetic outcomes.</dd></dl>
 </div></details></article></div></section>
 <section class="ose-teacher-unit" aria-labelledby="unit5">
-<header><h2 id="unit5" tabindex="-1">Unit 5 · Common Ancestry &amp; Speciation</h2><p>Introduce the Wapusk phenomenon and compare evidence at different scales.</p></header>
+<header><h2 id="unit5" tabindex="-1">Unit 5 · Common Ancestry &amp; Speciation</h2><p>Introduce the Wapusk phenomenon and compare evidence at different scales.</p><a href="#guide-index" class="teacher-guide-back">Back to activity list</a></header>
 <div class="ose-teacher-grid"><article class="ose-teacher-card" id="guide-b5-wapusk" data-guide-for="openscied-b5-wapusk.html" aria-labelledby="guide-b5-wapusk-title" tabindex="-1">
 <h3 id="guide-b5-wapusk-title">Three Bears in Wapusk</h3>
 <div class="teacher-guide-cue"><p class="ose-teacher-timing"><strong>Suggested time:</strong> 25–35 minutes of digital work spread across the original Lesson 1 sequence. Keep the partner talk, Inuvialuit evidence, fishbowl discussion, paper models, and Driving Question Board.</p><a class="btn btn--sm teacher-guide-launch" href="openscied-b5-wapusk.html" aria-label="Open activity: Three Bears in Wapusk">Open activity</a></div>
@@ -393,6 +402,7 @@
 </dl></div></details></article></div></section>
 </main>
 <footer class="site-footer"><div class="wrap wrap--wide gutter"><p>Created by Robert Smitka. Original content <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>.</p><p>Independently developed classroom guidance for <a href="https://www.openscied.org/">OpenSciEd</a> Biology companions. OpenSciEd high-school curriculum materials are licensed <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. This guide adds original pacing and facilitation guidance; it is not affiliated with or endorsed by OpenSciEd.</p><p>This guide does not collect student information or work. Analytics count page visits only.</p></div></footer>
+<script src="lab.js"></script>
 <script>
 (() => {
   let openedForPrint = null;
