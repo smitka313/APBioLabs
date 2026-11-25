@@ -28,6 +28,8 @@ const out=path.join(ROOT,'artifacts','screening');
     assert.ok(await id('map-grid').isHidden());
     const profiles=id('profiles').locator('article');
     assert.equal(await profiles.count(),3);
+    assert.equal(await profiles.locator('.sd-avatar svg').count(),3);
+    assert.ok(await p.locator('.sd-hero-art').isVisible());
     const initial=await profiles.allTextContents();
     for(const [i,place] of M.places.entries()){
       assert.match(initial[i],new RegExp(place+'.*Income:.*Hospital: '+M.distances[i].hub+' mi.*Mobile clinic: '+M.distances[i].mobile+' mi'));
@@ -124,6 +126,8 @@ const out=path.join(ROOT,'artifacts','screening');
     assert.ok(await id('mission-dialog').isVisible());
     assert.match(await id('popup-title').textContent(),/Over the clinic budget/);
     assert.match(await id('popup-message').textContent(),/745 cr.*720 cr.*25 cr/);
+    assert.equal(await id('clinic-gauge').getAttribute('data-over'),'true');
+    assert.ok(await id('popup-seal').locator('svg').isVisible());
     assert.match(await id('popup-evidence').textContent(),/Ride program.*95 cr/);
     await id('popup-close').click();
     await id('tool-rides').press('Enter');await site('rack').press('Enter');

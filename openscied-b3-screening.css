@@ -102,3 +102,29 @@
 .sd-mission-score{font-weight:760;background:var(--surface-2);border-inline-start:3px solid var(--accent);padding:.4rem .55rem}
 @keyframes sd-stamp{from{transform:scale(.65) rotate(-12deg);opacity:.4}to{transform:none;opacity:1}}
 @media(prefers-reduced-motion:reduce){.sd-dispatch-popup[open] .sd-popup-seal{animation:none}}
+
+/* Dispatch field guide: warmer terrain against a dark operations console. */
+.sd-hero{position:relative;min-height:182px;border:1px solid #527769;background:linear-gradient(90deg,#102e3a 0%,#163b45f5 43%,#1b3b43ce 100%),url("assets/openscied-screening-map.svg") 82% 44%/cover}
+.sd-hero-art{filter:drop-shadow(0 7px 9px #061b27b8)}
+.sd-signal{transform-origin:105px 50px}
+.sd-board{box-shadow:0 5px 0 #315a5180,0 9px 28px #15333831;border:2px solid #466d61}
+#sd-route{stroke:#fff5ba;filter:drop-shadow(0 0 2px #263f36);stroke-dasharray:9 6}
+.sd-home{background:#173b40;border:1px solid #cad3aa;color:#fffae3;box-shadow:0 2px 5px #1a343869}
+.sd-site{box-shadow:0 3px 0 #1733399c;border-color:#f3dea0}
+.sd-site.sd-mobile{background:#195553}.sd-site.sd-hub{background:#24424f}
+.sd-traveler{width:44px;height:37px;border-radius:11px;box-shadow:0 3px 0 #213c3c9e,0 0 0 1px #f4db94;background:#173b4a;border-color:#f1d389}
+.sd-traveler svg{width:36px;height:27px;display:block}
+.sd-traveler span{position:absolute;top:-7px;right:-8px;font-size:.66rem;line-height:1;padding:.18rem .28rem;border-radius:.43rem;background:#ffdf8d;color:#203840}
+.sd-traveler[data-stalled=true]{background:#f1e3c2;border-color:#78482c;box-shadow:0 3px 0 #613d30a0}
+.sd-traveler[data-stalled=true] span{background:#75442a;color:#fff7e6}
+.sd-profile{border-top:4px solid var(--accent);background:linear-gradient(165deg,var(--surface-2),var(--surface));box-shadow:0 3px 11px #17374117}
+.sd-case-head{grid-template-columns:clamp(3.2rem,7vw,4.1rem) minmax(0,1fr);padding-bottom:.36rem;border-bottom:1px solid var(--line)}
+.sd-profile .sd-pathway{display:inline-block;border-radius:.38rem;padding:.14rem .3rem;background:var(--surface-2);border:1px solid var(--line);font-size:.89rem;font-weight:750;margin-block:.4rem}
+.sd-clinic-gauge{height:9px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);margin:.35rem 0;overflow:hidden}
+.sd-clinic-gauge span{display:block;width:var(--used,0%);height:100%;background:#368472;transition:width .24s ease}
+.sd-clinic-gauge[data-over=true] span{background:repeating-linear-gradient(125deg,#a94e31 0 7px,#e4a173 7px 12px)}
+.sd-popup-seal{width:4.2rem;height:4.2rem;background:#d4eee3;color:#2a6956}
+.sd-popup-seal svg{width:3.7rem;height:3.7rem;margin-top:-.2rem}
+[data-tone=warning] .sd-popup-seal{color:#9a5a34}
+@media(max-width:540px){.sd-hero{min-height:0;grid-template-columns:minmax(0,1fr) 104px}.sd-traveler{width:37px;height:33px}.sd-traveler svg{width:30px}}
+@media(prefers-reduced-motion:reduce){.sd-clinic-gauge span{transition:none}}

@@ -150,7 +150,8 @@
   function popup(tone,kicker,title,message,lines,button='Continue',focusBack=document.activeElement){
     const dialog=$('mission-dialog'), items=el('ul');
     dialog.dataset.tone=tone;
-    $('popup-seal').textContent=tone==='warning'?'!':'✓';
+    const symbol=tone==='warning'?'<path d="M32 20v15m0 5v1" stroke="#704126" stroke-width="4" stroke-linecap="round" fill="none"/>':'<path d="m22 32 7 7 14-15" stroke="#255744" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
+    $('popup-seal').innerHTML='<svg viewBox="0 0 64 64" aria-hidden="true"><path d="m20 43-3 18 13-5 9 5 5-18" fill="currentColor" opacity=".45"/><path d="m32 3 7 4 8 1 4 7 7 5 0 8 3 7-5 6-2 8-8 3-6 5-8-2-8 2-6-5-8-3-2-8-5-6 3-7v-8l7-5 4-7 8-1Z" fill="currentColor" opacity=".22"/><circle cx="32" cy="31" r="22" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".62"/>'+symbol+'</svg>';
     $('popup-kicker').textContent=kicker;$('popup-title').textContent=title;
     $('popup-message').textContent=message;
     items.append(...lines.map(line=>el('li',line)));
@@ -195,6 +196,8 @@
     team.querySelector('small').textContent=moved?'Mobile clinic':'Hospital';
     $('move-team').disabled=moved;
     const used=M.total(s.plan);$('budget').textContent=' · '+used+' / '+M.budget+' cr';
+    const gauge=$('clinic-gauge');gauge.style.setProperty('--used',Math.min(100,100*used/M.budget)+'%');
+    gauge.dataset.over=String(used>M.budget);
     $('clinic').replaceChildren(...dl(clinicRows({costs:M.costs(s.plan)})).children);
     $('setup-note').textContent=invalid||(notChanged?'Move the team to test a different plan.':unchanged?'This plan is already recorded.':'Plan fits the budget.');
     $('setup-note').hidden=!invalid;
@@ -289,14 +292,13 @@
     }
   };
   const portraits=[
-    ['#315767','#d9a47e','#283647','#83bdbe','M17 26c-3-17 29-20 31 1l-5-2-3-9-13 8Z'],
-    ['#374d67','#a96648','#342637','#b5b6dc','M17 29c-7-18 13-24 23-16 8-1 11 9 8 17l-6-4-3-9-12 8Z'],
-    ['#385a50','#efc39a','#6a4d46','#c4ce8d','M18 29c-4-17 26-24 30-4l-5 2-9-8-10 8Z']
+    ['#274756','#d9a47e','#403232','#83bdbe','M23 34c-1-18 8-25 20-25s22 8 20 25l-7-2-2-11-12 8-13-1-1 8z'],
+    ['#4e4e62','#a96648','#352a37','#b5b6dc','M24 39c-8-13-3-21 4-23 2-10 9-11 15-8 9-5 19 2 19 9 8 4 7 14 1 20l-5-1-2-13-13 7-13-3-2 10z'],
+    ['#3a594f','#efc39a','#735348','#b8c882','M24 38c-5-17 2-26 12-30 13-5 26 3 28 18v12l-7-2-1-12-9 2-9-4-11 7z']
   ];
   function avatar(i){
-    const [bg,skin,hair,shirt,path]=portraits[i],wrap=el('div');
-    wrap.className='sd-avatar';
-    wrap.innerHTML='<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="13" fill="'+bg+'"/><circle cx="32" cy="29" r="14" fill="'+skin+'"/><path d="'+path+'" fill="'+hair+'"/><path d="M11 65v-7c2-10 10-15 21-15s19 5 21 15v7Z" fill="'+shirt+'"/><path d="M25 30h.1m13 0h.1m-11 7q5 3 10 0" fill="none" stroke="#35404a" stroke-width="1.8" stroke-linecap="round"/></svg>';
+    const [bg,skin,hair,shirt,path]=portraits[i],wrap=el('div');wrap.className='sd-avatar';
+    wrap.innerHTML='<svg viewBox="0 0 86 82" aria-hidden="true"><rect width="86" height="82" rx="10" fill="'+bg+'"/><circle cx="43" cy="36" r="31" fill="#fff7d3" opacity=".13"/><path d="M7 64h72m-72-8h72" stroke="#f8f0d7" opacity=".18"/><path d="M11 82v-9c3-12 18-20 32-20s30 8 32 20v9z" fill="'+shirt+'"/><path d="M43 60 26 57l6 15 11-9 12 9 5-15z" fill="#f3f0d3" opacity=".67"/><path d="M35 49h16v11l-8 5-8-5z" fill="'+skin+'"/><path d="M31 27q12-13 25 0l2 16q-4 13-15 13T28 43z" fill="'+skin+'"/><path d="M43 35h1l2 10-4 1m-3 4q4 2 8 0" fill="none" stroke="'+hair+'" stroke-width="1.25" stroke-linecap="round" opacity=".72"/><path d="M33 38h2m16 0h2" stroke="'+hair+'" stroke-width="2" stroke-linecap="round"/><path d="'+path+'" fill="'+hair+'"/><path d="M16 74h5m44 0h5" stroke="'+bg+'" opacity=".45" stroke-width="1.3"/></svg>';
     return wrap;
   }
   for(const [i,p] of cases.entries()){
@@ -306,7 +308,8 @@
     const head=el('div'),stamp=el('div');head.className='sd-case-head';
     if(equity)k.textContent+=' · '+(p.means>=100?'Higher income':'Lower income');
     stamp.append(k,el('h4','Patient '+p.id+' · '+p.place));head.append(avatar(i),stamp);
-    card.append(head,el('p',need(p)),el('p','Income: '+income(p)+' · Care budget: '+cost(p.means)),el('p','Time available per visit: '+p.hours+' h'),distances);
+    const pathway=el('p',need(p));pathway.className='sd-pathway';
+    card.append(head,pathway,el('p','Income: '+income(p)+' · Care budget: '+cost(p.means)),el('p','Time available per visit: '+p.hours+' h'),distances);
     const quoteButton=el('button','Open cost sheet');quoteButton.type='button';quoteButton.className='btn';
     quoteButton.setAttribute('aria-label','Open cost sheet for Case '+(i+1)+' · '+p.place);
     quoteButton.setAttribute('aria-controls','sd-quote-board');quoteButton.setAttribute('aria-expanded','false');quoteButton.onclick=()=>openQuote(p);
@@ -392,7 +395,7 @@
   const reduce=matchMedia('(prefers-reduced-motion: reduce)');
   function clearTrip(){cancelAnimationFrame(animation);$('traveler').hidden=true;$('map-event').hidden=true;$('route').setAttribute('visibility','hidden');}
   function marker(at,p,stalled){
-    const e=$('traveler');e.textContent=stalled?'!':String(p.id);e.dataset.stalled=String(stalled);
+    const e=$('traveler');$('traveler-id').textContent=stalled?'!':String(p.id);e.dataset.stalled=String(stalled);
     e.style.setProperty('--x',at[0]/10+'%');e.style.setProperty('--y',at[1]/6.4+'%');e.hidden=false;
   }
   function trip(scroll){
