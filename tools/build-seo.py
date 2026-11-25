@@ -58,6 +58,9 @@ def page_specs():
         'openscied-b5-thermoregulation.html': ('Bear Thermoregulation Lab — OpenSciEd Biology B.5 Lesson 2 | Lab Bench',
                                                   'Explore bear encounters, compare original polar bear treadmill data, and model the transfer of matter and energy during exercise.',
                                                   'Bear Thermoregulation Lab'),
+        'openscied-b5-ancestry.html': ('Bear Ancestry Lab — OpenSciEd Biology B.5 Lesson 3 | Lab Bench',
+                                                  'Compare illustrated bear specimens, inspect original DNA sequences, and build an evidence-based tree of bear relationships.',
+                                                  'Bear Ancestry Lab'),
         'getting-started.html': ('AP Biology Virtual Labs: Teacher Quick Start | Lab Bench',
                                  'Start teaching with free AP Biology virtual labs in five minutes. Choose a lab, share links, explain saving, collect reports, and review class progress.',
                                  'Teacher quick start'),
@@ -170,11 +173,11 @@ def structured_data(filename, title, description, label):
                          'teaches': 'Direct and indirect effects of migration on a local Serengeti ecosystem',
                          'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
                          'isBasedOn': 'https://openscied.org/instructional-materials/b-1-ecosystem-interactions-dynamics/'})
-        elif filename in ('openscied-b5-wapusk.html','openscied-b5-thermoregulation.html'):
+        elif filename in ('openscied-b5-wapusk.html','openscied-b5-thermoregulation.html','openscied-b5-ancestry.html'):
             page.update({'@type': ['WebPage', 'LearningResource'],
                          'educationalLevel': 'High school biology',
                          'learningResourceType': 'Interactive evidence investigation',
-                         'teaches': ('Thermoregulation, field evidence and energy transfer during exercise' if filename.endswith('thermoregulation.html') else 'Interpreting Arctic bear sightings, sea ice ecoregions, and evidence at different scales'),
+                         'teaches': ('Common ancestry, sequence comparison and interpretation of evolutionary trees' if filename.endswith('ancestry.html') else 'Thermoregulation, field evidence and energy transfer during exercise' if filename.endswith('thermoregulation.html') else 'Interpreting Arctic bear sightings, sea ice ecoregions, and evidence at different scales'),
                          'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
                          'isBasedOn': 'https://openscied.org/instructional-materials/b-5-common-ancestry-speciation/'})
         elif filename == 'openscied-b4-wildlife-corridor.html':

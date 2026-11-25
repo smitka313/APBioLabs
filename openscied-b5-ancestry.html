@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script src="domain-redirect.js"></script>
+<!-- seo:start -->
+<title>Bear Ancestry Lab — OpenSciEd Biology B.5 Lesson 3 | Lab Bench</title>
+<meta name="description" content="Compare illustrated bear specimens, inspect original DNA sequences, and build an evidence-based tree of bear relationships.">
+<link rel="canonical" href="https://biologylabbench.com/openscied-b5-ancestry">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AP Bio Digital Lab Bench">
+<meta property="og:title" content="Bear Ancestry Lab — OpenSciEd Biology B.5 Lesson 3 | Lab Bench">
+<meta property="og:description" content="Compare illustrated bear specimens, inspect original DNA sequences, and build an evidence-based tree of bear relationships.">
+<meta property="og:url" content="https://biologylabbench.com/openscied-b5-ancestry">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://biologylabbench.com/img/og.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="AP Bio Digital Lab Bench: lab simulation thumbnails beside the site title">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Bear Ancestry Lab — OpenSciEd Biology B.5 Lesson 3 | Lab Bench">
+<meta name="twitter:description" content="Compare illustrated bear specimens, inspect original DNA sequences, and build an evidence-based tree of bear relationships.">
+<meta name="twitter:image" content="https://biologylabbench.com/img/og.png">
+<meta name="twitter:image:alt" content="AP Bio Digital Lab Bench: lab simulation thumbnails beside the site title">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://biologylabbench.com/#website","url":"https://biologylabbench.com/","name":"AP Bio Digital Lab Bench","alternateName":"Biology Lab Bench","inLanguage":"en","creator":{"@id":"https://biologylabbench.com/#creator"}},{"@type":"Person","@id":"https://biologylabbench.com/#creator","name":"Robert Smitka"},{"@type":["WebPage","LearningResource"],"@id":"https://biologylabbench.com/openscied-b5-ancestry#webpage","url":"https://biologylabbench.com/openscied-b5-ancestry","name":"Bear Ancestry Lab — OpenSciEd Biology B.5 Lesson 3 | Lab Bench","description":"Compare illustrated bear specimens, inspect original DNA sequences, and build an evidence-based tree of bear relationships.","inLanguage":"en","isPartOf":{"@id":"https://biologylabbench.com/#website"},"isAccessibleForFree":true,"license":"https://creativecommons.org/licenses/by-nc-sa/4.0/","creator":{"@id":"https://biologylabbench.com/#creator"},"breadcrumb":{"@id":"https://biologylabbench.com/openscied-b5-ancestry#breadcrumb"},"educationalLevel":"High school biology","learningResourceType":"Interactive evidence investigation","teaches":"Common ancestry, sequence comparison and interpretation of evolutionary trees","audience":{"@type":"EducationalAudience","educationalRole":"student"},"isBasedOn":"https://openscied.org/instructional-materials/b-5-common-ancestry-speciation/"},{"@type":"BreadcrumbList","@id":"https://biologylabbench.com/openscied-b5-ancestry#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"All labs","item":"https://biologylabbench.com/"},{"@type":"ListItem","position":2,"name":"Bear Ancestry Lab","item":"https://biologylabbench.com/openscied-b5-ancestry"}]}]}</script>
+<!-- seo:end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(_){}</script>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="openscied-submission-report.css">
+<link rel="stylesheet" href="openscied-b5-ancestry.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to the investigation</a>
+<main id="main" class="ba-shell">
+<nav class="ba-links" aria-label="Lesson links"><a href="openscied-dashboard.html#unit5">← Unit 5 activities</a><a href="openscied-b5-thermoregulation.html">Lesson 2: Thermoregulation</a></nav>
+<header class="ba-hero"><div class="ba-hero-copy"><p class="ba-eyebrow">Arctic field station · Unit 5 · Lesson 3</p><h1>Bear Ancestry Lab</h1><p>Three bears share a park. Which two share the most recent common ancestor?</p></div></header>
+<nav class="ba-steps" aria-label="Investigation steps">
+<button type="button" class="btn" data-step="traits">1. Inspect traits</button>
+<button type="button" class="btn" data-step="dna">2. Compare DNA</button>
+<button type="button" class="btn" data-step="tree">3. Build a tree</button>
+<button type="button" class="btn" data-step="explain">4. Explain</button>
+</nav>
+<p class="ba-caption" id="ba-progress"></p>
+<div id="ba-status" class="ba-status" role="status"></div>
+<section class="ba-panel" id="traits" aria-labelledby="traits-title">
+<p class="ba-eyebrow">Specimen bench</p><h2 id="traits-title" tabindex="-1">Start with what you can see</h2>
+<p>Investigate the four stations. Look for patterns, then make a first guess. The traits may point in different directions.</p>
+<div class="ba-controls" aria-label="Specimen stations" role="group">
+<button type="button" class="btn" data-station="profile">01 · Bear profiles</button><button type="button" class="btn" data-station="skull">02 · Skulls</button><button type="button" class="btn" data-station="teeth">03 · Teeth</button><button type="button" class="btn" data-station="claw">04 · Claws</button>
+</div>
+<div class="ba-columns">
+<div>
+<div class="ba-controls" id="ba-trait-pairs" aria-label="Bears to compare" role="group"></div>
+<div class="ba-specimens" id="ba-specimens"></div>
+<p class="ba-caption" id="ba-station-note"></p>
+</div>
+<aside class="ba-card">
+<label id="ba-note-label" for="ba-note"></label><textarea id="ba-note" rows="3" maxlength="4000" placeholder="Record something you observed."></textarea>
+<p class="ba-caption" id="ba-note-count"></p>
+<fieldset><legend>Which pair is your first guess?</legend><div id="ba-hypotheses"></div></fieldset>
+<button type="button" class="btn btn--primary" id="ba-lock">Lock my first guess</button>
+<p class="ba-caption" id="ba-lock-hint">Save one observation and choose a pair. Your first guess does not have to be right.</p>
+</aside>
+</div>
+<button type="button" class="btn btn--primary" data-go="dna">Next: Compare DNA</button>
+</section>
+<section class="ba-panel" id="dna" aria-labelledby="dna-title" hidden>
+<p class="ba-eyebrow">Sequence bench</p><h2 id="dna-title" tabindex="-1">Find what the letters can tell you</h2>
+<p>These are the first 72 bases of the real sequences from the lesson. Each column lines up the same position in two bears’ DNA. Select every column where the letters differ. A and A match; A and G do not. With a keyboard, use arrow keys to move between columns and Space to mark one.</p>
+<div class="ba-controls" id="ba-dna-pairs" role="group" aria-label="DNA pairs"></div>
+<div class="ba-columns">
+<div>
+<p id="ba-dna-label" class="ba-label"></p>
+<div id="ba-seq" class="ba-seq" role="group" aria-labelledby="ba-dna-label"></div>
+<button type="button" class="btn btn--primary" id="ba-check">Check these positions</button>
+</div>
+<aside class="ba-card"><h3>Comparison log</h3><div id="ba-table"></div><p class="ba-caption">A match in this short stretch does not mean two bears have identical DNA. We are looking at one piece of one gene, not whole genomes.</p><p id="ba-first-guess"></p></aside>
+</div>
+<details class="ba-card ba-full"><summary>Explore the full eight-species dataset</summary>
+<p>Read all eight original sequences from the same noncoding region of the <em>transthyretin</em> gene. The full sequences differ in length; they need to be lined up with gap positions rather than compared letter-for-letter from the start.</p>
+<div class="ba-full-controls"><label>First bear <select id="ba-full-a"></select></label><label>Second bear <select id="ba-full-b"></select></label></div>
+<div id="ba-full-stat" class="ba-callout"></div><div id="ba-full-seq" class="ba-full-seq"></div><div class="ba-controls ba-data-actions"><button type="button" class="btn" id="ba-fasta">Download all 8 sequences (FASTA)</button><a href="https://www.ebi.ac.uk/jdispatcher/msa/mafft">Optional: align all 8 in MAFFT</a></div>
+<p class="ba-caption">The full comparison uses the fewest single-letter substitutions, insertions, or deletions to turn one sequence into the other. It is a simplified pair comparison, not the eight-species MAFFT tree used in the original lesson. The two methods can give different results: in the full raw data, this simple count ties for polar–brown and brown–American black. A tree-building analysis lines up all eight sequences and considers the pattern across species.</p>
+</details>
+<button type="button" class="btn btn--primary" data-go="tree">Next: Build a tree</button>
+</section>
+<section class="ba-panel" id="tree" aria-labelledby="tree-title" hidden>
+<p class="ba-eyebrow">Tree workbench</p><h2 id="tree-title" tabindex="-1">Put your evidence on branches</h2>
+<p>Drag a bear card onto a tip, or select a card and then select a tip. The two tips that join at the newer branch point show the pair with the most recent common ancestor.</p>
+<div class="ba-columns">
+<div>
+<div class="ba-controls ba-tokens" id="ba-tokens" aria-label="Bear cards"></div>
+<div class="ba-tree">
+<svg viewBox="0 0 680 270" preserveAspectRatio="none" aria-hidden="true"><path d="M26 141H155M155 103V221H440M155 103H305M305 55V150M305 55H440M305 150H440"/><circle cx="155" cy="141" r="8"/><circle cx="305" cy="103" r="8"/></svg>
+<span class="ba-branch-title">← Older branch points</span>
+<button type="button" class="btn ba-tip" data-tip="0">Tip 1 · empty</button>
+<button type="button" class="btn ba-tip" data-tip="1">Tip 2 · empty</button>
+<button type="button" class="btn ba-tip" data-tip="2">Tip 3 · empty</button>
+</div>
+<div class="ba-controls"><button type="button" class="btn btn--primary" id="ba-tree-check">Check my tree</button><button type="button" class="btn" id="ba-clear-tree">Clear the tips</button></div>
+</div>
+<aside class="ba-card"><h3>DNA evidence from your log</h3><div id="ba-tree-table"></div><p class="ba-caption">Follow where the branches join, not how close their labels look. Branch lengths here don’t represent years or amount of DNA change.</p></aside>
+</div>
+<button type="button" class="btn btn--primary" data-go="explain">Next: Explain your evidence</button>
+</section>
+<section class="ba-panel" id="explain" aria-labelledby="explain-title" hidden>
+<p class="ba-eyebrow">Investigator’s notebook</p><h2 id="explain-title" tabindex="-1">What did the evidence change?</h2>
+<div class="ba-columns">
+<div>
+<label for="ba-conclusion">Which two bears share a more recent common ancestor? Describe what one branch point means, and cite a number from your comparison log.</label><textarea id="ba-conclusion" rows="4" maxlength="4000"></textarea>
+<label for="ba-revise">Did you keep or revise your first guess? Use one trait observation. Explain why the appearance of a bear alone might not settle the question.</label><textarea id="ba-revise" rows="4" maxlength="4000"></textarea>
+<p class="ba-callout"><strong>Common ancestor</strong> means an earlier population that gave rise to later lineages. Neither modern bear on your tree descended from the other modern bear.</p>
+<div id="ba-report"></div>
+</div>
+<aside class="ba-card"><h3>Your evidence so far</h3><div id="ba-recap"></div><div id="ba-explain-table"></div><p class="ba-caption">The original lesson’s eight-species alignment also groups polar and brown bears together. This three-tip model cannot date their split or predict what happens as the Arctic changes.</p></aside>
+</div>
+</section>
+<p class="ba-caption" id="ba-save">Your work stays in this browser. Use the report to keep a copy.</p>
+<details class="ba-sources"><summary>Sources and model limits</summary>
+<p>Adapted from <a href="https://openscied.org/instructional-materials/b-5-common-ancestry-speciation/">OpenSciEd B.5 Lesson 3</a>. Original eight-species DNA sequences are included. The digital bench uses original specimen illustrations, a short guided window, and a simplified three-tip tree rather than an external analysis service. Claw measurements are of illustrated examples, not field measurements or species averages.</p>
+<p>Illustration references: <a href="https://www.nps.gov/articles/bear-identification.htm">National Park Service bear identification</a>, <a href="https://www.fws.gov/story/drilling-down-bear-dentition">U.S. Fish &amp; Wildlife Service bear dentition</a>, and <a href="https://publications.gc.ca/collections/collection_2019/eccc/CW69-14-351-2019-eng.pdf">Canada’s polar bear status report</a>.</p>
+</details>
+<footer>Created by Robert Smitka. <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">Site license: CC BY-NC-SA 4.0</a>. Adapted from <a href="https://www.openscied.org/">OpenSciEd</a> materials (<a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>); not affiliated with or endorsed by OpenSciEd. Student work and identity stay in this browser unless the student chooses to print or download.</footer>
+</main>
+<script src="lab.js"></script>
+<script src="openscied-save-session.js"></script>
+<script src="openscied-submission-report.js"></script>
+<script src="openscied-b5-ancestry-data.js"></script>
+<script src="openscied-b5-ancestry.js"></script>
+<script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</body>
+</html>

@@ -35,7 +35,8 @@
     'b4-junco': [[pref+'b4-junco:v1','prediction revealed reason observation claim limits sim']],
     'b4-wildlife-corridor': [[pref+'b4-wildlife-corridor:v1','prediction generations crossing claim limits finished']],
     'b5-wapusk': [[pref+'b5-wapusk:v1','fields check finished']],
-    'b5-thermoregulation': [[pref+'b5-thermoregulation:v1','fields check hum sort']]
+    'b5-thermoregulation': [[pref+'b5-thermoregulation:v1','fields check hum sort']],
+    'b5-ancestry': [[pref+'b5-ancestry:v1','notes prediction checked treeGood answers']]
   };
   const record = value => value && typeof value === 'object' && !Array.isArray(value);
   const safeDate = (n, now) => Number.isFinite(n) && n > 0 && n <= now ? n : 0;
