@@ -20,4 +20,9 @@
     apply(next);
   });
   window.addEventListener('storage', event => { if (event.key === key) apply(event.newValue ?? 'dark'); });
+  // A page restored by the Back button may have missed a preference change while frozen.
+  window.addEventListener('pageshow', event => {
+    if (!event.persisted) return;
+    try { apply(localStorage.getItem(key) ?? 'dark'); } catch (_) {}
+  });
 })();

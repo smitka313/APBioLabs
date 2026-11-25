@@ -70,6 +70,21 @@ const T=require('./_h'),assert=require('node:assert/strict'),fs=require('node:fs
     assert(await cellCard.evaluate(img=>img.naturalWidth===960&&img.naturalHeight===364),
       'welcome card has its own cell close-up at the same aspect ratio as the AP card');
     await verifyFooter(dark);await layout('welcome');
+    if(width===1366){
+      for(const [saved,expected] of [['dark','dark'],['auto',null],['light','light']]){
+        const restored=await p.evaluate(saved=>{
+          const previous=document.documentElement.getAttribute('data-theme');
+          // A same-document write deliberately bypasses the storage listener.
+          localStorage.setItem('aplab:pref:theme',saved);
+          window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true}));
+          return {previous,mode:document.documentElement.getAttribute('data-theme'),
+            selected:document.querySelector('[data-bench-theme][aria-pressed="true"]')?.dataset.benchTheme};
+        },saved);
+        assert.notEqual(restored.previous,expected);
+        assert.equal(restored.mode,expected,'the cached welcome page picks up the course theme on Back');
+        assert.equal(restored.selected,saved);
+      }
+    }
     const theme=dark?'Light':'Dark';
     await p.getByRole('button',{name:theme,exact:true}).click();
     assert.equal(await p.evaluate(()=>document.documentElement.dataset.theme),theme.toLowerCase());
