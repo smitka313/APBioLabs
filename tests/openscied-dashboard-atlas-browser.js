@@ -26,7 +26,7 @@ const keys = [
   'b2-burn-lab','b2-fires','b2-peat-bog-lab','b2-carbon-journey',
   'b3-cancer-rates','b3-screening','b3-cell-cycle','b3-dna-workshop','b3-dna-p53','b3-inheritance-environment',
   'b4-hawksbeard','b4-rat-generations','b4-junco','b4-wildlife-corridor',
-  'b5-wapusk','b5-thermoregulation','b5-ancestry','b5-speciation',
+  'b5-wapusk','b5-thermoregulation','b5-ancestry','b5-speciation','b5-hybrid',
 ];
 
 (async () => {

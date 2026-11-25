@@ -17,7 +17,7 @@ const fs = require('node:fs');
       assert.equal(await p.locator('.dashboard-activity').first().locator('.dashboard-preview').getAttribute('href'), 'openscied-b1-migration.html');
       assert.equal(await p.locator('#wapusk-open').getAttribute('href'),'openscied-b5-wapusk.html');
       const meta = await p.locator('.dashboard-meta').allTextContents();
-      assert.equal(meta.length, 22);
+      assert.equal(meta.length, 23);
       assert.ok(meta.every(label=>/\bmin(?:utes)?\b|class periods/.test(label)), 'every entry has a pacing estimate');
       const theme = p.getByRole('group', { name: 'Color theme', exact: true });
       assert.equal(await theme.count(), 1);

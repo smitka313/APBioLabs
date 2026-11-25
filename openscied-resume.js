@@ -37,7 +37,8 @@
     'b5-wapusk': [[pref+'b5-wapusk:v1','fields check finished']],
     'b5-thermoregulation': [[pref+'b5-thermoregulation:v1','fields check hum sort']],
     'b5-ancestry': [[pref+'b5-ancestry:v1','notes prediction checked treeGood answers']],
-    'b5-speciation': [[pref+'b5-speciation:v1','moves mathDraft mathChecked locked pins choices answers finished']]
+    'b5-speciation': [[pref+'b5-speciation:v1','moves mathDraft mathChecked locked pins choices answers finished']],
+    'b5-hybrid': [[pref+'b5-hybrid:v1','year islands traces rolls answers verdict finished']]
   };
   const record = value => value && typeof value === 'object' && !Array.isArray(value);
   const safeDate = (n, now) => Number.isFinite(n) && n > 0 && n <= now ? n : 0;

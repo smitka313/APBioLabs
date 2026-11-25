@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="510" viewBox="0 0 900 510">
+<defs><linearGradient id="water" x2=".3" y2="1"><stop stop-color="#123149"/><stop offset="1" stop-color="#24677b"/></linearGradient><linearGradient id="land" x2=".8" y2="1"><stop stop-color="#b5b995"/><stop offset="1" stop-color="#627a68"/></linearGradient><pattern id="h" width="61" height="34" patternUnits="userSpaceOnUse"><path d="M-11 17Q5 7 24 18t36-1t22 1m-91 7Q8 15 28 26t40-3" fill="none" stroke="#e5e1b3" opacity=".48"/></pattern>
+<path id="banks" d="m237 112-19 11-17 3-20 27-3 45 24 8 16 23 31-3 20-16 32-3 5-27-5-18 10-15-13-15-20-7-3-16-28 6Z"/>
+<path id="victoria" d="m389 172 22-16 37 9 11-17 28 4 7 16 24-8 55 17 7 14-9 17 28 13 15 25-13 18-24 8-12 23-35 17-49-5-15 10-37-9-9-23-24-9-5-17-19-10-10-33 18-13-7-14Z"/>
+<path id="main" d="m0 312 74-37 34 6 33-13 35 13 35 18 40 9 20 25 51 9 36 26 53 4 43 23 44 5 24 22 47 3 24-10 27 13 31-8 60 12 49-7 39 10 42-11 20 8 45-8 14 19 20 1v65H0Z"/>
+</defs><rect width="900" height="510" fill="url(#water)"/>
+<g stroke="#b2e8e7" fill="none" opacity=".18"><path d="M0 97h900M0 192h900M0 287h900M0 382h900M0 477h900M150 0l30 510M316 0l17 510M460 0v510M604 0l-17 510M750 0l-30 510"/></g>
+<g fill="url(#land)" stroke="#d8e0bd" stroke-width="2"><use href="#banks"/><use href="#victoria"/><use href="#main"/><path d="m426 0 28 21-12 29-36 8-29 27-37-9 10-23 19-6 7-18-12-29m178 0 21 11 43 0 11 17 26 1 14 30-24 23-35-14-38 6-41-12-21-29 3-25m166-8 29 14 21 6 34 19 28-2 4 19 60 17 67-9 18-15V0Z"/></g>
+<g fill="url(#h)"><use href="#banks"/><use href="#victoria"/><use href="#main"/></g>
+<g fill="none" stroke="#537961" stroke-width="2" opacity=".8"><path d="m10 412 52-27 51 16 33-17 47 19 36 3m-122 44 36-23 57 10 39-15 35 24m77 43 41-26 44 12 17-20 47-6 37 18"/></g>
+<g fill="#39624e"><path d="m103 443 9-19 9 19h-6v8h-5v-8zm59 25 8-15 7 15h-5v6h-4v-6zm58-21 9-18 9 18h-6v7h-6v-7zm-150 30 7-13 6 13h-5v5h-3v-5z"/></g>
+</svg>
