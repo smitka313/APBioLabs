@@ -134,9 +134,19 @@
 <button type="button" class="btn btn--primary" data-go="human">Next: Compare with humans</button>
 </section>
 <section class="th-panel" id="human" aria-labelledby="human-title" hidden>
-<p class="th-tag">Classroom investigation · 0–8 min</p><h2 id="human-title" tabindex="-1">Compare a human cooling response</h2>
-<p>Enter your teacher-supervised class readings, or load a practice example. The handheld infrared thermometer measures <strong>surface temperature</strong>. The bear’s implanted sensor measured <strong>core temperature</strong>. Compare the patterns and cooling responses, not the absolute values. The practice readings are invented, not research data.</p>
-<div class="th-actions"><button type="button" class="btn" id="th-sample">Load practice example</button><button type="button" class="btn" id="th-edit">Enter class readings</button></div>
+<p class="th-tag">Human investigation · 0–8 min</p><h2 id="human-title" tabindex="-1">Compare a human cooling response</h2>
+<p>Use a timer and an infrared thermometer designed to measure skin temperature. You can collect your own readings, or use the <strong>practice example</strong> if you don’t have a thermometer or prefer not to exercise. The practice readings are invented.</p>
+<div class="th-procedure" aria-labelledby="th-procedure-title">
+<h3 id="th-procedure-title">Exercise and take readings</h3>
+<ol>
+<li><strong>Before you move (0 min):</strong> Clear space around you. Follow the thermometer’s instructions and choose one skin spot to measure, such as your forehead if the device is designed for it. Record the starting temperature in °C under Participant A.</li>
+<li><strong>Move for 2 minutes:</strong> Do jumping jacks or step jacks at a comfortable, steady pace. Pause the timer and take a reading right after you stop. Use the same thermometer, spot, and distance each time. Enter the result in the 2-minute row.</li>
+<li><strong>Repeat:</strong> Resume the timer and do the same movement for another 2 minutes. Repeat until you’ve recorded the 4-, 6-, and 8-minute readings. Count movement time only. Use Participant B only if you have a second set of readings.</li>
+</ol>
+<p>Stop if you feel dizzy, overheated, or unwell. You can switch to the practice example at any point.</p>
+</div>
+<p><strong>Compare the patterns, not the exact temperatures.</strong> Your thermometer measures skin <strong>surface</strong> temperature. The bear’s implanted sensor measured <strong>core</strong> temperature inside its body.</p>
+<div class="th-actions"><button type="button" class="btn" id="th-sample">Load practice example</button><button type="button" class="btn" id="th-edit">Enter your readings</button></div>
 <p id="th-human-status" class="th-evidence" role="status"></p>
 <table class="th-table"><caption>Human surface temperature (°C)</caption><thead><tr><th scope="col">Time (min)</th><th scope="col">Participant A</th><th scope="col">Participant B (optional)</th></tr></thead><tbody id="th-human-data"></tbody></table>
 <figure class="th-chart"><figcaption><strong>Human surface temperature by time</strong></figcaption><svg id="th-human-plot" viewBox="0 0 460 200" role="img" aria-label="Temperature over time; exact readings in the table"></svg><p>A: circle and solid line. B: square and dashed line. Blank readings are not plotted.</p></figure>

@@ -48,3 +48,7 @@
 .th-video iframe{width:100%;max-width:850px;aspect-ratio:16/9;display:block;border-radius:8px;background:#142a39}
 .th-video-help{font-size:.83rem}
 @media(max-width:580px){.th-bear-profiles{grid-template-columns:1fr}.th-bear-profiles figure{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:center}}
+
+.th-procedure{border-left:3px solid var(--accent);background:var(--surface-2);padding:.65rem .8rem;border-radius:0 8px 8px 0;margin:.75rem 0}
+.th-procedure ol{gap:.65rem;padding-left:1.35em}
+.th-procedure p:last-child{margin:.6rem 0 0;font-size:.91rem}

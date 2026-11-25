@@ -105,7 +105,7 @@
     }
   }
   function drawHuman(){
-    $('human-status').textContent=s.mode==='practice'?'Practice example · invented surface readings. Switch back to begin a blank class table.':'Class readings · enter temperatures in °C. No participant names are needed.';
+    $('human-status').textContent=s.mode==='practice'?'Practice example · invented surface readings. Switch back to begin a blank table.':'Your readings · enter temperatures in °C. No participant names are needed.';
     $('sample').disabled=s.mode==='practice';$('edit').disabled=s.mode==='class';
     $('human-data').replaceChildren(...times.map((t,i)=>{
       const row=node('tr'),head=node('th',String(t));head.scope='row';row.append(head);
@@ -121,7 +121,7 @@
   }
   function chooseMode(mode){
     if(mode===s.mode)return;
-    if(s.mode==='class'&&s.hum.some(Boolean)&&!window.confirm('Replace your class readings with the practice example? Export a report first if you need your class data.'))return;
+    if(s.mode==='class'&&s.hum.some(Boolean)&&!window.confirm('Replace your readings with the practice example? Preview your report first if you need a copy.'))return;
     s.mode=mode;s.hum=mode==='practice'?times.flatMap((_,i)=>[String(sample[i]),String(sampleB[i])]):Array(10).fill('');
     drawHuman();save();
   }
@@ -159,7 +159,7 @@
     $('zones').append(b);
   }
   function recap(){
-    const rows=[['Field comparison','At the Barter Island site, 97 of 137 polar–brown encounters involved a nonaggressive grizzly approach and a polar bear giving way.'],['Treadmill comparison','At 1.1 m/s the bear took 0 breaks; at 2.2 m/s it took 24. One bear’s data cannot tell us why a wild bear leaves food.'],['Your human table',s.hum.some(Boolean)?(s.mode==='practice'?'Practice':'Class')+' surface data: '+times.map((t,i)=>s.hum[2*i]===''?'':t+' min: '+s.hum[2*i]+'°C (A)').filter(Boolean).join(' · '):'No readings saved yet.']];
+    const rows=[['Field comparison','At the Barter Island site, 97 of 137 polar–brown encounters involved a nonaggressive grizzly approach and a polar bear giving way.'],['Treadmill comparison','At 1.1 m/s the bear took 0 breaks; at 2.2 m/s it took 24. One bear’s data cannot tell us why a wild bear leaves food.'],['Your human table',s.hum.some(Boolean)?(s.mode==='practice'?'Practice':'Recorded')+' surface data: '+times.map((t,i)=>s.hum[2*i]===''?'':t+' min: '+s.hum[2*i]+'°C (A)').filter(Boolean).join(' · '):'No readings saved yet.']];
     $('recap').replaceChildren(node('h3','Evidence beside your explanation'),...rows.map(([k,v])=>{const p=node('p');p.append(node('strong',k+': '),v);return p;}));
   }
   function step(name,persist=true){
@@ -192,13 +192,13 @@
   if(!canSave())$('save').textContent='This browser could not open the saved notebook. You can still preview a report.';
   window.OpenSciEdSubmission?.mount({target:'#th-report',filename:'bear-thermoregulation',collect:()=>{
     const missing=fields.filter(k=>!s.fields[k]?.trim()).map(k=>qs[k]);
-    if(!s.hum.some(Boolean))missing.push('Enter class readings or load the practice example.');
+    if(!s.hum.some(Boolean))missing.push('Enter your readings or load the practice example.');
     if(Object.keys(s.sort).length<cards.length)missing.push('Place all six matter and energy cards.');
     return {title:'Bear Thermoregulation Lab',unit:'OpenSciEd B.5 · Lesson 2 companion',source:'Field: Miller, Wilder & Wilson (2015). Treadmill: OpenSciEd Lesson 2 / Best (1982), one polar bear. Human data are surface temperatures, not directly comparable to bear core temperatures.',
       status:!canSave()?'recovery':missing.length?'draft':'final',student:identity(),datasetId:'TH-'+s.id,missing,
       sections:[
         {title:'Field evidence and treadmill',items:[{type:'answer',prompt:qs.predict,value:s.fields.predict},{type:'answer',prompt:qs.field,value:s.fields.field},{type:'table',columns:['Speed (m/s)','Time on (min)','Time off (min)','Breaks'],rows:data.map(a=>a.map(String))},{type:'answer',prompt:qs.pattern,value:s.fields.pattern}]},
-        {title:s.mode==='practice'?'Practice human surface temperatures (invented)':'Class human surface temperatures',items:[{type:'table',columns:['Time (min)','A (°C)','B (°C)'],rows:times.map((t,i)=>[String(t),s.hum[i*2]||'—',s.hum[i*2+1]||'—'])},{type:'answer',prompt:qs.human,value:s.fields.human}]},
+        {title:s.mode==='practice'?'Practice human surface temperatures (invented)':'Recorded human surface temperatures',items:[{type:'table',columns:['Time (min)','A (°C)','B (°C)'],rows:times.map((t,i)=>[String(t),s.hum[i*2]||'—',s.hum[i*2+1]||'—'])},{type:'answer',prompt:qs.human,value:s.fields.human}]},
         {title:'Matter, energy and explanation',items:[{type:'answer',prompt:'Cards placed',value:Object.keys(s.sort).length+' of '+cards.length},{type:'answer',prompt:qs.explain,value:s.fields.explain}]}
       ]};
   }});
