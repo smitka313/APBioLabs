@@ -807,3 +807,8 @@ dialog[id^=rg-]::backdrop{background:#101b20a8}
   .rg-shell textarea:has(+.rg-print-answer){display:none}
   .rg-print-answer{display:block;white-space:pre-wrap;overflow-wrap:anywhere;color:#111;margin:4px 0 8px}
 }
+
+/* Grow student responses instead of scrolling their first line out of view. */
+.rg-panel textarea[data-rg-answer]{field-sizing:content;min-height:5em;line-height:1.5}
+
+#rg-prediction .btn--primary:disabled{background:var(--surface);color:var(--muted);border:1px solid var(--line);opacity:1}

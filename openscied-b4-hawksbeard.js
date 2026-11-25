@@ -39,13 +39,19 @@
   const setText = (selector, value) => { const target = $(selector); if (target) target.textContent = value; };
   const isOwn = (obj,key) => Object.prototype.hasOwnProperty.call(obj,key);
   const answerInputs = $$('[data-hb-answer]');
+  const denominatorPrompt='To find the nonfeathery share of city soil landings, which denominator should you use?';
+  const denominatorChoices={
+    all:'All seeds released in the city',
+    type:'Only nonfeathery seeds released in the city',
+    soil:'All seeds that landed on soil in the city'
+  };
   function newSeed() {
     try { return window.crypto.getRandomValues(new Uint32Array(1))[0]; }
     catch (_) { return (Date.now() ^ Math.floor(Math.random() * 4294967296)) >>> 0; }
   }
   const DETAIL_IDS=['hb-method','hb-published','hb-denominator-check'];
   const PERSON_LIMITS={name:100,period:24};
-  const fresh = () => ({v:1,seed:newSeed(),page:'predict',lastSection:'predict',lastVisitedAt:0,prediction:'',released:0,answers:{},person:{},disclosures:{}});
+  const fresh = () => ({v:1,seed:newSeed(),page:'predict',lastSection:'predict',lastVisitedAt:0,prediction:'',released:0,denominatorChoice:'',answers:{},person:{},disclosures:{}});
   const cleanField = (value,max) => value.trim().replace(/\s+/g,' ').slice(0,max);
   const datasetId = seed => 'HB-'+seed.toString(16).toUpperCase().padStart(8,'0');
   function restore(raw) {
@@ -66,7 +72,7 @@
     for (const id of DETAIL_IDS) {
       if (typeof s.disclosures?.[id]==='boolean') disclosures[id]=s.disclosures[id];
     }
-    return {...s,answers,person,disclosures,page:PAGES.includes(s.page) ? s.page : 'predict'};
+    return {...s,denominatorChoice:s.released===PAIRS&&isOwn(denominatorChoices,s.denominatorChoice)?s.denominatorChoice:'',answers,person,disclosures,page:PAGES.includes(s.page) ? s.page : 'predict'};
   }
   const scope='b4-hawksbeard', guard=window.OpenSciEdSaveSession;
   let session;
@@ -115,12 +121,16 @@
   const fraction = (n,d) => d ? n+' / '+d+' ('+percent(n,d)+')' : n+' / '+d+' (no denominator)';
   const records = (site, count = state.released) => trial[site].filter(r => r.plant <= count);
   const tally = (site, count = state.released) => L.summarize(records(site,count));
-  const ready = page => page === 'predict' || (page === 'release' ? !!state.prediction : state.released === PAIRS);
+  const ready = page => page === 'predict' || (page === 'release' ? !!state.prediction :
+    state.released === PAIRS && (page !== 'explain' || !!state.answers.reflection?.trim()));
+  const nextStepHint = () => !state.prediction ? 'Save a prediction first.' :
+    state.released < PAIRS ? 'Release all five matched plant pairs first.' :
+      'Write your comparison reflection before opening Explain.';
   function go(page,{focus=true,persist=true} = {}) {
     if (!PAGES.includes(page) || !ready(page)) {
-      if (focus) announce(!state.prediction ? 'Save a prediction first.' : 'Release all five matched plant pairs first.');
+      if (focus) announce(nextStepHint());
       if (focus) return false;
-      page = state.prediction ? 'release' : 'predict';
+      page = ready('compare') ? 'compare' : state.prediction ? 'release' : 'predict';
     }
     if (page!==state.page) announce('');
     state.page = page;
@@ -454,26 +464,27 @@
     const check=txt('details','','hb-denominator-check');check.id='hb-denominator-check';
     check.append(txt('summary','Quick check: Which total belongs on the bottom?'));
     const group=txt('fieldset','','hb-denominator-choices');
-    group.append(txt('legend','To find the nonfeathery share of city soil landings, which denominator should you use?'));
+    group.append(txt('legend',denominatorPrompt));
     const feedback=txt('p','','hb-denominator-feedback');
     feedback.hidden=true;
-    for (const [id,label] of [
-      ['all','All seeds released in the city'],
-      ['type','Only nonfeathery seeds released in the city'],
-      ['soil','All seeds that landed on soil in the city']
-    ]) {
+    function showAnswer(id,notify=false){
+      if (!isOwn(denominatorChoices,id)) return;
+      const base=id==='all' ? 'That total includes seeds that landed outside soil.' :
+        id==='type' ? 'That total would tell you the soil-landing rate for nonfeathery seeds.' : 'Right: compare seeds that landed on soil, not every seed released.';
+      feedback.hidden=false;
+      feedback.textContent=base+' Your city result is '+fraction(city.byType.nonfeathery.landed,city.landed)+' of the soil landings.';
+      if (notify) announce(feedback.textContent,{quiet:true});
+    }
+    for (const [id,label] of Object.entries(denominatorChoices)) {
       const option=txt('label',''), input=txt('input','');
-      input.type='radio';input.name='hb-denominator';input.value=id;
+      input.type='radio';input.name='hb-denominator';input.value=id;input.checked=id===state.denominatorChoice;
       option.append(input,txt('span',label));group.append(option);
       input.addEventListener('change',()=>{
-        const base=id==='all' ? 'That total includes seeds that landed outside soil.' :
-          id==='type' ? 'That total would tell you the soil-landing rate for nonfeathery seeds.' : 'Right: compare seeds that landed on soil, not every seed released.';
-        const suffix=' Your city result is '+fraction(city.byType.nonfeathery.landed,city.landed)+' of the soil landings.';
-        feedback.hidden=false;
-        feedback.textContent=base+suffix;
-        announce(feedback.textContent,{quiet:true});
+        state.denominatorChoice=id;
+        if(save())showAnswer(id,true);else showAnswer(id);
       });
     }
+    showAnswer(state.denominatorChoice);
     check.append(group,feedback);
     host.append(check);rememberDisclosure(check);
   }
@@ -521,6 +532,7 @@
     }
   }
   function gates() {
+    $('#hb-explain-hint').hidden=ready('explain');
     for (const b of $$('button[data-hb-go], a[data-hb-go], button[data-hb-page], a[data-hb-page]')) {
       const target=b.dataset.hbPage||b.dataset.hbGo;
       const ok=ready(target) && (!running || !['compare','explain'].includes(target));
@@ -613,7 +625,8 @@
     const sections=[
       {title:'Prediction and classroom responses',items:[
         {type:'answer',prompt:$('#hb-prediction legend')?.textContent?.trim()||'Prediction',value:choices[state.prediction]||''},
-        ...answerInputs.map(f=>({type:'answer',prompt:(f.labels?.[0]?.textContent||f.dataset.hbAnswer).trim(),value:state.answers[f.dataset.hbAnswer]||''}))
+        ...answerInputs.map(f=>({type:'answer',prompt:(f.labels?.[0]?.textContent||f.dataset.hbAnswer).trim(),value:state.answers[f.dataset.hbAnswer]||''})),
+        ...(state.denominatorChoice?[{type:'answer',prompt:denominatorPrompt,value:denominatorChoices[state.denominatorChoice]}]:[])
       ]},
       {title:'Model data · simulated',items:simulated}
     ];
@@ -651,6 +664,7 @@
     }
     if (state.released===PAIRS) lines.push('','PUBLISHED RESEARCH · NOT SIMULATED',research,researchScope,'Source (Cheptou et al., 2008): '+PAPER);
     lines.push('','MY RESPONSES');
+    if(state.denominatorChoice)lines.push(denominatorPrompt,denominatorChoices[state.denominatorChoice],'');
     for (const input of answerInputs){
       const id=input.dataset.hbAnswer;
       const title=(input.labels?.[0]?.textContent || id).trim();
@@ -705,7 +719,7 @@
 
   for (const b of $$('button[data-hb-go], a[data-hb-go], button[data-hb-page], a[data-hb-page]')) b.addEventListener('click', event=>{
     event.preventDefault();
-    if (b.getAttribute('aria-disabled')==='true') {announce(!state.prediction?'Save a prediction before releasing seeds.':'Release all five matched plant pairs first.');return;}
+    if (b.getAttribute('aria-disabled')==='true') {announce(nextStepHint());return;}
     go(b.dataset.hbPage||b.dataset.hbGo);
   });
   $('#hb-prediction')?.addEventListener('change',updatePredictionButton);
@@ -717,9 +731,12 @@
     state.prediction=choice;render();go('release');
     if (!blocked&&!preserved) announce('Prediction saved. Release your first matched pair when ready.');
   });
-  for (const f of answerInputs) f.addEventListener('input',()=>{
-    state.answers[f.dataset.hbAnswer]=f.value.slice(0,8000);renderCompletion();save();
-  });
+  for (const f of answerInputs) {
+    f.addEventListener('input',()=>{
+      state.answers[f.dataset.hbAnswer]=f.value.slice(0,8000);renderCompletion();gates();save();
+    });
+    f.addEventListener('blur',()=>{f.scrollTop=0;});
+  }
   for (const [field,max] of Object.entries(PERSON_LIMITS)) {
     const input=$('#hb-'+field);
     input?.addEventListener('input',()=>{state.person[field]=cleanField(input.value,max);save();});

@@ -574,8 +574,9 @@ async function denominatorCheck(page) {
       'denominator check explains selecting ' + value);
     if(value==='rats'){
       check((await save(page)).analysisAttempt==='rats' && (await save(page)).analysisChecked===false &&
-        await stepButton(page,'analyze').getAttribute('aria-description')==='Attempt saved',
-        'the wrong answer counts as an attempt, not a correct answer');
+        await stepButton(page,'analyze').getAttribute('aria-description')!=='Complete'&&
+        await stepButton(page,'explain').isDisabled(),
+        'the wrong answer is saved as an attempt without completing Analyze or unlocking Explain');
       await page.reload();
       await feedback.waitFor({state:'visible'});
       check(await choice.isChecked() && expected.test(await feedback.textContent()),
@@ -639,6 +640,7 @@ async function play(browser, base, cfg) {
     await screenshot(page, label + '-prediction');
     if (cfg.touch) await axe(page, '#rg-predict', label + ' prediction');
 
+    check(await page.locator('#rg-prediction button[type="submit"]').isDisabled(),label+' the prediction action starts disabled');
     const vote = page.locator('#rg-prediction input[value="increase"]');
     if (cfg.touch) await vote.locator('xpath=ancestor::label[1]').tap();
     else {
@@ -757,7 +759,11 @@ async function play(browser, base, cfg) {
     if (cfg.width === 1366) {
       await axe(page, '#rg-analyze', label + ' analysis');
       await denominatorCheck(page);
+    } else {
+      await page.locator('#rg-check input[value="alleles"]').check();
+      await page.locator('#rg-check button[type="submit"]').click();
     }
+    check(await stepButton(page,'explain').isEnabled(),label+' the correct denominator unlocks Explain');
 
     await enterStage(page, 'explain', cfg);
     check(await page.locator('#rg-evidence-summary').isVisible(),

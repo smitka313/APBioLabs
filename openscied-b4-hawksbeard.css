@@ -153,3 +153,6 @@ dialog[id^="hb-"] p{margin:6px 0}
  .hb-panel .hb-data-table :is(th,td){padding:4px 3px}
 }
 .hb-comparison-limit{font-size:.84rem;line-height:1.35}
+
+/* Grow student responses instead of scrolling their first line out of view. */
+.hb-answer-panel textarea[data-hb-answer]{field-sizing:content;min-height:5em;line-height:1.5}

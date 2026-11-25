@@ -35,7 +35,7 @@
     if(!raw||typeof raw!=='object'||Array.isArray(raw))return s;
     s.site=Object.hasOwn(sites,raw.site)?raw.site:s.site;
     s.group=Object.hasOwn(context,raw.group)?raw.group:s.group;
-    if(!uint(raw.seed)||!uint(raw.serial))return s;
+    if(!uint(raw.seed)||!Number.isInteger(raw.serial)||raw.serial<0||raw.serial>0xffffffff)return s;
     s.seed=raw.seed;s.serial=raw.serial;
     const seen=new Set();
     if(Array.isArray(raw.results))s.results=raw.results.slice(-60).flatMap(row=>{
@@ -48,6 +48,14 @@
       if(finished||a.step<endStep(s.seed,a.id,a.site,a.group,field))s.active={id:a.id,site:a.site,group:a.group,step:a.step,finished};
     }
     return s;
+  }
+  function cancel(s){
+    if(!s.active||s.active.finished)return false;
+    // An unfinished trial has no recorded distance. Release its provisional number
+    // without changing any completed trial ID or the seed used for its distance.
+    s.serial=s.results.at(-1)?.id??0;
+    s.active=null;
+    return true;
   }
   function report(s){
     if(!s?.results?.length)return [];
@@ -106,9 +114,8 @@
       save();show(false,true);approach.focus();
     });
     change.addEventListener('click',()=>{
-      if(!running())return;
-      sim.active=null;
-      save();show();say('Unfinished trial canceled. Choose a setup to try again. Your completed trials are still saved.');
+      if(!cancel(sim))return;
+      save();show();say('Unfinished trial canceled. Its number can be reused; completed trials are unchanged.');
       site.focus({preventScroll:true});
     });
     approach.addEventListener('click',()=>{
@@ -125,7 +132,7 @@
     if(sim.serial)details.open=true;
     show();
   }
-  const api={clean,threshold,endStep,distance,report,mount};
+  const api={clean,cancel,threshold,endStep,distance,report,mount};
   if(typeof module==='object'&&module.exports)module.exports=api;
   if(root)root.JuncoFlight=api;
 })(typeof window==='object'?window:null);

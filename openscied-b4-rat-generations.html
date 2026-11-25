@@ -68,7 +68,7 @@
         </fieldset>
         <label for="rg-reason">Why? <span class="rg-muted">(optional)</span></label>
         <textarea id="rg-reason" rows="2" maxlength="2400" data-rg-answer="reason"></textarea>
-        <div class="rg-actions"><button class="btn btn--primary" type="submit">Save prediction and start</button><button class="btn" type="button" data-rg-go="model" id="rg-return-model" hidden>Back to your model</button></div><p class="rg-muted" id="rg-prediction-lock" hidden>Your starting prediction is kept with this trial. Use Explain to say what the results showed.</p>
+        <div class="rg-actions"><button class="btn btn--primary" type="submit" aria-describedby="rg-prediction-hint" disabled>Save prediction and start</button><button class="btn" type="button" data-rg-go="model" id="rg-return-model" hidden>Back to your model</button></div><p class="rg-muted" id="rg-prediction-hint">Choose a prediction to enable Save prediction and start.</p><p class="rg-muted" id="rg-prediction-lock" hidden>Your starting prediction is kept with this trial. Use Explain to say what the results showed.</p>
       </form>
     </div>
   </section>
@@ -103,12 +103,12 @@
     </div>
   </section>
   <section id="rg-analyze" data-rg-step="analyze" aria-labelledby="rg-analyze-title" hidden>
-    <div class="rg-stage"><div><p class="eyebrow">03 · Read the data</p><h2 id="rg-analyze-title" tabindex="-1">Three ways to describe a colony</h2></div><button type="button" class="btn btn--primary" data-rg-go="explain">Go to Explain</button></div>
+    <div class="rg-stage"><div><p class="eyebrow">03 · Read the data</p><h2 id="rg-analyze-title" tabindex="-1">Three ways to describe a colony</h2></div><button type="button" class="btn btn--primary" data-rg-go="explain" aria-describedby="rg-step-hint" disabled>Go to Explain</button></div>
     <div class="rg-columns rg-analysis-grid">
       <div class="rg-panel">
         <h3>Plot your trial</h3>
         <div class="rg-metrics" id="rg-metrics" aria-label="Measure to plot"></div><div id="rg-chart"></div>
-        <p class="rg-muted">Survivors and starting counts are separate snapshots. A trait percentage can go up even when the colony gets smaller. Pairings vary by trial, but the model uses expected offspring counts rather than chance inheritance in each pup. Real colonies can change by chance as well as by selection.</p>
+        <p class="rg-muted">Survivors and starting counts are separate snapshots. A trait percentage can go up even when the colony gets smaller. Pairings vary by trial, but the model uses expected offspring counts rather than chance inheritance in each pup. Real litters can differ from those expected shares by chance. A real colony need not show the same jump in R frequency, even under similar selection pressure.</p>
       </div>
       <div class="rg-panel">
         <h3>Your generation record</h3><div id="rg-analysis-table"></div>
@@ -126,7 +126,7 @@
         <label class="rg-choice"><input type="radio" name="rg-concept" value="rats"><span>Number of rats in that snapshot</span></label>
         <label class="rg-choice"><input type="radio" name="rg-concept" value="alleles"><span>Number of allele copies in that snapshot</span></label>
         <label class="rg-choice"><input type="radio" name="rg-concept" value="r"><span>Number of R copies in that snapshot</span></label>
-      </fieldset><button class="btn" type="submit">Check answer</button><p id="rg-check-feedback"></p><p class="rg-muted">Checking an answer records your attempt. Use the feedback to revise it if needed.</p></form>
+      </fieldset><button class="btn" type="submit">Check answer</button><p id="rg-check-feedback"></p><p class="rg-muted">Use the feedback to revise your choice as needed. A correct check unlocks Explain.</p></form>
     </div>
   </section>
   <section id="rg-explain" data-rg-step="explain" aria-labelledby="rg-explain-title" hidden>
@@ -156,7 +156,7 @@
   <div class="rg-footer"><p id="rg-save">Your progress stays in this browser. Preview your report to keep a classroom copy.</p><button type="button" class="btn btn--ghost" id="rg-reset">Start a new trial…</button></div>
   <p id="rg-status" role="status" aria-live="polite" aria-atomic="true"></p>
   <details class="rg-details rg-method"><summary>What the model does and does not show</summary>
-    <p>This is a classroom simulation, not a pest-control investigation. It models two alleles, one simplified trait, fixed expected offspring counts, and nonoverlapping generations. During the selection steps, RR and RB survive and BB does not. Rats do not acquire R because they need it; offspring can inherit it from parents. No rat population measurements come from this simulation.</p>
+    <p>This is a classroom simulation, not a pest-control investigation. It models two alleles, one simplified trait, fixed expected offspring counts, and nonoverlapping generations. In this model, warfarin selection starts after Generation 3 births so you can compare generations before and after a change. Nothing special happens biologically at Generation 3. During the selection steps, RR and RB survive and BB does not. Rats do not acquire R because they need it; offspring can inherit it from parents. No rat population measurements come from this simulation.</p>
   </details>
   <div id="rg-submission-report"></div>
 </main>

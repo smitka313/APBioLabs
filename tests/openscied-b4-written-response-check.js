@@ -20,6 +20,9 @@ async function verifyLongResponse(page, field, { name, touch, screenshot }) {
   await field.fill(response);
   assert.equal(await field.inputValue(), response, 'the complete multiline answer remains editable');
 
+  assert.ok(await field.evaluate(el=>el.scrollHeight<=el.clientHeight+1),
+    'the multiline response expands its field instead of hiding early lines in an inner scrollbox');
+
   // Navigate from the end to the first line with the keyboard. It should be fully inside the
   // viewport of the textbox, rather than opening with a truncated first line.
   await field.press('Control+End');

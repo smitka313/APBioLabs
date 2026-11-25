@@ -149,3 +149,6 @@
   .ju-shell textarea:has(+.ju-print-answer){display:none}
   .ju-print-answer{display:block;white-space:pre-wrap;overflow-wrap:anywhere;color:#111;margin:4px 0 8px}
 }
+
+/* Grow student responses instead of scrolling their first line out of view. */
+.ju-clipboard textarea{field-sizing:content;min-height:5em;line-height:1.5}

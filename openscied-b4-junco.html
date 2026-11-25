@@ -39,15 +39,15 @@
   <aside id="ju-save-warning" class="ju-sheet" aria-label="Saving notice" hidden><p id="ju-save-warning-text"></p><button class="btn" id="ju-download-tab" type="button">Download the work in this tab</button></aside>
   <div class="ju-top"><a href="openscied-dashboard.html#unit4">← Biology Companion Activities</a><span data-ph="theme"></span></div>
   <header class="ju-hero">
-    <div><p class="ju-kicker">FIELD NOTEBOOK <span> · </span> B.4 / 04</p><h1>Junco Investigation</h1><p class="ju-hero-lead">Why do city juncos act bolder?</p><p>Follow two populations from the field to a shared aviary, then look for a clue in their stress response.</p><p class="ju-chips"><span>Real research</span><span>25–35 min</span></p></div>
+    <div><p class="ju-kicker">FIELD NOTEBOOK <span> · </span> B.4 / 04</p><h1>Junco Investigation</h1><p class="ju-hero-lead">Why do city juncos act bolder?</p><p>Follow two populations from the field to a shared aviary, then look for a clue in their stress response.</p><p class="ju-chips"><span>Real research</span><span>25–35 min</span><span title="Identifies this saved notebook; the published study data are the same for every student.">Dataset <strong id="ju-dataset-id">—</strong></span></p></div>
     <figure class="ju-cover"><img src="assets/junco-preview.svg" width="960" height="600" alt=""><figcaption><span>UC San Diego</span><span>Mt. Laguna</span></figcaption></figure>
   </header>
   <nav class="ju-nav" aria-label="Investigation steps" aria-describedby="ju-step-hint">
     <button type="button" data-step="field" aria-current="step"><span aria-hidden="true">01</span> In the field</button>
-    <button type="button" data-step="aviary"><span aria-hidden="true">02</span> Shared aviary</button>
+    <button type="button" data-step="aviary" disabled><span aria-hidden="true">02</span> Shared aviary</button>
     <button type="button" data-step="cort" disabled><span aria-hidden="true">03</span> Hormone clue</button>
   </nav>
-  <p id="ju-step-hint" class="ose-step-hint">To unlock the hormone clue, save your prediction and reveal the shared-aviary results.</p>
+  <p id="ju-step-hint" class="ose-step-hint">Write a field observation to unlock the shared aviary.</p>
   <noscript><p>This activity requires JavaScript to draw graphs and save your notebook.</p></noscript>
 
   <section id="field" class="ju-stage" aria-labelledby="ju-field-title">
@@ -112,7 +112,7 @@
         <p>Researchers walked toward a bird and measured how far away they were when it flew off. A shorter distance means the bird let them come closer.</p>
         <label for="ju-field-entry">What pattern do you notice? Name both populations.</label>
         <textarea id="ju-field-entry" maxlength="900" rows="3"></textarea>
-        <button class="btn btn--primary ju-next" id="ju-to-aviary" type="button">Go to the shared aviary <span aria-hidden="true">→</span></button>
+        <button class="btn btn--primary ju-next" id="ju-to-aviary" type="button" aria-describedby="ju-step-hint" disabled>Go to the shared aviary <span aria-hidden="true">→</span></button>
       </aside>
     </div>
   </section>
@@ -297,7 +297,7 @@
           </dl>
           <p class="ju-dot-example"><strong>Try one dot:</strong> Find the far-right dot, at about <strong>38.4 ng/mL</strong> and <strong>−0.8</strong>. Those are one bird’s maximum CORT and exploration score. The coordinates are estimated, and the graph doesn’t identify its population.</p>
         </section>
-        <p class="ju-chart-note">Look at the dots before turning on the best-fit line. A correlation is a pattern between two measurements, not proof that one causes the other.</p>
+        <p class="ju-chart-note">Look at the dots before turning on the best-fit line. A correlation is a pattern between two measurements, not proof that one causes the other. The published dots are not labeled by population. A difference between the groups could contribute to the overall pattern, even if it is weaker or absent within either group.</p>
         <div class="ju-tools" id="ju-cort-tools"><label for="ju-filter">Show <select id="ju-filter"><option value="all">Both populations</option><option value="urban">UC San Diego</option><option value="mountain">Mt. Laguna</option></select></label><label class="ju-fit" for="ju-fit"><input id="ju-fit" type="checkbox"> Show best-fit line</label></div>
         <div id="ju-chart" class="ju-plot"></div>
         <p id="ju-cort-status" class="ju-chart-note"></p>
