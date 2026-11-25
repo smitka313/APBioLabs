@@ -187,17 +187,15 @@ async function checkMixedVersionWorkspace(browser,site) {
           });
         }));
         assert.deepEqual(overflow,[],width+' px: visible descriptions, captions and actions fit within their cards');
-        assert.deepEqual(await p.locator('.dashboard-units h2[id^="unit"]').evaluateAll(e=>e.map(x=>x.id)),['unit1','unit2','unit3','unit4']);
-        const coming=p.locator('.dashboard-coming-soon');
-        assert.match(await coming.innerText(),/Unit 5.*No companion activities yet/);
-        assert.match(await coming.getByRole('link').getAttribute('href'),/^https:\/\/openscied\.org\/instructional-materials\/b-5-common-ancestry-speciation\/$/);
+        assert.deepEqual(await p.locator('.dashboard-units h2[id^="unit"]').evaluateAll(e=>e.map(x=>x.id)),['unit1','unit2','unit3','unit4','unit5']);
+        assert.equal(await p.locator('#wapusk-open').getAttribute('href'),'openscied-b5-wapusk.html');
         assert.equal(await p.locator('#hawksbeard-open').getAttribute('href'),'openscied-b4-hawksbeard.html');
         assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<= innerWidth + 1),true,'no page overflow');
         if (width <= 580) {
           const cards = p.locator('.dashboard-activity');
           assert.equal(await cards.locator('.dashboard-card-restart:visible').count(),0,'blank phone cards do not show inactive Restart');
           assert.equal(await cards.locator('.dashboard-activity-metric:visible, .dashboard-activity-progress:visible').count(),0,'blank phone cards do not show empty measures');
-          assert.equal(await cards.locator('.dashboard-open:visible').count(),18,'each blank phone card still has its Open activity action');
+          assert.equal(await cards.locator('.dashboard-open:visible').count(),19,'each blank phone card still has its Open activity action');
         }
         const saveImage=async label=>{if(screenshots) await p.screenshot({path:path.join(screenshots,width+'-'+label+'.png'),animations:'disabled'});};
         await saveImage('masthead');

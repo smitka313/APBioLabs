@@ -28,7 +28,8 @@
     { id: 'hawksbeard', name: 'Hawksbeard Wind Lab', file: 'openscied-b4-hawksbeard.html', key: PREFIX + 'b4-hawksbeard:v1', clears: 'seed releases, prediction, and written responses', progress: hawksbeardProgress, ids: hawksbeardResponseIds, answers: true },
     { id: 'rat-generations', name: 'Rat Generations', file: 'openscied-b4-rat-generations.html', key: PREFIX + 'b4-rat-generations:v1', clears: 'model generations, prediction, and written responses', progress: ratGenerationsProgress, ids: ratGenerationsResponseIds, answers: true },
     { id: 'junco', name: 'Junco Investigation', file: 'openscied-b4-junco.html', key: PREFIX + 'b4-junco:v1', clears: 'prediction, investigation progress, and written responses', progress: juncoProgress, ids: juncoResponseIds },
-    { id: 'wildlife-corridor', name: 'Wildlife Corridor Lab', file: 'openscied-b4-wildlife-corridor.html', key: PREFIX + 'b4-wildlife-corridor:v1', clears: 'prediction, crossing design, model runs, and written responses', progress: wildlifeCorridorProgress, ids: wildlifeCorridorResponseIds }
+    { id: 'wildlife-corridor', name: 'Wildlife Corridor Lab', file: 'openscied-b4-wildlife-corridor.html', key: PREFIX + 'b4-wildlife-corridor:v1', clears: 'prediction, crossing design, model runs, and written responses', progress: wildlifeCorridorProgress, ids: wildlifeCorridorResponseIds },
+    { id:'wapusk', name:'Three Bears in Wapusk', file: 'openscied-b5-wapusk.html', key:PREFIX + 'b5-wapusk:v1', clears:'evidence notebook and comparison answers', progress:wapuskProgress, ids:wapuskIds }
   ];
   const SECTIONS = ['overview', 'background', 'cell-game', 'growth-model', 'analyze', 'submit'];
   // Written-response fields. The activity saves the ids of every response field it has (saved.responseIds), so the
@@ -538,6 +539,17 @@
     const summary = saved.released + ' of 5 plant pairs released' + (answers ? ' · ' + answers + ' of ' + hawksbeardResponseIds().length + ' responses saved' : '');
     return { summary, started, section, visited, stepsDone:saved.released,stepsTotal:5,stepsLabel:'Plant pairs released' };
   }
+  function wapuskIds(){return ['observe','scales','regional','seasonal','persistent','question'];}
+  function wapuskProgress(raw){
+    const blank={summary:'Not started',started:false,section:'',visited:0};
+    let s;try{s=JSON.parse(raw);}catch(_){return blank;}
+    if(s?.v!==1||!/^[A-F0-9]{8}$/.test(s.id))return blank;
+    const n=wapuskIds().filter(id=>written(s.fields||{},id)).length;
+    const started=n>0||s.check==='place'||s.check==='meeting';
+    if(!started)return blank;
+    return {started,section:'',visited:Number(s.lastVisitedAt)||0,stepsDone:n,stepsTotal:6,stepsLabel:'Notebook responses saved',
+      summary:n===6&&s.finished===true?'Notebook complete':n+' of 6 notebook responses saved'};
+  }
   // Published, fixed denominators. A zero is meaningful even before a student starts.
   const STEP_SCALES = {
     migration:[12,'Months with saved observations'],carrying:[12,'Population model rounds'],
@@ -546,7 +558,7 @@
     'cell-cycle':[2,'Cell game rounds completed'],'dna-workshop':[6,'Workshop practices completed'],
     'dna-p53':[2,'Interactive models used'],'inh-env':[6,'Interactive models used'],
     hawksbeard:[5,'Plant pairs released'],'rat-generations':[4,'Investigation parts completed'],junco:[3,'Investigation steps completed'],
-    'wildlife-corridor':[4,'Investigation steps completed']
+    'wildlife-corridor':[4,'Investigation steps completed'],wapusk:[6,'Notebook responses saved']
   };
   function init() {
     $('[data-ph="dashboard-identity"]')?.remove();

@@ -17,7 +17,7 @@ const CORRIDOR_PREVIEW='assets/openscied-wildlife-corridor-preview.svg';
   // order in the script registry matches the page
   const js = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.js'), 'utf8');
   const files = [...js.matchAll(/file: '([^']+)'/g)].map(m => m[1]);
-  T.ok(JSON.stringify(files) === JSON.stringify(UNIT1.concat(UNIT2,UNIT3,UNIT4)), 'openscied-dashboard.js lists activities in page order through Unit 4');
+  T.ok(JSON.stringify(files) === JSON.stringify(UNIT1.concat(UNIT2,UNIT3,UNIT4,['openscied-b5-wapusk.html'])), 'openscied-dashboard.js lists activities in page order through Unit 5');
   const b = await T.launch(), srv = await T.serve();
   try {
     for (const width of [375, 768, 1366, 1920]) {
@@ -27,7 +27,7 @@ const CORRIDOR_PREVIEW='assets/openscied-wildlife-corridor-preview.svg';
       await p.goto(srv.url + 'openscied-dashboard.html'); await p.waitForSelector('#b2-burn-progress'); await p.waitForTimeout(600);
       const hrefs = sel => p.$$eval(sel + ' .dashboard-preview', as => as.map(a => a.getAttribute('href')));
       const units = await p.$$eval('.dashboard-units > section.dashboard-unit.current', sections=>sections.map(s=>s.getAttribute('aria-labelledby')));
-      T.ok(JSON.stringify(units) === JSON.stringify(['unit1','unit2','unit3','unit4']), width + ' px: all published units appear in curriculum order');
+      T.ok(JSON.stringify(units) === JSON.stringify(['unit1','unit2','unit3','unit4','unit5']), width + ' px: all published units appear in curriculum order');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit1"]')) === JSON.stringify(UNIT1), width + ' px: first unit links to Migration Explorer, Carrying Capacity Lab, Serengeti Board Game, and Ripple Effects');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit2"]')) === JSON.stringify(UNIT2), width + ' px: Unit 2 cards are Burning Fuels, Fires, Peat Bog Carbon Lab, Carbon Atom Journey');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit3"]')) === JSON.stringify(UNIT3), width + ' px: Unit 3 starts with the data dive, and DNA Workshop immediately precedes DNA Copying and p53');
@@ -79,11 +79,11 @@ const CORRIDOR_PREVIEW='assets/openscied-wildlife-corridor-preview.svg';
         };
       }));
       const svgCards = m.filter(x=>x.svg);
-      T.ok(m.length === 18 && svgCards.length === 7 && m.filter(x=>x.img).length === 11, width + ' px: eighteen cards: seven inline illustrations and eleven linked SVG illustrations');
+      T.ok(m.length === 19 && svgCards.length === 7 && m.filter(x=>x.img).length === 12, width + ' px: nineteen cards: seven inline illustrations and twelve linked SVG illustrations');
       T.ok(svgCards.every(x => x.hidden === 'true' && !x.role), width + ' px: inline SVGs stay decorative (aria-hidden, no role)');
       const actionCounts = await Promise.all((await p.locator('.dashboard-activity').all()).map(card => card.getByRole('link').count()));
       T.ok(m.every(x => x.previewHidden && /^Open activity: .+/.test(x.label)) &&
-        new Set(m.map(x => x.label)).size === 18 && actionCounts.every(n => n === 1),
+        new Set(m.map(x => x.label)).size === 19 && actionCounts.every(n => n === 1),
         width + ' px: pointer artwork remains linked without duplicating the one named keyboard action for each activity');
       T.ok(m.every(x=>!x.pill) && svgCards.every(x=>x.shapes>40), width + ' px: no pill inside any picture, and every SVG has real art');
       const first = m[0], poster = first?.img;

@@ -153,9 +153,9 @@ const serengetiSaved = JSON.stringify({v:1,game:{version:1,season:1,step:'hunt',
 test('Unit 1 precedes Units 2 and 3 with a linked original Serengeti illustration', () => {
   const page = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.html'), 'utf8');
   assert.deepEqual([...page.matchAll(/<section class="dashboard-unit current" aria-labelledby="(unit\d+)">/g)].map(m=>m[1]),
-    ['unit1','unit2','unit3','unit4']);
+    ['unit1','unit2','unit3','unit4','unit5']);
   assert.equal((page.match(/id="unit1"/g)||[]).length,1);
-  assert.match(page, /<p class="dashboard-coming-soon">[\s\S]*?No companion activities yet\.[\s\S]*?b-5-common-ancestry-speciation\//);
+  assert.match(page, /<h2 id="unit5"[\s\S]*?b-5-common-ancestry-speciation\/[\s\S]*?id="wapusk-open"/);
   const unit = page.split('<section class="dashboard-unit current" aria-labelledby="unit1">')[1].split('</section>')[0];
   assert.match(unit, /href="openscied-b1-serengeti\.html"[^>]*><img src="assets\/openscied-serengeti-preview\.svg" width="960" height="600"/);
   assert.match(unit, /id="serengeti-open"[^>]*href="openscied-b1-serengeti\.html"/);
@@ -228,7 +228,7 @@ test('dashboard loads the codon wheel first and counts a seeded long Workshop bo
   assert.equal(s.el('#dna-workshop-open').href, 'openscied-b3-dna-workshop.html#chain');
 });
 
-test('Unit 4 shows Hawksbeard, Rat Generations, then Junco, with a real curriculum link for unpublished Unit 5', () => {
+test('Unit 4 shows Hawksbeard, Rat Generations, then Junco, with a real curriculum link for Unit 5', () => {
   const page = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.html'), 'utf8');
   const heading = '<section class="dashboard-unit current" aria-labelledby="unit4">';
   const unit = page.split(heading)[1]?.split('</section>')[0] || '';
@@ -245,8 +245,8 @@ test('Unit 4 shows Hawksbeard, Rat Generations, then Junco, with a real curricul
   assert.match(unit, /href="openscied-b4-wildlife-corridor\.html"[^>]*><img src="assets\/openscied-wildlife-corridor-preview\.svg" width="960" height="600"/);
   assert.match(unit, /id="wildlife-corridor-open"[^>]*href="openscied-b4-wildlife-corridor\.html"/);
   assert.ok(unit.indexOf('id="junco-open"') < unit.indexOf('id="wildlife-corridor-open"'));
-  assert.match(page, /<p class="dashboard-coming-soon">[\s\S]*?No companion activities yet\.[\s\S]*?b-5-common-ancestry-speciation\//);
-  assert.doesNotMatch(page, /<details class="dashboard-coming-soon">|aria-labelledby="unit5"/);
+  assert.match(page, /<h2 id="unit5"[\s\S]*?b-5-common-ancestry-speciation\/[\s\S]*?id="wapusk-open"/);
+  assert.doesNotMatch(page, /<details class="dashboard-coming-soon">/);
 });
 
 test('Wildlife Corridor tracks real work, resumes without a hash, and preserves both raw and readable work in scoped backups', async () => {
@@ -846,12 +846,12 @@ test('backup reports both outcomes inside the clear dialog without erasing anyth
   assert.deepEqual({ ...s.data }, before);
 });
 
-test('student gets four direct unit jumps, one named card link, and no live-region chatter by card', () => {
+test('student gets five direct unit jumps, one named card link, and no live-region chatter by card', () => {
   const html = fs.readFileSync(path.join(__dirname,'../openscied-dashboard.html'),'utf8');
   const units = html.match(/<nav class="dashboard-unit-jumps"[^>]*>([\s\S]*?)<\/nav>/)?.[1] || '';
-  assert.deepEqual([...units.matchAll(/href="#(unit[1-4])"/g)].map(m => m[1]), ['unit1','unit2','unit3','unit4']);
+  assert.deepEqual([...units.matchAll(/href="#(unit[1-5])"/g)].map(m => m[1]), ['unit1','unit2','unit3','unit4','unit5']);
   const cards = [...html.matchAll(/<article class="dashboard-activity">([\s\S]*?)<\/article>/g)].map(m=>m[1]);
-  assert.equal(cards.length, 18);
+  assert.equal(cards.length, 19);
   const names = cards.map(card => {
     const image = card.match(/<a class="dashboard-preview"[^>]*>/)?.[0];
     assert.match(image || '', /tabindex="-1"/);
@@ -877,4 +877,14 @@ test('Rat Analyze progress includes a valid attempt without requiring the right 
   const s = setup(false, { [key]: JSON.stringify({v:1, seed:5, prediction:'same', action:6, step:'analyze', analysisAttempt:'rats', analysisChecked:false}) });
   const meter = s.created.find(e => e.tag==='progress' && e.attrs['aria-label']?.includes('Rat Generations'));
   assert.equal(meter.value, 3);
+});
+
+test('Wapusk tracks meaningful evidence, not tab browsing, and links Unit 5 independently',()=>{
+  const key='aplab:openscied:b5-wapusk:v1';
+  const base={v:1,id:'12345678',fields:{},step:'regions'};
+  const empty=setup(false,{[key]:JSON.stringify(base)});
+  assert.equal(empty.el('#wapusk-progress').textContent,'Not started');
+  const started=setup(false,{[key]:JSON.stringify({...base,fields:{observe:'Different seasons show different places.'}})});
+  assert.equal(started.el('#wapusk-progress').textContent,'1 of 6 notebook responses saved');
+  assert.equal(started.el('#wapusk-open').href,'openscied-b5-wapusk.html');
 });
