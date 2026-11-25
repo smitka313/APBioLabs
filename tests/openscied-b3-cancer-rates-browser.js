@@ -633,6 +633,25 @@ async function report(page, size, pair, michigan) {
   const wordSource=await dialog.locator('article').innerText();
   check(['Exhibit D','Exhibit E','It generally goes down.','Less common in neighborhoods with persistent poverty.','29.3%','12.6%','46.6%','58.2%'].every(x=>wordSource.includes(x)),
     'the same exhibits and exact selected answers appear in the Word report preview');
+  // Exercise the application print lifecycle without opening the operating-system dialog.
+  const beforePrint = await page.evaluate(key => localStorage.getItem(key), SAVE);
+  await page.evaluate(() => {
+    window.__auditPrintCount=0;
+    window.print=()=>{
+      window.__auditPrintCount++;
+      window.dispatchEvent(new Event('beforeprint'));
+      window.dispatchEvent(new Event('afterprint'));
+    };
+  });
+  await invoke(dialog.getByRole('button',{name:'Print or save as PDF',exact:true}),size);
+  check(await page.evaluate(()=>window.__auditPrintCount)===1,'completed Cancer Rates report invokes the print lifecycle');
+  check(await page.evaluate(key=>localStorage.getItem(key),SAVE)===beforePrint,'print lifecycle does not alter the completed activity record');
+  await invoke(dialog.getByRole('button',{name:'Close report',exact:true}),size);
+  await page.reload();
+  await visible(page,'explain');
+  check((await record(page))?.completed===true,'completed work survives reopening after print lifecycle');
+  await invoke(page.getByRole('button',{name:'Preview report',exact:true}),size);
+  check((await dialog.locator('article').innerText()).includes(CLAIM),'reopened report still has the saved claim');
   await invoke(dialog.getByRole('button',{name:'Close report',exact:true}),size);
   if (michigan) {
     check(michigan.names.every((name,i)=>file.includes(name)&&valueAppears(file,michigan.pair[i].lateRate)),
