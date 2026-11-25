@@ -95,6 +95,11 @@ const T=require('./_h'),assert=require('node:assert/strict'),fs=require('node:fs
     assert.equal(await p.evaluate(()=>document.documentElement.dataset.theme),theme.toLowerCase());
     const headerAppearance=p.locator('.bench-brandbar').getByRole('group',{name:'Color theme',exact:true});
     assert.equal(await headerAppearance.getByRole('button',{name:theme,exact:true}).getAttribute('aria-pressed'),'true');
+    if(width<=580){
+      const heights=await headerAppearance.getByRole('button').evaluateAll(buttons=>buttons.map(button=>button.getBoundingClientRect().height));
+      assert.equal(heights.length,3,'AP renders all three appearance choices');
+      assert(heights.every(height=>height>=44),`AP's phone theme buttons meet the 44px tap target: ${heights.join(', ')}`);
+    }
     const courseType=await p.locator('.bench-ap-hero h1').evaluate(el=>getComputedStyle(el).fontFamily);
     assert(await p.locator('.bench-brandbar .bench-route-nav [aria-current=page]').evaluate(el=>{
       const peer=el.parentElement.querySelector('a:not([aria-current])');
