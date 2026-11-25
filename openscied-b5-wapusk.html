@@ -34,6 +34,7 @@
 <nav class="wb-top" aria-label="Links"><a href="openscied-dashboard.html#unit5">← Unit 5 activities</a><a href="openscied-teacher-guide.html#guide-b5-wapusk">Teacher guide</a></nav>
 <header class="wb-hero"><p>Unit 5 · Lesson 1</p><h1>Three Bears in Wapusk</h1><p>What do changing habitats mean for Arctic bear populations?</p></header>
 <p>Wapusk National Park is on the traditional lands of the Cree and Métis. Use the evidence to build an initial idea, not a final answer.</p>
+<section class="wb-workspace" aria-label="Student workspace"><div id="wb-identity"></div><div><button type="button" class="btn" id="wb-reset" aria-haspopup="dialog" disabled>Start over…</button><p class="wb-small">Shared device? Choose Switch student if the name above isn’t yours.</p></div></section>
 <nav class="wb-tabs" aria-label="Investigation steps">
 <button class="btn" type="button" data-step="sightings">1. Sightings</button><button class="btn" type="button" data-step="scale">2. Changing habitats</button><button class="btn" type="button" data-step="regions">3. Ice regions</button><button class="btn" type="button" data-step="model">4. Initial models</button></nav>
 <p id="wb-status" role="status" aria-live="polite"></p>
@@ -51,7 +52,7 @@
 </div>
 <p class="wb-key">△ Polar bear · ◆ Brown bear (grizzly) · ⬟ Black bear · ↗ Movement evidence · ◎ Shared location · ? No reported sightings of other species. Markers summarize patterns, not counts or exact coordinates.</p>
 <div id="wb-evidence" class="wb-evidence" aria-live="polite"></div>
-<details class="wb-field-key">
+<details class="wb-field-key" data-keep-open="field-guide">
 <summary>Compare the three bear profiles</summary>
 <div class="wb-field-profiles">
 <figure><img src="assets/openscied-bear-profile-polar.svg" width="400" height="240" alt="" loading="lazy"><figcaption><strong>△ Polar bear</strong><span>Long neck and small, rounded ears</span></figcaption></figure>
@@ -60,7 +61,7 @@
 </div>
 <p class="wb-small">The drawings are not to scale. Brown and black bears can overlap in fur color. Look at their shapes instead. <a href="https://www.nps.gov/articles/bear-identification.htm">Bear identification (National Park Service)</a></p>
 </details>
-<details class="wb-source-document"><summary>Inspect the original Bear Sightings maps</summary>
+<details class="wb-source-document" data-keep-open="sightings-source"><summary>Inspect the original Bear Sightings maps</summary>
 <object data="https://openscied-uploads-production.s3.amazonaws.com/temp-materials-pdf/reference/B.5%20Lesson%201%20Reference%20Bear%20Sightings.pdf#view=FitH" type="application/pdf" aria-label="Original OpenSciEd Bear Sightings PDF: winter and summer maps"><p>Your browser cannot display the original PDF here.</p></object>
 <p class="wb-small">OpenSciEd <em>Bear Sightings</em> (CC BY-NC 4.0). <a href="https://openscied-uploads-production.s3.amazonaws.com/temp-materials-pdf/reference/B.5%20Lesson%201%20Reference%20Bear%20Sightings.pdf">Open the original PDF</a> if it doesn’t display above.</p>
 </details>
@@ -75,11 +76,27 @@
 <div id="wb-scale-tabs" class="wb-controls" role="group" aria-label="Data sources">
 <button class="btn" type="button" data-figure="0">Canada temperatures</button><button class="btn" type="button" data-figure="1">Hudson Bay ice breakup</button><button class="btn" type="button" data-figure="2">Arctic ice minimum</button><button class="btn" type="button" data-figure="3">Tundra changes</button>
 </div>
-<figure class="wb-source-figure"><img id="wb-scale-image" src="assets/wapusk-scale-1.webp" width="1050" height="788" alt=""><figcaption id="wb-scale-caption"></figcaption><button class="btn" type="button" id="wb-enlarge-scale">Enlarge this visual</button></figure>
+<figure class="wb-source-figure" id="wb-static-scale"><img id="wb-scale-image" src="assets/wapusk-scale-1.webp" width="1050" height="788" alt=""><figcaption id="wb-scale-caption"></figcaption><button class="btn" type="button" id="wb-enlarge-scale">Enlarge this visual</button></figure>
+<section id="wb-sea-ice" class="wb-evidence wb-sea-ice" aria-labelledby="wb-ice-title" hidden>
+<h3 id="wb-ice-title">Arctic annual minimum sea-ice extent, 1987–2023</h3>
+<p id="wb-ice-explainer">Each point is the lowest five-day average of the year. Extent counts ocean grid cells with at least 15% ice cover. The satellite record began earlier, but this series starts in 1987, when daily readings became available.</p>
+<svg id="wb-ice-plot" viewBox="0 0 660 320" role="img" aria-labelledby="wb-ice-title wb-ice-explainer"></svg>
+<div class="wb-ice-controls"><label for="wb-ice-year">Inspect a year</label><input id="wb-ice-year" type="range" min="1987" max="2023" step="1" value="2023"><div class="wb-controls"><button class="btn" type="button" data-ice-year="2012">2012 record low</button><button class="btn" type="button" data-ice-year="2023">2023 comparison</button></div><output id="wb-ice-value" for="wb-ice-year"></output></div>
+<details data-keep-open="ice-table"><summary>See the exact data by year</summary><table class="wb-table"><caption>Annual minimum extent (million km²)</caption><thead><tr><th scope="col">Year</th><th scope="col">Date</th><th scope="col">Extent</th></tr></thead><tbody id="wb-ice-data"></tbody></table></details>
+<p class="wb-small">Source: <a href="https://doi.org/10.7265/a98x-0f50">NSIDC Sea Ice Index v4</a>, <a href="https://environmentdashboard.org/data/sea-ice-extent/nsidc/arctic-minimum-5day">annual five-day minima calculated from the NSIDC data</a>. <a href="https://nsidc.org/sea-ice-today/analyses/2025-arctic-sea-ice-minimum-squeezes-ten-lowest-minimums">NSIDC’s finalized 2023 value is 4.26 million km²</a>, about 4.3 million km².</p>
+</section>
 <p id="wb-scale-prompt" class="wb-evidence" aria-live="polite"></p>
 <div class="wb-video wb-nasa" id="wb-nasa" hidden><div class="wb-video-prompt">
+<p class="wb-video-note">Optional NASA animation, 1979–2022: it shows ice <strong>area</strong>, not the <strong>extent</strong> plotted above. Area counts only the ice-covered share of each cell.</p>
 <button type="button" class="btn btn--primary" data-video="AuwOwqzT6rk" data-video-title="NASA Annual Arctic Sea Ice Minimum Area, 1979–2022">▶ Play NASA sea ice animation</button><a href="https://svs.gsfc.nasa.gov/5036">NASA source and accessible downloads</a></div></div>
 <p class="wb-small">Figures reproduced from <a href="https://docs.google.com/presentation/d/1wHEX1sNfDngbJlbskzARuxWEBtMixvKKF6ImSaKjx6w/edit">OpenSciEd Lesson 1 Data Exploration</a> (CC BY-NC 4.0). Original figure credits remain on the slides.</p>
+<form id="wb-scale-check"><fieldset><legend>Which statements match the evidence to the right scale?</legend>
+<p>Select all that fit.</p>
+<label><input type="checkbox" name="scale-match" value="canada"> The Canada temperature record compares years across a whole country.</label>
+<label><input type="checkbox" name="scale-match" value="bay"> The breakup record tracks dates in Western Hudson Bay across years.</label>
+<label><input type="checkbox" name="scale-match" value="arctic"> The minimum-extent chart compares the Arctic Ocean and surrounding seas across years.</label>
+<label><input type="checkbox" name="scale-match" value="camp"> The Arctic chart tells us the exact date when three bears met at Owl River.</label>
+<button class="btn" type="submit">Check the scales</button><p id="wb-scale-feedback" role="status"></p></fieldset></form>
 <label for="wb-scales">Record one pattern. State the place and time scale and name the evidence.</label><textarea id="wb-scales" data-field="scales" rows="3" maxlength="1600"></textarea>
 <button type="button" class="btn btn--primary" data-step="regions">Next: Ice regions</button>
 </section>
@@ -100,8 +117,13 @@
 <div class="wb-models"><div class="wb-model-card wb-model-seasonal"><p class="wb-kicker">Model A</p><label for="wb-seasonal">Seasonally available ice: What might happen to bear populations, and why?</label><textarea id="wb-seasonal" data-field="seasonal" rows="4" maxlength="1600"></textarea></div><div class="wb-model-card wb-model-persistent"><p class="wb-kicker">Model B</p><label for="wb-persistent">Ice usually persists through summer: What might happen, and why?</label><textarea id="wb-persistent" data-field="persistent" rows="4" maxlength="1600"></textarea></div></div>
 <label for="wb-question">What question will you bring to your class Driving Question Board?</label><textarea id="wb-question" data-field="question" rows="2" maxlength="1600"></textarea>
 <button class="btn btn--primary" type="button" id="wb-finish">Finish evidence notebook</button><div data-ose-report-final></div>
+<details class="wb-evidence" data-keep-open="exports"><summary>Other report formats: HTML or JSON</summary><p>Both files contain only this activity and include the name and period shown above. The HTML file opens without an internet connection.</p><div class="wb-controls"><button type="button" class="btn" id="wb-save-html">Download report HTML</button><button type="button" class="btn" id="wb-save-json">Download this activity’s JSON</button></div><p id="wb-export-status" role="status"></p></details>
 </section>
 <dialog id="wb-visual-dialog" aria-labelledby="wb-visual-title"><h2 id="wb-visual-title">Evidence visual</h2><figure class="wb-source-figure"><img id="wb-visual-image" alt=""><figcaption id="wb-visual-caption"></figcaption></figure><form method="dialog"><button class="btn" autofocus>Close visual</button></form></dialog>
-<div id="wb-report"></div>
+<dialog id="wb-reset-dialog" aria-labelledby="wb-reset-title"><form id="wb-reset-form">
+<h2 id="wb-reset-title">Start over in Wapusk?</h2><p>This clears only this activity’s work. Other activities and your saved name stay unchanged. Use Switch student above if someone else will use this device.</p>
+<label for="wb-reset-confirm">Type ERASE to confirm</label><input id="wb-reset-confirm" autocomplete="off" spellcheck="false" autofocus>
+<p id="wb-reset-error" role="status"></p><div class="wb-controls"><button type="button" class="btn" id="wb-keep">Keep working</button><button type="submit" class="btn btn--danger" id="wb-clear" disabled>Erase this activity</button></div>
+</form></dialog><div id="wb-report"></div>
 <footer><p>Progress stays in this browser unless you export a report. Original companion by Robert Smitka, <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>. Based on <a href="https://openscied.org/instructional-materials/b-5-common-ancestry-speciation/">OpenSciEd B.5 Lesson 1</a> and its public <a href="https://openscied-uploads-production.s3.amazonaws.com/G9_UBC/lowres/B.5%20Teacher%20Edition.pdf">Teacher Edition</a> (<a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>). Not affiliated with or endorsed by OpenSciEd.</p></footer>
 </main><script src="lab.js"></script><script src="openscied-save-session.js"></script><script src="openscied-submission-report.js"></script><script src="openscied-b5-wapusk.js"></script><script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script></body></html>
