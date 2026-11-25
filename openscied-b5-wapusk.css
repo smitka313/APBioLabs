@@ -1,0 +1,46 @@
+.wb-shell{width:min(1050px,calc(100% - 28px));margin:0 auto 2rem;color:var(--ink)}
+.wb-top,.wb-tabs,.wb-controls{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:.65rem 0}.wb-top{justify-content:space-between}
+.wb-hero{min-height:clamp(180px,29vw,326px);display:flex;flex-direction:column;justify-content:center;padding:clamp(1rem,4vw,2.8rem);border-radius:16px;color:#fcf5df;background:linear-gradient(90deg,#102e44f7,#17364ae0 43%,#15334421 100%),url("assets/openscied-wapusk.svg") center 64%/cover}
+.wb-hero h1{color:inherit;font-size:clamp(2rem,6vw,4rem);line-height:1.04;margin:.2rem 0}.wb-hero p{margin:.3rem 0;max-width:32ch}
+.wb-panel,.wb-cards article,.wb-evidence{padding:clamp(.7rem,2vw,1.2rem);background:var(--surface);border:1px solid var(--line);border-radius:12px;min-width:0}.wb-panel h2,.wb-panel h3{margin-top:0}.wb-panel h2{font-size:clamp(1.45rem,4vw,2rem)}
+.wb-tabs [aria-current],.wb-controls [aria-pressed=true],.wb-marker[aria-pressed=true]{outline:2px solid var(--accent);outline-offset:2px}
+.wb-map{position:relative;width:100%;max-width:100%;aspect-ratio:17/9;min-height:250px;border-radius:12px;overflow:hidden;isolation:isolate}.wb-map svg{position:absolute;inset:0;width:100%;height:100%}.wb-map[data-season=summer] .wb-ice{display:none}
+.wb-place,.wb-marker{position:absolute;transform:translate(-50%,-50%);left:var(--x);top:var(--y)}
+.wb-place{color:#172f37;background:#fbf5da;padding:.18rem .38rem;border-radius:4px;font-size:clamp(.68rem,2vw,.91rem);font-weight:750;white-space:nowrap;pointer-events:none}
+.wb-wood{--x:20%;--y:84%}.wb-tundra{--x:23%;--y:13%}.wb-bay{--x:81%;--y:84%}
+.wb-marker{width:44px;height:44px;border:2px solid #f8e6a9;border-radius:50%;font-size:1.15rem;font-weight:800;background:#153744;color:#fff2cb;cursor:pointer}.wb-marker:focus-visible,.wb-marker[aria-pressed=true]{outline-color:#fff1ae}
+.wb-key,#wb-status,.wb-shell footer,.wb-small{font-size:.91rem}.wb-evidence{background:var(--surface-2);margin:.6rem 0;overflow-wrap:anywhere}.wb-evidence p:last-child{margin-bottom:0}
+.wb-shell label{display:block;margin:.55rem 0 .25rem;font-weight:650}.wb-shell textarea{width:100%;box-sizing:border-box;min-height:68px;padding:.47rem;resize:vertical;background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:6px;font:inherit;margin-bottom:.48rem}.wb-shell fieldset{margin:.55rem 0;padding:.5rem;border:1px solid var(--line)}
+.wb-cards,.wb-models{display:grid;gap:.55rem;grid-template-columns:repeat(3,minmax(0,1fr))}.wb-models{grid-template-columns:repeat(2,minmax(0,1fr))}
+.wb-table{width:100%;border-collapse:collapse;font-size:clamp(.79rem,2vw,1rem);table-layout:fixed}.wb-table :is(th,td){border-bottom:1px solid var(--line);padding:.38rem;text-align:left;overflow-wrap:break-word}
+.wb-table caption{text-align:left;font-weight:750}.wb-shell [hidden]{display:none!important}
+@media(max-width:650px){.wb-cards,.wb-models{grid-template-columns:1fr}.wb-hero{background-position:56% 65%}}
+
+/* Field journal: a high-contrast evidence board with original research visuals. */
+.wb-shell{max-width:calc(100% - 28px);min-width:0;overflow-wrap:anywhere}
+.wb-shell :is(section,fieldset,legend,form,figure,iframe,object){min-inline-size:0;max-inline-size:100%}
+.wb-shell p{margin:.35rem 0 .65rem}.wb-shell footer{margin-top:1.15rem}
+.wb-kicker{font-size:.83rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.wb-panel{border-top:5px solid var(--accent);box-shadow:0 8px 28px #18394319}
+.wb-hero{border:1px solid #466575;box-shadow:0 4px 0 #294c6480;margin-block:.65rem 1rem}
+.wb-hero h1{max-width:15ch}.wb-hero p:first-child{font-weight:800;letter-spacing:.10em;text-transform:uppercase;color:#cde7dd}
+.wb-tabs{background:var(--surface-2);border-radius:12px;border:1px solid var(--line);padding:.55rem}
+.wb-video{margin:.7rem 0;border-radius:12px;background:#193a4a;color:#fff4d6;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr)}
+.wb-video-cover{background:linear-gradient(90deg,#15394cf2,#1d3d4cb6),url("assets/openscied-wapusk.svg") center 71%/cover}
+.wb-video-prompt{padding:.72rem;display:flex;align-items:center;gap:.45rem .76rem;flex-wrap:wrap}
+.wb-video-prompt a{color:#d3eee6;font-size:.86rem}.wb-video iframe{width:100%;aspect-ratio:16/9;display:block;border:0}
+.wb-source-document{border:1px solid var(--line);border-radius:10px;background:var(--surface-2);padding:.58rem;margin:.6rem 0}
+.wb-source-document summary{font-weight:750;cursor:pointer}.wb-source-document object{display:block;width:100%;height:clamp(440px,75vh,810px);margin:.5rem auto;border:1px solid var(--line)}
+.wb-source-figure{margin:.68rem 0;border:1px solid var(--line);border-radius:12px;padding:.55rem;background:var(--surface-2)}
+.wb-source-figure img{width:100%;height:auto;display:block;border-radius:7px;background:#f4f5f3}
+.wb-source-figure figcaption{font-size:.91rem;font-weight:700;margin:.38rem 0}
+.wb-region-figure img{max-height:570px;object-fit:contain}
+#wb-visual-dialog{width:min(1000px,calc(100% - 24px));max-height:calc(100% - 24px);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:12px}
+#wb-visual-dialog img{max-height:73vh;object-fit:contain}#wb-visual-dialog::backdrop{background:#051724c9}
+.wb-map{border:2px solid #385f6c;box-shadow:0 4px 0 #153f4c65}.wb-map .wb-ice{transition:opacity .2s ease}.wb-map[data-season=summer] .wb-ice{display:block;opacity:0}
+.wb-marker{box-shadow:0 3px 0 #162f3b80}.wb-marker[aria-pressed=true]{background:#fff0b0;color:#153744}
+.wb-model-card{padding:.65rem;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);min-width:0}
+.wb-model-card .wb-kicker{display:inline-block;border-radius:4px;padding:.15rem .36rem;color:#173748;background:#cae1e5;margin:0}
+.wb-model-persistent .wb-kicker{background:#e2dab5;color:#493c21}
+@media(max-width:440px){.wb-shell{width:calc(100% - 20px);max-width:calc(100% - 20px)}.wb-shell .btn{white-space:normal}.wb-video-prompt{align-items:flex-start;flex-direction:column}}
+@media(prefers-reduced-motion:reduce){.wb-map .wb-ice{transition:none}}

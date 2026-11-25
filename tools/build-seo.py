@@ -34,8 +34,8 @@ def page_specs():
         'teachers.html': ('Free AP Biology Virtual Labs for Teachers | Lab Bench',
                           'Teach all 13 AP Biology investigations with free virtual labs, printable student directions, protected teacher notes, and downloadable student reports.',
                           'For teachers'),
-        'openscied-teacher-guide.html': ('OpenSciEd Biology Teacher Guide for Units 1–4 | Lab Bench',
-                                         'Plan OpenSciEd Biology companion activities with classroom setup, suggested pacing, discussion prompts and teacher-only worked examples for Units 1–4.',
+        'openscied-teacher-guide.html': ('OpenSciEd Biology Teacher Guide for Units 1–5 | Lab Bench',
+                                         'Plan OpenSciEd Biology companion activities with classroom setup, suggested pacing, discussion prompts and teacher-only worked examples.',
                                          'OpenSciEd Teacher Guide'),
         'openscied-b4-hawksbeard.html': ('Hawksbeard Wind Lab — OpenSciEd Biology B.4 companion | Lab Bench',
                                          'Compare where hawksbeard seeds land in a city and a field in this free, virtual OpenSciEd Biology B.4 Lesson 2 companion.',
@@ -52,6 +52,9 @@ def page_specs():
         'openscied-b4-wildlife-corridor.html': ('Wildlife Corridor Lab — OpenSciEd Biology B.4 Lessons 8–9 | Lab Bench',
                                                'Compare connected and road-split habitats, place a wildlife crossing, and use a simulation to investigate gene flow across generations.',
                                                'Wildlife Corridor Lab'),
+        'openscied-b5-wapusk.html': ('Three Bears in Wapusk — OpenSciEd Biology B.5 Lesson 1 | Lab Bench',
+                                     'Compare winter and summer bear sightings, explore Arctic sea ice regions, and record evidence for initial models.',
+                                     'Three Bears in Wapusk'),
         'getting-started.html': ('AP Biology Virtual Labs: Teacher Quick Start | Lab Bench',
                                  'Start teaching with free AP Biology virtual labs in five minutes. Choose a lab, share links, explain saving, collect reports, and review class progress.',
                                  'Teacher quick start'),
@@ -164,6 +167,13 @@ def structured_data(filename, title, description, label):
                          'teaches': 'Direct and indirect effects of migration on a local Serengeti ecosystem',
                          'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
                          'isBasedOn': 'https://openscied.org/instructional-materials/b-1-ecosystem-interactions-dynamics/'})
+        elif filename == 'openscied-b5-wapusk.html':
+            page.update({'@type': ['WebPage', 'LearningResource'],
+                         'educationalLevel': 'High school biology',
+                         'learningResourceType': 'Interactive evidence investigation',
+                         'teaches': 'Interpreting Arctic bear sightings, sea ice ecoregions, and evidence at different scales',
+                         'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
+                         'isBasedOn': 'https://openscied.org/instructional-materials/b-5-common-ancestry-speciation/'})
         elif filename == 'openscied-b4-wildlife-corridor.html':
             page.update({'@type': ['WebPage', 'LearningResource'],
                          'educationalLevel': 'High school biology',

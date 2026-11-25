@@ -33,7 +33,8 @@
     'b4-hawksbeard': [[pref+'b4-hawksbeard:v1','prediction released answers']],
     'b4-rat-generations': [[pref+'b4-rat-generations:v1','prediction action answers crosses analysisChecked']],
     'b4-junco': [[pref+'b4-junco:v1','prediction revealed reason observation claim limits sim']],
-    'b4-wildlife-corridor': [[pref+'b4-wildlife-corridor:v1','prediction generations crossing claim limits finished']]
+    'b4-wildlife-corridor': [[pref+'b4-wildlife-corridor:v1','prediction generations crossing claim limits finished']],
+    'b5-wapusk': [[pref+'b5-wapusk:v1','fields check finished']]
   };
   const record = value => value && typeof value === 'object' && !Array.isArray(value);
   const safeDate = (n, now) => Number.isFinite(n) && n > 0 && n <= now ? n : 0;
