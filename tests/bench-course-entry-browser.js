@@ -17,6 +17,25 @@ const T=require('./_h'),assert=require('node:assert/strict'),fs=require('node:fs
     const p=await ctx.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
     await p.route(/gc\.zgo\.at|fonts\.(?:googleapis|gstatic)\.com/,r=>r.fulfill({status:200,body:''}));
     await p.goto(site.url+'index.html');await p.evaluate(()=>localStorage.removeItem('aplab:pref:theme'));await p.reload();
+    assert.equal(await p.evaluate(()=>document.documentElement.dataset.theme),'dark',
+      'fresh visitor starts in Dark even with a light OS');
+    await p.getByRole('button',{name:'Auto',exact:true}).click();
+    await p.reload();
+    assert.deepEqual(await p.evaluate(()=>[document.documentElement.getAttribute('data-theme'),localStorage.getItem('aplab:pref:theme')]),[null,'auto']);
+    if(width===1366){
+      await p.goto(site.url+'ap-biology.html');
+      assert.equal(await p.evaluate(()=>document.documentElement.getAttribute('data-theme')),null,
+        'explicit Auto survives a switch to AP Biology');
+      await p.goto(site.url+'openscied-dashboard.html');
+      assert.equal(await p.evaluate(()=>document.documentElement.getAttribute('data-theme')),null,
+        'explicit Auto survives a switch to OpenSciEd');
+      await p.evaluate(()=>localStorage.removeItem('aplab:pref:theme'));
+      await p.reload();
+      assert.equal(await p.evaluate(()=>document.documentElement.getAttribute('data-theme')),'dark',
+        'direct first visit to OpenSciEd also starts in Dark');
+      await p.goto(site.url+'index.html');
+    }
+    await p.getByRole('button',{name:dark?'Dark':'Light',exact:true}).click();
     const verifyFooter=async (darkExpected)=>{
      const mark=p.getByRole('link',{name:'Return to the Biology Lab Bench welcome page',exact:true});
      await mark.waitFor();

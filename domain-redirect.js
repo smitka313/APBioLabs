@@ -88,3 +88,24 @@
   footer.src = new URL('bench-footer.js', source.src).href;
   document.head.appendChild(footer);
 }());
+
+
+/* On the three course entrances, start new visitors in Dark without overriding a chosen mode. */
+(function () {
+  'use strict';
+  if (!document.currentScript || !document.currentScript.src) return;
+  var source = new URL(document.currentScript.src);
+  var root = source.pathname.replace(/domain-redirect\.js$/, '');
+  if (location.pathname.indexOf(root) !== 0) return;
+  var relative = location.pathname.slice(root.length);
+  if (relative && !/^(?:index|ap-biology|openscied-dashboard)(?:\.html)?\/?$/i.test(relative)) return;
+  var key = 'aplab:pref:theme';
+  var mode = 'dark';
+  try {
+    var saved = localStorage.getItem(key);
+    if (saved === 'light' || saved === 'dark' || saved === 'auto') mode = saved;
+    else localStorage.setItem(key, mode);
+  } catch (_) { /* Follow the default for this page when storage is unavailable. */ }
+  if (mode === 'auto') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', mode);
+}());

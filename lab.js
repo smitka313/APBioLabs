@@ -3792,12 +3792,12 @@
   Lab.color = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#888';
 
   /* ---------------- Theme switch: Light / Dark / Auto ----------------
-     The choice lives in localStorage 'aplab:pref:theme' ('light' | 'dark'; absent = Auto, follow the computer). It is a
+     The choice lives in localStorage 'aplab:pref:theme' ('light' | 'dark' | 'auto'). The course entrances set Dark on the first visit; an explicit Auto follows the computer. It is a
      preference, not personal data, so Sign out and Start over keep it. Every page's <head> sets data-theme from it before first paint:
      <script>try{var t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
      Lab.theme.get() gives 'light'|'dark'|'auto'; Lab.theme.set(mode); window event 'aplab:theme' fires after a change (token-driven canvases redraw). */
   const THEME_KEY = 'aplab:pref:theme';
-  let memTheme = 'auto';
+  let memTheme = document.documentElement.dataset.theme || 'auto';
   const themeGet = () => { try { const t = localStorage.getItem(THEME_KEY); return t === 'light' || t === 'dark' ? t : 'auto'; } catch (e) { return memTheme; } };
   function themeApply() {
     const m = themeGet(), root = document.documentElement;
@@ -3814,7 +3814,7 @@
   }
   function themeSet(m) {
     memTheme = m;
-    try { if (m === 'light' || m === 'dark') localStorage.setItem(THEME_KEY, m); else localStorage.removeItem(THEME_KEY); } catch (e) { /* blocked: this page only */ }
+    try { localStorage.setItem(THEME_KEY, m === 'light' || m === 'dark' ? m : 'auto'); } catch (e) { /* blocked: this page only */ }
     themeApply();
   }
   Lab.theme = { get: themeGet, set: themeSet };

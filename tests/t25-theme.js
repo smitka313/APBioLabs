@@ -41,7 +41,8 @@ async function themeContext(browser, options = {}) {
   let ctx = await themeContext(b, { dark: false });
   let p = await T.open(ctx, 'ap-biology.html', '', srv.url);
   T.ok(await p.locator('.theme-switch').count() === 1, 'switch on the home page');
-  T.ok(await attr(p) === null && (await pressed(p)).join() === 'auto', 'default is Auto: no data-theme, Auto pressed');
+  T.ok(await attr(p) === 'dark' && (await pressed(p)).join() === 'dark', 'fresh course page defaults to Dark even when the system is light');
+  await p.getByRole('button', { name: 'Light' }).click();
   const bg = () => p.evaluate(() => getComputedStyle(document.body).backgroundColor);
   const lightBg = await bg();
   await p.getByRole('button', { name: 'Dark' }).click();
@@ -58,7 +59,7 @@ async function themeContext(browser, options = {}) {
   await p.goto(srv.url + 'lab05.html'); await p.waitForTimeout(600);
   T.ok(await attr(p) === 'light', 'Light carries to a lab');
   await p.getByRole('button', { name: /^Auto/ }).click();
-  T.ok(await attr(p) === null && await stored(p) === null && (await pressed(p)).join() === 'auto', 'Auto removes data-theme and the stored choice');
+  T.ok(await attr(p) === null && await stored(p) === 'auto' && (await pressed(p)).join() === 'auto', 'Auto clears the forced theme and remembers that choice');
   // Auto follows the computer
   await p.emulateMedia({ colorScheme: 'dark' });
   T.ok(await p.evaluate(() => matchMedia('(prefers-color-scheme: dark)').matches) && await bg() !== lightBg, 'Auto follows the computer\'s dark setting');

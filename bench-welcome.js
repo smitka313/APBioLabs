@@ -16,8 +16,8 @@
   apply(root.dataset.theme);
   for (const button of buttons) button.addEventListener('click', () => {
     const next = button.dataset.benchTheme;
-    try { if (next === 'auto') localStorage.removeItem(key); else localStorage.setItem(key, next); } catch (_) {}
+    try { localStorage.setItem(key, next); } catch (_) {}
     apply(next);
   });
-  window.addEventListener('storage', event => { if (event.key === key) apply(event.newValue); });
+  window.addEventListener('storage', event => { if (event.key === key) apply(event.newValue ?? 'dark'); });
 })();
