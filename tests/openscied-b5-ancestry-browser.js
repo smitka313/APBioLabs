@@ -18,6 +18,7 @@ async function run(){
  try{
   for(const width of [390,768,1366,1920]){
    const c=await browser.newContext({viewport:{width,height:920},colorScheme:width===390?'dark':'light',reducedMotion:width===768?'reduce':'no-preference'});
+   if(width===1366)await c.addInitScript({path:path.join(path.dirname(require.resolve('docx')),'index.iife.js')});
    const p=await c.newPage(),errs=[];
    p.on('pageerror',e=>errs.push(e.message));
    await p.route('https://**/*',route=>route.abort());
@@ -92,8 +93,10 @@ async function run(){
    assert.match(report,new RegExp('BA-'+id));assert.match(report,/zero of 72.*revised my first guess/s);
    assert.match(report,/The model brown claw reaches farther/);
    if(width===1366){
-    const save= p.waitForEvent('download');await p.getByRole('button',{name:/Download.*Word/}).click();const doc=await save;
-    assert.match(doc.suggestedFilename(),/\.docx$/);
+    await p.getByText('More formats',{exact:true}).click();
+    const [doc]=await Promise.all([p.waitForEvent('download'),p.getByRole('button',{name:/Download.*Word/}).click()]);
+    assert.equal(doc.suggestedFilename(),'bear-ancestry-submission.docx');
+    assert.equal(fs.readFileSync(await doc.path()).subarray(0,2).toString(),'PK');
    }
    await p.keyboard.press('Escape');await layout('explain');
    assert.deepEqual(errs,[]);
