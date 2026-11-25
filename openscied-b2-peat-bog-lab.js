@@ -14,7 +14,7 @@
        trialLabel: string                                   the label box in My trials
        warmingUsed: bool                                    true once the student has used any Global warming control or "Test the bog in this year"
                                                             (the dashboard reads this; older saves without it fall back to "settings differ from today")
-       responseIds: [], fields: {}                          this page has no written answers; kept so the dashboard reads every companion alike
+       responseIds: ['graph-answer'], fields: {...}           graph evidence response, kept so the dashboard reads every companion alike
        lastSection, lastVisitedAt }
    Nothing is written until the student changes something, so a fresh visit (or one right after "Clear this activity") leaves no record. */
 (function () {

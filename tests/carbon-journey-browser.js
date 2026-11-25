@@ -92,8 +92,9 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       const dashboard = await ctx.newPage();
       await dashboard.goto(url.replace('openscied-b2-carbon-journey.html','openscied-dashboard.html'));
-      const units = dashboard.locator('section.dashboard-unit[aria-labelledby]');
-      assert.ok(await units.count() >= 5, 'all five curriculum units remain visible');
+      const units = dashboard.locator('section.dashboard-unit[aria-labelledby^="unit"]');
+      assert.deepEqual(await units.evaluateAll(sections=>sections.map(s=>s.getAttribute('aria-labelledby'))),
+        ['unit1','unit2','unit3','unit4','unit5'], 'all five curriculum units remain visible in order');
       for (const unit of await units.all()) {
         const advertised = (await unit.locator('.dashboard-tag').first().textContent()).match(/^(\d+) activities? available$/);
         assert.ok(advertised, 'each unit advertises its activity count');

@@ -78,6 +78,9 @@ const ink = (p, sel) => p.evaluate(s => { const c = document.querySelector(s + '
     await go(p, 'plan'); await p.selectOption('#pred-fastest', 'warm');
     await go(p, 'sense3');
     T.ok(/^✓ You predicted Beaker 3 \(43 °C\)/.test(await p.locator('#pred-note').innerText()), 'prediction check: ' + await p.locator('#pred-note').innerText());
+    T.ok(await p.locator('#data-sense-foam-body table').isVisible() &&
+      !/You predicted/.test(await p.locator('#data-sense-foam-body').innerText()),
+      'the data table shows recorded evidence while the separate results note shows the prediction once');
     // start over needs a second tap
     await go(p, 'yeast');
     await p.locator('[data-dc="reset"]').click();
@@ -90,7 +93,7 @@ const ink = (p, sel) => p.evaluate(s => { const c = document.querySelector(s + '
     await p.locator('[data-dc="skip"]').click();
     T.ok(/Finished: 20 of 20 min/.test(await p.locator('[data-dc="clock"]').innerText()) &&
       /Record next unrecorded sample \(0 min\)/.test(await p.locator('[data-dc="record"]').innerText()) &&
-      /run is finished.*Record all missing readings.*starting at minute 0/.test(await p.locator('[data-dc="hint"]').innerText()) &&
+      /reached minute 20.*next unrecorded sample is from minute 0.*Record all missing readings/.test(await p.locator('[data-dc="hint"]').innerText()) &&
       /Record all 11 missing readings/.test(await p.locator('[data-dc="record-all"].btn--primary').innerText()),
       'the clock and queued 0-minute sample are separately labeled');
     await p.locator('[data-dc="record"]').click();

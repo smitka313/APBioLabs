@@ -132,7 +132,7 @@
     }
     function hint(due, done, allRec) {
       if (allRec) return 'Every reading is recorded. Look at the table and the chart.';
-      if (done && due.length > 1) return 'The run is finished. Record all missing readings to fill the table, or add them one at a time starting at minute ' + due[0] + '.';
+      if (done && due.length > 1) return 'The test has reached minute 20. The next unrecorded sample is from minute ' + due[0] + '. Choose Record all missing readings to fill the table at once.';
       if (done) return 'The run is finished. Record the sample from minute ' + due[0] + ' to finish your table.';
       if (due.length > 1) return 'The button records the oldest unrecorded sample first, not the current clock time. Record all readings so far to catch up.';
       if (due.length) return 'A reading is ready. Beaker temperatures: ' + st.temps.map((t, i) => L.BEAKER_NAMES[i] + ' ' + tempLabel(t)).join(', ') + '.';

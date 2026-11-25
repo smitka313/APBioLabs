@@ -180,7 +180,14 @@ const ann = p => p.locator('#announcer').textContent();
     await d.goto(server.url + 'openscied-dashboard.html'); await d.waitForSelector('#peat-bog-progress');
     T.ok(/warming explored/.test(await d.locator('#peat-bog-progress').innerText()), 'C4: dashboard says warming explored: ' + await d.locator('#peat-bog-progress').innerText());
     T.ok(!/warming not explored/.test(await d.locator('body').innerText()), 'C4: "warming not explored" appears nowhere on the dashboard (including the Continue banner)');
-    T.ok(Array.isArray(saved.responseIds) && saved.responseIds.length === 0 && !/answers saved/.test(await d.locator('#peat-bog-progress').innerText()), 'D1: the Peat Bog Lab has no written answers, so it saves an empty responseIds and the dashboard shows no answer count (nothing to disagree)');
+    T.ok(JSON.stringify(saved.responseIds) === JSON.stringify(['graph-answer']) && !saved.fields['graph-answer'] &&
+      !/answers saved/.test(await d.locator('#peat-bog-progress').innerText()),
+      'D1: Peat declares the graph response field without claiming an untouched answer was saved');
+    await q.goto(server.url + PAGE + '#graph'); await q.waitForFunction(() => document.querySelector('#graph.is-current'));
+    await q.locator('#graph-answer').fill('Peat carbon dropped from +13 to −5 as the bog drained.');
+    await q.reload(); await q.waitForFunction(() => document.querySelector('#graph.is-current'));
+    T.ok((await q.locator('#graph-answer').inputValue()).includes('dropped from +13 to −5'),
+      'D1: the new graph evidence response is saved and restores on reload');
     // old saves (no flag) still work: changed climate counts, untouched climate does not
     await d.evaluate(k => localStorage.setItem(k, JSON.stringify({ v: 1, settings: { wet: 30 }, climate: { fossil: 10, forest: 100, year: 2100 }, trials: [] })), KEY);
     await d.reload(); await d.waitForSelector('#peat-bog-progress');
