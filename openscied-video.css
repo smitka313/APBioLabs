@@ -1,0 +1,45 @@
+/* Compact disclosures share the activity theme and size the original provider player. */
+.ose-video-list {
+  display: grid;
+  gap: .65rem;
+}
+.ose-video {
+  box-sizing: border-box;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  padding: .6rem .8rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+#collection-cards > .ose-video {
+  margin-block: .75rem;
+}
+.ose-video > summary {
+  min-block-size: 24px;
+  padding-block: .18rem;
+  color: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+}
+.ose-video-body {
+  min-inline-size: 0;
+  max-inline-size: 44rem;
+}
+.ose-video-body > p {
+  margin-block: .55rem;
+}
+.ose-video-body iframe {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 200px;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 6px;
+  background: #141719;
+}
+.ose-video-fallback a {
+  display: inline-block;
+  min-block-size: 24px;
+}

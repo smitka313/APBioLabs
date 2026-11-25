@@ -48,8 +48,11 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
     await p.waitForFunction(() => document.querySelector('#ideas.is-current'));
     await p.locator('#ideas .pager-next').click();
     await p.waitForFunction(() => document.querySelector('#families.is-current'));
-    const vidLabels = await p.locator('#families a[href*="youtu.be"]').evaluateAll(a => a.map(x => x.href.split('/').pop() + '|' + x.textContent.replace(/\(opens in a new tab\)/, '').trim()));
-    T.ok(vidLabels.join(';') === 'U1Zifbvvl0Q|Video A: Lauren’s family history;ux7obpTlkbU|Video B: Lakita’s family history;-NhqJRIJJsw|Video C: Lauren talks about surgery (about 1 minute)', 'video links are labeled with what each video is (C is the surgery video, not "why one syndrome leads to many cancers"): ' + vidLabels.join(' ; '));
+    const videoTitles = await p.locator('#families .ose-video template').evaluateAll(nodes => nodes.map(t => {
+      const f = t.content.querySelector('iframe');
+      return new URL(f.src).pathname.split('/').pop() + '|' + f.title;
+    }));
+    T.ok(videoTitles.join(';') === 'U1Zifbvvl0Q|Lauren’s family history;ux7obpTlkbU|Lakita’s family history;-NhqJRIJJsw|Lauren talks about surgery', 'all three embedded videos keep their individual titles and original IDs: ' + videoTitles.join(' ; '));
     T.ok(true, 'pager Next works');
     T.ok(await p.locator('[aria-live], [role=status], [role=alert]').count() === 1, 'exactly one live region');
 
@@ -78,9 +81,9 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
     await go(p, 'ideas');
     T.ok(/do not need to write about any real family/.test(await p.locator('#ideas').innerText()) && /Pause whenever you like/.test(await p.locator('#ideas').innerText()), 'reminder before Part A');
     T.ok(await p.locator('details.teacher-note').count() === 1, 'collapsible teacher note');
-    T.ok(await p.locator('iframe, video, embed, object').count() === 0, 'no embedded video');
-    const vids = await p.$$eval('.video-links a', as => as.map(a => a.href + '|' + a.rel + '|' + a.target));
-    T.ok(vids.length === 3 && vids.every(v => /^https:\/\/youtu\.be\/.+\|noopener noreferrer\|_blank$/.test(v)), 'three video links, new tab, noopener');
+    T.ok(await p.locator('iframe, video, embed, object').count() === 0, 'no player mounts before a student chooses an optional clip');
+    const vids = await p.$eval('.ose-video-fallback a', as => as.map(a => a.href + '|' + a.rel + '|' + a.target));
+    T.ok(vids.length === 3 && vids.every(v => /^https:\/\/youtu\.be\/.+\|noopener noreferrer\|_blank$/.test(v)), 'three fallback video links, new tab, noopener');
     const labels = await p.evaluate(() => Array.from(document.querySelectorAll('main textarea, main input, main select')).map(e => { const l = document.querySelector('label[for="' + e.id + '"]'); return (l ? l.textContent : '') + ' ' + (e.placeholder || '') + ' ' + (e.closest('fieldset') && e.closest('fieldset').querySelector('legend') ? e.closest('fieldset').querySelector('legend').textContent : ''); }));
     T.ok(!labels.some(t => /(your|my|their) (own )?(family|mother|father|parents?|grand|relatives?|health|medical|diagnos|cancer history)|have you (or|ever)|does anyone in your|do you know anyone/i.test(t)), 'no input asks for personal or family health information');
     const bodyText = await p.locator('main').textContent();
