@@ -83,7 +83,7 @@ async function download(page,size) {
   check(saved.includes(CLAIM)&&saved.includes(LIMIT)&&saved.includes(OBSERVATION)&&saved.includes('Name: J. Student')&&saved.includes('Class period: 4'),
     'the downloaded file contains the original field observation, claim, and limitation');
   check(file.suggestedFilename()==='junco-field-report.txt' &&
-    /Hormone graph: All plotted birds[\s\S]*40 birds shown; correlation r = -0\.53/.test(saved),
+    /40 birds shown; correlation r = -0\.53/.test(saved) && saved.includes(await id(page,'ju-dataset-id').textContent()),
     'a revealed TXT retains its filename and computed hormone summary');
 }
 
@@ -178,6 +178,9 @@ async function exerciseFlightSimulation(page,size,label) {
   await id(page,'field').waitFor({state:'visible'});
   if(!await panel.evaluate(el=>el.open)) await activate(panel.locator('summary').first(),size);
   check(JSON.stringify(await rows())===JSON.stringify(completed),label+' both completed simulated trials return after reload');
+  await activate(start,size);
+  check(/^Trial 3 ·/.test(await id(page,'ju-sim-status').textContent()),label+' the canceled trial number is reused after reload');
+  await activate(change,size);
 }
 
 async function exercise(browser,base,size) {
@@ -214,9 +217,12 @@ async function exercise(browser,base,size) {
       check(foraging['UC San Diego']===4.2&&foraging['Mt. Laguna']===13.5&&
         incubating['UC San Diego']===0.36&&incubating['Mt. Laguna']===0.99,
         label+' the field table retains the published figure’s estimated meters under both group choices');
-      await id(page,'ju-field-entry').fill(OBSERVATION);
       await exerciseFlightSimulation(page,size,label);
     }
+    check(await id(page,'ju-to-aviary').isDisabled()&&await page.locator('.ju-nav [data-step="aviary"]').isDisabled(),
+      label+' the shared aviary requires a written field note');
+    await id(page,'ju-field-entry').fill(OBSERVATION);
+    check(await id(page,'ju-to-aviary').isEnabled(),label+' the field note unlocks the shared aviary');
     await selectStep(page,size,'aviary');
     check(await id(page,'ju-aviary-results').isHidden(),label+' aviary evidence starts concealed');
     check(/explore the new room/.test(await page.locator('label[for=ju-prediction]').innerText()) &&
@@ -342,6 +348,8 @@ async function exerciseNormalMotion(browser,base) {
     page.on('pageerror',error=>errors.push(error.message));
     page.setDefaultTimeout(8000);
     await page.goto(new URL(PAGE,base).href);
+    await selectStep(page,size,'field');
+    await id(page,'ju-field-entry').fill(OBSERVATION);
     await selectStep(page,size,'aviary');
     const art=id(page,'ju-aviary-art'), routineButton=id(page,'ju-aviary-replay');
     const routineCaption=id(page,'ju-aviary-routine-caption');

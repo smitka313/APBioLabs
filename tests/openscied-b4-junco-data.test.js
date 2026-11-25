@@ -84,6 +84,22 @@ test('flight notebook restores validated trials and exports them as simulations'
   assert.match(flight.report(saved).join('\n'),/SIMULATED WALK-UP TRIALS.*\nTrial 1:/);
 });
 
+test('canceling an unfinished approach frees its number but never changes completed trials or the dataset seed',()=>{
+  const seed=491,site='mountain',group='foraging';
+  const first=flight.clean({seed,serial:1,site,group,active:{id:1,site,group,step:0}},data.field.rows);
+  assert.equal(flight.cancel(first),true);
+  assert.equal(first.serial,0);
+  assert.equal(first.seed,seed);
+  assert.equal(flight.clean(first,data.field.rows).seed,seed,'cancel followed by reload keeps the same trial dataset');
+  const step=flight.endStep(seed,1,site,group,data.field.rows), row={id:1,site,group,step};
+  const next=flight.clean({seed,serial:2,site,group,active:{id:2,site,group,step:0},results:[row]},data.field.rows);
+  assert.equal(flight.cancel(next),true);
+  assert.equal(next.serial,1);
+  assert.deepEqual(next.results,[row]);
+  assert.equal(flight.cancel(next),false);
+  assert.equal(flight.endStep(next.seed,next.serial+1,site,group,data.field.rows),flight.endStep(seed,2,site,group,data.field.rows));
+});
+
 const {readFileSync}=require('node:fs');
 const {join}=require('node:path');
 const vm=require('node:vm');

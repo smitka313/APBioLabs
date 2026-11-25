@@ -16,11 +16,13 @@
   const $=id=>document.getElementById('ju-'+id);
   const cleanText=(v,n)=>typeof v==='string'?v.slice(0,n):'';
   const pick=(v,valid,d)=>valid.includes(v)?v:d;
-  const blank=()=>({step:'field',prediction:'',revealed:false,reason:'',observation:'',claim:'',limits:'',person:{},fieldGroup:'foraging',aviaryGroup:'female',filter:'all',fit:false,lastVisitedAt:0});
+  const notebookSeed=()=>{try{return window.crypto.getRandomValues(new Uint32Array(1))[0];}catch(_){return Math.floor(Math.random()*0x100000000);}};
+  const datasetId=seed=>'JU-'+seed.toString(16).toUpperCase().padStart(8,'0');
+  const blank=()=>({notebookSeed:notebookSeed(),step:'field',prediction:'',revealed:false,reason:'',observation:'',claim:'',limits:'',person:{},fieldGroup:'foraging',aviaryGroup:'female',filter:'all',fit:false,lastVisitedAt:0});
   const scope='b4-junco', guard=window.OpenSciEdSaveSession;
   let session;
   try {session=guard?.open(window.localStorage,scope,[key]);} catch (_) {}
-  let state=blank(), invalid=false, warned='';
+  let state=blank(), invalid=false, warned='', needsId=false;
   try{
     const saved=session?.read(key) ?? null, raw=JSON.parse(saved ?? 'null');
     if(saved!==null&&(!raw||typeof raw!=='object'||Array.isArray(raw))) throw Error('Unreadable notebook');
@@ -35,6 +37,8 @@
       state.filter=pick(raw.filter,['all',...Object.keys(sites)],'all');
       state.fit=raw.fit===true;
       if(window.JuncoFlight)state.sim=window.JuncoFlight.clean(raw.sim,D.field.rows);
+      if(Number.isInteger(raw.notebookSeed)&&raw.notebookSeed>=0&&raw.notebookSeed<=0xffffffff)state.notebookSeed=raw.notebookSeed;
+      else {state.notebookSeed=state.sim?.seed||state.notebookSeed;needsId=true;}
     }
   }catch(_){invalid=true;}
   function notSaved(reason) {
@@ -96,9 +100,10 @@
   }
   const points=D.cort.rows.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
   const identified=points.some(p=>p.site==='urban')&&points.some(p=>p.site==='mountain');
-  function cortReading(){
-    const d=D.cort, rows=points.filter(p=>!identified||state.filter==='all'||p.site===state.filter), r=corr(rows);
-    const view=identified?sites[state.filter]||'Both populations':'All plotted birds';
+  function cortReading(full=false){
+    const filter=full?'all':state.filter;
+    const d=D.cort, rows=points.filter(p=>!identified||filter==='all'||p.site===filter), r=corr(rows);
+    const view=identified?sites[filter]||'Both populations':'All plotted birds';
     const pattern=Number.isFinite(r)&&(r<-.15||r>.15)
       ? 'In these data, higher maximum CORT generally went with '+(r<0?'lower':'higher')+' exploration scores. That does not tell us whether CORT caused the difference.'
       : '';
@@ -144,14 +149,21 @@
     $('saved-observation').hidden=!state.observation.trim();
     $('saved-observation').textContent=state.observation.trim()?'Your field note: '+state.observation:'';
   }
+  const fieldWritten=()=>!!state.observation.trim();
+  const unlocked=step=>step==='field'||(steps.includes(step)&&fieldWritten()&&(step==='aviary'||state.revealed));
   function completion(){
-    const done={field:!!state.observation.trim(),aviary:state.revealed,cort:!!(state.claim.trim()&&state.limits.trim())};
-    $('step-hint').hidden=state.revealed;
+    const done={field:fieldWritten(),aviary:state.revealed&&fieldWritten(),cort:!!(state.claim.trim()&&state.limits.trim()&&unlocked('cort'))};
+    const stepHint=$('step-hint');
+    stepHint.hidden=unlocked('cort');
+    stepHint.textContent=fieldWritten()?'To unlock the hormone clue, save a prediction and reveal the shared-aviary results.':
+      'Write a field observation to unlock the shared aviary.';
+    $('to-aviary').disabled=!fieldWritten();
     for(const btn of nav){
       const step=btn.dataset.step;
+      btn.disabled=!unlocked(step);
       btn.toggleAttribute('data-ose-complete',done[step]);
       if(done[step])btn.setAttribute('aria-description','Complete');
-      else if(step==='cort'&&!state.revealed)btn.setAttribute('aria-description','Save your prediction and reveal the shared-aviary results first.');
+      else if(btn.disabled)btn.setAttribute('aria-description',stepHint.textContent);
       else btn.removeAttribute('aria-description');
     }
   }
@@ -160,7 +172,7 @@
     for(const btn of nav){
       if(btn.dataset.step===state.step)btn.setAttribute('aria-current','step');
       else btn.removeAttribute('aria-current');
-      btn.disabled=btn.dataset.step==='cort'&&!state.revealed;
+
     }
     completion();
     $('field-group').value=state.fieldGroup;$('aviary-group').value=state.aviaryGroup;
@@ -176,7 +188,7 @@
     if(focus)$(state.step+'-title').focus();
   }
   function go(step,focus=true){
-    if(!steps.includes(step)||(step==='cort'&&!state.revealed))return false;
+    if(!unlocked(step))return false;
     if(state.step==='aviary'&&step!=='aviary'){
       resetAviaryRoutine?.();
       say('');
@@ -300,27 +312,28 @@
       answer('reason','reason'),answer('claim','claim'),answer('limits','limits')];
     const sections=[{title:'Field report · your observations and explanation',items:responses}];
     const keyResults=[];
-    function dataSection(data,group,label,title){
-      const rows=groupRows(data,group);
-      const hasSE=rows.some(row=>Number.isFinite(row.se));
-      keyResults.push({label,value:rows.map(row=>sites[row.site]+' '+fmt(row.mean)).join(' vs. '),unit:data.unit,note:'Approximate published group means.'});
-      return {title,items:[
-        {type:'table',title:label,columns:['Population','Mean ('+data.unit+')',...(hasSE?[errName(data)]:[]),'Birds (n)'],
-          rows:rows.map(row=>hasSE?rowData(row):[sites[row.site],fmt(row.mean),row.n??'Not reported'])},
-        {type:'text',text:data.note},{type:'text',text:data.source+': '+data.url}
-      ]};
+    function dataSection(data,groups,title){
+      const items=Object.entries(groups).map(([group,label])=>{
+        const rows=groupRows(data,group);
+        const hasSE=rows.some(row=>Number.isFinite(row.se));
+        keyResults.push({label:title.split(' · ')[0]+' · '+label,value:rows.map(row=>sites[row.site]+' '+fmt(row.mean)).join(' vs. '),unit:data.unit,note:'Approximate published group means.'});
+        return {type:'table',title:label,columns:['Population','Mean ('+data.unit+')',...(hasSE?[errName(data)]:[]),'Birds (n)'],
+          rows:rows.map(row=>hasSE?rowData(row):[sites[row.site],fmt(row.mean),row.n??'Not reported'])};
+      });
+      return {title,items:[...items,{type:'text',text:data.note},{type:'text',text:data.source+': '+data.url}]};
     }
-    sections.push(dataSection(D.field,state.fieldGroup,fieldLabels[state.fieldGroup],'Field distance · published evidence'));
+    sections.push(dataSection(D.field,fieldLabels,'Field distance · published evidence'));
     if(state.revealed){
-      sections.push(dataSection(D.aviary,state.aviaryGroup,aviaryLabels[state.aviaryGroup],'Shared aviary · published evidence'));
-      const {d,rows,r}=cortReading();
+      sections.push(dataSection(D.aviary,aviaryLabels,'Shared aviary · published evidence'));
+      const {d,rows,r,summary}=cortReading(true);
       const items=[
-        {type:'text',text:d.note},
-        {type:'text',text:'CORT and exploration can be related without CORT causing the behavior. The shared aviary does not prove that a difference was inherited.'}
+        {type:'text',text:summary},
+        {type:'text',text:'CORT and exploration can be related without CORT causing the behavior. The shared aviary does not prove that a difference was inherited.'},
+        ...(!identified?[{type:'text',text:'The published figure does not label each dot by population. The pooled pattern may partly reflect differences between populations; it does not establish a pattern within either group.'}]:[])
       ];
       if(d.published)items.push({type:'text',text:d.published.note+' Published model: n = '+d.published.n+', R² = '+d.published.rSquared+', P = '+d.published.p+'.'});
       if(rows.length){
-        if(Number.isFinite(r))items.push({type:'text',text:'Selected classroom points: n = '+rows.length+', correlation r = '+fmt(r)+'. This is not the published model result.'});
+        if(Number.isFinite(r))items.push({type:'text',text:'All classroom points: n = '+rows.length+', correlation r = '+fmt(r)+'. This is not the published model result.'});
         items.push({type:'table',title:'Classroom points approximated from the published figure',
           columns:[identified?'Population':'Bird (dot)',d.xLabel||'CORT','Individual exploration score (PC1)'],
           rows:rows.map((row,i)=>[identified?(sites[row.site]||'Not identified'):i+1,fmt(row.x),fmt(row.y)])});
@@ -335,17 +348,22 @@
     ]});
     return {title:'Junco Investigation',unit:'OpenSciEd Biology B.4 · Lesson 4',source:'Independent OpenSciEd companion by Robert Smitka. Published evidence from Atwell et al. (2012) is separate from optional simulated trials.',
       status:invalid||!session?.check(key)?.ok?'recovery':missing.length?'draft':'final',missing,
-      student:{name:$('name').value.trim(),period:$('period').value.trim()},keyResults,sections};
+      student:{name:$('name').value.trim(),period:$('period').value.trim()},datasetId:datasetId(state.notebookSeed),keyResults,sections};
   }
   function plainTextReport(){
-    const hormone=state.revealed?cortReading():null;
-    const sources=state.revealed?[D.field,D.aviary,D.cort]:[D.field];
-    return ['Junco Investigation — Field report','Name: '+$('name').value.trim(),'Class period: '+$('period').value.trim(),'','PUBLISHED STUDY EVIDENCE',...evidenceLines(),
-      '', 'My observation: '+state.observation,'My prediction: '+(choices[state.prediction]||'Not recorded'),'My reasoning: '+state.reason,
-      '', ...(hormone?['Hormone graph: '+hormone.view,hormone.summary]:['Aviary and hormone results: Not revealed yet.']),
-      '','My explanation:',state.claim,'','Limits or next question:',state.limits,'',
-      ...(window.JuncoFlight?.report(state.sim)??[]),
-      ...sources.map(d=>d.source+' — '+d.url)].join('\n')+'\n';
+    const report=submissionReport();
+    const lines=['Junco Investigation — Field report','Name: '+report.student.name,'Class period: '+report.student.period,
+      'Dataset ID: '+report.datasetId,'','PUBLISHED STUDY EVIDENCE'];
+    if(!state.revealed)lines.push('Aviary and hormone results: Not revealed yet.');
+    for(const section of report.sections){
+      lines.push('',section.title);
+      for(const item of section.items){
+        if(item.type==='table')lines.push(item.title,item.columns.join(' | '),...item.rows.map(row=>row.join(' | ')));
+        else if(item.type==='answer')lines.push(item.prompt+': '+item.value);
+        else if(item.type==='text')lines.push(item.text);
+      }
+    }
+    return lines.join('\n')+'\n';
   }
   function download(){
     const body=plainTextReport();
@@ -363,9 +381,15 @@
   });
   if(window.JuncoFlight)window.JuncoFlight.mount({state,field:D.field.rows,save,say});
   const requested=location.hash.slice(1);
-  if(steps.includes(requested)&&(requested!=='cort'||state.revealed))state.step=requested;
+  if(unlocked(requested))state.step=requested;
+  if(!unlocked(state.step))state.step='field';
+  if(steps.includes(requested)&&!unlocked(requested)){
+    history.replaceState(null,'','#'+state.step);
+    say(fieldWritten()?'Make a prediction and reveal the aviary results before opening the hormone clue.':'Write a field observation before opening the shared aviary.');
+  }
+  $('dataset-id').textContent=datasetId(state.notebookSeed);
+  if(needsId&&!invalid)save();
   draw();
-  if(requested==='cort'&&!state.revealed)say('Make a prediction and reveal the aviary results before opening the hormone clue.');
   if(invalid)notSaved('unreadable');
   const monitorSave=()=>{
     const result=session?.check(key);

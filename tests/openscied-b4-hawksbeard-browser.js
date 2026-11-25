@@ -549,6 +549,9 @@ async function play(browser, base, cfg) {
     const reflection = page.getByLabel('Would you keep or change your prediction? Cite one fraction.', { exact:true });
     check(await reflection.isVisible() && await reflection.getAttribute('id') === 'hb-reflection',
       at + ' comparison asks students to revisit their prediction using one of their fractions');
+    check(await page.locator('#hb-compare [data-hb-go="explain"]').isDisabled()&&
+      await page.locator('.hb-steps [data-hb-go="explain"]').isDisabled(),
+      at+' Explain stays locked until the student writes a comparison');
     await reflection.fill(REFLECTION_TEXT);
     await reflection.press('Tab');
     await completedSteps(page, ['predict', 'release', 'compare'], at + ' comparison recorded');
@@ -634,8 +637,9 @@ async function play(browser, base, cfg) {
       await stage(page, 'compare');
       check(await reflection.inputValue() === REFLECTION_TEXT &&
         await page.locator('#hb-denominator-check').evaluate(el => el.open) &&
-        !await page.locator('.hb-denominator-feedback').isVisible(),
-        'Compare restores the reflection and open disclosure without showing stale quiz feedback');
+        await page.locator('input[name="hb-denominator"][value="soil"]').isChecked()&&
+        /compare seeds that landed on soil/.test(await page.locator('.hb-denominator-feedback').textContent()),
+        'Compare restores the reflection, disclosure, and saved denominator feedback for this trial');
       await page.locator('#hb-denominator-check summary').press('Enter');
       await disclosed(page, 'hb-denominator-check', false);
       await stage(page, 'explain');

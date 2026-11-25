@@ -72,7 +72,7 @@
     return result?.ok ? saved() : notSaved(result?.reason);
   }
   function available(step) {
-    return step==='predict'||(step==='model'&&!!state.prediction)||(['analyze','explain'].includes(step)&&model.done);
+    return step==='predict'||(step==='model'&&!!state.prediction)||(step==='analyze'&&model.done)||(step==='explain'&&model.done&&state.analysisChecked);
   }
   function go(step,{focus=true,persist=true}={}) {
     if(!available(step))return;
@@ -93,21 +93,24 @@
     }
     $('#rg-reason').readOnly=locked;
     $('#rg-prediction button[type=submit]').hidden=locked;
-    $('#rg-prediction button[type=submit]').disabled=locked;
+    const picked=$('input[name=rg-prediction]:checked')?.value;
+    $('#rg-prediction button[type=submit]').disabled=locked||!own(PRED,picked);
+    $('#rg-prediction-hint').hidden=locked||own(PRED,picked);
     $('#rg-return-model').hidden=!locked;
     $('#rg-prediction-lock').hidden=!locked;
-    const done={predict:!!state.prediction,model:model.done,analyze:!!state.analysisAttempt,
+    const done={predict:!!state.prediction,model:model.done,analyze:state.analysisChecked,
       explain:['claim','evidence','limits'].every(key=>state.answers[key]?.trim())};
-    $('#rg-step-hint').hidden=model.done;
-    set('step-hint',state.prediction?'Finish the colony model to unlock Analyze and Explain.':'Save your prediction to unlock the colony model.');
+    $('#rg-step-hint').hidden=model.done&&state.analysisChecked;
+    set('step-hint',model.done?'Use the feedback to check the denominator before opening Explain.':
+      state.prediction?'Finish the colony model to unlock Analyze.':'Save your prediction to unlock the colony model.');
     for(const b of $$('[data-rg-go]')) {
       const wanted=b.dataset.rgGo;
       b.disabled=!available(wanted);
       if(b.closest('.rg-steps')){
         if(wanted===state.step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');
         b.toggleAttribute('data-ose-complete',Boolean(done[wanted]));
-        if(done[wanted])b.setAttribute('aria-description',wanted==='analyze'?'Attempt saved':'Complete');
-        else if(b.disabled)b.setAttribute('aria-description',wanted==='model'?'Save your prediction first.':'Finish the colony model first.');
+        if(done[wanted])b.setAttribute('aria-description','Complete');
+        else if(b.disabled)b.setAttribute('aria-description',wanted==='model'?'Save your prediction first.':model.done?'Check the denominator correctly first.':'Finish the colony model first.');
         else b.removeAttribute('aria-description');
       }
     }
@@ -254,7 +257,7 @@
     }else{
       title='Generation '+entry.generation+' offspring recorded';
       why=entry.counts.total+' offspring replaced the parent generation. Each pair contributed four expected offspring.';
-      if(entry.generation===3)why+=' This is the birth count. Apply selection next to see how many survive.';
+      if(entry.generation===3)why+=' This is the birth count. The model starts selection now so you can compare births before and after a change. Generation 3 is not a biological threshold.';
       if(entry.generation===5)why+=' This final record is offspring, not an additional survivor count.';
     }
     set('event-title',title);set('event-explanation',why);
@@ -381,11 +384,25 @@
     return state.analysisAttempt &&
       $('input[name="rg-concept"][value="'+state.analysisAttempt+'"]')?.labels?.[0]?.textContent?.trim() || '';
   }
+  function builtCrosses(){
+    const preview=M.preview(model)?.action==='breed'?M.step(model).generations.at(-1):null;
+    const generations=preview?[...model.generations,preview]:model.generations;
+    const crosses=[], inProgress=[];
+    for(const g of generations)for(const pair of g.pairs||[]){
+      const cross=state.crosses[pair.id];
+      if(B.complete(cross))crosses.push([g.generation,pair.id,pair.parents.map(rat=>rat.genotype).join(' × '),pair.cells.join(', ')]);
+      else if(cross) {
+        const placed=[...cross.parents,...cross.headers,...cross.cells.flat()].filter(Boolean).length;
+        if(placed)inProgress.push([g.generation,pair.id,placed+' of 14 placements']);
+      }
+    }
+    return {crosses,inProgress};
+  }
   function submissionReport(){
     const missing=[];
     if(!state.prediction)missing.push('Save a prediction.');
     if(!model.done)missing.push('Finish the colony model through Generation 5.');
-    if(!state.analysisAttempt)missing.push('Try the Analyze quick check.');
+    if(!state.analysisChecked)missing.push('Use the feedback to answer the Analyze quick check correctly.');
     for(const [id,label] of [['claim','claim'],['evidence','evidence response'],['limits','model limits response']])
       if(!state.answers[id]?.trim())missing.push('Write your '+label+'.');
 
@@ -406,17 +423,7 @@
       simItems.push({type:'table',title:'Generation record',columns:['Generation and stage','Genotype counts','Total rats','Resistant / total','R copies / total copies','Survived / born'],rows});
     } else simItems.push({type:'text',text:'No model actions recorded yet.'});
 
-    const preview=M.preview(model)?.action==='breed'?M.step(model).generations.at(-1):null;
-    const generations=preview?[...model.generations,preview]:model.generations;
-    const crosses=[], inProgress=[];
-    for(const g of generations)for(const pair of g.pairs||[]){
-      const cross=state.crosses[pair.id];
-      if(B.complete(cross))crosses.push([g.generation,pair.id,pair.parents.map(rat=>rat.genotype).join(' × '),pair.cells.join(', ')]);
-      else if(cross) {
-        const placed=[...cross.parents,...cross.headers,...cross.cells.flat()].filter(Boolean).length;
-        if(placed)inProgress.push([g.generation,pair.id,placed+' of 14 placements']);
-      }
-    }
+    const {crosses,inProgress}=builtCrosses();
     if(crosses.length)simItems.push({type:'table',title:'Punnett squares you built · expected model outcomes',columns:['Generation produced','Pair','Parent genotypes','Four cells'],rows:crosses});
     else simItems.push({type:'text',text:'No completed Punnett square recorded yet.'});
     if(inProgress.length)simItems.push({type:'table',title:'Partially built Punnett squares',columns:['Generation produced','Pair','Recorded work'],rows:inProgress});
@@ -433,6 +440,11 @@
       'G'+generation+' '+selectionName[phase]+': RR '+c.RR+', RB '+c.RB+', BB '+c.BB+'; '+c.total+' rats; '+
       fraction(c.carriers,c.total)+' showing resistance; '+fraction(c.redAlleles,c.total*2)+' R allele copies'+
       (phase==='survived'?'; survival '+fraction(c.total,born):'')+'.');
+    const {crosses,inProgress}=builtCrosses();
+    if(crosses.length)lines.push('','PUNNETT SQUARES YOU BUILT · EXPECTED MODEL OUTCOMES',
+      ...crosses.map(([generation,pair,parents,cells])=>'G'+generation+' · '+pair+' · '+parents+': '+cells));
+    if(inProgress.length)lines.push('','PARTIALLY BUILT PUNNETT SQUARES',
+      ...inProgress.map(([generation,pair,placed])=>'G'+generation+' · '+pair+': '+placed));
     lines.push('','MY RESPONSES');
     for(const f of $answer)lines.push(f.labels?.[0]?.textContent?.trim()||f.dataset.rgAnswer,state.answers[f.dataset.rgAnswer]||'[No response yet]','');
     const selected=analysisSelection();
@@ -454,6 +466,7 @@
     }catch(_){copy(true);}
   }
   for(const b of $$('[data-rg-go]'))b.addEventListener('click',()=>go(b.dataset.rgGo));
+  $('#rg-prediction').addEventListener('change',gates);
   $('#rg-prediction').addEventListener('submit',ev=>{
     ev.preventDefault();
     if(predictionLocked()){gates();announce('The starting prediction is locked. Use Explain to reflect on the results.');return;}
@@ -533,7 +546,7 @@
   });
   fill();colony($('#rg-start-colony'),M.create(0).generations[0].counts);render();
   const request=location.hash.slice(1);
-  go(available(request)?request:available(state.step)?state.step:'predict',{focus:false,persist:false});
+  go(available(request)?request:available(state.step)?state.step:model.done?'analyze':'predict',{focus:false,persist:false});
   if(invalid)set('save','An older record is preserved. Download this trial before leaving.');
   const monitorSave=()=>{
     const result=session?.check(KEY);

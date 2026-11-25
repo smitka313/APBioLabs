@@ -77,6 +77,7 @@ test('Hawksbeard carries accurate simulated pairs and reports without requiring 
     state,trial,SITES,TYPES:Object.fromEntries(types.map(t=>[t,t])),PAIRS:L.PLANTS,L,running:false,KEY:'key',preserved:false,
     session:{check:()=>({ok:current})}, choices:{city:'City'}, $:selector, datasetId:s=>'HB-'+s,
     siteName:s=>s==='city'?'City':'Field',typeName:t=>t,fraction:(n,d)=>n+' / '+d, tally:(type)=>L.summarize(trial[type].filter(r=>r.plant<=state.released)),
+    denominatorPrompt:'Which denominator?',denominatorChoices:{soil:'All seeds that landed on soil in the city',type:'Only nonfeathery seeds released in the city'},
     research:'Published experiment',researchScope:'Separate from these simulated trials',PAPER:'published source',
     reportPerson:()=>({name:'First student',period:'1'}), answerInputs:['reflection','claim','evidence','limits'].map(id=>input('hb',id))
   },helpers);
@@ -87,7 +88,10 @@ test('Hawksbeard carries accurate simulated pairs and reports without requiring 
   assert.ok(!sections(report()).some(s=>s.startsWith('Published')));
   state.released=L.PLANTS;
   Object.assign(state.answers,{reflection:'trial notes',claim:'my claim',evidence:'student evidence',limits:'my limit'});
+  state.denominatorChoice='type';
   const final=report(), hits=L.summarize(trial.field);
+  assert.ok(final.sections[0].items.some(item=>item.prompt==='Which denominator?'&&item.value==='Only nonfeathery seeds released in the city'),
+    'Word collects the chosen response, not a replacement answer');
   assert.equal(final.status,'final');
   assert.equal(final.keyResults[0].value,hits.byType.nonfeathery.landed+' / '+hits.landed);
   assert.deepEqual(table(final,'Released seeds and landings by environment').rows[0].slice(2,5),
@@ -99,7 +103,7 @@ test('Hawksbeard carries accurate simulated pairs and reports without requiring 
   assert.ok(JSON.stringify(report()).includes('student evidence'));
 });
 
-test('Rat Generations includes attempted, not graded, analysis and exact snapshots and built crosses',()=>{
+test('Rat Generations keeps the attempted answer in draft and includes exact snapshots and built crosses in both formats',()=>{
   const state={seed:42,action:6,prediction:'decrease',analysisAttempt:'rats',analysisChecked:false,
     answers:{claim:'my claim',evidence:'my evidence',limits:'my limit'},crosses:{}};
   const model=M.restore({v:1,seed:state.seed,step:state.action});
@@ -116,43 +120,47 @@ test('Rat Generations includes attempted, not graded, analysis and exact snapsho
   const report=collect('rat-generations','rg',bind,helpers);
   const legacy=()=>vm.runInNewContext(helpers+between(src,'function report()','function copy(')+'report();',bind);
   const r=report();
-  assert.equal(r.status,'final','A checked but incorrect selection is an attempt, not a missing response');
+  assert.equal(r.status,'draft','An incorrect selection is kept as an attempt but does not finish Analyze');
   assert.equal(r.sections[0].items.at(-1).value,'Original response choice');
   assert.ok(!JSON.stringify(r).includes('Correct'));
   assert.match(legacy(),/ANALYZE QUICK CHECK · SAVED ANSWER\nOriginal prompt\nOriginal response choice/);
   assert.ok(!legacy().includes('Correct'),'TXT describes the wrong attempt without grading it');
   assert.equal(table(r,'Generation record').rows.length,model.generations.length+model.generations.filter(g=>g.survivors).length);
   assert.equal(table(r,'Punnett squares you built · expected model outcomes').rows[0][3],pair.cells.join(', '));
-  state.analysisAttempt='';
+  assert.ok(legacy().includes(pair.cells.join(', '))&&legacy().includes(pair.id),'TXT includes the same Punnett square data');
+  state.analysisChecked=true;state.analysisAttempt='alleles';
+  assert.equal(report().status,'final','A correct check plus the required responses completes the report');
+  state.analysisChecked=false;state.analysisAttempt='';
   assert.equal(report().status,'draft');
-  assert.deepEqual(report().missing,['Try the Analyze quick check.']);
+  assert.deepEqual(report().missing,['Use the feedback to answer the Analyze quick check correctly.']);
   assert.ok(!legacy().includes('ANALYZE QUICK CHECK'),'No saved attempt is not printed as a response');
 });
 
 test('Junco does not leak unrevealed evidence and distinguishes published and illustrative records',()=>{
   const field=D.field.rows, valid=flight.endStep(9,1,'urban','foraging',field);
   const state={observation:'Field note',prediction:'',reason:'',claim:'',limits:'',fieldGroup:'foraging',aviaryGroup:'female',filter:'all',
-    revealed:false,sim:{results:[{id:1,site:'urban',group:'foraging',step:valid}]}};
+    revealed:false,notebookSeed:491,sim:{results:[{id:1,site:'urban',group:'foraging',step:valid}]}};
   const points=D.cort.rows.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
   const src=source('junco');
   const bind={
     D,state,points,identified:false,invalid:false,key:'key', session:{check:()=>({ok:true})},choices:{same:'About the same'},
-    sites:{urban:'UC San Diego',mountain:'Mt. Laguna'},fieldLabels:{foraging:'Birds looking for food'},aviaryLabels:{female:'Females'},
+    sites:{urban:'UC San Diego',mountain:'Mt. Laguna'},fieldLabels:{foraging:'Birds looking for food',incubating:'Females sitting on eggs'},aviaryLabels:{female:'Females',male:'Males'},
+    datasetId:seed=>'JU-'+seed.toString(16).toUpperCase().padStart(8,'0'),
     $:id=>({value:id==='name'?'Student label':'3',labels:[{textContent:id}],textContent:'STALE DOM SENTINEL'}),
     fmt:value=>Number.isFinite(value)?String(Number(value.toFixed(2))):String(value),window:{JuncoFlight:flight}
   };
   const helpers=between(src,'const errName=','function summary(')+between(src,'function corr(','const points=')+
-    between(src,'function cortReading()','function cort()');
+    between(src,'function cortReading(','function cort()');
   const report=collect('junco','ju',bind,helpers);
   const legacy=()=>vm.runInNewContext(helpers+between(src,'function pairLine(','function evidence()')+
-    between(src,'function plainTextReport()','function download()')+'plainTextReport();',{...bind});
+    between(src,'function submissionReport()','function download()')+'plainTextReport();',{...bind});
   assert.equal(report().status,'draft');
   assert.ok(sections(report()).some(s=>s.includes('Field distance')));
   assert.ok(!sections(report()).some(s=>s.includes('Hormone')||s.includes('aviary')));
   assert.equal(table(report(),'Completed virtual observations').rows[0].at(-1),flight.distance('foraging',valid));
   const draftText=legacy();
   assert.match(draftText,/Not revealed yet/);
-  assert.ok(draftText.includes(state.observation)&&draftText.includes(D.field.url)&&draftText.includes('SIMULATED WALK-UP TRIALS'));
+  assert.ok(draftText.includes(state.observation)&&draftText.includes(D.field.url)&&draftText.includes('Optional walk-up trials'));
   assert.ok(!draftText.includes(D.aviary.url)&&!draftText.includes(D.cort.url)&&!draftText.includes('Aviary exploration ·'));
   assert.ok(!draftText.includes('STALE DOM SENTINEL'));
   Object.assign(state,{prediction:'same',revealed:true,claim:'My explanation',limits:'A limitation'});
@@ -162,10 +170,20 @@ test('Junco does not leak unrevealed evidence and distinguishes published and il
   const fullText=legacy();
   assert.ok(fullText.includes(D.aviary.url)&&fullText.includes(D.cort.url)&&fullText.includes(state.claim)&&fullText.includes(state.limits));
   assert.match(fullText,/40 birds shown; correlation r = -0\.53/);
+  assert.match(fullText,/Dataset ID: JU-000001EB/);
+  assert.equal(report().datasetId,'JU-000001EB');
+  assert.ok(fullText.includes('R² = 0.21')&&fullText.includes('P = 0.021'),'TXT carries the same published-model note as Word');
+  for(const [label,name,mean] of [['Birds looking for food','Mt. Laguna','13.5'],['Females sitting on eggs','UC San Diego','0.36'],['Females','Mt. Laguna','-0.65'],['Males','UC San Diego','0.8']]){
+    assert.ok(table(report(),label).rows.some(row=>row[0]===name&&row[1]===mean));
+    assert.ok(fullText.includes(name+' | '+mean));
+    assert.ok(fullText.includes(label));
+  }
   assert.ok(!fullText.includes('STALE DOM SENTINEL'),'Backup summaries come from the captured state even when CORT was not rendered');
   const plotted=table(report(),'Classroom points approximated from the published figure');
   if(points.length){
     assert.equal(plotted.rows.length,points.length);
+    assert.equal(fullText.split('Individual exploration score (PC1)')[1].split(D.cort.source+':')[0]
+      .split('\n').filter(line=>/^\d+ \|/.test(line)).length,points.length,'TXT contains every plotted row');
     assert.equal(plotted.columns[0],'Bird (dot)','Pooled evidence numbers dots rather than suggesting an identified population');
     assert.deepEqual(plotted.rows.map(row=>row[0]),points.map((_,i)=>i+1));
     assert.ok(!plotted.columns.includes('Population'),'No population attribution is invented for pooled source data');
