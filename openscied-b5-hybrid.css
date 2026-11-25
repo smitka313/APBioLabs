@@ -28,6 +28,7 @@
 .hy-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:clamp(.7rem,2vw,1.3rem);align-items:start}
 .hy-grid>*{min-width:0}
 .hy-card{padding:.8rem;border:1px solid var(--line);border-radius:13px;background:var(--bg);min-width:0}
+.hy-recovery{border-inline-start:5px solid var(--bad);margin:.75rem 0}.hy-shell .hy-recovery h2{font-size:1.2rem}
 .hy-card label:not(:first-child){display:block;margin:.65rem 0 .25rem}
 .hy-hint:not(:empty),#hy-status:not(:empty){border-inline-start:3px solid var(--accent);background:var(--surface);padding:.45rem .7rem}
 .hy-hint:empty,#hy-status:empty{display:none}

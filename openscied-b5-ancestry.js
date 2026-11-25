@@ -18,7 +18,7 @@ function validTree(t){return t[2]==='black'&&[t[0],t[1]].includes('polar')&&[t[0
 let s=fresh(),session,failed=false,st='profile',p=0,dp=0,pending=null,editing=false,selected='',zoom='',calc={},treeMismatch=false,canSave;
 try{
   session=window.OpenSciEdSaveSession?.open(localStorage,'b5-ancestry',[KEY]);
-  const raw=localStorage.getItem(KEY);
+  const raw=session?.read(KEY);
   if(raw){
     const v=JSON.parse(raw);if(v?.v!==1||!/^[A-F0-9]{8}$/.test(v.id))throw Error('invalid notebook');
     s.id=v.id;s.lastVisitedAt=Number(v.lastVisitedAt)||0;s.step=routes.includes(v.step)?v.step:'traits';
@@ -268,7 +268,7 @@ $('reset-form').onsubmit=e=>{
 specimens();noteUI();predictUI();dna();tree();
 const hash=location.hash.slice(1), start=routes.includes(hash)&&gate(hash)?hash:gate(s.step)?s.step:routes.findLast(gate);step(start,false);
 if(!canSave())$('save').textContent='This browser could not open the saved notebook. You can still preview a report.';
-window.OpenSciEdSubmission?.mount({target:'#ba-report',filename:'bear-ancestry',collect:()=>{
+function collectReport(){
  const q1='Which bears share a more recent common ancestor? Explain one branch point and cite a DNA comparison.',q2='Did you keep or revise your first guess? Explain what the trait evidence can and cannot tell you.';
  const ordered=key=>key.split('|').sort().join('|');
  const featured=pairs.map(pair=>ordered(pair.map(k=>bears[k].data).join('|')));
@@ -281,10 +281,20 @@ window.OpenSciEdSubmission?.mount({target:'#ba-report',filename:'bear-ancestry',
  {title:'Original dataset and what this model can show',items:[
   {type:'text',text:'The original lesson’s eight-species MAFFT alignment groups polar and brown bears together. This three-tip model cannot date their split or predict what happens as the Arctic changes. The dataset contains no human DNA.'},
   {type:'table',columns:['Original species','Sequence length (bases)'],rows:fullKeys.map(k=>[display(k),String(DNA[k].length)])},
-  {type:'text',text:'The table below includes the three featured full-sequence comparisons and any additional pairs you opened. A simple minimum-change count is not a multi-species phylogenetic analysis.'},
+  {type:'text',text:'The first 72 bases can give the same count for two pairs even when the full comparisons give different counts. The full comparisons use the whole pair, including gaps. The original eight-species tree uses the pattern across species, not a single pair count.'},
   {type:'table',columns:['Full pair','Changes','Substitutions','Gap bases'],rows:fullRows}
  ]},
  {title:'Explain and revise',items:[{type:'answer',prompt:q1,value:s.answers.conclusion},{type:'answer',prompt:q2,value:s.answers.revise}]}
  ]};
-}});
+}
+window.OpenSciEdSubmission?.mount({target:'#ba-report',filename:'bear-ancestry',collect:collectReport});
+window.OpenSciEdB5ReportFiles?.bindHTML($('save-html'),collectReport,'bear-ancestry',announce);
+$('save-json').onclick=()=>{
+ const r=window.OpenSciEdSubmission?.normalize(collectReport());
+ if(!r)return;
+ const json={format:'bear-ancestry-activity-v1',title:r.title,unit:r.unit,source:r.source,
+  student:r.student.name?r.student:null,datasetId:r.datasetId,status:r.status,exportedAt:r.exportedAt,missing:r.missing,report:r.sections};
+ window.OpenSciEdB5ReportFiles?.download(JSON.stringify(json,null,2),'application/json','bear-ancestry-'+r.datasetId+'.json');
+ announce('Downloaded this activity’s JSON.');
+};
 })();

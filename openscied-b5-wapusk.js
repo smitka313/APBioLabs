@@ -16,10 +16,15 @@
     [2011,11,4.34],[2012,17,3.39],[2013,13,5.05],[2014,17,5.03],[2015,9,4.43],[2016,10,4.17],
     [2017,13,4.66],[2018,23,4.66],[2019,18,4.19],[2020,16,3.82],[2021,16,4.77],[2022,19,4.70],[2023,19,4.26]
   ];
-  const scaleOptions={canada:'Canada temperatures over years',bay:'Western Hudson Bay breakup over years',arctic:'Arctic minimum extent over years',camp:'Exact date of a three-bear meeting at Owl River'};
+  const scaleInputs=all('[name="scale-match"]');
+  const scaleOptions=Object.fromEntries(scaleInputs.map(b=>[b.value,b.parentElement.textContent.trim()]));
   const requiredScales=['canada','bay','arctic'];
-  const scaleGood=choices=>choices?.length===3&&requiredScales.every(k=>choices.includes(k));
-  const scaleFeedback=choices=>choices===null?'':scaleGood(choices)?'Yes. The three records track changes over years at three different places or sizes of area. None tells us when individual bears meet.':choices.includes('camp')?'The Arctic chart covers a huge area. It does not show the date or behavior of individual bears at Owl River. Compare the other three claims with their data sources.':'Look again at the place and the years covered by each data source. More than one statement fits.';
+  // Earlier notebooks did not have the local, across-seasons park example.
+  const scaleGood=(choices,version)=>{const required=version===2?['park',...requiredScales]:requiredScales;
+    return choices?.length===required.length&&required.every(k=>choices.includes(k));};
+  const scaleFeedback=(choices,version)=>choices===null?'':scaleGood(choices,version)?
+    version===2?'Yes. The park maps compare seasons locally. The other three records compare years at larger scales. None tells us when individual bears meet.':'Yes. Your earlier check matched three records to their scales. You can also try the new local park example.':
+    choices.includes('camp')?'The Arctic chart covers a huge area. It does not show the date or behavior of individual bears at Owl River. Compare the other claims with their data sources.':'Look again at the places and times covered by the data sources. More than one statement fits.';
   const owlLabels={place:'The three species used the same location on different occasions.',meeting:'The three species were observed together.'};
   const owlFeedback={place:'That matches the evidence. The photos show one location used on different occasions, not a meeting.',meeting:'Look at the difference between place and time. The photographs do not establish an encounter.'};
   const figures=[
@@ -89,7 +94,7 @@
     ]
   };
   const study='https://research-groups.usask.ca/human-wildlife-interaction/documents/clark-et-al.-2018-novel-range-overlap-of-three-ursids-in-the-canadian-subarctic.pdf#page=5';
-  let state={v:1,id:signature(),step:'sightings',season:'winter',region:'seasonal',figure:0,fields:{},check:'',scaleCheck:null,finished:false,lastVisitedAt:0}, session, recovery=false, picked=-1;
+  let state={v:1,id:signature(),step:'sightings',season:'winter',region:'seasonal',figure:0,fields:{},check:'',scaleCheck:null,scaleCheckVersion:2,scaleDraft:null,finished:false,lastVisitedAt:0}, session, recovery=false, picked=-1;
   try{
     session=window.OpenSciEdSaveSession?.open(localStorage,'b5-wapusk',[KEY]);
     const raw=session?.read(KEY);
@@ -99,12 +104,12 @@
       state={...state,id:x.id,step:stages.includes(x.step)?x.step:'sightings',season:x.season==='summer'?'summer':'winter',
         region:Object.hasOwn(regions,x.region)?x.region:'seasonal',fields:Object.fromEntries(Object.keys(labels).map(k=>[k,clean(x.fields?.[k])])),
         check:['place','meeting'].includes(x.check)?x.check:'',figure:Number.isInteger(x.figure)&&figures[x.figure]?x.figure:0,
-        scaleCheck:Array.isArray(x.scaleCheck)?[...new Set(x.scaleCheck.filter(k=>Object.hasOwn(scaleOptions,k)))]:null,finished:x.finished===true,lastVisitedAt:Number(x.lastVisitedAt)||0};
+        scaleCheck:cleanScale(x.scaleCheck),scaleCheckVersion:x.scaleCheckVersion===2?2:1,scaleDraft:cleanScale(x.scaleDraft),finished:x.finished===true,lastVisitedAt:Number(x.lastVisitedAt)||0};
     }
   }catch(_){recovery=true;}
   const identity=window.OpenSciEdSaveSession?.reportIdentity?.(session,[KEY],()=>window.Lab?.identity?.get?.()??null)??(()=>null);
   const canSave=()=>!recovery&&session?.check(KEY).ok;
-  function resetState(){ $('reset').disabled=!canSave()||!(Object.values(state.fields).some(v=>v.trim())||state.check||state.scaleCheck!==null||state.finished); }
+  function resetState(){ $('reset').disabled=!canSave()||!(Object.values(state.fields).some(v=>v.trim())||state.check||state.scaleCheck!==null||state.scaleDraft!==null||state.finished); }
   function save(){state.lastVisitedAt=Date.now();if(!canSave()||!session.write(KEY,JSON.stringify(state)).ok){tell('This tab could not save on this device. Preview a report to keep a copy.');resetState();return false;}resetState();return true;}
   const uiKey=id=>'aplab:ui:wapusk:disclosure:'+id;
   let resetDisclosures=false;
@@ -126,7 +131,10 @@
     state.step=step;
     if(step==='model')drawRecap();
     if(step==='scale')$('scale-recap').textContent=state.fields.observe?.trim()?'Your Wapusk observation: '+state.fields.observe.trim():'';
-    if(focus){$(step+'-title').focus();save();}
+    if(focus){
+      if(step!=='scale'&&location.hash==='#wb-sea-ice')history.replaceState(null,'',location.pathname+location.search);
+      $(step+'-title').focus();save();
+    }
   }
   function showMark(index){
     picked=index;
@@ -184,12 +192,19 @@
     }
   }
   function feedback(){
-    $('feedback').textContent=owlFeedback[state.check]||'';
+    const r=owlRecord();$('feedback').textContent=r.answer?owlResultText(r):'';
     for(const b of all('[name="overlap"]'))b.checked=b.value===state.check;
   }
   for(const b of all('[data-figure]'))b.onclick=()=>{state.figure=Number(b.dataset.figure);drawFigure(state.figure);save();};
-  function showScaleCheck(){for(const b of all('[name="scale-match"]'))b.checked=state.scaleCheck?.includes(b.value)||false;$('scale-feedback').textContent=scaleFeedback(state.scaleCheck);}
-  $('scale-check').onsubmit=e=>{e.preventDefault();state.scaleCheck=all('[name="scale-match"]:checked').map(b=>b.value);showScaleCheck();save();};
+  function cleanScale(raw){return Array.isArray(raw)?[...new Set(raw.filter(k=>Object.hasOwn(scaleOptions,k)))]:null;}
+  const readScale=()=>scaleInputs.filter(b=>b.checked).map(b=>b.value);
+  function showScaleCheck(){
+    const choices=state.scaleDraft??state.scaleCheck;
+    for(const b of scaleInputs)b.checked=choices?.includes(b.value)||false;
+    $('scale-feedback').textContent=state.scaleDraft!==null?'Choose Check the scales for feedback.':scaleFeedback(state.scaleCheck,state.scaleCheckVersion);
+  }
+  for(const b of scaleInputs)b.addEventListener('change',()=>{state.scaleDraft=readScale();showScaleCheck();save();});
+  $('scale-check').onsubmit=e=>{e.preventDefault();state.scaleCheck=readScale();state.scaleCheckVersion=2;state.scaleDraft=null;showScaleCheck();save();};
   showScaleCheck();
   $('enlarge-scale').onclick=()=>enlarge($('scale-image'),$('scale-caption').textContent);
   for(const b of all('[data-video]'))b.onclick=()=>{
@@ -199,6 +214,8 @@
     frame.setAttribute('allowfullscreen','');frame.referrerPolicy='strict-origin-when-cross-origin';
     host.prepend(frame);b.hidden=true;frame.focus();
   };
+  const directIce=location.hash==='#wb-sea-ice';
+  if(directIce)state.figure=2;
   drawFigure(state.figure);
   for(const b of all('[data-step]'))b.onclick=()=>section(b.dataset.step);
   for(const b of all('[data-season]'))b.onclick=()=>{state.season=b.dataset.season;picked=-1;drawSeason();save();};
@@ -226,12 +243,19 @@
     try{for(const d of all('details[data-keep-open]'))sessionStorage.removeItem(uiKey(d.dataset.keepOpen));}catch(_){}
     location.reload();
   };
-  drawSeason();drawRegion();feedback();section(state.step,false);resetState();
+  drawSeason();drawRegion();feedback();section(directIce?'scale':state.step,false);resetState();
   if(!canSave())tell('This browser could not open the saved notebook. You can still work and preview a report.');
   const popColumns=['Subpopulation','Population size (map)','Body condition','Reproduction'];
   const evidenceSource='Wapusk sightings and regional snapshot: OpenSciEd B.5 Lesson 1. Arctic extent: NSIDC Sea Ice Index v4, 1987–2023 (five-day yearly minima). Interactive map is schematic.';
-  const owlRecord=()=>({answer:owlLabels[state.check]||null,verdict:state.check==='place'?'Supported':state.check==='meeting'?'Not supported':'Not checked',feedback:owlFeedback[state.check]||null});
-  const scaleRecord=()=>({choices:state.scaleCheck?.map(k=>scaleOptions[k])||[],verdict:state.scaleCheck===null?'Not checked':scaleGood(state.scaleCheck)?'Correct':'Try again',feedback:scaleFeedback(state.scaleCheck)||null});
+  function owlRecord(){return {answer:owlLabels[state.check]||null,verdict:state.check==='place'?'Supported':state.check==='meeting'?'Not supported':'Not checked',feedback:owlFeedback[state.check]||null};}
+  function owlResultText(owl){return owl.verdict+(owl.answer?' · '+owl.answer+' '+owl.feedback:'');}
+  function scaleRecord(){
+    const draft=state.scaleDraft!==null;
+    const keys=state.scaleDraft??state.scaleCheck;
+    return {question:$('scale-check-question').textContent,choices:keys?.map(k=>scaleOptions[k])||[],
+      verdict:draft?'Selections not checked':keys===null?'Not checked':scaleGood(keys,state.scaleCheckVersion)?'Correct':'Try again',
+      feedback:draft?'You saved these selections without checking them.':scaleFeedback(keys,state.scaleCheckVersion)||null};
+  }
   function makeReport(){
     const missing=unfinished().map(k=>'Record: '+labels[k]+'.');
     if(!state.finished)missing.push('Choose Finish evidence notebook.');
@@ -242,8 +266,8 @@
       sections:[
         {title:'Evidence notebook · '+r.name,items:Object.entries(labels).map(([k,prompt])=>({type:'answer',prompt,value:state.fields[k]||''}))},
         {title:'Concept checks',items:[
-          {type:'answer',prompt:'Owl River claim verdict',value:owl.verdict+(owl.answer?' · '+owl.answer+' '+owl.feedback:'')},
-          {type:'answer',prompt:'Which claims match the scale of the evidence?',value:scale.verdict+(scale.choices.length?' · '+scale.choices.join('; ')+' '+(scale.feedback||''):'')}
+          {type:'answer',prompt:'Owl River claim verdict',value:owlResultText(owl)},
+          {type:'answer',prompt:scale.question,value:scale.verdict+(scale.choices.length?' · '+scale.choices.join(' '):'')+(scale.feedback?' '+scale.feedback:'')}
         ]},
         {title:'Evidence reference · '+r.name,items:regionItems}
       ]};

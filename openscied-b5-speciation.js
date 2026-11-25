@@ -14,7 +14,7 @@ const fresh=()=>({v:1,rosterVersion:2,id:Array.from(crypto.getRandomValues(new U
 let s=fresh(),session,failed=false,selected=-1,selectedTrait=-1,site=0,videoLoaded=false,replayTimer,writingStarted=false;
 try{
  session=window.OpenSciEdSaveSession?.open(localStorage,'b5-speciation',[KEY]);
- const raw=localStorage.getItem(KEY);
+ const raw=session?.read(KEY);
  if(raw){
    const v=JSON.parse(raw);
    if(v?.v!==1||!/^[A-F0-9]{8}$/.test(v.id))throw Error('Invalid saved notebook');
@@ -88,7 +88,7 @@ function go(k,focus=true){
  if(!gate(k))return;
  s.step=k;routes.forEach(r=>document.getElementById(r).hidden=r!==k);
  if(location.hash!=='#'+k)history.replaceState(null,'','#'+k);
- if(writingStarted)save();
+ if(focus&&writingStarted)save();
  if(k==='argument')recap();
  if(k==='fossils')$('fossil-first').textContent=s.answers.first||'';
  controls();
@@ -327,21 +327,21 @@ function collectReport(){
  ]};
 }
 window.OpenSciEdSubmission?.mount({target:'#ice-report',filename:'ice-age-bear-speciation',collect:collectReport});
+window.OpenSciEdB5ReportFiles?.bindHTML($('save-html'),collectReport,'ice-age-bear-speciation',tell);
 $('backup').onclick=()=>{
  if(!writingStarted)return;
  const report=collectReport();
  const payload={
-  format:'ice-age-bear-speciation-backup-v1',exportedAt:new Date().toISOString(),student:report.student,datasetId:report.datasetId,
+  format:'ice-age-bear-speciation-backup-v2',exportedAt:new Date().toISOString(),student:report.student,datasetId:report.datasetId,
   progress:{completed:doneCount(),total:4,summary:doneCount()+' of 4 steps complete',status:report.status},
   selectedCycle:p().id,climate:phases.map((k,i)=>({phase:k==='cold'?'Glacial':'Interglacial',
-   fromYearsAgo:date(i===1)[0]*1000,toYearsAgo:date(i===1)[1]*1000,years:D.years(p(),i===1),
+   cycle:p().id,fromYearsAgo:date(i===1)[0]*1000,toYearsAgo:date(i===1)[1]*1000,years:D.years(p(),i===1),
    generations:s.mathChecked?D.generations(p(),i===1):null,
    placements:s.moves[k].map((v,i)=>({bear:'Bear '+(i+1),habitat:D.habitats[v]?.name??null}))})),
   fossilPins:s.pins.map(i=>{const f=D.fossils[i];return {location:f.name,bear:f.bear,youngestYears:f.young,oldestYears:f.old};}),
   conclusionCheck:{question:D.conclusion.question,response:s.limitChoice?D.conclusion.choices[s.limitChoice]:null,
    verdict:s.limitChoice?(s.limit?'Correct':'Try again'):'Not answered',feedback:s.limitChoice?D.conclusion.feedback[s.limitChoice]:null},
-  report:report.sections,
-  work:{'aplab:openscied:b5-speciation:v1':JSON.stringify(s)}
+  title:report.title,unit:report.unit,source:report.source,missing:report.missing,report:report.sections
  };
  const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));
  const a=mk('a');a.href=url;a.download='ice-age-bear-speciation-backup.json';a.click();

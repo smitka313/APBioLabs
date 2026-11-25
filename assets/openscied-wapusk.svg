@@ -66,7 +66,7 @@
 </g>
 <g id="wapusk-polar" transform="translate(388 201) scale(0.82)">
 <ellipse cx="207" cy="218" rx="167" ry="14" fill="url(#polar-shadow)"/>
-<g stroke="#637d80" stroke-width="2" stroke-linejoin="round">
+<g stroke="#3d6068" stroke-width="3" stroke-linejoin="round">
 <path fill="#9caeaa" d="M107 149L135 155L142 178L126 204L135 215Q136 222 121 222H103L100 215L113 180Z"/><path fill="#9caeaa" d="M239 148L268 145L274 173L274 200L285 210Q289 217 282 221H256L251 214L248 184Z"/>
 <path fill="url(#polar-coat)" d="M46 131 Q51 114 67 107 Q78 89 99 80 Q121 69 154 70 Q183 68 209 80 Q231 85 247 97 Q267 109 285 104 Q299 99 311 105 Q323 111 332 122 L354 129 Q365 133 362 140 L354 146 L337 151 Q325 162 300 161 Q284 163 264 178 Q246 194 221 186 Q194 202 165 191 Q141 190 122 180 Q99 178 80 169 Q65 167 54 149 Q45 149 41 143 Q37 138 46 131Z"/>
 <g clip-path="url(#polar-fur)" stroke="none">
@@ -75,7 +75,7 @@
 <path d="M66 126Q122 85 172 89Q231 92 267 112" transform="translate(0 0)" fill="none" stroke="#fff8df" stroke-width="2" stroke-opacity=".51"/>
 <path d="M285 131q11-19 27-22 13 8 24 23-21 9-27 14z" fill="#eadfca" opacity=".44"/>
 </g>
-<path fill="url(#polar-legs)" stroke="none" d="M91 142 Q111 136 133 158 L126 179 Q117 194 113 207 L120 213 Q122 221 115 224 L86 224 Q80 221 82 213 L88 188 Q83 174 82 164 Q81 153 91 142Z"/><path fill="url(#polar-legs)" stroke="none" d="M224 140 Q244 133 259 152 L256 184 L258 199 Q263 207 272 212 Q277 219 267 223 L237 223 Q229 222 228 214 L225 192 L216 174 Q206 151 224 140Z"/>
+<path fill="url(#polar-legs)" stroke-width="2" stroke-opacity=".72" d="M91 142 Q111 136 133 158 L126 179 Q117 194 113 207 L120 213 Q122 221 115 224 L86 224 Q80 221 82 213 L88 188 Q83 174 82 164 Q81 153 91 142Z"/><path fill="url(#polar-legs)" stroke-width="2" stroke-opacity=".72" d="M224 140 Q244 133 259 152 L256 184 L258 199 Q263 207 272 212 Q277 219 267 223 L237 223 Q229 222 228 214 L225 192 L216 174 Q206 151 224 140Z"/>
 <path fill="none" stroke-opacity=".55" d="M86 181q2 17-4 33m15 4 2-3m6 3 2-3m124-26 4 22m12 7 4-4m6 4 4-3"/>
 <path fill="#9caeaa" d="M296 107Q289 100 291 92Q293 85 299 87Q306 87 311 103Z"/><path fill="none" stroke="#fff8df" stroke-opacity=".6" d="M296 96q5-5 10 3"/>
 <path fill="none" d="M328 143q12 4 25-1"/><path fill="#364b50" d="M350 128l12 4 3 7-6 6-8-4-3-8Z"/>

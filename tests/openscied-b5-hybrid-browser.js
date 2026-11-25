@@ -55,8 +55,11 @@ const server=http.createServer((req,res)=>{
    await layout('family');await go('model').click();
    for(let i=0;i<4;i++)await at('flip').click();
    assert.equal((await save()).rolls,4);assert.equal(await at('cohort').locator('button').count(),1);
-   await at('flip').click();await p.reload();assert(await stage('model').isVisible());
+   assert.match(await at('remaining').textContent(),/Flip all four coins for the next mating/);
+   await at('flip').click();const beforeReload=await save();await p.reload();assert(await stage('model').isVisible());
+   assert.deepEqual(await save(),beforeReload,'reloading must not rewrite saved evidence or its timestamp');
    assert.equal((await save()).rolls,5);assert.equal((await save()).id,seed);
+   assert.match(await at('remaining').textContent(),/Flip remaining coins for this mating/);
    await at('remaining').click();assert.equal((await save()).rolls,8);
    for(let i=2;i<10;i++)await at('remaining').click();
    assert.equal((await save()).rolls,40);assert.equal(await at('cohort').locator('button').count(),10);
@@ -71,7 +74,11 @@ const server=http.createServer((req,res)=>{
    if(width===1366){
     await p.getByText('Keep a backup of this activity',{exact:true}).click();
     const json=p.waitForEvent('download');await at('backup').click();const result=JSON.parse(fs.readFileSync(await (await json).path(),'utf8'));
-    assert.equal(result.student.name,'Avery Ice');assert.equal(String(result.student.period),'3');assert.equal(result.datasetId,'HY-'+seed);assert.equal(result.flips,40);assert.equal(Object.keys(result.work).length,1);
+    assert.equal(result.student.name,'Avery Ice');assert.equal(String(result.student.period),'3');assert.equal(result.datasetId,'HY-'+seed);assert.equal(result.flips,40);assert.equal(result.format,'arctic-bear-futures-backup-v2');assert.equal(result.work,undefined);
+    assert.deepEqual(result.coinFlips.map(row=>row.side==='Tails'?1:0),D.flips(seed,40));
+    assert.equal(result.climate.measure,'September sea-ice area');assert.ok(result.climate.pinnedValues.every(row=>row.kind==='projected'));
+    const [htmlFile]=await Promise.all([p.waitForEvent('download'),at('save-html').click()]);
+    const html=fs.readFileSync(await htmlFile.path(),'utf8');assert.match(html,/Avery Ice.*HY-[A-F0-9]{8}.*annual minimum extent.*NOS3/s);
     assert.deepEqual(result.report[2].items[1].rows.map(row=>row.slice(1).map(v=>v.startsWith('Tails')?1:0)).flat(),D.flips(seed,40));
     await p.getByRole('button',{name:'Preview report'}).click();await p.getByText('More formats',{exact:true}).click();
     const word=p.waitForEvent('download');await p.getByRole('button',{name:/Download Word/i}).click();
@@ -79,9 +86,26 @@ const server=http.createServer((req,res)=>{
     const xml=await z.file('word/document.xml').async('string');
     for(const pattern of [/Avery Ice/,/HY-[A-F0-9]{8}/,/NOS3/,/Which conclusion matches/,/2100/])assert.match(xml,pattern);
     await p.getByRole('button',{name:'Close report'}).click();
-    const dash=await c.newPage();await dash.goto(base+'openscied-dashboard.html');assert.match(await dash.locator('#bear-hybrid-progress').innerText(),/4 of 4/);await dash.close();
+    const dash=await c.newPage();await dash.goto(base+'openscied-dashboard.html');assert.match(await dash.locator('#bear-hybrid-progress').innerText(),/4 of 4/);
+    // Simulate a different tab clearing only this activity without touching its neighbor.
+    await dash.evaluate(()=>{
+     const storage=window.localStorage;
+     storage.setItem('aplab:openscied:b5-wapusk:v1','neighbor-record');
+     window.OpenSciEdSaveSession.erase(storage,'b5-hybrid',['aplab:openscied:b5-hybrid:v1']);
+    });
+    await at('recovery').waitFor({state:'visible'});assert(await at('reset').isDisabled());
+    assert.equal(await save(),null);
+    const [recovered]=await Promise.all([p.waitForEvent('download'),at('save-recovery').click()]);
+    const recovery=JSON.parse(fs.readFileSync(await recovered.path(),'utf8'));
+    assert.equal(recovery.status,'recovery');assert.equal(recovery.datasetId,'HY-'+seed);assert.equal(recovery.flips,40);
+    await at('open-current').click();assert(await at('recovery-dialog').isVisible());
+    await at('keep-recovery').click();assert(await at('recovery').isVisible());
+    await Promise.all([p.waitForEvent('load'),(async()=>{await at('open-current').click();await at('confirm-reload').click();})()]);
+    assert(await stage('ice').isVisible());assert(await at('recovery').isHidden());
+    assert.equal(await dash.evaluate(()=>localStorage.getItem('aplab:openscied:b5-wapusk:v1')),'neighbor-record');await dash.close();
+   } else {
+    await at('reset').click();await at('erase').fill('ERASE');await at('confirm').click();await stage('ice').waitFor();assert.equal(await save(),null);
    }
-   await at('reset').click();await at('erase').fill('ERASE');await at('confirm').click();await stage('ice').waitFor();assert.equal(await save(),null);
    assert.deepEqual(errors,[]);await c.close();
   }
   console.log('Lesson 6 browser flow passed at 390, 768, 1366, and 1920 px, including JSON, Word, resume, and reset.');

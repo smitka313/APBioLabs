@@ -31,7 +31,7 @@ let s=fresh(),session,failed=false,started=false,year=2022,encounter='brown',fam
 const shown=new Set(D.graph.map(g=>g.key));
 try{
  session=window.OpenSciEdSaveSession?.open(localStorage,'b5-hybrid',[KEY]);
- const raw=localStorage.getItem(KEY);
+ const raw=session?.read(KEY);
  if(raw){
   const v=JSON.parse(raw);
   if(v?.v!==1||!/^[A-F0-9]{8}$/.test(v.id))throw Error('Invalid saved record');
@@ -55,9 +55,19 @@ function readyFamily(){return s.islands.length===2&&[1,2].every(g=>D.family.some
 function readyClaim(){return readyIce()&&readyFamily()&&s.rolls===40&&written('claim')&&written('limit')&&s.verdict==='clue';}
 function gate(step){const idx=routes.indexOf(step);return idx===0||(idx>0&&readyIce()&&(idx===1||(readyFamily()&&(idx===2||s.rolls===40))));}
 function done(){return Number(readyIce())+Number(readyIce()&&readyFamily())+Number(readyIce()&&readyFamily()&&s.rolls===40)+Number(s.finished);}
+let writeFailed=false;
+function saveStatus(){
+ const savable=canSave()&&!writeFailed;
+ const notice=$('recovery'),focused=notice.contains(document.activeElement);
+ notice.hidden=!!savable;
+ if(focused&&savable)$('reset').focus();
+ $('reset').disabled=!canSave()||!started;
+ $('save').textContent=savable?'Your work is saved in this browser. Preview the report to keep a copy.':'This tab cannot save. Download a recovery copy before reloading.';
+}
 function save(){
  started=true;s.lastVisitedAt=Date.now();
- if(!canSave()||!session.write(KEY,JSON.stringify(s)).ok)$('save').textContent='This tab cannot save. Preview your report to keep a copy.';
+ writeFailed=!canSave()||!session.write(KEY,JSON.stringify(s)).ok;
+ saveStatus();
 }
 function changed(){s.finished=false;save();controls();}
 function controls(){
@@ -68,7 +78,7 @@ function controls(){
  $('model-hint').textContent=s.rolls===40?'Ten simulated offspring recorded.':Math.floor(s.rolls/4)+' of 10 offspring recorded · '+s.rolls+' of 40 coin flips.';
  $('claim-hint').textContent=s.finished?'Investigation complete. Preview your report or choose Edit saved work.':readyClaim()?'Ready to finish.':'Write both responses and check the conclusion.';
  $('finish').disabled=!readyClaim()||s.finished;$('finish').hidden=s.finished;$('edit').hidden=!s.finished;
- $('reset').disabled=!canSave()||!started;$('backup').disabled=!started;
+ saveStatus();$('backup').disabled=!started;
  for(const k of ['claim','limit'])$(k).readOnly=s.finished;
  all('input[name=hy-check]').forEach(e=>e.disabled=s.finished);
  all('[data-step],[data-go]').forEach(b=>{b.disabled=!gate(b.dataset.step||b.dataset.go);if(b.hasAttribute('data-step')){if(b.dataset.step===s.step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');}});
@@ -77,7 +87,7 @@ function go(k,focus=true){
  if(!gate(k))return;
  s.step=k;routes.forEach(r=>document.getElementById(r).hidden=r!==k);
  if(location.hash!=='#'+k)history.replaceState(null,'','#'+k);
- if(started)save();if(k==='claim')recap();controls();
+ if(focus&&started)save();if(k==='claim')recap();controls();
  if(focus){say('');document.getElementById(k+'-title').focus();}
 }
 all('[data-step],[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go||b.dataset.step));
@@ -159,7 +169,8 @@ function showModel(){
  $('round').textContent='Mating '+(r+1)+' of 10 · '+f.length+' of 4 variants revealed';
  $('flip').disabled=s.rolls>=40;
  $('flip').textContent=s.rolls===40?'All 40 flips recorded':s.rolls%4===0&&s.rolls>0?'Next mating · Flip for LYST':'Flip for '+D.traits[s.rolls%4].key;
- $('remaining').hidden=s.rolls<4||s.rolls===40;
+ $('remaining').hidden=s.rolls===0||s.rolls===40;
+ $('remaining').textContent=s.rolls%4?'Flip remaining coins for this mating':'Flip all four coins for the next mating';
  $('coin').textContent=s.rolls?(bits().at(-1)===0?'H':'T'):'?';
  $('cub').dataset.born=String(f.length===4);$('cub').dataset.coat=f[0]===1?'light':'mixed';
  $('inheritance').replaceChildren(table(['Gene','Polar contribution','Brown contribution','Model result'],D.traits.map((t,i)=>[t.key,t.polar,f[i]===undefined?'Not flipped':face(f[i])+': '+t.brown[f[i]],f[i]===undefined?'Waiting':D.phenotype(i,f[i])]),'Mating '+(r+1)+' model traits'));
@@ -222,8 +233,8 @@ function report(){
  const missing=[];if(!readyIce())missing.push('Pin a year and write the climate prediction.');if(!readyFamily())missing.push('Trace the family and write the evidence note.');if(s.rolls<40)missing.push('Complete ten matings.');if(!s.finished)missing.push('Finish the claim.');
  return {title:'Arctic Bear Futures & Hybridization',unit:'OpenSciEd B.5 · Lesson 6 companion',
  source:'OpenSciEd B.5 Lesson 6: Future Predictions, Mating Between Bear Species, Making Sense of Matings and Hybridization Model. Climate points are approximate readings; the documented family is real; the classroom cohort is simulated.',
- status:!canSave()?'recovery':s.finished?'final':'draft',student:identity(),datasetId:'HY-'+s.id,missing,sections:[
- {title:'Climate evidence',items:[{type:'answer',prompt:'Pinned year and approximate September sea-ice area',value:s.year?s.year+' · '+gText(s.year):''},answer('prediction')]},
+ status:(!canSave()||writeFailed)?'recovery':s.finished?'final':'draft',student:identity(),datasetId:'HY-'+s.id,missing,sections:[
+ {title:'Climate evidence',items:[{type:'answer',prompt:'Pinned year and approximate September sea-ice area',value:s.year?s.year+' · '+gText(s.year):''},answer('prediction'),{type:'text',text:'These September area values are not directly comparable to the Wapusk chart’s annual minimum extent. Area counts the ice-covered share; extent counts whole qualifying grid cells.'}]},
  {title:'Documented family and encounters',items:[{type:'answer',prompt:'Islands visited',value:s.islands.map(k=>k==='banks'?'Banks Island':'Victoria Island').join(', ')},{type:'answer',prompt:'Family branches traced',value:s.traces.map(k=>D.family.find(a=>a.id===k).label).join(', ')},answer('evidence')]},
  {title:'Ten-mating classroom model',items:[{type:'text',text:s.rolls+' of 40 independent model coin flips. Real survival and mating rates are not modeled.'},
  {type:'table',columns:['Offspring','LYST','APOB','ARID5B','NOS3'],rows:cohort().map((row,i)=>['Bear '+(i+1),...row.map((b,j)=>face(b)+': '+D.phenotype(j,b))])},
@@ -231,14 +242,32 @@ function report(){
  {title:'Claim, reasoning and limits',items:[answer('claim'),answer('limit'),{type:'answer',prompt:'Which conclusion matches the evidence?',value:s.verdict?checkChoices[s.verdict]+' '+checks[s.verdict]:''}]}
  ]};
 }
-$('backup').onclick=()=>{
- const r=report(),payload={format:'arctic-bear-futures-backup-v1',exportedAt:new Date().toISOString(),student:r.student,datasetId:r.datasetId,progress:{completed:done(),total:4},pinnedYear:s.year,flips:s.rolls,conditions:summaries(),report:r.sections,work:{[KEY]:JSON.stringify(s)}};
- const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));const a=n('a');a.href=url;a.download='arctic-bear-futures-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);say('Downloaded the Lesson 6 backup.');
-};
+function downloadJSON(){
+ const r=report(), yearRow=s.year==null?undefined:years.find(y=>y===s.year);
+ const payload={format:'arctic-bear-futures-backup-v2',exportedAt:new Date().toISOString(),
+   student:r.student,datasetId:r.datasetId,status:r.status,title:r.title,unit:r.unit,source:r.source,missing:r.missing,
+   progress:{completed:done(),total:4},pinnedYear:s.year,
+   climate:{measure:'September sea-ice area',unit:'million km²',pinnedValues:yearRow==null?[]:D.graph.flatMap(g=>{
+     const value=point(g,yearRow);return value==null?[]:[{series:g.label,value,kind:g.key==='obs'?'observed':'projected'}];
+   })},flips:s.rolls,coinFlips:bits().map((bit,index)=>{
+     const gene=index%4,trait=D.traits[gene];return {mating:Math.floor(index/4)+1,gene:trait.key,side:face(bit),simulatedTrait:D.phenotype(gene,bit)};
+   }),conditions:summaries(),report:r.sections};
+ window.OpenSciEdB5ReportFiles?.download(JSON.stringify(payload,null,2),'application/json','arctic-bear-futures-backup.json');
+ say('Downloaded the Lesson 6 '+(r.status==='recovery'?'recovery file.':'backup.'));
+}
+$('backup').onclick=downloadJSON;
+$('save-recovery').onclick=downloadJSON;
+$('open-current').onclick=()=>$('recovery-dialog').showModal();
+$('keep-recovery').onclick=()=>$('recovery-dialog').close();
+$('confirm-reload').onclick=()=>location.reload();
+window.addEventListener('storage',e=>{
+ const api=window.OpenSciEdSaveSession;
+ if(!e.key||e.key===KEY||e.key===api?.globalKey||e.key===api?.scopeKey('b5-hybrid')||e.key===api?.resetKey(KEY))saveStatus();
+});
 for(const b of all('.hy-island'))b.dataset.visited=String(s.islands.includes(b.dataset.island));
 window.Lab?.identity?.mount?.('#hy-identity',{compact:true,sharedDevice:true});
 chart();drawPedigree();encounters();showModel();showCheck();
 const hash=location.hash.slice(1);go(gate(hash)?hash:gate(s.step)?s.step:routes.findLast(gate),false);
-if(!canSave())$('save').textContent='This browser could not open a saved notebook. Preview your report to keep a copy.';
+window.OpenSciEdB5ReportFiles?.bindHTML($('save-html'),report,'arctic-bear-futures',say);
 window.OpenSciEdSubmission?.mount({target:'#hy-report',filename:'arctic-bear-futures',collect:report});
 })();

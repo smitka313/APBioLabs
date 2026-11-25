@@ -114,7 +114,11 @@ const server=http.createServer((req,res)=>{
     assert.equal(backup.selectedCycle,'G6');assert.deepEqual(backup.climate.map(x=>[x.years,x.generations]),[[15000,1322],[65000,5727]]);
     assert.deepEqual(backup.fossilPins.map(f=>f.location),['France','Norway (Svalbard)']);
     assert.equal(backup.conclusionCheck.question,D.conclusion.question);assert.equal(backup.conclusionCheck.verdict,'Correct');
-    assert.equal(Object.keys(backup.work).length,1);
+    assert.equal(backup.format,'ice-age-bear-speciation-backup-v2');
+    assert.equal(backup.work,undefined,'report JSON must not expose a duplicate opaque browser record');
+    assert.ok(backup.climate.every(x=>x.cycle==='G6'));
+    const [htmlFile]=await Promise.all([p.waitForEvent('download'),at('save-html').click()]);
+    const html=fs.readFileSync(await htmlFile.path(),'utf8');assert.match(html,/Avery Ice.*ICE-[A-F0-9]{8}.*G6.*Svalbard/s);
     await p.getByRole('button',{name:'Preview report'}).click();
     await p.getByText('More formats',{exact:true}).click();
     const word=p.waitForEvent('download');await p.getByRole('button',{name:/Download Word/i}).click();const d=await word;
