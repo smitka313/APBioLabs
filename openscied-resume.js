@@ -2,6 +2,8 @@
 (function (root) {
   'use strict';
   const META_KEY = 'aplab:pref:openscied-resume:v1';
+  const keyFor = id => META_KEY + ':' + id;
+  const isMetaKey = key => key === META_KEY || (typeof key === 'string' && key.startsWith(META_KEY + ':'));
   const saveEpoch = 'aplab:pref:openscied-save-session:v1:';
   const pref = 'aplab:openscied:';
   // Evidence fields only: looking at another section, rearranging a view, or mounting a saved page
@@ -92,16 +94,26 @@
     let baseline;
     try { baseline=keys.map(key=>storage.getItem(key)); } catch (_) {}
     const current=()=>!!baseline&&keys.every((key,index)=>storage.getItem(key)===baseline[index]);
-    function book() {
-      try { const value=JSON.parse(storage.getItem(META_KEY)); return record(value) ? value : {}; }
-      catch (_) { return {}; }
+    function metadata(id) {
+      const read = key => {
+        try { return JSON.parse(storage.getItem(key)); } catch (_) { return null; }
+      };
+      const separate=read(keyFor(id));
+      const epoch=[storage.getItem(saveEpoch+'global'),storage.getItem(saveEpoch+'scope:'+id)];
+      if (record(separate)) {
+        return { old: separate.epoch?.[0]===epoch[0]&&separate.epoch?.[1]===epoch[1] ? separate : {}, epoch };
+      }
+      const legacy=read(META_KEY)?.[id];
+      // A pre-existing ledger did not snapshot the epoch. A reset marker is
+      // sufficient to stop using those old dates until the activity is opened again.
+      return {old:epoch.every(value=>value===null)&&record(legacy)?legacy:{},epoch};
     }
     function snapshot(path, mode='dashboard') {
       const id=route(path);
       if (!id) return {};
       try {
         if (!current()) return {};
-        const now=clock(), notes=book(), old=notes[id]||{};
+        const now=clock(), {old,epoch}=metadata(id);
         let stamp=0;
         const data=sources[id].map(([key,fields,extraFields])=>{
           try {
@@ -115,19 +127,21 @@
         const signature=data.some(Boolean) ? fingerprint(JSON.stringify(data)) : '';
         const previous=safeDate(old.changed,now);
         const changed=signature ? old.signature===signature ? previous :
-          mode==='exit' && old.signature!==undefined ? now : stamp || (old.signature!==undefined ? now : 0) : 0;
+          mode==='exit' && old.signature!==undefined ? Math.max(stamp,previous,now) : stamp : 0;
         const opened=mode==='open' ? now : safeDate(old.opened,now);
-        const next={signature,changed,opened};
-        if (current() && (next.signature!==old.signature || next.changed!==old.changed || next.opened!==old.opened)) {
-          notes[id]=next;
-          storage.setItem(META_KEY,JSON.stringify(notes));
+        const next={signature,changed,opened,epoch};
+        // Cards only read metadata: visiting or refreshing the dashboard cannot
+        // turn an older observation into a new save or wake another dashboard up.
+        if (mode!=='dashboard' && current() &&
+            (next.signature!==old.signature || next.changed!==old.changed || next.opened!==old.opened || !old.epoch)) {
+          storage.setItem(keyFor(id),JSON.stringify(next));
         }
         return {changed,opened,legacy:stamp};
       } catch (_) { return {}; } // A metadata write failure must not prevent use of existing saved work.
     }
     return {snapshot};
   }
-  const api={META_KEY,connect,route};
+  const api={META_KEY,isMetaKey,connect,route};
   if(typeof module==='object'&&module.exports){module.exports=api;return;}
   root.OpenSciEdResume=api;
   const path=root.location.pathname;

@@ -1302,7 +1302,7 @@
       return false;
     }
   }
-  const keepSitePrefs = k => k !== OPENSCIED_RESUME_KEY && KEEP_PREFS.some(p => k.startsWith(p));
+  const keepSitePrefs = k => k !== OPENSCIED_RESUME_KEY && !k.startsWith(OPENSCIED_RESUME_KEY + ':') && KEEP_PREFS.some(p => k.startsWith(p));
   function doSignOut(status) {
     if (!wipeSiteWork(keepSitePrefs, true, status)) return;
     memIdentity = lastStoredIdentity = lastEffectiveIdentity = null; memBackup = null;
