@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520">
+<defs>
+ <linearGradient id="water" x2="0" y2="1"><stop stop-color="#102941"/><stop offset="1" stop-color="#0b4658"/></linearGradient>
+ <linearGradient id="earth" x2=".78" y2="1"><stop stop-color="#65786b"/><stop offset="1" stop-color="#344f49"/></linearGradient>
+ <linearGradient id="glacier" x2=".8" y2="1"><stop stop-color="#f2fcff"/><stop offset="1" stop-color="#89c1d4"/></linearGradient>
+ <pattern id="grain" width="24" height="20" patternUnits="userSpaceOnUse"><path d="M2 16h3m8-12h2m5 7h3" fill="none" stroke="#e9faf9" opacity=".46"/></pattern>
+ <pattern id="hatch" width="18" height="14" patternUnits="userSpaceOnUse"><path d="m-3 14 14-14m4 14 14-14" stroke="#f2fcff" fill="none" opacity=".55" stroke-width="1.5"/></pattern>
+ <pattern id="contour" width="65" height="34" patternUnits="userSpaceOnUse"><path d="M-14 17Q5 5 24 18T59 16t32-1M-18 24Q4 11 25 24t34-1 34 0" stroke="#c4c79c" opacity=".27" fill="none"/></pattern>
+ <path id="west" d="M0 112 24 116 36 105 61 110 81 95 107 99 130 91 147 77 164 84 182 107 195 115 212 110 239 134 246 154 258 160 276 145 296 149 321 171 318 189 296 200 310 216 328 214 351 221 371 244 352 254 361 272 355 296 339 322 313 326 313 345 296 363 278 366 277 391 254 416 252 451 263 478 244 487 212 488 183 471 157 472 137 492 120 520H0Z"/>
+ <path id="east" d="m900 68-39 23-29-3-27 13-22 2-19-4-19 17-30 1-16 15-23-12-20 18-20 4-20 26-2 26-24 23-10 20 5 10 13-7 14-13-3 21 9 11-15 9-30 27 15 14-12 12-22 9-7 30 19 11 28-10 18 18 25 0 28 28 16-8 18 9 10-15-13-11 5-17 34-10 52-11 71 7 21-30 25 3 25-27 22-3Z"/>
+ <path id="green" d="m415 107 18-17 28 1 26 15 32 0 12 13-9 26-14 7-3 25-20 16-7 24-24 32-17 9-13-12 3-25-19-23-15-26 4-31Z"/>
+</defs>
+<rect width="900" height="520" fill="url(#water)"/>
+<g fill="none" stroke="#b8eff3" opacity=".17"><ellipse cx="455" cy="-15" rx="200" ry="147"/><ellipse cx="455" cy="-15" rx="300" ry="223"/><ellipse cx="455" cy="-15" rx="400" ry="305"/><ellipse cx="455" cy="-15" rx="505" ry="401"/><ellipse cx="455" cy="-15" rx="615" ry="515"/><path d="M457 0 205 520M457 0 706 520M457 0V520M457 0 40 520M457 0 860 520"/></g>
+<g fill="url(#earth)" stroke="#c3d3bd" stroke-width="2"><use href="#west"/><use href="#east"/><use href="#green"/><path d="m228 92 17-27 26 4 13-12 25 13-6 14-23 14zM287 111l18-19 30 5 7 27-15 8-24-9zM327 66l12-29 14-7 22 10-6 28-28 13zM356 103l22-14 23 10-13 29-21 8zM529 285l19-8 17 8-4 13-19 9-16-11zM565 347l-12 22 2 21 11 5 12-18-4-26zM645 80l18-12 18 8-11 16-17 1z"/></g>
+<g fill="url(#contour)"><use href="#west"/><use href="#east"/><use href="#green"/></g>
+<path d="m282 251 10-23 24 4 13 20-12 24-27 16-19-16z" fill="#24576c" stroke="#a9c6cc"/>
+<g fill="url(#glacier)" stroke="#dff5ff" stroke-width="2"><path d="m426 114 24-15 35 13 23 8 2 24-14 25-9 22-25 25-10 18-12-3-1-22-16-23-15-26 5-21Z"/></g>
+<g fill="#173b37" opacity=".62"><path d="m81 379 12-25 13 25h-9v9h-8v-9zm45 19 14-29 13 29h-9v9h-8v-9zm-51 20 10-20 11 20h-7v7h-7v-7zm125-15 12-24 12 24h-8v8h-8v-8zm-35 41 13-27 13 27h-9v9h-8v-9zm593-69 13-28 13 28h-9v9h-8v-9zm42-22 11-24 11 24h-7v9h-8v-9zm26 38 15-31 15 31h-10v9h-10v-9z"/></g>
+<rect width="900" height="520" fill="url(#grain)" opacity=".28"/>
+</svg>

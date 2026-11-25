@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script src="domain-redirect.js"></script>
+<!-- seo:start -->
+<title>Ice Age Bear Speciation Explorer — OpenSciEd Biology B.5 Lesson 4 | Lab Bench</title>
+<meta name="description" content="Move ancestral bears as ice retreats, compare fossil sites and inherited traits, and revise a scientific argument about speciation.">
+<link rel="canonical" href="https://biologylabbench.com/openscied-b5-speciation">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AP Bio Digital Lab Bench">
+<meta property="og:title" content="Ice Age Bear Speciation Explorer — OpenSciEd Biology B.5 Lesson 4 | Lab Bench">
+<meta property="og:description" content="Move ancestral bears as ice retreats, compare fossil sites and inherited traits, and revise a scientific argument about speciation.">
+<meta property="og:url" content="https://biologylabbench.com/openscied-b5-speciation">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://biologylabbench.com/img/og.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="AP Bio Digital Lab Bench: lab simulation thumbnails beside the site title">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Ice Age Bear Speciation Explorer — OpenSciEd Biology B.5 Lesson 4 | Lab Bench">
+<meta name="twitter:description" content="Move ancestral bears as ice retreats, compare fossil sites and inherited traits, and revise a scientific argument about speciation.">
+<meta name="twitter:image" content="https://biologylabbench.com/img/og.png">
+<meta name="twitter:image:alt" content="AP Bio Digital Lab Bench: lab simulation thumbnails beside the site title">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://biologylabbench.com/#website","url":"https://biologylabbench.com/","name":"AP Bio Digital Lab Bench","alternateName":"Biology Lab Bench","inLanguage":"en","creator":{"@id":"https://biologylabbench.com/#creator"}},{"@type":"Person","@id":"https://biologylabbench.com/#creator","name":"Robert Smitka"},{"@type":["WebPage","LearningResource"],"@id":"https://biologylabbench.com/openscied-b5-speciation#webpage","url":"https://biologylabbench.com/openscied-b5-speciation","name":"Ice Age Bear Speciation Explorer — OpenSciEd Biology B.5 Lesson 4 | Lab Bench","description":"Move ancestral bears as ice retreats, compare fossil sites and inherited traits, and revise a scientific argument about speciation.","inLanguage":"en","isPartOf":{"@id":"https://biologylabbench.com/#website"},"isAccessibleForFree":true,"license":"https://creativecommons.org/licenses/by-nc-sa/4.0/","creator":{"@id":"https://biologylabbench.com/#creator"},"breadcrumb":{"@id":"https://biologylabbench.com/openscied-b5-speciation#breadcrumb"},"educationalLevel":"High school biology","learningResourceType":"Interactive evidence investigation","teaches":"Glacial cycles, evidence for speciation, and natural selection","audience":{"@type":"EducationalAudience","educationalRole":"student"},"isBasedOn":"https://openscied.org/instructional-materials/b-5-common-ancestry-speciation/"},{"@type":"BreadcrumbList","@id":"https://biologylabbench.com/openscied-b5-speciation#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"All labs","item":"https://biologylabbench.com/"},{"@type":"ListItem","position":2,"name":"Ice Age Bear Speciation Explorer","item":"https://biologylabbench.com/openscied-b5-speciation"}]}]}</script>
+<!-- seo:end -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(_){}</script>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="openscied-submission-report.css">
+<link rel="stylesheet" href="openscied-b5-speciation.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to the investigation</a>
+<main id="main" class="ice-shell">
+<nav class="ice-links" aria-label="Lesson links"><a href="openscied-dashboard.html#unit5">← Unit 5 activities</a><a href="openscied-b5-ancestry.html">Lesson 3: Bear Ancestry</a></nav>
+<header class="ice-hero"><p class="ice-kicker">Arctic field station / Unit 5 / Lesson 4</p><h1>Ice Age Bear<br class="ice-break"> Speciation Explorer</h1><p>Two bears share an ancestor. What could have separated their populations?</p></header>
+<div class="ice-workspace"><div id="ice-identity"></div><button type="button" class="btn" id="ice-reset" aria-haspopup="dialog" disabled>Start over…</button></div>
+<nav id="ice-nav" class="ice-nav" aria-label="Investigation steps">
+<button type="button" class="btn" data-step="cycles"><span>01</span> Move bears</button>
+<button type="button" class="btn" data-step="fossils"><span>02</span> Find fossils</button>
+<button type="button" class="btn" data-step="traits"><span>03</span> Test traits</button>
+<button type="button" class="btn" data-step="argument"><span>04</span> Revise</button>
+</nav>
+<p class="ice-caption" id="ice-progress"></p>
+<p id="ice-status" class="ice-status" role="status" aria-live="polite"></p>
+<section class="ice-panel" id="cycles" aria-labelledby="cycles-title">
+<p class="ice-kicker">01 / Climate workbench</p><h2 id="cycles-title" tabindex="-1">Move bears as the ice changes</h2>
+<p>In a <strong>glacial period</strong>, the climate is colder and land ice grows. In a warmer <strong>interglacial period</strong>, land ice shrinks. An ice sheet on land is not the same as sea ice over the ocean.</p>
+<div class="ice-grid"><div>
+<div class="ice-instrument">
+<div class="ice-row ice-between"><label for="ice-period">Choose a glacial period</label><select id="ice-period"></select></div>
+<div id="ice-timeline" class="ice-timeline" role="group" aria-label="Glacial and interglacial timeline"></div>
+<div class="ice-ticks"><span>680,000 years ago</span><span>Present day</span></div>
+<div class="ice-row ice-phase" role="group" aria-label="Map phase"><button class="btn" type="button" data-phase="cold" aria-pressed="true">❄ Glacial</button><button class="btn" type="button" data-phase="warm" aria-pressed="false">☼ Interglacial</button><button class="btn" type="button" id="ice-replay">Play ice retreat</button></div>
+<p id="ice-dates" class="ice-caption"></p>
+</div>
+<p class="ice-map-instruction"><strong>Drag a bear onto a location, or select a bear and then select a location.</strong> Place all three in each phase. More than one can share a location.</p>
+<div class="ice-map" id="ice-map" data-phase="cold">
+<img src="assets/openscied-ice-age-map.svg" width="900" height="520" alt="" draggable="false">
+<svg viewBox="0 0 900 520" aria-hidden="true" class="ice-coverage">
+<defs><pattern id="ice-stripes" width="18" height="13" patternUnits="userSpaceOnUse"><path d="m-5 14 14-14m4 14 14-14" stroke="#f4fcff" opacity=".66" fill="none" stroke-width="2"/></pattern>
+<linearGradient id="ice-glow" x2=".6" y2="1"><stop stop-color="#effbff"/><stop offset="1" stop-color="#90becd"/></linearGradient>
+<path id="ice-max" d="M0 107Q62 99 145 70l55 26 48 13 27 36 53 23 15 30-19 28 28 23-12 43-46 27-29 31-48 9-51-16-33 5-41-42-41-6L0 284ZM561 189l31-34 30-25 26-35 34-13 24 27 62-14 44-8L900 74v115l-62 18-29-11-41 19-46-17-30 6-33 26-18 34-38 5-24-28-20-26Z"/>
+<path id="ice-floes" d="m283 66 24-23 32-9 49-21 120 4 85 23 33 29-41 23-47-11-44 4-43-13-46 8-43 16-27-12Z"/></defs>
+<g class="ice-expanse"><use href="#ice-max" fill="url(#ice-glow)" opacity=".87"/><use href="#ice-max" fill="url(#ice-stripes)"/><use href="#ice-max" fill="none" stroke="#d8f7ff" stroke-width="2" stroke-dasharray="6 4"/></g>
+<g class="ice-floes"><use href="#ice-floes" fill="none" stroke="#b2e9ec" stroke-width="3" stroke-dasharray="7 9"/><path d="m328 62 30-12 51-11 35 7-40 10-30 8-27 16zm134-22 30-11 41 10 34 13-27 6-30-12zm84 25 23-6 40 10-11 11-26 1z" fill="#c3edf3" opacity=".75"/></g>
+</svg>
+<span class="ice-atlas-label">NORTH ATLANTIC · SCHEMATIC</span><div id="ice-destinations"></div><div id="ice-map-bears" aria-hidden="true"></div>
+</div>
+<div class="ice-legend"><span><i class="ice-land-key"></i> Land ice</span><span><i class="ice-sea-key"></i> Floating sea ice</span><span>Not an exact map of any one year</span></div>
+<div id="ice-bear-tray" class="ice-tray" role="group" aria-label="Ancestral bear tokens"></div>
+<p id="ice-placement" class="ice-caption"></p>
+<details id="ice-video"><summary>Watch the original ice-retreat clip</summary><p>Watch how the summer ice in the visualization changes from about 18,000 years ago to today. This clip shows the end of one glacial period, not every cycle on our timeline.</p><div id="ice-player"></div><a href="https://www.youtube.com/watch?v=Q0KgdNk--iU" target="_blank" rel="noopener noreferrer">Open the original clip in a new tab</a></details>
+</div><aside class="ice-notebook">
+<p class="ice-kicker">Field notes / Climate &amp; time</p><h3>How many generations fit?</h3>
+<p>Use the timeline dates, then divide the number of years by <strong>11.35 years per generation</strong>. This is a modern polar bear estimate applied to the ancestor in our model. Round to the nearest whole generation.</p>
+<div class="ice-numbers"><label for="ice-g-cold">Glacial generations</label><input type="number" inputmode="numeric" id="ice-g-cold" min="1"><label for="ice-g-warm">Interglacial generations</label><input type="number" inputmode="numeric" id="ice-g-warm" min="1"></div>
+<button class="btn" type="button" id="ice-math">Check my estimates</button><p id="ice-math-feedback" class="ice-feedback"></p>
+<h3>First argument</h3><label for="ice-first">When, where, and why might the populations have begun to separate? Use your map or timeline as evidence.</label><textarea id="ice-first" data-answer="first" rows="4" maxlength="3000"></textarea>
+<label for="ice-needed">What evidence would make your argument stronger?</label><textarea id="ice-needed" data-answer="needed" rows="2" maxlength="3000"></textarea>
+<p class="ice-note" id="ice-gate-cycles"></p><button class="btn btn--primary" type="button" id="ice-lock" disabled>Save first argument and open fossils →</button>
+</aside></div>
+</section>
+<section class="ice-panel" id="fossils" aria-labelledby="fossils-title" hidden>
+<p class="ice-kicker">02 / Fossil archive</p><h2 id="fossils-title" tabindex="-1">Find bears in the fossil record</h2>
+<p>Open a numbered site to see which bear was found there and how old the fossil is. Keep one polar bear site and one brown bear site for your argument. Pinning another fossil of the same type replaces the one you pinned.</p>
+<div class="ice-grid"><div>
+<div class="ice-fossil-map"><img src="assets/openscied-ice-age-fossils.svg" width="900" height="390" alt=""><svg viewBox="0 0 900 390" aria-hidden="true" id="ice-leaders"></svg><div id="ice-markers"></div></div>
+<div class="ice-legend"><span><i class="ice-polar-key"></i> Polar bear fossil</span><span><i class="ice-brown-key"></i> Brown bear fossil</span><span>Locations are approximate</span></div>
+<div class="ice-file" id="ice-fossil-file"></div>
+<label for="ice-fossil-select" class="ice-caption">Or choose a labeled site</label><select id="ice-fossil-select"></select>
+<p class="ice-note">A fossil shows a bear of that kind existed by then. The oldest fossil found is not necessarily the first bear of that kind. Empty map areas do not prove bears were absent.</p>
+</div><aside class="ice-notebook">
+<p class="ice-kicker">Field notes / First comparison</p><h3>Pinned evidence</h3><div id="ice-pins"></div>
+<details><summary>Read your first claim</summary><p id="ice-fossil-first"></p></details>
+<label for="ice-fossil-note">What do the sites and ages support or challenge in your first argument?</label><textarea id="ice-fossil-note" data-answer="fossilNote" rows="4" maxlength="3000"></textarea>
+<p class="ice-note" id="ice-gate-fossils"></p><button class="btn btn--primary" type="button" data-go="traits" disabled>Next: Test traits →</button>
+</aside></div>
+</section>
+<section class="ice-panel" id="traits" aria-labelledby="traits-title" hidden>
+<p class="ice-kicker">03 / Inherited-trait workbench</p><h2 id="traits-title" tabindex="-1">Match traits to habitats</h2>
+<p>A <strong>variant</strong> is a version of a gene. Open the three evidence cards to see what researchers learned. Then choose one bear with at least one of the three Arctic clues for the snowy coast, and a bear with darker pigmentation for exposed southern land. Explain why one trait could affect reproduction in that habitat.</p>
+<div id="ice-genes" class="ice-genes"></div>
+<div class="ice-grid"><div>
+<div class="ice-selection"><p class="ice-kicker">Ancestral population / Simulated cards</p><h3>Who might leave more offspring?</h3>
+<p>Compare cards, then drag a bear to a habitat or select it and choose a habitat. You can make a different choice and compare it. The illustrations show fur contrast, not what an ancestral bear looked like.</p>
+<div id="ice-roster" class="ice-roster" role="group" aria-label="Bear genetic trait cards"></div>
+<div id="ice-trait-destinations" class="ice-trait-sites"></div>
+</div></div><aside class="ice-notebook">
+<p class="ice-kicker">Field notes / Selection</p><h3>Make the connection</h3>
+<label for="ice-trait-note">Name a trait from a card. How could it affect which bears leave offspring in one habitat? What could happen to that trait over many generations?</label><textarea id="ice-trait-note" data-answer="traitNote" rows="4" maxlength="3000"></textarea>
+<p class="ice-note">Bears don’t change the genes they inherit when the weather changes. The model compares advantages; it does not predict who definitely survives.</p>
+<p class="ice-note" id="ice-gate-traits"></p><button class="btn btn--primary" type="button" data-go="argument" disabled>Next: Revise my argument →</button>
+</aside></div>
+</section>
+<section class="ice-panel" id="argument" aria-labelledby="argument-title" hidden>
+<p class="ice-kicker">04 / Field report</p><h2 id="argument-title" tabindex="-1">Revise your case for speciation</h2>
+<p><strong>Speciation</strong> is the process by which one lineage gives rise to distinct species. Separation can reduce gene flow: fewer individuals reproduce across populations. The populations can then change in different ways over many generations.</p>
+<div class="ice-grid ice-report-grid"><div class="ice-notebook">
+<label for="ice-revised">Revise your claim: when, where and why might the lineages have split? Cite the timeline, a fossil and a genetic clue. Explain how each supports your claim and what the evidence still can’t tell you.</label><textarea id="ice-revised" data-answer="revised" rows="7" maxlength="5000"></textarea>
+<label for="ice-future">Bridge to Lesson 5: If bears get fewer days on sea ice, what interaction would you add or change in your class model? What question would you add to your Driving Question Board?</label><textarea id="ice-future" data-answer="future" rows="3" maxlength="3000"></textarea>
+<fieldset id="ice-limit-check"><legend>Which conclusion does the evidence support?</legend>
+<label><input type="radio" name="ice-limit" value="exact"> The fossils show the exact date and place of the split.</label>
+<label><input type="radio" name="ice-limit" value="single"> One gene change explains the whole split.</label>
+<label><input type="radio" name="ice-limit" value="possible"> Several kinds of evidence support a possible explanation, not an exact date or location.</label>
+</fieldset><p id="ice-limit-feedback" class="ice-feedback" aria-describedby="ice-limit-check"></p>
+<div class="ice-row"><button type="button" class="btn btn--primary" id="ice-finish" disabled>Finish investigation</button><button type="button" class="btn" id="ice-edit" hidden>Edit saved work</button></div>
+<p id="ice-gate-argument" class="ice-note"></p>
+</div><aside class="ice-notebook ice-recap"><p class="ice-kicker">Evidence beside your claim</p><h3>Your first argument</h3><p id="ice-first-recap"></p><div id="ice-evidence-recap"></div>
+<p class="ice-note">The evidence does not pin down an exact split or show no contact ever happened again. Ancient DNA indicates that the two lineages later exchanged genes.</p></aside>
+</div></section>
+<dialog id="ice-reset-dialog" aria-labelledby="ice-reset-title"><form id="ice-reset-form"><h2 id="ice-reset-title">Start this investigation over?</h2><p>This clears only your Ice Age bear maps, evidence pins, and responses on this device. Save a report first if you want a copy.</p><label for="ice-confirm">Type ERASE to confirm</label><input id="ice-confirm" type="text" autocomplete="off" autofocus><p id="ice-reset-feedback"></p><div class="ice-row"><button class="btn" type="button" id="ice-cancel">Keep working</button><button type="submit" class="btn btn--danger" id="ice-erase" disabled>Erase this activity</button></div></form></dialog>
+<div id="ice-report"></div>
+<details class="ice-backup"><summary>Keep a backup of this activity</summary><p>This JSON includes your Ice Age work and the same name, class period, and Dataset ID as your report. The dashboard’s device backup is anonymous and is not a classroom report.</p><button id="ice-backup" class="btn" type="button" disabled>Download this activity’s JSON</button></details>
+<p id="ice-save" class="ice-caption">Your work is saved in this browser. Use the report to keep a copy.</p>
+<details><summary>Sources and model limits</summary><p>Adapted from OpenSciEd B.5 Lesson 4: Glacial and Interglacial Periods, Bears and Glacial Cycles, Bear Fossils Map, Genetic Bear Data, and Developing an Argument. The bridge draws on the Lesson 5 Student Procedure. The digital maps and tokens are original, schematic illustrations. Token placements and trait combinations are simulated; the published fossil ages are approximate estimates reproduced from the lesson map. We use three variants from the genetic handout; the original chip exercise also draws on the NOS3 clue from Lesson 2.</p><p>Original genetics research: <a href="https://doi.org/10.1016/j.cell.2014.03.054" target="_blank" rel="noopener noreferrer">Liu et al. (2014)</a>; ancient gene flow: <a href="https://pubmed.ncbi.nlm.nih.gov/35711062/" target="_blank" rel="noopener noreferrer">Wang et al. (2022)</a>. Fossil map sources credited by OpenSciEd: Cahill et al. (2018), Harington et al. (2014), Marciszak et al. (2015), Segawa et al. (2021), Villalba de Alvarado et al. (2022), and Wang et al. (2022).</p></details>
+<footer>Created by Robert Smitka. <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">Site license: CC BY-NC-SA 4.0</a>. Adapted from <a href="https://www.openscied.org/instructional-materials/b-5-common-ancestry-speciation/">OpenSciEd</a> materials (<a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>); not affiliated with or endorsed by OpenSciEd. Student work and identity stay in this browser unless the student chooses to print or download.</footer>
+</main>
+<script src="lab.js"></script>
+<script src="openscied-save-session.js"></script>
+<script src="openscied-submission-report.js"></script>
+<script src="openscied-b5-speciation-data.js"></script>
+<script src="openscied-b5-speciation.js"></script>
+<script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</body>
+</html>

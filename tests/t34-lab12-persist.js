@@ -35,6 +35,10 @@ const T = require('./_h');
   await p.evaluate(() => Lab.pages.go('analyze')); await p.waitForTimeout(300);
   T.ok(await p.evaluate(() => document.querySelector('#x-a').value === ''), 'example not saved');
   await p.evaluate(() => document.querySelector('#x-last').click());
+  // Choosing the last trial is a programmatic edit, and must save before navigation.
+  T.ok(await p.evaluate(() => ['x-a','x-b'].every(id =>
+    Lab.store.get('field:'+id) === document.getElementById(id).value && document.getElementById(id).value !== ''
+  )), 'last-trial counts are saved immediately');
   const out = await p.evaluate(() => document.querySelector('#x-out').textContent);
   await p.reload(); await p.waitForTimeout(800);
   await p.evaluate(() => Lab.pages.go('analyze')); await p.waitForTimeout(300);

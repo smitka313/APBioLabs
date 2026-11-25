@@ -1560,7 +1560,19 @@ function runChi() {
 }
 $('#x-run').addEventListener('click', runChi);
 ['#x-a', '#x-b'].forEach(i => $(i).addEventListener('input', runChi));
-$('#x-last').addEventListener('click', () => { const r = trialsTable.getRows(); if (!r.length) { $('#x-out').textContent = 'Finish a choice-chamber trial first.'; return; } const l = r[r.length - 1]; $('#x-a').value = l.A; $('#x-b').value = l.B; runChi(); });
+$('#x-last').addEventListener('click', () => {
+  const rows = trialsTable.getRows();
+  if (!rows.length) { $('#x-out').textContent = 'Finish a choice-chamber trial first.'; return; }
+  const last = rows[rows.length - 1];
+  // Assigning .value does not fire input/change. Save these copied counts now,
+  // rather than depending on a pagehide flush if the student reloads right away.
+  for (const [id, count] of [['x-a', last.A], ['x-b', last.B]]) {
+    const field = $('#' + id);
+    field.value = count;
+    field.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  runChi();
+});
 runChi();
 xEx = workedExample({ anchor: $('#x-a').closest('.grid-2'), button: $('#x-example'), text: 'Sample counts: 21 flies at end A and 9 at end B (30 flies). Your own counts come back when you clear it.',
   fields: [[$('#x-a'), 21], [$('#x-b'), 9]], onChange: () => runChi() });

@@ -17,7 +17,7 @@ const CORRIDOR_PREVIEW='assets/openscied-atlas-b4-wildlife-corridor.svg';
   // order in the script registry matches the page
   const js = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.js'), 'utf8');
   const files = [...js.matchAll(/file: '([^']+)'/g)].map(m => m[1]);
-  const originalActivities=UNIT1.concat(UNIT2,UNIT3,UNIT4,['openscied-b5-wapusk.html','openscied-b5-thermoregulation.html','openscied-b5-ancestry.html']);
+  const originalActivities=UNIT1.concat(UNIT2,UNIT3,UNIT4,['openscied-b5-wapusk.html','openscied-b5-thermoregulation.html','openscied-b5-ancestry.html','openscied-b5-speciation.html']);
   T.ok(JSON.stringify(files.slice(0,originalActivities.length)) === JSON.stringify(originalActivities), 'openscied-dashboard.js preserves the published activity order through Unit 5');
   for (const activity of UNIT1.concat(UNIT2,UNIT3,UNIT4)) {
     const file = '../assets/openscied-atlas-'+activity.replace(/^openscied-|\.html$/g,'')+'.svg';

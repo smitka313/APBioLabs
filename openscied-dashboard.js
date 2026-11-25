@@ -31,7 +31,8 @@
     { id: 'wildlife-corridor', name: 'Wildlife Corridor Lab', file: 'openscied-b4-wildlife-corridor.html', key: PREFIX + 'b4-wildlife-corridor:v1', clears: 'prediction, crossing design, model runs, and written responses', progress: wildlifeCorridorProgress, ids: wildlifeCorridorResponseIds },
     { id:'wapusk', name:'Three Bears in Wapusk', file: 'openscied-b5-wapusk.html', key:PREFIX + 'b5-wapusk:v1', clears:'evidence notebook and comparison answers', progress:wapuskProgress, ids:wapuskIds },
     { id:'thermoregulation', name:'Bear Thermoregulation Lab', file: 'openscied-b5-thermoregulation.html', key:PREFIX+'b5-thermoregulation:v1', clears:'treadmill notebook, human readings, and matter and energy cards', progress:thermProgress, ids:thermIds },
-    { id:'bear-ancestry', name:'Bear Ancestry Lab', file: 'openscied-b5-ancestry.html', key:PREFIX+'b5-ancestry:v1', clears:'trait notes, DNA comparisons, tree, and explanations', progress:bearAncestryProgress, ids:()=>['conclusion','revise'], answers:true }
+    { id:'bear-ancestry', name:'Bear Ancestry Lab', file: 'openscied-b5-ancestry.html', key:PREFIX+'b5-ancestry:v1', clears:'trait notes, DNA comparisons, tree, and explanations', progress:bearAncestryProgress, ids:()=>['conclusion','revise'], answers:true },
+    { id:'bear-speciation', name:'Ice Age Bear Speciation Explorer', file: 'openscied-b5-speciation.html', key:PREFIX+'b5-speciation:v1', clears:'model maps, fossil pins, and argument notebook', progress:bearSpeciationProgress, ids:()=>['first','needed','fossilNote','traitNote','revised','future'], answers:true }
   ];
   const SECTIONS = ['overview', 'background', 'cell-game', 'growth-model', 'analyze', 'submit'];
   // Written-response fields. The activity saves the ids of every response field it has (saved.responseIds), so the
@@ -578,6 +579,21 @@
     const section=valid.includes(s.step)?s.step:valid.at(-1);
     return {started:true,section,visited:Number(s.lastVisitedAt)||0,stepsDone:n,stepsTotal:4,stepsLabel:'Investigation steps completed',summary:n+' of 4 investigation steps complete'};
   }
+  function bearSpeciationProgress(raw){
+    const blank={summary:'Not started',started:false,section:'',visited:0};
+    let s;try{s=JSON.parse(raw);}catch(_){return blank;}
+    if(s?.v!==1||!/^[A-F0-9]{8}$/.test(s.id))return blank;
+    const a=s.answers||{};
+    const started=Object.keys(a).some(k=>written(a,k))||['cold','warm'].some(k=>Array.isArray(s.moves?.[k])&&s.moves[k].some(Boolean))||s.mathDraft?.some?.(Boolean)||s.mathChecked===true;
+    if(!started)return blank;
+    const map=s.locked===true;
+    const fossil=map&&Array.isArray(s.pins)&&s.pins.some(i=>[0,1].includes(i))&&s.pins.some(i=>[2,3,4,5,6,7].includes(i))&&written(a,'fossilNote');
+    const trait=fossil&&[0,1,2].every(i=>Array.isArray(s.genes)&&s.genes.includes(i))&&Number.isInteger(s.choices?.north)&&Number.isInteger(s.choices?.south)&&(s.rosterVersion!==2||s.matches?.north===true&&s.matches?.south===true)&&written(a,'traitNote');
+    const finish=trait&&s.finished===true&&s.limit===true&&written(a,'revised')&&written(a,'future');
+    const n=[map,fossil,trait,finish].filter(Boolean).length;
+    const allowed=['cycles',...(map?['fossils']:[]),...(fossil?['traits']:[]),...(trait?['argument']:[])];
+    return {started:true,section:allowed.includes(s.step)?s.step:allowed.at(-1),visited:Number(s.lastVisitedAt)||0,stepsDone:n,stepsTotal:4,stepsLabel:'Investigation steps completed',summary:n+' of 4 investigation steps complete'};
+  }
   // Published, fixed denominators. A zero is meaningful even before a student starts.
   const STEP_SCALES = {
     migration:[12,'Months with saved observations'],carrying:[12,'Population model rounds'],
@@ -586,7 +602,7 @@
     'cell-cycle':[2,'Cell game rounds completed'],'dna-workshop':[6,'Workshop practices completed'],
     'dna-p53':[2,'Interactive models used'],'inh-env':[6,'Interactive models used'],
     hawksbeard:[5,'Plant pairs released'],'rat-generations':[4,'Investigation parts completed'],junco:[3,'Investigation steps completed'],
-    'wildlife-corridor':[4,'Investigation steps completed'],wapusk:[6,'Notebook responses saved'],thermoregulation:[5,'Notebook responses saved'],'bear-ancestry':[4,'Investigation steps completed']
+    'wildlife-corridor':[4,'Investigation steps completed'],wapusk:[6,'Notebook responses saved'],thermoregulation:[5,'Notebook responses saved'],'bear-ancestry':[4,'Investigation steps completed'],'bear-speciation':[4,'Investigation steps completed']
   };
   function init() {
     $('[data-ph="dashboard-identity"]')?.remove();

@@ -18,11 +18,12 @@ const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r =>
       await unit3.locator('#screening-open').count() === 1,
     'Unit 2 stays at four activities and Unit 3 has six including Cancer Rates Data Dive, Cancer Screening Design Lab, and DNA Workshop');
     const unit5 = p.locator('section[aria-labelledby="unit5"]');
-    T.ok(await unit5.locator('.dashboard-activity').count() === 3
+    T.ok(await unit5.locator('.dashboard-activity').count() === 4
       && await unit5.locator('#wapusk-open').getAttribute('href') === 'openscied-b5-wapusk.html'
       && await unit5.locator('#thermoregulation-open').getAttribute('href') === 'openscied-b5-thermoregulation.html'
-      && await unit5.locator('#bear-ancestry-open').getAttribute('href') === 'openscied-b5-ancestry.html',
-      'Unit 5 lists all three bear activities without changing the Unit 2 cards');
+      && await unit5.locator('#bear-ancestry-open').getAttribute('href') === 'openscied-b5-ancestry.html'
+      && await unit5.locator('#bear-speciation-open').getAttribute('href') === 'openscied-b5-speciation.html',
+      'Unit 5 lists all four bear activities without changing the Unit 2 cards');
     // work the real page, then come back
     const q = await ctx.newPage(); await stub(q);
     await q.goto(srv.url + 'openscied-b2-peat-bog-lab.html#bog'); await q.waitForFunction(() => window.B2Peat);

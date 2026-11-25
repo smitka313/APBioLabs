@@ -851,7 +851,7 @@ test('student gets five direct unit jumps, one named card link, and no live-regi
   const units = html.match(/<nav class="dashboard-unit-jumps"[^>]*>([\s\S]*?)<\/nav>/)?.[1] || '';
   assert.deepEqual([...units.matchAll(/href="#(unit[1-5])"/g)].map(m => m[1]), ['unit1','unit2','unit3','unit4','unit5']);
   const cards = [...html.matchAll(/<article class="dashboard-activity">([\s\S]*?)<\/article>/g)].map(m=>m[1]);
-  assert.equal(cards.length, 21);
+  assert.equal(cards.length, 22);
   const names = cards.map(card => {
     const image = card.match(/<a class="dashboard-preview"[^>]*>/)?.[0];
     assert.match(image || '', /tabindex="-1"/);
@@ -905,4 +905,20 @@ test('Bear Ancestry ignores page-only visits and resumes the latest available st
   const work=setup(false,{[key]:JSON.stringify({...base,notes:{skull:'The snout is long.'},prediction:0,checked:[0,1,2]})});
   assert.equal(work.el('#bear-ancestry-progress').textContent,'2 of 4 investigation steps complete');
   assert.match(work.el('#bear-ancestry-open').href,/openscied-b5-ancestry\.html#tree$/);
+});
+
+test('Ice Age Bear Speciation derives completion from saved evidence and gates resume',()=>{
+  const key='aplab:openscied:b5-speciation:v1',base={v:1,id:'12AB34CD',step:'argument',answers:{}};
+  const blank=setup(false,{[key]:JSON.stringify(base)});
+  assert.equal(blank.el('#bear-speciation-progress').textContent,'Not started');
+  const draft=setup(false,{[key]:JSON.stringify({...base,answers:{first:'Ice could separate the two populations.'},locked:true,finished:true,pins:[0]})});
+  assert.equal(draft.el('#bear-speciation-progress').textContent,'1 of 4 investigation steps complete');
+  assert.match(draft.el('#bear-speciation-open').href,/openscied-b5-speciation\.html#fossils$/);
+  const finished=setup(false,{[key]:JSON.stringify({...base,answers:{first:'Ice could separate populations.',fossilNote:'A minimum age.',traitNote:'Fur could affect camouflage.',revised:'Several lines of evidence.',future:'Seals depend on ice.'},locked:true,finished:true,limit:true,pins:[0,4],genes:[0,1,2],choices:{north:0,south:1}})});
+  assert.equal(finished.el('#bear-speciation-progress').textContent,'4 of 4 investigation steps complete');
+  const edited=JSON.parse(finished.data[key]);edited.rosterVersion=2;edited.matches={north:false,south:true};
+  const retry=setup(false,{[key]:JSON.stringify(edited)});
+  assert.equal(retry.el('#bear-speciation-progress').textContent,'2 of 4 investigation steps complete');
+  assert.match(retry.el('#bear-speciation-open').href,/#traits$/);
+  assert.match(finished.el('#bear-speciation-open').href,/openscied-b5-speciation\.html#argument$/);
 });
