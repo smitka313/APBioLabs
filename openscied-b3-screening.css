@@ -128,3 +128,6 @@
 [data-tone=warning] .sd-popup-seal{color:#9a5a34}
 @media(max-width:540px){.sd-hero{min-height:0;grid-template-columns:minmax(0,1fr) 104px}.sd-traveler{width:37px;height:33px}.sd-traveler svg{width:30px}}
 @media(prefers-reduced-motion:reduce){.sd-clinic-gauge span{transition:none}}
+
+.sd-dispatch-popup form{display:flex;gap:.45rem;flex-wrap:wrap}
+#sd-probe-position{display:inline-block;margin-right:.42rem;font-variant-numeric:tabular-nums}

@@ -5,7 +5,7 @@
   const el=(tag,t)=>Object.assign(document.createElement(tag),{textContent:t??''});
   const cost=n=>n+' cr', label=z=>M.names[z]||'Supply rack';
   const newSeed=()=>M.equitySeed(()=>crypto.getRandomValues(new Uint32Array(1))[0]);
-  const fresh=()=>({v:1,seed:null,caseMode:'equity',plan:{...M.baseline},started:false,trial:null,claim:'',limit:'',finished:false,step:'map',caseId:null,caseAnswers:{},caseChecks:[],lastVisitedAt:0});
+  const fresh=()=>({v:1,seed:null,caseMode:'equity',plan:{...M.baseline},started:false,trial:null,claim:'',limit:'',finished:false,step:'map',caseId:null,caseAnswers:{},caseChecks:[],practice:{},lastVisitedAt:0});
   const cleanPlan=p=>Object.fromEntries(M.pieces.map(k=>[k,M.zones.includes(p?.[k])?p[k]:null]));
   const str=x=>typeof x==='string'?x.slice(0,1800):'';
   const ready=()=>!!s.trial&&cases.every(p=>s.caseChecks.includes(p.id));
@@ -18,12 +18,14 @@
       const x=JSON.parse(raw);
       if(x?.v!==1||!Number.isInteger(x.seed)||x.seed<0||x.seed>4294967295)throw Error('Invalid save');
       const trial=cleanPlan(x.trial);
-      s={...s,seed:x.seed,caseMode:x.caseMode==='equity'?'equity':'legacy',plan:x.started?cleanPlan(x.plan):{...M.baseline},started:x.started===true,trial:x.started&&!M.validate(trial)&&!same(trial,M.baseline)?trial:null,caseId:x.caseId,caseAnswers:x.caseAnswers,caseChecks:Array.isArray(x.caseChecks)?x.caseChecks:[],claim:str(x.claim),limit:str(x.limit),finished:x.finished===true,lastVisitedAt:Number(x.lastVisitedAt)||0,step:x.step==='explain'?'explain':'map'};
-    }else{s.seed=newSeed();session.write(KEY,JSON.stringify({v:1,seed:s.seed,caseMode:s.caseMode}));}
+      s={...s,seed:x.seed,caseMode:x.caseMode==='equity'?'equity':'legacy',plan:x.started?cleanPlan(x.plan):{...M.baseline},started:x.started===true,trial:x.started&&!M.validate(trial)&&!same(trial,M.baseline)?trial:null,caseId:x.caseId,caseAnswers:x.caseAnswers,caseChecks:Array.isArray(x.caseChecks)?x.caseChecks:[],practice:x.practice&&typeof x.practice==='object'&&!Array.isArray(x.practice)?x.practice:{},claim:str(x.claim),limit:str(x.limit),finished:x.finished===true,lastVisitedAt:Number(x.lastVisitedAt)||0,step:x.step==='explain'?'explain':'map'};
+    }else{s.seed=newSeed();if(!session.write(KEY,JSON.stringify({v:1,seed:s.seed,caseMode:s.caseMode})).ok)recovery=true;}
     if(s.trial)view='trial';
 
   }catch(_){recovery=true;}
   if(s.seed===null)s.seed=newSeed();
+  const datasetId='SD-'+s.seed.toString(16).toUpperCase().padStart(8,'0');
+  $('dataset').textContent='Dataset '+datasetId+' · Cases are generated when you start and stay with your saved work in this browser. Start over draws a new district.';
   const curated=s.caseMode==='equity'?M.equityCases(s.seed):[];
   const equity=curated.length===3;
   const cases=equity?curated:M.scenarios(s.seed);
@@ -50,7 +52,7 @@
   };
   const probe=$('probe'), massAt=61, massRadius=16;
   const svgNS='http://www.w3.org/2000/svg';
-  let marked=false;
+  let marked=false,markedAt=null;
   for(let i=0;i<255;i++){
     const dot=document.createElementNS(svgNS,'circle');
     dot.setAttribute('cx',String((i*127+19)%320));dot.setAttribute('cy',String((i*43+Math.floor(i/8)*17)%151));
@@ -68,6 +70,7 @@
     for(const id of ['point','point-text'])$(id).setAttribute('visibility',onMass&&marked?'visible':'hidden');
     const status=onMass?'A darker oval is visible in this slice.':'Only the usual layers are visible in this slice.';
     $('probe-note').textContent=status;
+    $('probe-position').textContent='Position '+at+' / 100';
     $('sonogram').setAttribute('aria-label','Simulated ultrasound image. '+status);
     probe.setAttribute('aria-valuetext',at+' of 100. '+status);
     return onMass;
@@ -77,10 +80,17 @@
   }
   probe.oninput=moveProbe;
   $('mark').onclick=()=>{
-    marked=drawProbe();drawProbe();
+    marked=drawProbe();
+    if(marked){markedAt=Number(probe.value);$('probe-return').hidden=false;}
+    drawProbe();
     const msg=$('scan-feedback');msg.hidden=false;
     msg.textContent=marked?'You found the simulated mass. Different echoes made its outline stand out from nearby tissue. This image shows a shape, not a cancer diagnosis.':'This slice only shows tissue layers. Sweep farther and watch for a new shape. One slice can miss a mass.';
     msg.focus({preventScroll:true});
+  };
+  $('probe-return').onclick=()=>{
+    if(markedAt===null)return;
+    probe.value=markedAt;marked=true;drawProbe();$('scan-feedback').hidden=false;
+    $('scan-feedback').textContent='Returned to marked slice '+markedAt+'. This image shows a shape, not a diagnosis.';
   };
   const tissue=$('tissue');
   function positionProbe(e){
@@ -157,9 +167,15 @@
     items.append(...lines.map(line=>el('li',line)));
     $('popup-evidence').replaceChildren(items);
     $('popup-close').textContent=button;
+    $('edit-plan').hidden=true;
     dialog.onclose=()=>{if(focusBack?.getClientRects().length&&!focusBack.disabled)focusBack.focus({preventScroll:true});};
     dialog.showModal();
   }
+  $('edit-plan').onclick=()=>{
+    const dialog=$('mission-dialog');
+    dialog.onclose=null;dialog.close();
+    $('advanced').open=true;$('advanced').querySelector('summary').focus();
+  };
   function budgetPopup(){
     const used=M.total(s.plan);
     const lines=clinicRows({costs:M.costs(s.plan)}).filter(([,value])=>value!==cost(0)).map(([name,value])=>name+': '+value);
@@ -213,8 +229,10 @@
   const income=p=>p.monthlyIncome.toLocaleString('en-US')+' cr/month';
   const visits={screen:'Screening',scan:'Ultrasound follow-up'};
   const mobilePractice={...M.baseline,machine:'mobile',operator:'mobile'};
-  const plansForPractice=()=>[M.baseline,s.trial||mobilePractice];
+  const plansForPractice=()=>({base:M.baseline,trial:s.trial||mobilePractice,local:{...mobilePractice,screen:'mobile'}});
   const needKinds=p=>p.needed?['screen','scan']:['screen'];
+  const practicePlan=()=>plansForPractice()[$('pay-plan').value];
+  const walletKey=()=>[quoteCase.id,...M.pieces.map(k=>practicePlan()[k]??'none')].join(':');
   let quoteCase=null,wallet={credits:0,next:0};
   const quoteRows=q=>[['Test fee',cost(q.fee)],['Drive'+(q.ride?' after voucher':''),cost(q.travel)],['Time away (valued in credits)',cost(q.timeCost)],['Budget used',cost(q.total)]];
   function quoteTile(kind,zone,q){
@@ -234,7 +252,7 @@
     d.append(el('summary',title),grid);return d;
   }
   function drawWallet(animate=false){
-    const p=quoteCase, next=needKinds(p)[wallet.next], plan=plansForPractice()[$('pay-plan').value==='base'?0:1];
+    const p=quoteCase, next=needKinds(p)[wallet.next], plan=plansForPractice()[$('pay-plan').value];
     const bar=el('div'), fill=el('span');
     bar.className='sd-wallet-bar';bar.setAttribute('aria-hidden','true');bar.append(fill);
     const percent=(v)=>100*v/p.means+'%';
@@ -246,8 +264,16 @@
     $('book').disabled=!next;
     $('book').textContent=next?'Try booking '+visits[next].toLowerCase():'Care pathway complete';
   }
-  function resetWallet(){
-    wallet={credits:quoteCase.means,next:0};$('pay-result').textContent='';drawWallet();
+  function loadWallet(note=''){
+    const p=quoteCase, plan=practicePlan(), k=walletKey(), steps=s.practice[k];
+    wallet={credits:p.means,next:0};
+    for(const kind of needKinds(p).slice(0,Number.isInteger(steps)&&steps>0?steps:0)){
+      const tx=M.checkout(visitQuote(p,kind,plan),wallet.credits,p.hours);
+      if(!tx.ok)break;
+      wallet.next++;wallet.credits=tx.remaining;
+    }
+    $('pay-result').textContent=note+(wallet.next?' '+wallet.next+' booking(s) saved for this plan.':'');
+    drawWallet();
   }
   const costToggles=[];
   function openQuote(p){
@@ -260,30 +286,38 @@
     for(const kind of ['screen','scan'])for(const zone of M.zones){
       grid.append(quoteTile(kind,zone,M.quote(p,zone,kind,M.baseline)));
     }
-    $('price-sheet').replaceChildren(el('p','Standard patient prices, before any ride voucher. The services available depend on where the clinic puts its teams.'),grid);
-    $('pay-plan').value='base';$('pay-plan').options[1].textContent=s.trial?'Your recorded redesign':'Mobile ultrasound practice';
-    resetWallet();$('quote-title').focus();
+    $('price-sheet').replaceChildren(el('p','Price estimates for both sites, before vouchers. A service can be booked only at the site shown under “Next” for the selected plan.'),
+      el('p','This patient: '+p.value+' cr per hour away; '+(p.routeExtra?'detour adds 1 hour and 3 credits to each visit.':'no detour charge.')),grid);
+    $('pay-plan').value='base';$('pay-plan').options[1].textContent=s.trial?'Your recorded redesign':'Mobile ultrasound · hospital screening';
+    loadWallet();$('quote-title').focus();
   }
-  $('pay-plan').onchange=resetWallet;$('pay-reset').onclick=resetWallet;
+  $('pay-plan').onchange=()=>loadWallet('Switched practice plans. Each plan keeps its own bookings.');
+  $('pay-reset').onclick=()=>{delete s.practice[walletKey()];save();loadWallet('Practice bookings cleared for this patient and plan only.');};
   $('book').onclick=()=>{
     if(!quoteCase)return;
     const p=quoteCase, kinds=needKinds(p), kind=kinds[wallet.next];
     if(!kind)return;
-    const q=visitQuote(p,kind,plansForPractice()[$('pay-plan').value==='base'?0:1]);
+    const q=visitQuote(p,kind,plansForPractice()[$('pay-plan').value]);
     const tx=M.checkout(q,wallet.credits,p.hours);
     if(!tx.ok){
       const hurdles=[tx.moneyShort&&cost(tx.moneyShort)+' short',tx.timeShort&&tx.timeShort+' h more than the patient has'].filter(Boolean);
-      $('pay-result').textContent='Could not book '+visits[kind].toLowerCase()+': '+hurdles.join(' and ')+'. No credits used. Try the other plan.';
+      const differing=Array.from($('pay-plan').options).filter(o=>o.value!==$('pay-plan').value).find(o=>{
+        const alt=visitQuote(p,kind,plansForPractice()[o.value]);
+        return alt.total<q.total||alt.time<q.time;
+      });
+      const hint=differing?' Compare “'+differing.textContent+'” for a cheaper or shorter visit. Each plan keeps its own bookings.':' None of these practice options lowers this visit’s cost or time. When editing your clinic plan, try changing the service location or adding a ride voucher (cost only).';
+      $('pay-result').textContent='Could not book '+visits[kind].toLowerCase()+': '+hurdles.join(' and ')+'. No credits used.'+hint;
       popup('warning','Patient '+p.id+' · '+p.place,tx.moneyShort?'Over this patient’s care budget':'Not enough time for this visit',
-        visits[kind]+' needs '+cost(q.total)+' and '+q.time+' h. This patient has '+cost(wallet.credits)+' left and '+p.hours+' h available. '+hurdles.join(' and ')+'. No credits were used.',
+        visits[kind]+' needs '+cost(q.total)+' and '+q.time+' h. This patient has '+cost(wallet.credits)+' left and '+p.hours+' h available. '+hurdles.join(' and ')+'. No credits were used.'+hint,
         quoteRows(q).slice(0,3).map(([k,v])=>k+': '+v),'Back to the cost sheet');
       return;
     }
     wallet={next:wallet.next+1,credits:tx.remaining,previous:wallet.credits};
+    s.practice[walletKey()]=wallet.next;save();
     drawWallet(true);
     $('pay-result').textContent=visits[kind]+' booked: '+cost(q.total)+' used. '+(wallet.next===kinds.length?'Care pathway complete.':'Try booking the follow-up next.');
     if(wallet.next===kinds.length){
-      const a=get(M.baseline).patients[p.id-1],isAlt=$('pay-plan').value==='trial';
+      const a=get(M.baseline).patients[p.id-1],isAlt=$('pay-plan').value!=='base';
       const improved=isAlt&&!milestone(a);
       popup('success','Patient '+p.id+' · '+p.place,improved?'You opened a path to care!':'Care booked within budget!',
         'This patient could book every needed visit, with '+cost(wallet.credits)+' left.'+(improved?' The hospital plan left this same patient short of the care they needed.':''),
@@ -332,7 +366,7 @@
       button.setAttribute('aria-pressed',String(chosen));
       for(const [j,p] of [a[id-1],b?.[id-1]].entries()){
         const td=tr.cells[j+1];
-        if(!checked||!p){td.replaceChildren(el('span',!p?'Not run yet':'Check case to reveal'));td.className='sd-unresolved';continue;}
+        if(!checked||!p){td.replaceChildren(el('span',!p?'Not run yet':'Answer correctly to reveal'));td.className='sd-unresolved';continue;}
         const finished=milestone(p);
         if(finished)counts[j]++;
         const tag=el('strong',finished?'✓ Care reached':'! Care missed');tag.className='sd-decision-stamp';
@@ -352,6 +386,7 @@
     const named=score.helped.find(p=>caseIds.includes(p.id))||score.helped[0];
     if(named)lines.push('Patient '+named.id+' in '+named.place+' missed needed care in the hospital plan and reached it with your redesign.');
     lines.push(score.helped.length+' newly reached needed care in the 30-patient district; '+score.lost.length+' lost access they previously had.');
+    if(score.lost.length)lines.push('Lost access: '+score.lost.map(p=>'Patient '+p.id+' ('+p.place+')').join(', ')+'.');
     if(equity)lines.push(score.featuredComplete+' of 3 featured patients got every needed visit.');
     if(tiedBest)lines.push('No permitted redesign gets more patients all the care they need in this district. Use the cost sheets to compare travel, time, and trade-offs.');
     else if(!won)lines.push('Try moving services or adding ride vouchers, or use the cost sheets to explain why the result did not improve.');
@@ -359,19 +394,24 @@
     popup('success','Dispatch mission results',won?'Mission won!':tiedBest?'Best attainable result!':'Budget met. Access goal not met yet.',
       'Your redesign stayed within '+cost(M.budget)+' with '+cost(score.left)+' to spare.'+(won?' More patients got all the care they needed than with the hospital plan.' :equity&&score.featuredComplete<3?' Keep testing: this plan did not get all three featured patients to the care they needed.':' The number of patients who reached needed care did not go up.'),
       lines,'Review my evidence',$('to-explain'));
+    $('edit-plan').hidden=won;
   }
   function drawCases(){
     $('case-progress').textContent=s.trial?s.caseChecks.length+' of 3 comparisons checked.':'Hospital results are ready. Test the redesign to compare all three.';
     drawDecision();
     const scoreBox=$('mission-score');
-    scoreBox.hidden=!ready();
+    scoreBox.hidden=!ready();$('lost-access').hidden=true;
     if(ready()){
       const score=dispatchScore();
+      if(score.lost.length){
+        $('lost-access').hidden=false;
+        $('lost-access').textContent='Lost access: '+score.lost.map(p=>'Patient '+p.id+' ('+p.place+')').join(', ')+'.';
+      }
       scoreBox.textContent=(score.won?'✓ Mission won':bestAttainable(score)?'✓ Best attainable result':'Budget met · Access goal not met')+' · '+score.helped.length+' gained access · '+score.lost.length+' lost access · '+cost(score.left)+' left'+(equity?' · '+score.featuredComplete+'/3 featured patients got needed care':'');
     }
     story($('story'),s.caseId);
     $('case-form').hidden=!s.trial;
-    $('case-pick').value=s.caseChecks.includes(s.caseId)?s.caseAnswers[s.caseId]:'';
+    $('case-pick').value=comparisonLabels[s.caseAnswers?.[s.caseId]]?s.caseAnswers[s.caseId]:'';
   }
   function drawPatient(){
     const r=result(),p=r.patients[patient-1],box=$('patient');
@@ -499,22 +539,30 @@
       s.started=true;view='base';
       patient=s.caseId;
     }
-    else{s.trial={...s.plan};view='trial';s.finished=false;s.caseChecks=[];s.caseAnswers={};patient=s.caseId;}
+    else{
+      s.trial={...s.plan};view='trial';s.finished=false;patient=s.caseId;
+      const baseline=get(M.baseline).patients, revised=get(s.trial).patients;
+      s.caseChecks=s.caseChecks.filter(id=>s.caseAnswers?.[id]===M.comparison(baseline[id-1],revised[id-1]));
+    }
     $('case-feedback').textContent='';
     if(quoteCase){
-      $('pay-plan').options[1].textContent=s.trial?'Your recorded redesign':'Mobile ultrasound practice';
-      resetWallet();
+      $('pay-plan').options[1].textContent=s.trial?'Your recorded redesign':'Mobile ultrasound · hospital screening';
+      loadWallet('Practice bookings are kept separately for each plan.');
     }
     save();render();trip(false);
     (s.trial?$('journey-title'):$('action-title')).focus();
-    saySafe(view==='base'?'Hospital plan recorded. Watch the selected patient, then move the ultrasound team.':'Redesign recorded. Compare all three patients.');
+    saySafe(view==='base'?'Hospital plan recorded. Watch the selected patient, then move the ultrasound team.':'Redesign recorded. '+s.caseChecks.length+' of 3 earlier answers still match. Recheck changed results before submitting.');
+    if(view==='trial'&&ready())showMission(dispatchScore());
   };
+  const comparisonLabels={base:'Hospital only',trial:'Redesign only',both:'Both plans',neither:'Neither plan'};
   $('case-form').onsubmit=e=>{
     e.preventDefault();if(!s.trial||!$('case-pick').value)return;
     const id=s.caseId, a=get(M.baseline).patients[id-1], b=get(s.trial).patients[id-1];
     const answer=M.comparison(a,b), choice=$('case-pick').value;
     if(choice!==answer){
-      $('case-feedback').textContent='Not quite. Check each result above. This patient needs '+need(cases.find(p=>p.id===id)).toLowerCase()+'.';
+      s.caseAnswers={...s.caseAnswers,[id]:choice};s.caseChecks=s.caseChecks.filter(x=>x!==id);s.finished=false;save();render();
+      const explain=(name,p)=>name+': '+(milestone(p)?'all needed care completed.':p.reason);
+      $('case-feedback').textContent='Not quite. '+explain('Hospital',a)+' '+explain('Redesign',b);
       return;
     }
     const wasReady=ready();
@@ -532,7 +580,7 @@
   $('clear').onclick=()=>{const r=session?.reset(KEY,JSON.stringify({v:1,seed:newSeed(),caseMode:'equity'}));if(r?.ok)location.reload();else{$('dialog').close();say('Could not reset this activity from this tab.');}};
   window.addEventListener('storage',notice);window.addEventListener('pageshow',notice);
   render();notice();
-  window.OpenSciEdSubmission?.mount({target:'#sd-report',filename:'cancer-screening-design',collect:()=>{
+  function collectReport(){
     const missing=[!s.started&&'Run the hospital plan.',!s.trial&&'Run a redesign.',!ready()&&'Check all three patient comparisons.',!complete()&&'Write both recommendations and finish.'].filter(Boolean);
     const comparison=s.started?[{type:'table',title:'Fictional district results',columns:cols,rows:comparisons()}]:[];
     const plan=s.trial?[{type:'table',title:'Clinic costs by plan',columns:['Clinic expense','Hospital plan','Redesign'],rows:clinicRows(get(M.baseline)).map(([k,v],i)=>[k,v,clinicRows(get(s.trial))[i][1]])},{type:'table',title:'Recorded redesign',columns:['Equipment or support','Location'],rows:M.pieces.map(k=>[M.names[k],label(s.trial[k])])}]:[];
@@ -542,16 +590,39 @@
       ['Clinic credits remaining',cost(score.left)],...(equity?[['Featured patients who reached needed care',score.featuredComplete+' / 3']]:[]),['Patients newly reaching needed care',String(score.helped.length)],
       ['Patients losing access they previously had',String(score.lost.length)],['Mission result',score.won?'Won: within budget with a net gain in access':bestAttainable(score)?'Best attainable: within budget and matched the highest access total':equity&&score.featuredComplete<3?'Within budget; not all featured patients reached needed care':'Within budget; no net gain in access']
     ]}]:[];
-    const caseItems=[{type:'table',title:'Three patient scenarios',columns:['Patient / town','Income and care budget','Care needed','Hospital / mobile one-way distance','Hospital plan','Redesign','Comparison'],rows:cases.map(p=>[
+    const caseItems=[{type:'table',title:'Three patient scenarios',columns:['Patient / town','Income and care budget','Care needed','Hospital / mobile one-way distance','Hospital plan','Redesign'],rows:cases.map(p=>[
       'Patient '+p.id+' · '+p.place,income(p)+' · '+cost(p.means),need(p),p.distances.hub+' mi / '+p.distances.mobile+' mi',
-      s.started?outcomes[a[p.id-1].outcome]:'Not yet tested',b?outcomes[b[p.id-1].outcome]:'Not yet tested',s.caseChecks.includes(p.id)?'Checked':'Not yet checked'
+      s.started?outcomes[a[p.id-1].outcome]:'Not yet tested',b?outcomes[b[p.id-1].outcome]:'Not yet tested'
     ])}];
+    const choices=[{type:'table',title:'Your comparison answers',columns:['Patient','Selected answer','Status'],rows:cases.map(p=>[
+      'Patient '+p.id,comparisonLabels[s.caseAnswers?.[p.id]]||'Not answered',s.caseChecks.includes(p.id)?'Correct for this plan':'Needs review'
+    ])}];
+    const losses=score?.lost.length?[{type:'text',text:'Lost access: '+score.lost.map(p=>'Patient '+p.id+' ('+p.place+')').join(', ')+'.'}]:[];
     const priceItems=s.started?[{type:'table',title:'Itemized patient cost sheets (planned visits, not necessarily completed)',columns:['Case / plan','Service and site','Drive','Test fee','Time away','Budget used'],rows:cases.flatMap((p,i)=>(s.trial?[['Hospital',M.baseline],['Redesign',s.trial]]:[['Hospital',M.baseline]]).flatMap(([planName,plan])=>needKinds(p).map(kind=>{
       const q=visitQuote(p,kind,plan);return ['Case '+(i+1)+' / '+planName,visits[kind]+' · '+label(q.place),
         q.miles+' mi one way · '+cost(q.travel),cost(q.fee),q.time+' h · '+cost(q.timeCost),cost(q.total)];
     })))}]:[];
-    return {title:'Cancer Screening Design Lab',unit:'OpenSciEd Biology B.3 · Engineering extension',source:'Fictional classroom simulation. Costs in made-up credits. No real patient records or cancer diagnosis.',status:!savable()?'recovery':complete()?'final':'draft',student:student(),datasetId:'SD-'+s.seed.toString(16).toUpperCase().padStart(8,'0'),missing,
-      sections:[{title:'Evidence',items:[...caseItems,...missionItems,...comparison,...plan,...priceItems]},
+    return {title:'Cancer Screening Design Lab',unit:'OpenSciEd Biology B.3 · Engineering extension',source:'Fictional classroom simulation. Costs in made-up credits. No real patient records or cancer diagnosis.',status:!savable()?'recovery':complete()?'final':'draft',student:student(),datasetId,missing,
+      sections:[{title:'Evidence',items:[...caseItems,...choices,...losses,...missionItems,...comparison,...plan,...priceItems]},
       {title:'My recommendation',items:[{type:'answer',prompt:'Which plan would you fund?',value:s.claim},{type:'answer',prompt:'Who might still get left out?',value:s.limit}]}]};
-  }});
+  }
+  window.OpenSciEdSubmission?.mount({target:'#sd-report',filename:'cancer-screening-design',collect:collectReport});
+  $('copy-report').onclick=async()=>{
+    const r=collectReport(), lines=[r.title,r.datasetId,r.unit,r.source];
+    if(r.student?.name)lines.push('Name: '+r.student.name);
+    if(r.student?.period)lines.push('Class period: '+r.student.period);
+    lines.push('Status: '+r.status);
+    if(r.missing.length)lines.push('Remaining: '+r.missing.join(' '));
+    for(const sec of r.sections){
+      lines.push('',sec.title);
+      for(const item of sec.items){
+        if(item.type==='table')lines.push(item.title,item.columns.join(' | '),...item.rows.map(row=>row.join(' | ')));
+        else if(item.type==='answer')lines.push(item.prompt,item.value||'Not answered');
+        else lines.push(item.text);
+      }
+    }
+    const contents=lines.join('\n');
+    try{await navigator.clipboard.writeText(contents);$('copy-fallback').hidden=true;say('Report text copied.');}
+    catch(_){$('copy-fallback').hidden=false;$('copy-text').value=contents;$('copy-text').select();say('Clipboard unavailable. Copy the selected report text manually.');}
+  };
 })();

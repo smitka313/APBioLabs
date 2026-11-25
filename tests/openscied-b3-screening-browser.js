@@ -36,7 +36,10 @@ const out=path.join(ROOT,'artifacts','screening');
     }
     assert.equal(initial.filter(t=>t.includes('Screening + ultrasound follow-up')).length,2);
     assert.equal(initial.filter(t=>t.includes('Screening only')).length,1);
+    const dataset=await id('dataset').textContent();
+    assert.match(dataset,/SD-[A-F0-9]{8}/);
     await p.reload();assert.deepEqual(await profiles.allTextContents(),initial);
+    assert.equal(await id('dataset').textContent(),dataset);
     await profiles.first().getByRole('button',{name:/Open cost sheet/}).click();
     const intake=await p.evaluate(()=>JSON.parse(localStorage.getItem('aplab:openscied:b3-screening:v1')));
     assert.ok(width===1920?intake.seed===1161&&M.bestGain(intake.seed)===0:intake.caseMode==='equity'&&M.equityCases(intake.seed).length===3);
@@ -69,6 +72,11 @@ const out=path.join(ROOT,'artifacts','screening');
         if(!tx.ok)break;
       }
     }
+    await id('pay-plan').selectOption('local');
+    assert.match(await id('wallet').innerText(),/Next: Shared mobile clinic/);
+    await id('pay-plan').selectOption('base');
+    const baseTrip=M.run(intake.seed,M.baseline).patients[first.id-1];
+    assert.match(await id('wallet').innerText(),new RegExp((first.means-baseTrip.paid)+' cr of '+first.means+' cr left'));
     assert.ok(await id('map-grid').isHidden());
     await profiles.first().getByRole('button',{name:/Open cost sheet/}).click();
     assert.ok(await id('quote-board').isHidden());
@@ -114,7 +122,10 @@ const out=path.join(ROOT,'artifacts','screening');
     assert.equal(await id('point-text').getAttribute('visibility'),'visible');
     assert.match(await id('scan-feedback').textContent(),/not a cancer diagnosis/);
     await shot('ultrasound-finding');
+    const marked=await id('probe').inputValue();
     await id('probe').press('End');assert.equal(await id('sonogram-mass').getAttribute('visibility'),'hidden');
+    await id('probe-return').click();assert.equal(await id('probe').inputValue(),marked);
+    assert.equal(await id('sonogram-mass').getAttribute('visibility'),'visible');
     await id('cart').locator('summary').click();
     await id('advanced').locator('summary').click();
     await id('tool-machine').press('Enter');await site('hub').press('Enter');
@@ -165,7 +176,12 @@ const out=path.join(ROOT,'artifacts','screening');
     assert.ok(await id('mission-dialog').isVisible());
     assert.match(await id('popup-title').textContent(),width===1920?/Best attainable result!/:mission.won?/Mission won!/:/Access goal not met/);
     assert.match(await id('popup-message').textContent(),new RegExp(mission.left+' cr to spare'));
-    await id('popup-close').click();
+    if(mission.won)await id('popup-close').click();
+    else{
+      await id('edit-plan').click();
+      assert.match(await id('case-progress').textContent(),/3 of 3/);
+      assert.ok(await id('results').locator('table').first().isVisible());
+    }
     await id('to-explain').click();assert.match(await id('evidence').innerText(),/Simulated outcome/);
     assert.equal(await id('case-evidence').locator(':scope > details').count(),3);
     assert.match(await id('case-evidence').innerText(),/Hospital plan:.*Redesign:/s);
@@ -175,7 +191,7 @@ const out=path.join(ROOT,'artifacts','screening');
     assert.match(await id('finished').textContent(),/Investigation complete/);
     assert.match(await id('claim').inputValue(),/redesign/);
     await p.getByRole('button',{name:'Preview report'}).click();
-    assert.match(await p.getByRole('dialog').filter({hasText:'Cancer Screening Design Lab'}).innerText(),/Three patient scenarios.*Dispatch mission results.*Ultrasound acquisition.*Itemized patient cost sheets/s);
+    assert.match(await p.getByRole('dialog').filter({hasText:'Cancer Screening Design Lab'}).innerText(),/Three patient scenarios.*Your comparison answers.*(Both plans|Neither plan|Hospital only|Redesign only).*Dispatch mission results.*Ultrasound acquisition.*Itemized patient cost sheets/s);
     assert.deepEqual(errors,[]);
     console.log('ok: Screening Design '+width+'px — map, staffing gate, budget, fair comparison, reload, report');
    }finally{await ctx.close();}

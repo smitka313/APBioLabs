@@ -73,16 +73,20 @@
  <h3 id="sd-intake-title">Patient dispatch files</h3>
  <p><strong>Your mission:</strong> <span id="sd-mission-rules">Stay within the 720-credit clinic budget, get all three featured patients to needed care, and help more people district-wide than the hospital plan did.</span> Open a cost sheet to practice booking a visit.</p>
  <div id="sd-profiles" class="sd-profiles"></div>
+ <p class="sd-hint" id="sd-dataset"></p>
  <p class="sd-hint">All incomes and distances are fictional. This model sets aside 2% of monthly income for test fees, travel, and time away. Distances are one way.</p>
  <section class="sd-quote-board" id="sd-quote-board" aria-labelledby="sd-quote-title" hidden>
    <h4 id="sd-quote-title" tabindex="-1"></h4>
    <div id="sd-price-sheet"></div>
-   <p class="sd-hint">Drive cost is the modeled cost of the trip. Miles show the one-way drive from home. Time covers the trip and visit. Time away is not a bill, but the model counts it against the care budget.</p>
+   <details class="sd-deeper"><summary>How the model calculates costs</summary>
+   <p>Screening costs 8 credits; ultrasound costs 22. Driving costs 1 credit per 2 one-way miles, plus a 3-credit detour for some cases. A voucher subtracts up to 13 credits from the drive, never below zero, and saves no time.</p>
+   <p>Trip and appointment time is 1 hour plus 1 hour per 14 one-way miles, plus 1 hour for a detour where shown. Time away is counted at each patient’s listed rate (4–7 credits per hour). This is not a bill; it represents the cost of lost time.</p>
+   </details>
    <div class="sd-checkout">
      <h5>Can this patient make it to care?</h5>
      <p>Choose a plan and try booking each needed visit. Watch the budget go down as you book.</p>
      <label for="sd-pay-plan">Plan to try</label>
-     <select id="sd-pay-plan"><option value="base">Hospital plan</option><option value="trial">Mobile ultrasound practice</option></select>
+     <select id="sd-pay-plan"><option value="base">Hospital plan</option><option value="trial">Mobile ultrasound · hospital screening</option><option value="local">Mobile screening + ultrasound practice</option></select>
      <div id="sd-wallet"></div>
      <div class="sd-pay-actions"><button class="btn btn--primary" type="button" id="sd-book"></button><button class="btn" type="button" id="sd-pay-reset">Reset practice</button></div>
      <p id="sd-pay-result" role="status"></p>
@@ -112,8 +116,8 @@
  <div class="sd-team-actions"><button type="button" class="sd-piece sd-team" id="sd-tool-team" aria-pressed="false"><span aria-hidden="true">✚</span><strong>Ultrasound team</strong><small></small></button><button type="button" class="btn" id="sd-move-team">Move team to mobile clinic</button></div>
  <p class="sd-hint">Drag the team to the mobile clinic, or use the button.</p>
 </div>
-<details id="sd-advanced" class="sd-supply" hidden><summary>Try more changes (optional)</summary>
- <p>Move screening, staff, equipment, or ride vouchers. Separate pieces must still make a working plan.</p>
+<details id="sd-advanced" class="sd-supply" hidden><summary>Edit clinic plan: move services or add rides</summary>
+ <p>Try moving screening or adding ride vouchers if the first redesign can’t reach everyone. Your last results stay visible until you run an updated plan. The machine and sonographer must be together.</p>
  <div id="sd-tools"></div><button type="button" class="btn" data-zone="rack">Return selected piece to rack</button>
 </details>
 </div>
@@ -125,7 +129,7 @@
 </div>
 <section class="sd-panel" id="sd-journeys" hidden aria-labelledby="sd-journey-title">
 <h3 id="sd-journey-title" tabindex="-1">Compare your three patients</h3>
-<p id="sd-case-progress"></p><p class="sd-mission-score" id="sd-mission-score" hidden></p>
+<p id="sd-case-progress"></p><p class="sd-mission-score" id="sd-mission-score" hidden></p><p class="sd-hint" id="sd-lost-access" hidden></p>
 <table class="sd-decision">
  <caption>Patient decision board</caption>
  <thead><tr><th scope="col">Choose a case</th><th scope="col">Hospital plan</th><th scope="col">Redesign</th></tr></thead>
@@ -167,7 +171,7 @@
     </g>
     <line id="sd-plane" x1="0" x2="0" y1="47" y2="146" stroke="#fff4c9" stroke-width="1.2" stroke-dasharray="4 5" opacity=".9"/>
    </svg>
-   <label for="sd-probe">Slide the practice probe</label><input id="sd-probe" type="range" min="0" max="100" value="10">
+   <label for="sd-probe">Slide the practice probe</label><input id="sd-probe" type="range" min="0" max="100" step="1" value="10"><output for="sd-probe" id="sd-probe-position"></output> <button type="button" class="btn" id="sd-probe-return" hidden>Return to marked slice</button>
   </figure>
   <figure><figcaption>Watch the ultrasound image</figcaption>
    <svg id="sd-sonogram" viewBox="0 0 320 151" role="img" aria-label="Simulated grayscale ultrasound image showing tissue layers">
@@ -208,7 +212,7 @@
 <p>The same 30 fictional patients are used for every plan. Screening and follow-up visits have different costs. A visit is missed if it exceeds a patient’s available credits or time per visit. Patient burden includes fees, net travel cost, and time valued in credits. The clinic budget is separate. Equipment acquisition is a one-period allocation, not a real purchase price. Each visit starts from the patient’s home. An area’s modeled travel time does not tell you its wealth or cancer risk. Facilities with more resources may be better able to pay for equipment and trained staff, but funding, staffing and geography do not always line up.</p>
 <p>Real screening and follow-up depend on the cancer type, the person and clinical guidance. The model does not simulate how accurate any test is, cancer incidence, or confirmed diagnoses. See <a href="https://www.cancer.gov/about-cancer/diagnosis-staging/diagnosis">National Cancer Institute: How Cancer Is Diagnosed</a>.</p>
 </details>
-<p id="sd-save">Progress stays on this device unless you choose to download a report.</p><div id="sd-report"></div>
+<p id="sd-save">Progress stays on this device unless you choose to download a report.</p><div id="sd-report"></div><button class="btn" type="button" id="sd-copy-report">Copy report text</button><div id="sd-copy-fallback" hidden><label for="sd-copy-text">Copy this report text</label><textarea id="sd-copy-text" rows="7" readonly></textarea></div>
 <button type="button" class="btn" id="sd-reset">Start over…</button>
 <dialog class="sd-dispatch-popup" id="sd-mission-dialog" aria-labelledby="sd-popup-title" aria-describedby="sd-popup-message">
  <div class="sd-popup-seal" id="sd-popup-seal" aria-hidden="true"></div>
@@ -216,7 +220,7 @@
  <h2 id="sd-popup-title"></h2>
  <p id="sd-popup-message"></p>
  <div id="sd-popup-evidence"></div>
- <form method="dialog"><button class="btn btn--primary" id="sd-popup-close" autofocus>Continue</button></form>
+ <form method="dialog"><button class="btn btn--primary" id="sd-popup-close" autofocus>Continue</button> <button class="btn" type="button" id="sd-edit-plan" hidden>Edit plan without clearing results</button></form>
 </dialog>
 <dialog id="sd-dialog"><h2>Clear this investigation?</h2><p>Use Preview report first if you want to keep a copy.</p><form method="dialog"><button class="btn" autofocus>Keep working</button> <button type="button" class="btn" id="sd-clear">Clear this activity</button></form></dialog>
 </main>
