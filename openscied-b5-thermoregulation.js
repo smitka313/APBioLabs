@@ -167,7 +167,15 @@
     s.step=name;
     for(const id of route)document.getElementById(id).hidden=id!==name;
     all('[data-step]').forEach(b=>{if(b.dataset.step===name)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');});
-    for(const f of all('iframe[data-lesson-video]'))if(f.closest('section').id!==name){f.parentElement.querySelector('[data-video]').hidden=false;f.remove();}
+    for(const f of all('iframe[data-lesson-video]')){
+      const parent=f.closest('.th-panel');
+      if(parent?.id===name){
+        if(!f.getAttribute('src')&&f.dataset.playerSrc)f.setAttribute('src',f.dataset.playerSrc);
+      }else if(f.getAttribute('src')){
+        f.dataset.playerSrc=f.getAttribute('src');
+        f.removeAttribute('src');
+      }
+    }
     if(name!=='treadmill')walk(false);
     if(name==='model')recap();
     if(persist){save();history.replaceState(null,'','#'+name);document.getElementById(name+'-title').focus();}
@@ -177,9 +185,6 @@
   all('[data-row]').forEach(b=>b.onclick=()=>{s.row=Number(b.dataset.row);treadmill(true);save();});
   all('[data-check]').forEach(b=>b.onclick=()=>{s.check=b.dataset.check;renderCheck();save();});
   all('[data-field]').forEach(n=>{n.maxLength=4000;n.value=s.fields[n.dataset.field]||'';n.oninput=()=>{s.fields[n.dataset.field]=clean(n.value);save();};});
-  all('[data-video]').forEach(b=>b.onclick=()=>{
-    const f=node('iframe');f.dataset.lessonVideo='1';f.title=b.dataset.title;f.allow='autoplay; encrypted-media; picture-in-picture; fullscreen';f.allowFullscreen=true;f.referrerPolicy='strict-origin-when-cross-origin';f.src='https://www.youtube-nocookie.com/embed/'+b.dataset.video+'?autoplay=1'+(b.dataset.start?'&start='+b.dataset.start:'');b.after(f);b.hidden=true;f.focus();
-  });
   $('enlarge').onclick=()=>$('visual').showModal();
   $('sample').onclick=()=>chooseMode('practice');$('edit').onclick=()=>chooseMode('class');
   field();treadmill();renderCheck();drawHuman();sort();

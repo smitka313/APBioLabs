@@ -41,9 +41,14 @@
 <p class="th-tag">Field notebook</p><h2 id="field-title" tabindex="-1">Who gives up the food?</h2>
 <p>In Lesson 1, the Wapusk sightings showed where bears were reported. Now examine what bears actually did when they shared a food source at a different site.</p>
 <label for="th-predict">Predict: If a brown bear approaches a polar bear at a food source, what might happen? Why?</label><textarea id="th-predict" data-field="predict"></textarea>
-<figure class="th-bear-guide"><img src="assets/openscied-bear-field-profiles.svg" width="900" height="240" alt="Illustrations distinguish the polar bear’s long neck, the brown bear’s shoulder hump, and the black bear’s taller ears and lack of a hump.">
-<figcaption><span><strong>Polar</strong><small>Long neck, small ears</small></span><span><strong>Brown</strong><small>High shoulder hump</small></span><span><strong>Black</strong><small>Taller ears, no hump</small></span></figcaption>
-<p>Illustrations are not to scale. Black and brown bears can overlap in fur color; body shape is a better clue. <a href="https://www.nps.gov/articles/bear-identification.htm">Bear identification (National Park Service)</a></p></figure>
+<section class="th-bear-guide" aria-labelledby="th-profile-title">
+<h3 id="th-profile-title">Compare the three bears</h3>
+<div class="th-bear-profiles">
+<figure><img src="assets/openscied-bear-profile-polar.svg" width="400" height="240" alt=""><figcaption><strong>Polar bear</strong><span>Long neck and small, rounded ears</span></figcaption></figure>
+<figure><img src="assets/openscied-bear-profile-brown.svg" width="400" height="240" alt=""><figcaption><strong>Brown bear (grizzly)</strong><span>High shoulder hump and a dip in the face profile</span></figcaption></figure>
+<figure><img src="assets/openscied-bear-profile-black.svg" width="400" height="240" alt=""><figcaption><strong>American black bear</strong><span>Taller ears, a straighter face profile, and no shoulder hump</span></figcaption></figure>
+</div>
+<p>Illustrations are not to scale. Black and brown bears can overlap in fur color. Compare their shapes instead. <a href="https://www.nps.gov/articles/bear-identification.htm">Bear identification (National Park Service)</a></p></section>
 <h3>Open the field cases</h3>
 <div class="th-actions" role="group" aria-label="Which bear pair"><button type="button" class="btn" data-pair="polar-brown">Polar + brown</button><button type="button" class="btn" data-pair="brown-black">Brown + black</button><button type="button" class="btn" data-pair="polar-black">Polar + black</button></div>
 <div class="th-evidence" id="th-case" aria-live="polite"></div>
@@ -53,7 +58,11 @@
 <section class="th-panel" id="treadmill" aria-labelledby="treadmill-title" hidden>
 <p class="th-tag">Lab evidence · Best, 1982</p><h2 id="treadmill-title" tabindex="-1">What changes when the bear walks faster?</h2>
 <p><strong>Thermoregulation</strong> means keeping body temperature in a workable range. Scientists studied two trained polar bears indoors; the values here are from one bear. The treadmill was stopped at 40°C when the bears showed heat stress. That is the study’s stopping point, not a temperature reading for each row in the table.</p>
-<details class="th-evidence"><summary>Watch the Oregon Zoo treadmill clip</summary><p>This video shows what a bear treadmill looks like. It is not footage from Best’s study.</p><button type="button" class="btn" data-video="lff3Sca8g9M" data-start="17" data-title="Oregon Zoo polar bear treadmill">Play clip</button> <a href="https://www.youtube.com/watch?v=lff3Sca8g9M&amp;t=17s">Open on YouTube</a></details>
+<section class="th-evidence th-video" aria-labelledby="th-treadmill-video-title">
+<h3 id="th-treadmill-video-title">Watch: A polar bear on a treadmill</h3>
+<p>The Oregon Zoo clip shows what a bear treadmill looks like. It is not footage from Best’s study. Captions are available in the player when the video provider supplies them.</p>
+<iframe data-lesson-video src="https://www.youtube-nocookie.com/embed/lff3Sca8g9M?start=17&amp;rel=0" title="Oregon Zoo polar bear treadmill" width="800" height="450" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<p class="th-video-help">If the player is blocked, <a href="https://www.youtube.com/watch?v=lff3Sca8g9M&amp;t=17s">try the original clip</a> or use the treadmill illustration and data below.</p></section>
 <div class="th-actions" role="group" aria-label="Walking speed"><span>Choose a speed:</span><button type="button" class="btn" data-row="0">1.1 m/s</button><button type="button" class="btn" data-row="1">1.6 m/s</button><button type="button" class="btn" data-row="2">2.0 m/s</button><button type="button" class="btn" data-row="3">2.2 m/s</button></div>
 <figure class="th-scene" id="th-scene">
 <svg class="th-treadmill-art" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 480" width="1000" height="480" role="img" aria-labelledby="th-art-title th-art-desc">
@@ -138,7 +147,12 @@
 <p class="th-tag">Matter &amp; energy workbench</p><h2 id="model-title" tabindex="-1">Follow the matter and energy</h2>
 <p>Drag each card to its place, or select it and then select a destination. Glucose and oxygen take part in cellular respiration. Muscle cells transfer some energy to a usable form and release some as heat.</p>
 <div class="th-palette" id="th-cards" aria-label="Cards"></div><div class="th-zones" id="th-zones" aria-label="Destinations"></div><p id="th-sort-status" role="status"></p>
-<aside class="th-evidence"><h3>A genetic clue, not proof</h3><p><a href="https://doi.org/10.1093/gbe/evu025">A bear genome study</a> found a difference in <em>NOS3</em>, a gene linked to nitric oxide production. That molecule helps regulate blood flow and can affect energy use. The study did not test whether that gene difference makes a polar bear leave food.</p><details><summary>Watch the polar bear adaptation clip</summary><button type="button" class="btn" data-video="n3ahSPfZfqU" data-title="Polar bear adaptations">Play clip</button> <a href="https://www.youtube.com/watch?v=n3ahSPfZfqU">Open on YouTube</a></details></aside>
+<aside class="th-evidence"><h3>A genetic clue, not proof</h3><p><a href="https://doi.org/10.1093/gbe/evu025">A bear genome study</a> found a difference in <em>NOS3</em>, a gene linked to nitric oxide production. That molecule helps regulate blood flow and can affect energy use. The study did not test whether that gene difference makes a polar bear leave food.</p></aside>
+<section class="th-evidence th-video" aria-labelledby="th-adaptation-video-title">
+<h3 id="th-adaptation-video-title">Watch: Polar bear adaptations</h3>
+<p>Notice a trait that might affect how a polar bear gains or loses heat. Which evidence would help you test that idea?</p>
+<iframe data-lesson-video src="https://www.youtube-nocookie.com/embed/n3ahSPfZfqU?rel=0" title="Polar bear adaptations" width="800" height="450" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<p class="th-video-help">If the player is blocked, <a href="https://www.youtube.com/watch?v=n3ahSPfZfqU">try the original clip</a> or compare the bear traits and cooling evidence in this lesson.</p></section>
 <aside class="th-evidence" id="th-recap" aria-label="Your evidence so far"></aside>
 <label for="th-explain">Is overheating a possible explanation for polar bears giving up food? Use field and lab evidence, then explain what would test the idea in the wild.</label><textarea id="th-explain" data-field="explain"></textarea>
 <div id="th-report"></div>

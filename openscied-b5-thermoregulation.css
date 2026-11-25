@@ -25,9 +25,7 @@
 @keyframes th-body-rise{0%,50%,100%{transform:translateY(0)}25%,75%{transform:translateY(-2px)}}
 @keyframes th-belt-motion{to{transform:translateX(-23px)}}
 .th-bear-guide{margin:.75rem 0;padding:.58rem;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
-.th-bear-guide img{display:block;width:100%;height:auto;aspect-ratio:900/240;border-radius:8px}
-.th-bear-guide figcaption{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem;padding:.4rem .2rem;font-size:.95rem}
-.th-bear-guide figcaption span{border-bottom:1px solid var(--line);padding:.25rem 0}.th-bear-guide small{display:block;font-size:.83rem}.th-bear-guide p{font-size:.88rem;margin:.35rem .2rem .1rem}
+.th-bear-guide p{font-size:.88rem;margin:.35rem .2rem .1rem}
 .th-bar-row{display:grid;grid-template-columns:3.9rem minmax(0,1fr) 4rem;align-items:center;gap:.4rem;margin:.42rem 0;font-size:.87rem}
 .th-track{height:1.12rem;background:var(--surface);border:1px solid var(--line);border-radius:4px}.th-bar{height:100%;background:var(--accent);border-radius:3px}.th-bar-row[data-active=true]{font-weight:800}.th-bar-row[data-active=true] .th-track{outline:2px dashed var(--accent);outline-offset:2px}
 .th-table{width:100%;table-layout:fixed;border-collapse:collapse;margin:.9rem 0}.th-table caption{text-align:left;font-weight:750}.th-table :is(th,td){padding:.4rem .32rem;text-align:left;border-bottom:1px solid var(--line)}.th-table tr[data-active=true]{background:var(--accent-soft)}
@@ -42,3 +40,11 @@
 .th-source img,#th-visual img{display:block;width:100%;height:auto;max-width:655px;margin:.6rem auto;background:#fff;border-radius:5px}
 #th-visual{width:min(820px,calc(100% - 20px));max-height:93vh;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px}
 #th-visual img{max-height:78vh;object-fit:contain}#th-visual::backdrop{background:#0d2131c9}
+.th-bear-profiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem;padding:.1rem .15rem}
+.th-bear-profiles figure{margin:0;overflow:hidden;border:1px solid var(--line);border-radius:9px;background:var(--surface)}
+.th-bear-profiles img{display:block;width:100%;height:auto;aspect-ratio:5/3;border-radius:0}
+.th-bear-profiles figcaption{display:grid;gap:.14rem;padding:.5rem .6rem;line-height:1.27}
+.th-bear-profiles figcaption span{border:0;padding:0;font-size:.83rem}
+.th-video iframe{width:100%;max-width:850px;aspect-ratio:16/9;display:block;border-radius:8px;background:#142a39}
+.th-video-help{font-size:.83rem}
+@media(max-width:580px){.th-bear-profiles{grid-template-columns:1fr}.th-bear-profiles figure{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:center}}
