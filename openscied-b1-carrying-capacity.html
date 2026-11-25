@@ -52,7 +52,7 @@
 <div class="cc-lab">
   <div class="cc-panel cc-station">
     <div class="cc-strip"><div><p class="cc-tag" id="cc-scenario">Baseline · All grass available</p><h3 id="cc-round">Round 0 of 12</h3></div><span class="cc-badge" id="cc-board-phase">Before round 1</span></div>
-    <p class="cc-caption"><strong>Model limit:</strong> Grass is the only limiting resource here. This model does not estimate the size of the real herd.</p>
+    <p class="cc-caption"><strong>Model rule:</strong> The 20 roles are either wildebeest or grass. After each round, subtract the ending herd from 20 to find the next round’s grass roles. Use all of those roles in the baseline, or multiply by the selected percentage and round down in the grass comparison. Grass is the only resource in this model; it does not estimate the size of the real herd.</p>
     <div id="cc-board"></div>
     <p class="cc-caption" id="cc-board-caption">Board shows the starting herd and available grass for the next round. One grass unit feeds one wildebeest in the model.</p>
     <div class="cc-turn"><p class="cc-tag">What happened and why?</p><p id="cc-outcome">No rounds yet. Predict how the herd will change, then run round 1 to see who gets enough grass.</p></div>
@@ -66,7 +66,7 @@
   </div>
 </div>
 <div id="cc-range-section" class="cc-after-run">
-  <div class="cc-panel cc-content cc-data-row"><details id="cc-table"><summary>View round-by-round data</summary><div class="cc-table-wrap"><table id="cc-history"><caption class="cc-sr">Simulated counts for the selected run</caption><thead><tr><th scope="col">Round</th><th scope="col">Start</th><th scope="col">Grass</th><th scope="col">Survived</th><th scope="col">Births</th><th scope="col">Deaths</th><th scope="col">End</th></tr></thead><tbody></tbody></table></div></details></div>
+  <div class="cc-panel cc-content cc-data-row"><details id="cc-table"><summary>View round-by-round data</summary><div class="cc-table-wrap"><table id="cc-history"><caption class="cc-sr">Simulated counts for the selected run</caption><thead><tr><th scope="col">Round</th><th scope="col">Start</th><th scope="col">Grass</th><th scope="col">Survived</th><th scope="col">Births</th><th scope="col">Left herd</th><th scope="col">End</th></tr></thead><tbody></tbody></table></div></details></div>
   <div id="cc-range-app"></div>
 </div>
 <div class="cc-below">
@@ -74,6 +74,7 @@
   <p id="cc-compare-hint">Finish the baseline to unlock the comparison.</p>
   <div class="cc-actions" id="cc-compare-controls" hidden><label for="cc-grass">Grass available <select id="cc-grass"><option value="50">50% of grass roles</option><option value="75">75% of grass roles</option></select></label><button type="button" class="cc-primary" id="cc-compare">Start grass comparison</button></div>
   <div class="cc-actions" id="cc-run-switches" hidden aria-label="Choose a run to inspect"><button type="button" id="cc-view-baseline" aria-pressed="false">Show baseline</button><button type="button" id="cc-view-comparison" aria-pressed="false">Show comparison</button></div>
+  <div class="cc-actions" id="cc-replay-controls" hidden><label id="cc-replay-setting" for="cc-replay-grass">Practice grass setting <select id="cc-replay-grass"><option value="50">50% of grass roles</option><option value="75">75% of grass roles</option></select></label><button type="button" id="cc-replay">Replay grass comparison (practice)</button><button type="button" id="cc-stop-replay" hidden>Return to recorded comparison</button></div>
   <p id="cc-comparison-result" class="cc-result" hidden></p></section>
   <section class="cc-panel cc-content" aria-labelledby="cc-check-title"><p class="cc-tag">Quick check · Practice, not a grade</p><h3 id="cc-check-title">Why does growth slow?</h3><p>A <strong>limiting factor</strong> is something that restricts a population’s growth or size. It could be a resource in short supply, such as food, or a condition such as extreme heat.</p>
   <fieldset id="cc-check-food"><legend>If more wildebeest try to feed than there are grass units, what limits the herd?</legend>
@@ -122,7 +123,7 @@
 <option value="limit">5. Model limitations</option>
 <option value="habitat-claim">Optional: Habitat challenge</option>
 </select>
-<div class="cc-question" data-cc-question="claim"><label id="cc-prompt-claim" for="cc-claim">How did grass availability affect the herd in your model?</label><p id="cc-hint-claim" class="cc-caption">Use a specific round or compare two runs. Explain what caused the change, not just whether the herd grew.</p><textarea id="cc-claim" aria-describedby="cc-hint-claim" rows="4" maxlength="4000"></textarea></div>
+<div class="cc-question" data-cc-question="claim"><label id="cc-prompt-claim" for="cc-claim">How did grass availability affect the herd in your model?</label><p id="cc-hint-claim" class="cc-caption">Compare the results with your starting prediction beside this question. Use a specific round or compare both runs. Explain what caused the change and what you would revise about your prediction.</p><textarea id="cc-claim" aria-describedby="cc-hint-claim" rows="4" maxlength="4000"></textarea></div>
 <div class="cc-question" data-cc-question="shortage-rule" hidden><label id="cc-prompt-shortage-rule" for="cc-shortage-rule">Write an if/then rule for a grass shortage.</label><p id="cc-hint-shortage-rule" class="cc-caption">If there are more wildebeest than grass units, what happens to survival, births, and the next herd? Use a round to check your rule.</p><textarea id="cc-shortage-rule" aria-describedby="cc-hint-shortage-rule" rows="4" maxlength="4000"></textarea></div>
 <div class="cc-question" data-cc-question="long-run" hidden><label id="cc-prompt-long-run" for="cc-long-run">If the model rules stay the same, what will the baseline graph look like over the next six rounds?</label><p id="cc-hint-long-run" class="cc-caption">Look at rounds 7–12. Which herd sizes repeat? Use that pattern to sketch or describe rounds 13–18. Would the herd settle at one size or keep changing? You do not need to run more rounds.</p><textarea id="cc-long-run" aria-describedby="cc-hint-long-run" rows="4" maxlength="4000"></textarea></div>
 <div class="cc-question" data-cc-question="migration-claim" hidden><label id="cc-prompt-migration-claim" for="cc-migration-claim">How could migration affect carrying capacity?</label><p id="cc-hint-migration-claim" class="cc-caption">Explain how movement can make more grass accessible to the herd without creating more grass at any one site.</p><textarea id="cc-migration-claim" aria-describedby="cc-hint-migration-claim" rows="4" maxlength="4000"></textarea></div>
@@ -136,7 +137,7 @@
 </div>
 <aside class="cc-panel cc-content cc-write-evidence" aria-labelledby="cc-writing-title">
 <h3 id="cc-writing-title">Evidence within reach</h3>
-<details data-cc-evidence="model" open><summary>Model results</summary><p id="cc-writing-evidence">No model rounds yet. Run the model to collect data.</p>
+<details data-cc-evidence="model" open><summary>Model results</summary><p id="cc-writing-prediction"></p><p id="cc-writing-evidence">No model rounds yet. Run the model to collect data.</p>
 <div id="cc-writing-rounds" hidden><div class="cc-explain-picks"><label for="cc-explain-trial">Run<select id="cc-explain-trial"></select></label><label for="cc-explain-round">Round<select id="cc-explain-round"></select></label></div><dl id="cc-explain-round-data" class="cc-explain-data"></dl></div>
 </details>
 <details data-cc-evidence="range"><summary>Estimate and fluctuation range</summary><p id="cc-writing-range"></p><div id="cc-writing-late"></div></details>

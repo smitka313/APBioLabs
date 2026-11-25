@@ -138,3 +138,5 @@
   :root:not([data-theme]) .mx :is(.mx-rain-figure img,.mx-rain-source){filter:invert(.92) hue-rotate(180deg)}
   :root:not([data-theme]) .mx .mx-rain-column{outline-color:#ffda87;background:#ffd67626}
 }
+
+.mx-note-shortcut{padding:0 16px 6px}.mx-note-shortcut button{font-size:.84rem}

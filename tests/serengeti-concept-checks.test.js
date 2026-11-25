@@ -16,6 +16,7 @@ test('four classroom checks have one correct answer and useful feedback for each
     assert.equal(new Set(feedback.map(result => result.feedback)).size, 3);
   }
   assert.equal(C.answer('hunt', 'one-die').correct, true);
+  assert.match(C.answer('event','no-target').feedback,/card leaves the board.*successful hunt is different.*splitting a small group/);
   assert.equal(C.answer('comparison', 'map-and-record').correct, true);
   assert.equal(C.get('__proto__'), null);
   assert.equal(C.answer('event', 'not-a-choice'), null);

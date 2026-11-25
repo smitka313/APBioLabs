@@ -75,7 +75,7 @@
     return `<svg id="cc-range-plot" viewBox="0 0 560 212" width="560" height="212" role="img" aria-labelledby="cc-range-plot-title cc-range-plot-desc"
         data-y-max="${max}" data-y-top="${Y0}" data-y-bottom="${Y1}">
       <title id="cc-range-plot-title">Simulated wildebeest population by round</title>
-      <desc id="cc-range-plot-desc">The points are ${entry.series.map(p=>'round '+p.round+': '+p.ending).join('; ')}. Rounds 7 through 12 are highlighted. Use the keyboard slider below to move your estimate line.</desc>
+      <desc id="cc-range-plot-desc">The points are ${entry.series.map(p=>'round '+p.round+': '+p.ending).join('; ')}. Rounds 7 through 12 are highlighted. Use the slider or enter an exact value below to move the estimate line.</desc>
       <rect class="cc-range-late" x="${shade}" y="${Y0}" width="${X1-shade}" height="${Y1-Y0}"/>
       <rect id="cc-range-accepted-band" x="${shade}" width="${X1-shade}" height="0" aria-hidden="true" hidden/>
       <text class="cc-range-plot-head" x="${X0}" y="18">Wildebeest</text>
@@ -150,7 +150,7 @@
       return '<option value="">Choose a late round</option>'+data.points.map(r=>'<option value="'+r.round+'"'+(round===r.round?' selected':'')+'>Round '+r.round+' · '+r.ending+' wildebeest</option>').join('');
     }
     function readiness(){
-      return populated()?'Drag the dashed line to the level the herd fluctuates around, then lock in your estimate.':'Finish 12 grass-model rounds to mark points here. Rounds 7–12 focus on the later pattern, not the early growth.';
+      return populated()?'Drag the dashed line or enter an exact value for the level the herd fluctuates around. Then lock in your estimate.':'Finish 12 grass-model rounds to mark points here. Rounds 7–12 focus on the later pattern, not the early growth.';
     }
     function compareCopy(){
       const a=estimateState('baseline'),b=estimateState('comparison');
@@ -162,10 +162,11 @@
       const k=state.trial, entry=trials[k];
       if(!entry)return;
       const guess=estimateFor(k),value=guess??entry.startLine, y=yAt(value,entry.maximum);
-      const line=$('#cc-range-line'),grab=$('.cc-range-grab'),handle=$('#cc-range-handle'),slider=$('#cc-range-slider');
+      const line=$('#cc-range-line'),grab=$('.cc-range-grab'),handle=$('#cc-range-handle'),slider=$('#cc-range-slider'), exact=$('#cc-range-number');
       for(const el of [line,grab])if(el){el.setAttribute('y1',y);el.setAttribute('y2',y);}
       handle?.setAttribute('cy',y);
       if(slider){slider.value=value;slider.setAttribute('aria-valuetext',shown(value)+' wildebeest'+(guess===null?', starting line not chosen':''));}
+      if(exact&&exact!==root.document.activeElement)exact.value=guess??'';
       const number=$('#cc-range-line-value'), button=$('#cc-range-lock'), feedback=$('#cc-range-estimate-feedback'),checked=estimateState(k);
       if(number)number.textContent=guess===null?'Starting line: '+shown(value)+' wildebeest (move to choose)':'Your estimate: '+shown(value)+' wildebeest';
       const accepted=$('#cc-range-accepted-band'),caption=$('#cc-range-confirmed'),supported=checked?.code==='correct';
@@ -222,8 +223,11 @@
           <select id="cc-range-trial">${MODES.map(mode=>`<option value="${mode}"${k===mode?' selected':''}${trials[mode]?'':' disabled'}>${label(mode,trials[mode])}${trials[mode]?'':' · finish 12 rounds'}</option>`).join('')}</select></label>
           ${table?`<div class="cc-range-workbench">${plot(table,estimateFor(k)??table.startLine)}
           <div class="cc-range-estimate-controls">
-          <label for="cc-range-slider">Move your carrying-capacity estimate <output id="cc-range-line-value" for="cc-range-slider"></output></label>
+          <label for="cc-range-slider">Move your carrying-capacity estimate <output id="cc-range-line-value" for="cc-range-slider cc-range-number"></output></label>
           <input type="range" id="cc-range-slider" min="0" max="${table.maximum}" step=".5" value="${estimateFor(k)??table.startLine}" aria-describedby="cc-range-estimate-feedback">
+          <label for="cc-range-number" class="cc-range-number">Or enter an estimate (wildebeest)
+            <input type="number" inputmode="decimal" id="cc-range-number" min="0" max="${table.maximum}" step=".5" value="${estimateFor(k)??''}" aria-describedby="cc-range-number-help"></label>
+          <p id="cc-range-number-help" class="cc-caption">Use 0 to ${table.maximum}, in steps of 0.5.</p>
           <button type="button" class="cc-primary" id="cc-range-lock">Lock in my estimate</button>
           <p id="cc-range-confirmed" class="cc-range-marks" hidden></p>
           <p id="cc-range-estimate-feedback" class="cc-range-feedback"${typeof announce==='function'?'':' role="status"'}></p></div></div>
@@ -266,7 +270,12 @@
     }
     host.addEventListener('change',e=>{
       const {id,value}=e.target;
-      if(id==='cc-range-trial'&&MODES.includes(value)&&trials[value]){
+      if(id==='cc-range-number'){
+        if(e.target.validity.valid&&value!=='')selectEstimate(Number(value));
+        else e.target.value=estimateFor(state.trial)??'';
+        return;
+      }
+      if(id==='cc-range-trial' &&MODES.includes(value)&&trials[value]){
         state.trial=value;persist();draw();$('#cc-range-trial')?.focus({preventScroll:true});emitMarks();announce?.('Now inspecting '+label(value,trials[value])+'.');return;
       }
       const kind=id==='cc-range-low'?'low':id==='cc-range-high'?'high':'';
@@ -316,6 +325,10 @@
     });
     host.addEventListener('input',e=>{
       if(e.target.id==='cc-range-slider'){selectEstimate(Number(e.target.value));return;}
+      if(e.target.id==='cc-range-number'){
+        if(e.target.validity.valid&&e.target.value!=='')selectEstimate(Number(e.target.value));
+        return;
+      }
       if(e.target.id!=='cc-range-estimate')return;
       state.note=e.target.value.slice(0,1000);persist();updateFeedback();
     });

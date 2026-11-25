@@ -151,7 +151,7 @@
         +' Board tokens: '+oldPrey.length+' → '+newPrey.length+' (+1). Population: −1. One small group represents three wildebeest; two survived as individuals.';
     }else if(removed){
       message='Removed the wildebeest '+tokenType(removed.type).toLowerCase()+' at square '+squareName(removed.cell)+'.'
-        +(battle.preyId!==removed.id?' The attacked token stayed on the board.':'')+' Population: '+signed(battle.change)+'.';
+        +(battle.preyId!==removed.id?' The attacked token stayed on the board. The hunt rule lets the board count one wildebeest lost by removing an individual token from any square. The removed square is not another attack site.':'')+' Population: '+signed(battle.change)+'.';
     }else message='The predator won the roll, but there was no eligible loss to apply. No tokens or population changed.';
     huntDetails[index]=message;
     huntReview={index,cells};
@@ -336,7 +336,7 @@
     b.addEventListener('click', invoke);
     return b;
   }
-  function run(type, choice) {
+  function run(type, choice, rollTies = false) {
     const focused = document.activeElement && document.activeElement.id;
     const current = focused && document.getElementById(focused);
     const oldTop = current && current.getBoundingClientRect().top;
@@ -345,7 +345,15 @@
     const beforeReady = type==='beginHunts' ? moveReadiness(before,prior.role) : null;
     const chosen = (prior.options||[]).find(o=>o.id===choice) || prior.options?.[0];
     const noCardTarget = type==='resolveCard' && !(prior.options||[]).some(o=>o.id!=='stay');
-    try { state = L.act(state, choice == null || choice === '' ? {type} : {type, optionId: choice}); }
+    try {
+      const action=choice == null || choice === '' ? {type} : {type, optionId:choice};
+      state=L.act(state,action);
+      // In a 1-die-vs-1-die tie, repeat the same engine action. Stop after resolving
+      // this match; never roll for the next pair. Every roll is retained in the log.
+      if (rollTies && type==='roll' && prior.battle?.predatorDice===1 && prior.battle.preyDice===1) {
+        for(let i=1;i<40&&state.battle&&state.log.length===before.log.length;i++)state=L.act(state,action);
+      }
+    }
     catch (_) { state = before; say('That move is not available. Choose a listed option.'); return; }
     if (!state || state === before) { state = before; say('That move is not available now.'); return; }
     decision=decisionFor(type,before,state,prior,chosen,noCardTarget,beforeReady);
@@ -372,7 +380,7 @@
     save();
     if (type==='roll') window.SerengetiDice?.markRoll();
     paint(true);
-    if (focused && /^sg-(start|next|move)/.test(focused)) {
+    if (focused && /^sg-(start|next|move|roll-ties)/.test(focused)) {
       const next = qs('#sg-next') || qs('#sg-action-title');
       next.focus({preventScroll:true});
       if (matchMedia('(max-width: 700px)').matches && oldTop > 0 && oldTop < innerHeight && scrollY > 0) {
@@ -398,7 +406,10 @@
     const extras = [entry.preyType && 'Wildebeest: ' + tokenType(entry.preyType),
       entry.predatorType && (SINGULAR[entry.predatorSpecies || entry.role] || 'Predator') + ': ' + tokenType(entry.predatorType),
       outcomeText(entry.winner)].filter(Boolean);
-    return [huntDetails[index] || entry.description || '', ...extras].filter(Boolean).join(' · ');
+    const detail=huntDetails[index] || entry.description || '';
+    const separate=entry.kind==='hunt' && entry.winner==='predator' && entry.removedId!=null &&
+      entry.attackedId!==entry.removedId && !/small.group|hunt rule/i.test(detail);
+    return [detail,separate?'The hunt rule removes an individual token from anywhere to count one population loss. The removed square is not a second hunt.':'',...extras].filter(Boolean).join(' · ');
   }
   function rawSummary() { return state ? L.results(state) : {population:null,seasons:[]}; }
   function paintSeasonPath(st,p,review) {
@@ -618,6 +629,9 @@
       desc = huntMatchup(battle);
       showDice(battle,species,false);
       advance(rounds.length ? 'Roll remaining dice' : 'Roll hunt dice','roll');
+      if(battle?.predatorDice===1&&battle.preyDice===1&&rounds.at(-1)?.pairs?.[0]?.winner==='tie'){
+        actions.append(button('sg-roll-ties','Roll until this tie breaks',()=>run('roll',null,true),'sg-plain'));
+      }
       const initial=huntStart?.season===season&&huntStart.role===activeRole ? huntStart.count : null;
       note = huntRibbon(initial,moveReadiness(st,activeRole).count)+' Lower dice are removed; ties and unmatched dice stay.';
     } else if (p.kind === 'seasonEnd') {
@@ -953,10 +967,13 @@
     if(checkRows.length)sections.push({title:'Optional concept checks',items:[{type:'table',
       columns:['Concept','Last response','Feedback','Attempts'],rows:checkRows}]});
     const shared=roleSetup.mode!=='solo';
-    if(shared)sections.unshift({title:'Shared-device play',items:[{type:'text',text:'This is a group record. No individual name is attached because the game does not collect player names.'}]});
+    const recorder=preserveRaw?null:reportIdentity();
+    if(shared)sections.unshift({title:'Shared-device play',items:[{type:'text',text:
+      'This is a group record. The recorder is the signed-in student, not a list of the players.'+
+      (recorder?.name?' Recorded by: '+recorder.name+(recorder.period?' · Class period: '+recorder.period:'')+'.':' No recorder name was entered.')}]});
     return {title:'Serengeti Board Game',unit:'Unit B.1 · Lesson 7',
       source:'Adapted from OpenSciEd B.1 Lesson 7. The board game simulates change from the starting wildebeest population, not field counts. Dice model chance; births, available food and water, and predator population responses are not modeled.',
-      status:recovering?'recovery':missing.length?'draft':'final',missing,student:shared||preserveRaw?null:reportIdentity(),allowIdentityEdit:!shared,
+      status:recovering?'recovery':missing.length?'draft':'final',missing,student:shared?null:recorder,allowIdentityEdit:!shared,
       keyResults:[{label:'Seasons completed',value:finishedSeasons+' / 4'},
         ...(state?[{label:'Net modeled change',value:signed(summary.change),note:'Relative to the starting population; not a field count'}]:[]),
         {label:'Events and hunts recorded',value:rows.length}],sections};
@@ -964,13 +981,18 @@
   function evidenceFile() {
     const rows = state ? state.log : [];
     const summary = rawSummary();
-    const lines = ['Serengeti Board Game · Lesson 7','SIMULATED; evidence shows cumulative change from the starting population, not field counts.','','Season totals'];
+    const who=preserveRaw?null:reportIdentity(), shared=roleSetup.mode!=='solo';
+    const lines = ['Serengeti Board Game · Lesson 7','SIMULATED; evidence shows cumulative change from the starting population, not field counts.',
+      (shared?'Group record · Recorded by: ':'Name: ')+(who?.name||'Not entered'),
+      'Class period: '+(who?.period||'Not entered'),'','Season totals'];
     if (!summary.seasons?.length) lines.push('No season started yet.');
     (summary.seasons || []).forEach(s => lines.push(seasonName(s.season)+': '+signed(s.start)+' → '+signed(s.end == null ? summary.change : s.end)+' · Cards '+signed(s.cardChange)+' · Hunts '+signed(s.huntChange)));
     lines.push('','Event and hunt history');
     if (!rows.length) lines.push('No events recorded yet.');
     rows.forEach((r,i) => lines.push(seasonName(r.season)+' · '+recordName(r)+' · '+signed(r.change)+' · '+signed(r.population)+' cumulative · '+describeRow(r,i)));
-    lines.push('','Investigation question: '+answers.question,'Evidence: '+selectionText(rows),'Explanation: '+answers.claim,'Further test: '+answers.limits);
+    lines.push('','Model investigation question: How do event cards and hunts change the wildebeest population across the four seasons?');
+    if(answers.question.trim())lines.push('Our investigation question: '+answers.question.trim());
+    lines.push('Evidence: '+selectionText(rows),'Explanation: '+answers.claim,'Further test: '+answers.limits);
     return {name:'Serengeti-game-evidence.txt',text:lines.join('\n')};
   }
   function preservedFile() {

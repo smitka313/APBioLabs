@@ -83,7 +83,7 @@ test('editing pauses the exact playback controller and keeps separate drafts on 
       elements.set(id,{attrs,dataset:{},value:'',addEventListener(e,f){(listeners[e]??=[]).push(f);},
         setAttribute(e,v){attrs[e]=v;},hasAttribute(e){return e==='data-editor-month'&&Object.hasOwn(this.dataset,'editorMonth');},
         fire(e){listeners[e]?.forEach(f=>f({target:this}));this['on'+e]?.({target:this});},
-        focus(){document.activeElement=this;this.fire('focus');}});
+        focus(){document.activeElement=this;this.fire('focus');if(id==='#observation')$('.mx-record').fire('focusin');}});
     }
     return elements.get(id);
   };
@@ -94,7 +94,7 @@ test('editing pauses the exact playback controller and keeps separate drafts on 
     MigrationScene:{init(){}},save(){},say(text){context.messages.push(text);},
     setInterval(callback){intervals.set(++serial,callback);return serial;},clearInterval(id){intervals.delete(id);},
     renderMonth(){vm.runInContext(`if(typeof showDraft==='function')showDraft(state.month);else $('#observation').value=state.observations[state.month]||'';`,context);},
-    region(){context.renderMonth();},renderNotes(){vm.runInContext('renderNoteProgress();',context);}
+    view(){},region(){context.renderMonth();},renderNotes(){vm.runInContext('renderNoteProgress();',context);}
   };
   vm.createContext(context);
   vm.runInContext(cut('  function cardText(','  function renderInspector(')+
@@ -103,6 +103,10 @@ test('editing pauses the exact playback controller and keeps separate drafts on 
   context.renderMonth();
   play.fire('click');assert.equal(play.attrs['aria-pressed'],'true');
   field.focus();assert.equal(play.attrs['aria-pressed'],'false','focus interrupts playback before the next tick');
+  play.fire('click');
+  $('#pause-and-note').fire('click');
+  assert.equal(play.attrs['aria-pressed'],'false','the note shortcut also freezes the chosen month');
+  assert.equal(document.activeElement,field,'the shortcut moves focus to the editing field');
   field.value='A May draft.';field.fire('input');
   for(const tick of intervals.values())tick();
   assert.equal(state.month,4);assert.equal(field.value,'A May draft.');assert.equal(state.notes.length,0);
