@@ -9,7 +9,7 @@ const MIGRATION_PREVIEW = 'assets/migration-explorer-preview.svg';
 const CARRYING_PREVIEW = 'assets/carrying-capacity-preview.svg';
 const SERENGETI_PREVIEW = 'assets/openscied-serengeti-preview.svg';
 const UNIT2 = ['openscied-b2-burn-lab.html', 'openscied-b2-fires.html', 'openscied-b2-peat-bog-lab.html', 'openscied-b2-carbon-journey.html'];
-const UNIT3 = ['openscied-b3-cancer-rates.html', 'openscied-b3-cell-cycle.html', 'openscied-b3-dna-workshop.html', 'openscied-b3-dna-p53.html', 'openscied-b3-inheritance-environment.html'];
+const UNIT3 = ['openscied-b3-cancer-rates.html', 'openscied-b3-screening.html', 'openscied-b3-cell-cycle.html', 'openscied-b3-dna-workshop.html', 'openscied-b3-dna-p53.html', 'openscied-b3-inheritance-environment.html'];
 const UNIT4 = ['openscied-b4-hawksbeard.html','openscied-b4-rat-generations.html','openscied-b4-junco.html','openscied-b4-wildlife-corridor.html'];
 const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
 const CORRIDOR_PREVIEW='assets/openscied-wildlife-corridor-preview.svg';
@@ -79,11 +79,11 @@ const CORRIDOR_PREVIEW='assets/openscied-wildlife-corridor-preview.svg';
         };
       }));
       const svgCards = m.filter(x=>x.svg);
-      T.ok(m.length === 17 && svgCards.length === 7 && m.filter(x=>x.img).length === 10, width + ' px: seventeen cards: seven inline illustrations and ten linked SVG illustrations');
+      T.ok(m.length === 18 && svgCards.length === 7 && m.filter(x=>x.img).length === 11, width + ' px: eighteen cards: seven inline illustrations and eleven linked SVG illustrations');
       T.ok(svgCards.every(x => x.hidden === 'true' && !x.role), width + ' px: inline SVGs stay decorative (aria-hidden, no role)');
       const actionCounts = await Promise.all((await p.locator('.dashboard-activity').all()).map(card => card.getByRole('link').count()));
       T.ok(m.every(x => x.previewHidden && /^Open activity: .+/.test(x.label)) &&
-        new Set(m.map(x => x.label)).size === 17 && actionCounts.every(n => n === 1),
+        new Set(m.map(x => x.label)).size === 18 && actionCounts.every(n => n === 1),
         width + ' px: pointer artwork remains linked without duplicating the one named keyboard action for each activity');
       T.ok(m.every(x=>!x.pill) && svgCards.every(x=>x.shapes>40), width + ' px: no pill inside any picture, and every SVG has real art');
       const first = m[0], poster = first?.img;

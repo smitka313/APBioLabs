@@ -18,7 +18,7 @@ const fs = require('node:fs');
       assert.match(await p.locator('.dashboard-coming-soon').innerText(), /Unit 5.*No companion activities yet/);
       assert.match(await p.locator('.dashboard-coming-soon a').getAttribute('href'), /openscied\.org.*b-5-common-ancestry-speciation/);
       const meta = await p.locator('.dashboard-meta').allTextContents();
-      assert.equal(meta.length, 17);
+      assert.equal(meta.length, 18);
       assert.ok(meta.every(label=>/\bmin(?:utes)?\b|class periods/.test(label)), 'every entry has a pacing estimate');
       const theme = p.getByRole('group', { name: 'Color theme', exact: true });
       assert.equal(await theme.count(), 1);

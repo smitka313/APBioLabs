@@ -15,11 +15,11 @@ const DNA = 'aplab:openscied:b3-dna-p53:v1', CELL = 'aplab:openscied:b3-cell-cyc
       await p.reload();
       const unit3 = p.locator('section[aria-labelledby="unit3"]');
       const unit3Cards = await unit3.locator('.dashboard-activity .dashboard-open').evaluateAll(links => links.map(link => link.id));
-      T.ok(await unit3.locator('.dashboard-activity').count() === 5 &&
-        JSON.stringify(unit3Cards) === JSON.stringify(['cancer-rates-open','cell-cycle-open','dna-workshop-open','dna-p53-open','inh-env-open']),
-      width + ' px: five Unit 3 cards; DNA Workshop immediately precedes the DNA/p53 companion');
-      T.ok((await unit3.locator('.dashboard-tag').textContent()).trim() === '5 activities available',
-        width + ' px: Unit 3 tag counts five activities');
+      T.ok(await unit3.locator('.dashboard-activity').count() === 6 &&
+        JSON.stringify(unit3Cards) === JSON.stringify(['cancer-rates-open','screening-open','cell-cycle-open','dna-workshop-open','dna-p53-open','inh-env-open']),
+      width + ' px: six Unit 3 cards; DNA Workshop immediately precedes the DNA/p53 companion');
+      T.ok((await unit3.locator('.dashboard-tag').textContent()).trim() === '6 activities available',
+        width + ' px: Unit 3 tag counts six activities');
       T.ok(await p.locator('#dna-p53-open').getAttribute('href') === 'openscied-b3-dna-p53.html#overview', 'DNA card opens its page');
       T.ok(/Not started/.test(await p.locator('#dna-p53-progress').innerText()) && /Not started/.test(await p.locator('#cell-cycle-progress').innerText()), 'both cards start as Not started');
       T.ok(await p.locator('#dna-p53-reset').isDisabled(), 'restart disabled with nothing saved');

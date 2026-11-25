@@ -1,0 +1,31 @@
+name: Cancer Screening Design
+on:
+  pull_request:
+    paths:
+      - 'openscied-b3-screening*'
+      - 'assets/openscied-screening-map.svg'
+      - 'tests/openscied-b3-screening*'
+      - '.github/workflows/openscied-screening.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  screening-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: node --test tests/openscied-b3-screening-logic.test.js
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/openscied-b3-screening-browser.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: openscied-screening-viewports
+          path: artifacts/screening/
+          if-no-files-found: ignore

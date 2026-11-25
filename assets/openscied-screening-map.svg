@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 640" width="1000" height="640" preserveAspectRatio="none">
+<defs>
+ <linearGradient id="land" x2=".7" y2="1"><stop stop-color="#cad6a5"/><stop offset=".65" stop-color="#9bb88a"/><stop offset="1" stop-color="#709c82"/></linearGradient>
+ <linearGradient id="water" x2="1" y2="1"><stop stop-color="#226d7a"/><stop offset=".55" stop-color="#3a98a1"/><stop offset="1" stop-color="#286373"/></linearGradient>
+ <pattern id="field" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><path d="M0 0v12" stroke="#506e38" stroke-width="4" opacity=".4"/></pattern>
+ <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0v40" fill="none" stroke="#ffffff" opacity=".1"/></pattern>
+ <path id="river" d="M367-45C329 62 352 109 420 177S516 288 470 365 360 449 375 515 454 597 419 672"/>
+ <path id="road" d="M170 141 470 365 750 141M180 512 470 365 820 486"/>
+ <symbol id="conifer" viewBox="0 0 50 57"><ellipse cx="27" cy="49" rx="23" ry="6" fill="#355d51" opacity=".26"/><path d="M23 31h6v17h-6z" fill="#764f40"/><path d="M26 0 8 30h8L4 42h42L34 30h8Z" fill="#3b6c58"/><path d="M26 0v42H4l12-12H8Z" fill="#538a67"/></symbol>
+ <symbol id="tree" viewBox="0 0 52 55"><ellipse cx="28" cy="49" rx="23" ry="6" fill="#325748" opacity=".26"/><path d="M23 22h6v26h-6z" fill="#775747"/><circle cx="22" cy="23" r="17" fill="#60966e"/><circle cx="34" cy="21" r="12" fill="#41795f"/><circle cx="20" cy="16" r="12" fill="#81ad75"/></symbol>
+ <symbol id="home" viewBox="0 0 82 77">
+  <ellipse cx="44" cy="65" rx="36" ry="8" fill="#355047" opacity=".35"/><path d="M9 33h47l16 12v24L55 62H9z" fill="#f6deaf"/>
+  <path d="M55 34 72 45v24l-17-7z" fill="#ae9b7a"/><path d="M3 37 30 11l31 25-6 8-26-22L9 44Z" fill="#bf604c"/>
+  <path d="m30 11 24-2 25 30-18-3Z" fill="#9f493e"/><path d="M16 44h11v10H16zm23 0h9v10h-9z" fill="#4d6c78"/><path d="M29 61V43h9v18" fill="#887057"/>
+ </symbol>
+</defs>
+<path fill="url(#land)" d="M0 0h1000v640H0z"/><path fill="url(#grid)" d="M0 0h1000v640H0z"/>
+<path fill="#edf0c2" opacity=".52" d="M0 0h304c24 87-15 141-95 172C121 205 53 276 0 257zm529 0h471v270c-67-9-138-117-227-132S585 71 529 0zM490 640c74-104 206-167 305-126s148 26 205-20v146z"/>
+<path fill="#456e59" opacity=".21" d="M0 352c67-47 89-72 163-57 63 13 102 72 167 81l-52 118C168 445 68 491 0 528zm557-26c62-92 132-98 214-74l143 45 86-13v130c-99 38-130-59-228-45s-162 22-215-43z"/>
+<g fill="none" stroke="#365e4e" stroke-width="1.8" opacity=".29">
+ <path d="M0 64C70 74 130 11 217 1M0 81C69 89 151 26 239 4M0 100C83 109 177 42 267 9M0 122C91 128 202 63 285 20M0 255c90-19 168-30 249 16s75 55 110 62M0 277c82-19 167-23 241 13s77 59 109 67M0 300c87-23 166-20 229 10s79 62 111 72"/>
+ <path d="M550 640c114-73 201-90 267-65s113 12 183-26M585 640c109-62 178-69 236-48s109 8 179-24M617 640c95-45 155-53 205-32s109 2 178-19M645 640c86-36 140-32 177-20s110 3 178-14M557 38c58 44 90 40 160 44M591 25c48 36 79 31 150 42"/>
+</g>
+<path fill="#d5cd85" d="M31 266 131 217 220 235 165 291 104 312Z M848 182l128 30 24 52-95-4-91-47Z M44 542l121 2 67 35-32 61H35Z"/>
+<path fill="url(#field)" d="M31 266 131 217 220 235 165 291 104 312Z M848 182l128 30 24 52-95-4-91-47Z M44 542l121 2 67 35-32 61H35Z"/>
+<g fill="none"><use href="#river" stroke="#eff1bd" stroke-width="82" opacity=".56"/><use href="#river" stroke="url(#water)" stroke-width="63"/><use href="#river" stroke="#94dad7" stroke-width="2" stroke-dasharray="27 14 7 23" opacity=".72"/></g>
+<g opacity=".93">
+ <use href="#conifer" x="26" y="187" width="38" height="44"/><use href="#conifer" x="59" y="159" width="48" height="56"/><use href="#conifer" x="85" y="198" width="39" height="45"/>
+ <use href="#conifer" x="212" y="47" width="39" height="46"/><use href="#conifer" x="258" y="72" width="41" height="49"/><use href="#conifer" x="248" y="36" width="49" height="55"/><use href="#conifer" x="292" y="54" width="34" height="40"/>
+ <use href="#tree" x="34" y="395" width="48" height="51"/><use href="#tree" x="70" y="405" width="36" height="39"/><use href="#tree" x="83" y="372" width="50" height="53"/>
+ <use href="#conifer" x="266" y="519" width="41" height="47"/><use href="#conifer" x="307" y="521" width="39" height="44"/><use href="#conifer" x="285" y="553" width="44" height="49"/>
+ <use href="#tree" x="557" y="318" width="39" height="41"/><use href="#tree" x="583" y="289" width="45" height="48"/><use href="#tree" x="611" y="309" width="45" height="49"/>
+ <use href="#conifer" x="880" y="291" width="47" height="54"/><use href="#conifer" x="924" y="312" width="37" height="46"/><use href="#conifer" x="901" y="332" width="45" height="49"/><use href="#conifer" x="948" y="292" width="43" height="49"/>
+ <use href="#tree" x="502" y="580" width="46" height="50"/><use href="#tree" x="536" y="565" width="45" height="49"/><use href="#tree" x="573" y="573" width="43" height="45"/>
+</g>
+<g fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#road" stroke="#3f594d" stroke-width="36" opacity=".43"/><use href="#road" stroke="#fff3cf" stroke-width="27"/><use href="#road" stroke="#9a957d" stroke-width="22"/><use href="#road" stroke="#e8d7a7" stroke-width="2" stroke-dasharray="10 8"/></g>
+<path d="m425 331 45 34 40-32" fill="none" stroke="#f0d5a0" stroke-width="22"/><path d="m425 319 45 34 40-32m-85 22 45 34 40-32" fill="none" stroke="#624f46" stroke-width="4"/>
+<g><use href="#home" x="91" y="58" width="67" height="66"/><use href="#home" x="149" y="54" width="79" height="74"/><use href="#home" x="57" y="85" width="55" height="51"/><use href="#home" x="118" y="433" width="73" height="69"/><use href="#home" x="180" y="423" width="67" height="65"/><use href="#home" x="762" y="405" width="71" height="67"/><use href="#home" x="823" y="388" width="74" height="71"/><use href="#home" x="864" y="433" width="66" height="63"/></g>
+<g transform="translate(686 29)">
+ <ellipse cx="66" cy="97" rx="81" ry="12" fill="#355047" opacity=".44"/>
+ <path d="M4 43h127v55H4z" fill="#f9ecce"/><path d="M131 43 151 32v55l-20 11z" fill="#aebbb4"/><path d="M4 43 24 32h127l-20 11z" fill="#fbfbeb"/>
+ <path d="M27 20h78v42H27z" fill="#f9f7de"/><path d="M105 20 122 9v41l-17 12z" fill="#97b2ae"/><path d="M27 20 44 9h78l-17 11z" fill="#e7eedb"/>
+ <path d="M57 30h17v8h8v16h-8v8H57v-8h-8V38h8z" fill="#a43c46"/>
+ <path d="M12 63h21v15H12zm86 0h21v15H98z" fill="#466a79"/><path d="M57 97V68h26v29" fill="#496e78"/><path d="M70 69v27m-12-25 13 5" stroke="#cbe0d3" stroke-width="2"/>
+ <path d="M49 99h42m-48 5h54" stroke="#e5d3ac" stroke-width="4"/>
+</g>
+<g transform="translate(418 258)">
+ <ellipse cx="60" cy="69" rx="70" ry="11" fill="#304a45" opacity=".4"/>
+ <path d="M0 22 19 11h79v48L77 68H0Z" fill="#dceee0"/><path d="M77 22 98 11v48l-21 9z" fill="#78a39d"/><path d="M0 22 19 11h79L77 22Z" fill="#fffae4"/>
+ <path d="M77 39h24l20 17v13H77z" fill="#dbe8d5"/><path d="M91 42h9l12 13H91z" fill="#456d78"/><path d="M1 60h119v7H1z" fill="#4f817d"/>
+ <path d="M29 31h9v7h8v9h-8v7h-9v-7h-8v-9h8z" fill="#a43c46"/>
+ <circle cx="22" cy="67" r="10" fill="#233842"/><circle cx="104" cy="67" r="10" fill="#233842"/><path d="M17 67h10m72 0h10" stroke="#a9bdbc" stroke-width="3"/>
+</g>
+<g transform="translate(947 51)" fill="#f8f1da" stroke="#365e4e" stroke-width="2"><circle r="22"/><path d="M0-15 6 6 0 3-6 6Z" fill="#365e4e"/><path d="M0 9v6m-15-15h3m24 0h3"/></g>
+</svg>

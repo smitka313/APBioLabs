@@ -173,7 +173,7 @@ test('DNA Workshop comes before DNA Copying and saves a resumable local practice
   const p = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.html'), 'utf8');
   const unit = p.split('aria-labelledby="unit3">')[1]?.split('</section>')[0] || '';
   assert.deepEqual([...unit.matchAll(/class="dashboard-preview" href="([^"]+)"/g)].map(m=>m[1]),[
-    'openscied-b3-cancer-rates.html','openscied-b3-cell-cycle.html','openscied-b3-dna-workshop.html','openscied-b3-dna-p53.html','openscied-b3-inheritance-environment.html'
+    'openscied-b3-cancer-rates.html','openscied-b3-screening.html','openscied-b3-cell-cycle.html','openscied-b3-dna-workshop.html','openscied-b3-dna-p53.html','openscied-b3-inheritance-environment.html'
   ]);
   const key='aplab:openscied:b3-dna-workshop:v1';
   const raw=JSON.stringify({v:1,step:'copy',progress:{v:1,placed:{'pair-1':'A','pair-2':'C'}},answers:{build:'One new strand.'},lastVisitedAt:1800000000000});
@@ -851,7 +851,7 @@ test('student gets four direct unit jumps, one named card link, and no live-regi
   const units = html.match(/<nav class="dashboard-unit-jumps"[^>]*>([\s\S]*?)<\/nav>/)?.[1] || '';
   assert.deepEqual([...units.matchAll(/href="#(unit[1-4])"/g)].map(m => m[1]), ['unit1','unit2','unit3','unit4']);
   const cards = [...html.matchAll(/<article class="dashboard-activity">([\s\S]*?)<\/article>/g)].map(m=>m[1]);
-  assert.equal(cards.length, 17);
+  assert.equal(cards.length, 18);
   const names = cards.map(card => {
     const image = card.match(/<a class="dashboard-preview"[^>]*>/)?.[0];
     assert.match(image || '', /tabindex="-1"/);

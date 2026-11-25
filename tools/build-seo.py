@@ -61,6 +61,9 @@ def page_specs():
         'openscied-b3-cancer-rates.html': ('Cancer Rates Data Dive — OpenSciEd Biology B.3 Lesson 1 | Lab Bench',
                                               'Explore real cancer data in a free OpenSciEd B.3 Lesson 1 companion. Sort and filter rates, compare populations, test predictions, and explain what the data can and cannot tell us.',
                                               'Cancer Rates Data Dive'),
+        'openscied-b3-screening.html': ('Cancer Screening Design Lab — OpenSciEd Biology B.3 | Lab Bench',
+                                           'Place an ultrasound machine and trained staff, then compare patient journeys, clinic costs, and access in a fictional district.',
+                                           'Cancer Screening Design Lab'),
         'openscied-b3-cell-cycle.html': ('Cell Cycle & Cancer — a companion for OpenSciEd Biology B.3 | Lab Bench',
                                          'A free, independent cell-cycle and cancer companion for OpenSciEd Biology B.3 Lessons 3–4. Play a checkpoint game and compare how age, body size, and cell-division rate affect modeled DNA-copying opportunities.',
                                          'Cell cycle and cancer companion (OpenSciEd B.3)'),
@@ -173,6 +176,13 @@ def structured_data(filename, title, description, label):
                          'educationalLevel': 'High school biology',
                          'learningResourceType': 'Interactive data investigation',
                          'teaches': 'How to interpret cancer incidence and mortality rates and distinguish patterns from causes',
+                         'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
+                         'isBasedOn': 'https://openscied.org/instructional-materials/b-3-inheritance-variation-of-traits/'})
+        elif filename == 'openscied-b3-screening.html':
+            page.update({'@type': ['WebPage', 'LearningResource'],
+                         'educationalLevel': 'High school biology',
+                         'learningResourceType': 'Interactive engineering simulation',
+                         'teaches': 'Evaluating trade-offs in clinic cost and patient access to screening and ultrasound follow-up',
                          'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
                          'isBasedOn': 'https://openscied.org/instructional-materials/b-3-inheritance-variation-of-traits/'})
         elif filename == 'openscied-b3-cell-cycle.html':
