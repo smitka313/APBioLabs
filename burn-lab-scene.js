@@ -167,7 +167,7 @@
         top.appendChild(box); return;
       }
       const recorded = st.records.find(row => row.fuel === r.fuel && row.n === r.n);
-      const fs = h('fieldset', { class: 'bn-obs' }, h('legend', { class: 'bn-legend', text: 'Optional observations: what did you see?' }));
+      const fs = h('fieldset', { class: 'bn-obs' }, h('legend', { class: 'bn-legend', text: 'Optional observations: what did you see? Select any that match, or leave them blank.' }));
       L.OBS.forEach(o => {
         const b = h('button', { type: 'button', class: 'bn-chip', 'aria-pressed': String(recorded.obs.includes(o.id)), text: o.label });
         b.addEventListener('click', () => {
@@ -500,7 +500,7 @@
       // bench caption
       ctx.fillStyle = muted; ctx.font = '600 11px ' + css('--f-mono', 'monospace'); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
       ctx.fillText('SIMULATED · ' + stageText(v) + (running ? ' · ' + secs(v.t) : ''), 10, H - 12);
-      if (W > 560) { ctx.textAlign = 'right'; ctx.fillText(res.massStart + ' g handful · balance reads 0.1 g · laser thermometer reads 1 °C', W - 10, H - 12); }
+      if (W > 560) { ctx.textAlign = 'right'; ctx.fillText(L.instrumentCaption(res, v.phase, v.read), W - 10, H - 12); }
       canvas.setAttribute('role', 'img'); canvas.setAttribute('aria-label', canvasLabel(v));
     }
     function canvasLabel(v) {

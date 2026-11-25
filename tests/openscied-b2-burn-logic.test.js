@@ -322,3 +322,13 @@ test('a saved burn review points to one existing sample, never manufactures a du
   assert.deepEqual(draft.current.obs,['smoke']);
   assert.equal(draft.review,undefined);
 });
+
+
+test('burn caption follows each phase and never prints an unmeasured result', () => {
+  const r = L.burnResult(40, 'wood', 1);
+  assert.equal(L.instrumentCaption(r, 'ready', false), 'Fuel not yet weighed · temperature not yet read');
+  assert.equal(L.instrumentCaption(r, 'ready', true), 'Balance: ' + r.massBefore.toFixed(1) + ' g · temperature: ' + r.tempBefore + ' °C');
+  assert.equal(L.instrumentCaption(r, 'running', false), 'Balance idle · thermometer put down');
+  assert.equal(L.instrumentCaption(r, 'finished', false), 'Ash not yet weighed · temperature not yet read');
+  assert.equal(L.instrumentCaption(r, 'finished', true), 'Balance: ' + r.massAfter.toFixed(1) + ' g · temperature: ' + r.tempAfter + ' °C');
+});

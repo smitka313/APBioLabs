@@ -118,10 +118,11 @@
       const bar = h('div', { class: 'dc-bar', role: 'presentation' }, h('i', { 'data-dc': 'bar', style: 'width:' + Math.round(m / L.END_MIN * 100) + '%' }));
       clock.appendChild(strong); clock.appendChild(bar);
       clock.appendChild(h('p', { class: 'dc-note', 'data-dc': 'hint', text: hint(due, done, allRec) }));
-      const rec = h('button', { type: 'button', class: 'btn btn--primary', 'data-dc': 'record', text: readingLabel(due, allRec) });
+      const catchUp = done && due.length > 1;
+      const rec = h('button', { type: 'button', class: 'btn' + (catchUp ? '' : ' btn--primary'), 'data-dc': 'record', text: readingLabel(due, allRec) });
       rec.disabled = !due.length; rec.addEventListener('click', () => record(false));
-      const recAll = h('button', { type: 'button', class: 'btn', 'data-dc': 'record-all', text: 'Record all readings so far' }); recAll.disabled = due.length < 2; recAll.addEventListener('click', () => record(true));
-      const actions = h('div', { class: 'dc-actions' }, rec, recAll);
+      const recAll = h('button', { type: 'button', class: 'btn' + (catchUp ? ' btn--primary' : ''), 'data-dc': 'record-all', text: catchUp ? 'Record all ' + due.length + ' missing readings' : 'Record all readings so far' }); recAll.disabled = due.length < 2; recAll.addEventListener('click', () => record(true));
+      const actions = h('div', { class: 'dc-actions' }, ...(catchUp ? [recAll, rec] : [rec, recAll]));
       if (!done) { const skip = h('button', { type: 'button', class: 'btn', 'data-dc': 'skip', text: 'Skip ahead for class' }); skip.addEventListener('click', skipAhead); actions.appendChild(skip); }
       actions.appendChild(resetControl());
       clock.appendChild(actions);
@@ -131,8 +132,8 @@
     }
     function hint(due, done, allRec) {
       if (allRec) return 'Every reading is recorded. Look at the table and the chart.';
-      if (done) return 'The test reached minute 20. The next unrecorded sample is from minute ' + due[0] +
-        (due.length > 1 ? '. Record it first, or record all missing readings together.' : '. Record it to finish your table.');
+      if (done && due.length > 1) return 'The run is finished. Record all missing readings to fill the table, or add them one at a time starting at minute ' + due[0] + '.';
+      if (done) return 'The run is finished. Record the sample from minute ' + due[0] + ' to finish your table.';
       if (due.length > 1) return 'The button records the oldest unrecorded sample first, not the current clock time. Record all readings so far to catch up.';
       if (due.length) return 'A reading is ready. Beaker temperatures: ' + st.temps.map((t, i) => L.BEAKER_NAMES[i] + ' ' + tempLabel(t)).join(', ') + '.';
       return 'Next reading at ' + nextDue() + ' minutes. Watch the foam rise.';

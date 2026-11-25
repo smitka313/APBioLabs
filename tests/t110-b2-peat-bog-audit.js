@@ -74,7 +74,11 @@ const ann = p => p.locator('#announcer').textContent();
     // ---------- C2: status text updates at once ----------
     await p.evaluate(() => B2Peat.setState(B2Peat.logic.DEFAULTS, true));
     await p.waitForTimeout(900);
-    await p.fill('#n-wet', '70'); await p.press('#n-wet', 'Enter');
+    await p.fill('#n-wet', '70');
+    T.ok(await p.locator('#s-wet').inputValue() === '70' &&
+      await p.evaluate(k => JSON.parse(localStorage.getItem(k))?.settings.wet, KEY) === 70,
+      'C2: a valid typed setting updates and saves the displayed simulation before Enter or blur');
+    await p.press('#n-wet', 'Enter');
     const w70 = L.model(Object.assign({}, D, { wet: 70 }));
     let live = true; try { await p.waitForFunction(t => document.getElementById('announcer').textContent.indexOf(t) === 0, 'Photosynthesis ' + Math.round(w70.P), { timeout: 400 }); } catch (e) { live = false; }
     T.ok(live, 'C2: the live status shows the new rates within 400 ms of typing 70 in the water box: ' + await ann(p));

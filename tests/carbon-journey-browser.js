@@ -17,6 +17,9 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       const ctx = await browser.newContext({ viewport: { width, height }, colorScheme: width < 400 ? 'dark' : 'light', reducedMotion: 'reduce' });
       const p = await ctx.newPage(), errors = []; p.on('pageerror', e => errors.push(e.message));
       await p.goto(url);
+      await p.goto(url + '#budget');
+      assert.equal(await p.getByRole('button',{name:'Carbon & Energy Budget',exact:true}).isDisabled(),true);
+      assert.equal(await p.locator('#budget').isHidden(),true);
       const shot = state => p.screenshot({ path: path.join(root, `artifacts/l9/${width}-${state}.png`), fullPage: true });
       const fits = async selector => { const b = await p.locator(selector).boundingBox(); assert.ok(b && b.y >= 0 && b.y + b.height <= height + 1, `${selector} within viewport at ${width}x${height}: ${JSON.stringify(b)}`); };
       await p.locator('#roll').waitFor();
@@ -209,6 +212,10 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       const writer=await multiCtx.newPage(), stale=await multiCtx.newPage(), dash=await multiCtx.newPage();
       const keys=['aplab:openscied:b2-carbon-journey:v1','aplab:openscied:b2-carbon-journey:budget:v1'];
       await writer.goto(url);
+      await writer.evaluate(key=>localStorage.setItem(key,JSON.stringify({
+        v:1, position:-1, furthest:-1, prediction:'Earlier test budget', explanation:''
+      })),keys[1]);
+      await writer.reload();
       const recordTurn=async()=>{
         await writer.locator('#roll').click();await writer.locator('#skip-prediction').click();await writer.locator('#record').click();
       };

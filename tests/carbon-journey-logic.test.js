@@ -208,6 +208,33 @@ test('repeated cards trigger a resumable checkpoint before the next official rol
   a.equal(after.coverageCheckpoint,null);
 });
 
+test('three stays at Soil and rock pause the exact audit seed without changing its rolls',()=>{
+  let s=L.initial(1336800262);
+  for(let i=0;i<5;i++)s=L.record({...s,pending:L.die(s.seed,i)});
+  a.equal(L.routeRepeating(s),false);
+  s.pending=L.die(s.seed,5);
+  const page=openFictionalJourney(JSON.stringify({...s,presentation:{revealed:true}}),'#play');
+  page.get('#record-form').events.submit({preventDefault(){}});
+  const held=JSON.parse(page.read());
+  a.equal(held.coverageCheckpoint,'repeat');
+  a.deepEqual(held.rows.map(r=>r.die),[6,2,5,4,2,2]);
+  a.deepEqual(held.rows.slice(-3).map(r=>r.from+':'+r.to),Array(3).fill('soil:soil'));
+  a.equal(page.get('#roll').hidden,true);
+  a.equal(L.readSaved(page.read()).coverageCheckpoint,'repeat');
+  page.get('#coverage-continue').click();
+  a.equal(JSON.parse(page.read()).coverageCheckpoint,null);
+  a.equal(L.die(held.seed,held.rows.length),6);
+});
+
+test('direct links cannot start a new Budget before Journey completion',()=>{
+  const page=openFictionalJourney(null,'#budget');
+  a.equal(page.get('#budget').hidden,true);
+  a.equal(page.get('[data-page="budget"]').disabled,true);
+  a.equal(page.get('#play').hidden,false);
+  a.match(L.energyMeaning(L.energy[1]), /not an atom/);
+  a.equal(L.cardText('fuel burned to for energy'), 'fuel burned for energy');
+});
+
 test('a short route cannot finish without evidence from every missing station and a decomposer',()=>{
   let s=L.initial(1);
   for(let i=0;i<10;i++)s=L.record({...s,pending:1});

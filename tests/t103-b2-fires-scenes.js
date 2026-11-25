@@ -90,7 +90,8 @@ const ink = (p, sel) => p.evaluate(s => { const c = document.querySelector(s + '
     await p.locator('[data-dc="skip"]').click();
     T.ok(/Finished: 20 of 20 min/.test(await p.locator('[data-dc="clock"]').innerText()) &&
       /Record next unrecorded sample \(0 min\)/.test(await p.locator('[data-dc="record"]').innerText()) &&
-      /reached minute 20.*sample is from minute 0.*record all missing readings/.test(await p.locator('[data-dc="hint"]').innerText()),
+      /run is finished.*Record all missing readings.*starting at minute 0/.test(await p.locator('[data-dc="hint"]').innerText()) &&
+      /Record all 11 missing readings/.test(await p.locator('[data-dc="record-all"].btn--primary').innerText()),
       'the clock and queued 0-minute sample are separately labeled');
     await p.locator('[data-dc="record"]').click();
     T.ok(/Record next unrecorded sample \(2 min\)/.test(await p.locator('[data-dc="record"]').innerText()) &&

@@ -86,9 +86,31 @@ function missingCoverage(s) {
    (!origins.has(sample.from) || (sample.from==='soil'&&!sawDecomposer)));
 }
 function routeRepeating(s) {
+ const tail=s.rows.slice(-3);
+ // Three consecutive stays count even when the official events differ.
+ // Trigger once in a single stay streak; a new streak can trigger again.
+ if(tail.length===3&&tail.every(row=>row.from===tail[0].from&&row.to===tail[0].from)){
+  const before=s.rows.at(-4);
+  return !before||before.from!==tail[0].from||before.to!==tail[0].from;
+ }
  if(s.rows.length<4)return false;
  const heard=new Set(s.rows.slice(0,-3).map(row=>row.card));
  return s.rows.slice(-3).every(row=>!!row.card&&heard.has(row.card));
+}
+// Preserve the published event and its saved category. Explain the model's
+// shorthand in the UI, so students do not mistake energy for moving atoms.
+function energyMeaning(category) {
+ return [
+  'No energy transfer is tracked in this event. The atom stays in the same kind of molecule.',
+  'Matter moves between places without changing this atom’s molecule. Energy can be transferred with moving matter; it is not an atom.',
+  'The atoms are rearranged. Energy can change form as molecules are rearranged.',
+  'Matter moves and atoms are rearranged. Energy is transferred or changes form; it does not cycle with this carbon atom.'
+ ][energy.indexOf(category)] || '';
+}
+function cardText(value) {
+ // Display correction for an obvious duplicated preposition; the source
+ // transcription and persisted roll still keep the original wording.
+ return typeof value==='string'?value.replace('burned to for energy','burned for energy'):'';
 }
 function readSaved(raw){
  try {
@@ -123,4 +145,4 @@ function readSaved(raw){
  } catch {return null;}
 }
 function restore(raw,seed){return readSaved(raw) ?? initial(seed);}
-return {stations,matter,energy,die,initial,current,outcome,record,totals,tour,missingCoverage,routeRepeating,readSaved,restore};});
+return {stations,matter,energy,die,initial,current,outcome,record,totals,tour,missingCoverage,routeRepeating,energyMeaning,cardText,readSaved,restore};});
