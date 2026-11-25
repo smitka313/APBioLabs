@@ -140,3 +140,14 @@ test('older preview data cannot be presented as observations from the two-allele
   assert.equal(b.record().model,'Aa');
   assert.deepEqual(b.record().generations,{baseline:0,corridor:0});
 });
+test('the Lesson 7 note survives reload and follows the student into the report',()=>{
+  const disk=new Map(), original=browser(disk);
+  original.node('panther-note').value='The breeding area is smaller. What changes when populations are separated?';
+  original.node('panther-note').fire('input');
+  assert.equal(original.record().prediction,null);
+  const reopened=browser(disk);
+  assert.match(reopened.node('panther-note').value,/breeding area is smaller/);
+  assert.match(reopened.report().sections.find(s=>s.title==='Florida panther field evidence').items[0].value,/populations are separated/);
+  reopened.predict();
+  assert.equal(reopened.location.hash,'#model');
+});

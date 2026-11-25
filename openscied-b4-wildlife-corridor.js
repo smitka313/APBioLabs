@@ -18,7 +18,7 @@
   const END=M.GENERATIONS, MAX=2400;
   const seed=()=>{try{return window.crypto.getRandomValues(new Uint32Array(1))[0];}catch(_){return (Date.now()+Math.random()*0x100000000)>>>0;}};
   const labelId=n=>'WC-AA-'+n.toString(16).toUpperCase().padStart(8,'0');
-  const newState=()=>({v:1,model:'Aa',seed:seed(),step:'predict',prediction:null,generations:{baseline:0,corridor:0},crossing:-1,claim:'',limits:'',finished:false,lastVisitedAt:0});
+  const newState=()=>({v:1,model:'Aa',seed:seed(),step:'predict',prediction:null,pantherNote:'',generations:{baseline:0,corridor:0},crossing:-1,claim:'',limits:'',finished:false,lastVisitedAt:0});
   const text=value=>typeof value==='string'?value.slice(0,MAX):'';
   const choice=value=>Object.prototype.hasOwnProperty.call(PRED,value);
   let session;
@@ -34,7 +34,7 @@
        ((s.crossing===1||b>0)&&a!==END)||(b>0&&s.crossing!==1))throw Error('Unrecognized investigation');
     const prediction=choice(s.prediction?.choice)&&text(s.prediction.reason).trim()?{choice:s.prediction.choice,reason:text(s.prediction.reason)}:null;
     if(a>0&&!prediction)throw Error('Unrecognized investigation');
-    return {v:1,model:'Aa',seed:s.seed,step:STEPS.includes(s.step)?s.step:'predict',prediction,generations:{baseline:a,corridor:b},crossing:s.crossing,
+    return {v:1,model:'Aa',seed:s.seed,step:STEPS.includes(s.step)?s.step:'predict',prediction,pantherNote:text(s.pantherNote).slice(0,1200),generations:{baseline:a,corridor:b},crossing:s.crossing,
       claim:text(s.claim),limits:text(s.limits),finished:s.finished===true&&b===END&&!!text(s.claim).trim()&&!!text(s.limits).trim(),
       lastVisitedAt:Number.isFinite(s.lastVisitedAt)?s.lastVisitedAt:0};
   }
@@ -319,6 +319,8 @@
     set('dataset',labelId(state.seed));
   }
   function render(){
+    show('panther-recall',!!state.pantherNote.trim());
+    set('panther-recall-text',state.pantherNote);
     renderMap('connected','connected');
     renderMap(state.generations.corridor>0&&inspectedHabitat!=='road'?'corridor':'road','road');
     showInheritance();
@@ -403,11 +405,11 @@
       notes.push({type:'table',title:LABEL[id]+' · generation record',columns:['Generation',...endHeaders.slice(1)],rows});
     }
     const student=reportIdentity()||{};
-    return {title:'Wildlife Corridor Lab',unit:'OpenSciEd Biology B.4 · Lessons 8–9 supplemental',source:'Independent OpenSciEd companion by Robert Smitka. Fictional habitat and modeled inheritance, not field data.',
+    return {title:'Wildlife Corridor Lab',unit:'OpenSciEd Biology B.4 · Lessons 7–9 companion',source:'Independent OpenSciEd companion by Robert Smitka. Florida panther context from B.4 Lesson 7 and Florida FWC; corridor runs are fictional.',
       status:badRecord||!session?.check(KEY)?.ok?'recovery':missing.length?'draft':'final',missing,
       student:{name:student.name||'',period:student.period||''},datasetId:labelId(state.seed),keyResults:finalRows().map(row=>({
         label:row[0]+' · generation '+END,value:'West: '+row[1]+'; East: '+row[2],note:'Gap: '+row[3]+' A copies. '+row[4]+' copies from the other side in this generation.'})),
-      sections:[{title:'My prediction and explanation',items:[
+      sections:[...(state.pantherNote.trim()?[{title:'Florida panther field evidence',items:[{type:'answer',prompt:'One clue and a question about isolation and genetic diversity',value:state.pantherNote}]}]:[]),{title:'My prediction and explanation',items:[
         {type:'answer',prompt:'Which setup will make the allele counts more similar across the two patches?',value:PRED[state.prediction?.choice]||''},
         {type:'answer',prompt:'What is your prediction based on?',value:state.prediction?.reason||''},
         {type:'answer',prompt:'What does your comparison show? Cite numbers from two setups.',value:state.claim},
@@ -419,6 +421,7 @@
       if(el.matches('select'))el.value=state.prediction?.choice||'';
       else el.checked=el.value===state.prediction?.choice;
     }
+    if(by('panther-note'))by('panther-note').value=state.pantherNote;
     for(const key of ['reason','claim','limits'])if(by(key))by(key).value=(key==='reason'?state.prediction?.reason:state[key])||'';
   }
   for(const btn of $$('[data-wc-go]'))btn.addEventListener('click',()=>{
@@ -426,6 +429,20 @@
     go(step);
     render();
     // View navigation alone does not become fresh progress or revive an erased record.
+  });
+  const pantherNotes={
+    earlier:'The historical range stretched across much of the Southeast. Switch views to see where most breeding occurs now.',
+    recent:'Most breeding occurs in southern Florida. A sighting outside this area does not mean panthers breed there.'
+  };
+  for(const button of $$('[data-wc-panther-range]'))button.addEventListener('click',()=>{
+    const view=button.dataset.wcPantherRange;
+    for(const other of $$('[data-wc-panther-range]'))other.setAttribute('aria-pressed',String(other===button));
+    for(const key of Object.keys(pantherNotes))by('panther-layer-'+key)?.toggleAttribute('hidden',key!==view);
+    set('panther-map-summary',pantherNotes[view]);set('panther-map-desc',pantherNotes[view]);
+  });
+  by('panther-note')?.addEventListener('input',e=>{
+    state.pantherNote=text(e.target.value).slice(0,1200);
+    save();
   });
   by('prediction-form')?.addEventListener('submit',e=>{
     e.preventDefault();
