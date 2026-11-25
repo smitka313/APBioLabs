@@ -4,7 +4,7 @@
 .wb-hero h1{color:inherit;font-size:clamp(2rem,6vw,4rem);line-height:1.04;margin:.2rem 0}.wb-hero p{margin:.3rem 0;max-width:32ch}
 .wb-panel,.wb-cards article,.wb-evidence{padding:clamp(.7rem,2vw,1.2rem);background:var(--surface);border:1px solid var(--line);border-radius:12px;min-width:0}.wb-panel h2,.wb-panel h3{margin-top:0}.wb-panel h2{font-size:clamp(1.45rem,4vw,2rem)}
 .wb-tabs [aria-current],.wb-controls [aria-pressed=true],.wb-marker[aria-pressed=true]{outline:2px solid var(--accent);outline-offset:2px}
-.wb-map{position:relative;aspect-ratio:17/9;min-height:250px;border-radius:12px;overflow:hidden;isolation:isolate}.wb-map svg{position:absolute;inset:0;width:100%;height:100%}.wb-map[data-season=summer] .wb-ice{display:none}
+.wb-map{position:relative;width:100%;max-width:100%;aspect-ratio:17/9;min-height:250px;border-radius:12px;overflow:hidden;isolation:isolate}.wb-map svg{position:absolute;inset:0;width:100%;height:100%}.wb-map[data-season=summer] .wb-ice{display:none}
 .wb-place,.wb-marker{position:absolute;transform:translate(-50%,-50%);left:var(--x);top:var(--y)}
 .wb-place{color:#172f37;background:#fbf5da;padding:.18rem .38rem;border-radius:4px;font-size:clamp(.68rem,2vw,.91rem);font-weight:750;white-space:nowrap;pointer-events:none}
 .wb-wood{--x:20%;--y:84%}.wb-tundra{--x:23%;--y:13%}.wb-bay{--x:81%;--y:84%}

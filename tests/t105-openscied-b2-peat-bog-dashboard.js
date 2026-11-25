@@ -17,9 +17,10 @@ const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r =>
       (await unit3.locator('.dashboard-tag').textContent()).trim() === '6 activities available' &&
       await unit3.locator('#screening-open').count() === 1,
     'Unit 2 stays at four activities and Unit 3 has six including Cancer Rates Data Dive, Cancer Screening Design Lab, and DNA Workshop');
-    const coming = p.locator('.dashboard-coming-soon');
-    T.ok(/Unit 5.*No companion activities yet/.test(await coming.innerText()) && /openscied\.org.*b-5-common-ancestry-speciation/.test(await coming.locator('a').getAttribute('href')),
-      'unpublished Unit 5 links to the official unit, not an empty activity');
+    const unit5 = p.locator('section[aria-labelledby="unit5"]');
+    T.ok(await unit5.locator('.dashboard-activity').count() === 1
+      && await unit5.locator('#wapusk-open').getAttribute('href') === 'openscied-b5-wapusk.html',
+      'Unit 5 lists the Wapusk lesson without changing the Unit 2 cards');
     // work the real page, then come back
     const q = await ctx.newPage(); await stub(q);
     await q.goto(srv.url + 'openscied-b2-peat-bog-lab.html#bog'); await q.waitForFunction(() => window.B2Peat);
