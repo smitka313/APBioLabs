@@ -135,20 +135,13 @@ const fs = require('node:fs');
       assert.equal(beforeSwitch.responses.junco.claim, 'Example evidence for this test');
       await switchDialog.getByRole('button', { name: 'Cancel', exact: true }).click();
       assert.equal(await p.evaluate(key=>localStorage.getItem(key), juncoKey), fictional);
-      // Responsive source selection can change naturalWidth (it is density-corrected).
-      // Check the actual decoded asset dimensions, not the rendered CSS width.
+      // A single vector plate is now shared across viewport widths. Verify it decodes
+      // and keeps its own intrinsic dimensions independently of rendered CSS sizing.
       const art = await p.locator('.dashboard-hero-art').evaluate(async el => {
         await el.decode();
-        const response = await fetch(el.currentSrc);
-        const bitmap = await createImageBitmap(await response.blob());
-        try { return { path: new URL(el.currentSrc).pathname, width: bitmap.width, height: bitmap.height }; }
-        finally { bitmap.close(); }
+        return { path: new URL(el.currentSrc).pathname, width: el.naturalWidth, height: el.naturalHeight };
       });
-      if (width === 390) {
-        assert.deepEqual(art, { path: '/assets/openscied-atlas-hero-small.webp', width: 1024, height: 341 });
-      } else {
-        assert.deepEqual(art, { path: '/assets/openscied-banner.jpg', width: 2048, height: 682 });
-      }
+      assert.deepEqual(art, { path: '/assets/bench-field-atlas.svg', width: 1200, height: 226 });
       assert.equal(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       assert.deepEqual(p.errors, []);
       T.ok(true, width + 'px: Light/Dark/Auto, theme persistence, sign-in, backup, clear, and AP work preservation');
