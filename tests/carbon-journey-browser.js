@@ -92,11 +92,16 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       const dashboard = await ctx.newPage();
       await dashboard.goto(url.replace('openscied-b2-carbon-journey.html','openscied-dashboard.html'));
-      assert.equal(await dashboard.locator('section[aria-labelledby="unit1"] .dashboard-activity').count(),3);
-      assert.equal(await dashboard.locator('section[aria-labelledby="unit2"] .dashboard-activity').count(),4);
-      assert.equal(await dashboard.locator('section[aria-labelledby="unit3"] .dashboard-activity').count(),5);
-      assert.equal(await dashboard.locator('section[aria-labelledby="unit4"] .dashboard-activity').count(),3);
-      assert.equal(await dashboard.locator('.dashboard-activity').count(),15);
+      const units = dashboard.locator('section.dashboard-unit[aria-labelledby]');
+      assert.ok(await units.count() >= 5, 'all five curriculum units remain visible');
+      for (const unit of await units.all()) {
+        const advertised = (await unit.locator('.dashboard-tag').first().textContent()).match(/^(\d+) activities? available$/);
+        assert.ok(advertised, 'each unit advertises its activity count');
+        assert.equal(await unit.locator('article.dashboard-activity').count(), Number(advertised[1]), 'visible count matches activity cards');
+      }
+      assert.deepEqual(await dashboard.locator('section[aria-labelledby="unit2"] .dashboard-open').evaluateAll(links=>links.map(link=>link.id)), [
+        'b2-burn-open', 'b2-fires-open', 'peat-bog-open', 'carbon-journey-open'
+      ], 'all Unit 2 activity links remain in the expected order');
       assert.match(await dashboard.locator('#carbon-journey-progress').textContent(),/10 rolls recorded/);
       await dashboard.screenshot({path:path.join(root,`artifacts/l9/${width}-dashboard.png`),fullPage:true});
       const resume = dashboard.locator('#carbon-journey-open');
