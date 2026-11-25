@@ -109,7 +109,7 @@
       &&!(p.screen==='mobile'&&p.machine==='mobile'&&p.rides);
     const checks=Array.isArray(s.caseChecks)?new Set(s.caseChecks.filter(id=>Number.isInteger(id)&&id>=1&&id<=30)).size:0;
     const complete=compared&&checks===3&&s.finished===true&&screeningIds().every(id=>written(s,id));
-    return {started:true,section:'',visited:Number(s.lastVisitedAt)||0,stepsDone:complete?3:compared?2:1,stepsTotal:3,stepsLabel:'Investigation steps completed',
+    return {started:true,section:'',visited:Number(s.lastVisitedAt)||0,stepsDone:complete?3:compared&&checks===3?2:1,stepsTotal:3,stepsLabel:'Investigation milestones complete',
       summary:complete?'Investigation complete':compared?checks+'/3 patient comparisons checked':'Hospital plan recorded'};
   }
   function rippleResponseIds(){return ['choice','reason','claim','limit'];}
@@ -319,10 +319,11 @@
       summary:placements+' '+(placements===1?'piece':'pieces')+' placed'+(n?' · '+n+' '+(n===1?'response':'responses')+' saved':'')};
   }
   function dnaP53ResponseIds(saved) {
-    const listed = saved && Array.isArray(saved.responseIds) ? saved.responseIds.filter(id => typeof id === 'string' && id) : [];
+    const core=id=>typeof id==='string' && !!id && !['p-peer','peer-notes'].includes(id);
+    const listed = saved && Array.isArray(saved.responseIds) ? saved.responseIds.filter(core) : [];
     if (listed.length) return Array.from(new Set(listed));
     const fields = saved && saved.fields || {};
-    return Object.keys(fields).filter(id => typeof fields[id] === 'string' && !/^(ex-el-|cl-.*-src-)/.test(id));
+    return Object.keys(fields).filter(id => core(id) && typeof fields[id] === 'string' && !/^(ex-el-|cl-.*-src-)/.test(id));
   }
   function dnaP53Progress(raw) {
     if (!raw) return { summary: 'Not started', started: false, section: 'overview', visited: 0 };
@@ -369,7 +370,7 @@
     return { started, section: INH_SECTIONS.includes(saved.lastSection) ? saved.lastSection : fallback,
       visited: Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
       stepsDone:models,stepsTotal:6,stepsLabel:'Interactive models used',
-      summary: started ? models + ' of 6 interactive models used · ' + answers + ' of ' + ids.length + ' answers saved' : 'Not started' };
+      summary: started ? models + ' of 6 interactive models used · ' + answers + ' of ' + ids.length + ' answers saved (choices and writing)' : 'Not started' };
   }
   // Fires: Peat, Decomposition & Earth's Tilt (Unit B.2, Lessons 3 and 5): the activity saves the ids of every response; three scenes may save state.
   const B2_SECTIONS = ['overview', 'ideas', 'plan', 'yeast', 'cards', 'sense3', 'hypothesis', 'tilt', 'sense5', 'peat', 'wrapup'];
@@ -660,7 +661,7 @@
       const detail=done+' of '+total+' '+label.toLowerCase();
       // This bar counts one named milestone, not the whole activity.
       if (summary.textContent !== detail) summary.textContent = detail;
-      summary.hidden=false;bar.hidden=false;
+      summary.hidden=String(item.summary||'').toLowerCase().startsWith(detail);bar.hidden=false;
       bar.max=total;bar.value=done;bar.title=detail;
       bar.setAttribute('aria-label',activity.name+' · '+label);
       bar.setAttribute('aria-valuetext',detail);
@@ -904,7 +905,7 @@
     });
     // The dashboard can remain open while an activity saves in another tab.
     window.addEventListener('storage', event => { if (!event.key || event.key === Lab.data.workspaceEpochKey ||
-      event.key === 'aplab:student' || event.key === window.OpenSciEdResume?.META_KEY || isOpenSciEdKey(event.key)) refresh(); });
+      event.key === 'aplab:student' || event.key === window.OpenSciEdResume?.META_KEY || window.OpenSciEdResume?.isMetaKey?.(event.key) || isOpenSciEdKey(event.key)) refresh(); });
     document.addEventListener('submit', event => {
       if (event.target?.closest?.('#openscied-student-identity')) setTimeout(refresh,0);
     });

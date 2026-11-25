@@ -29,6 +29,12 @@
       throw new TypeError('An OpenSciEd activity scope is required.');
     }
   }
+  function ownerOf(key) {
+    if (key === 'aplab:openscied-b1-carrying-capacity:run-v1') return 'b1-carrying-capacity';
+    if (key === 'aplab:openscied-b1-serengeti:preview-v1') return 'b1-serengeti';
+    const activity = /^aplab:openscied:(b[1-5]-[a-z0-9-]+):/.exec(key)?.[1];
+    return activity === 'b2-peat-bog' ? 'b2-peat-bog-lab' : activity;
+  }
   function trackedKeys(keys) {
     const all = [...new Set(keys)];
     if (all.some(key => !isActivityKey(key))) throw new TypeError('Only OpenSciEd work may be tracked.');
@@ -45,13 +51,40 @@
   }
   // This only erases OpenSciEd records. Site-wide identity deletion remains in Lab.data.
   function erase(storage, scope, keys, nonce = newNonce) {
+    if (scope !== null) checkScope(scope);
     const all = trackedKeys(keys);
+    if (scope !== null && all.some(key => ownerOf(key) !== scope)) return changed();
     const mark = invalidate(storage, scope, nonce);
     if (!mark.ok) return mark;
     try {
       all.forEach(key => storage.removeItem(key));
       return success();
     } catch (_) { return { ...unavailable(), partial:true }; }
+  }
+
+  // A write can be denied even while controls and local model state still work.
+  // Keep the recovery route visible without touching the record or prompting a reload.
+  function warn(key, reason) {
+    const doc = typeof document === 'object' && document;
+    if (!doc?.body?.prepend || !doc.createElement || !doc.querySelector) return;
+    const message = reason === 'erased' ? 'Saved work was reset after this tab opened.' :
+      reason === 'changed' ? 'A newer version is saved in another tab.' : 'This browser could not write to storage.';
+    let notice = doc.querySelector('#ose-save-warning');
+    const text = 'This tab could not save your latest work. ' + message +
+      ' Use Preview report or the activity’s backup option to keep a copy before reloading or closing this tab.';
+    if (!notice) {
+      notice = doc.createElement('aside');
+      notice.id = 'ose-save-warning';
+      notice.setAttribute('role','alert');
+      notice.style.cssText = 'position:sticky;top:0;z-index:6;color:var(--ink,#223229);background:var(--surface,#fcf9ec);border:2px solid var(--accent,#307657);border-radius:.5rem;padding:.6rem .8rem;margin:.5rem;line-height:1.4';
+      (doc.querySelector('main') || doc.body).prepend(notice);
+    }
+    notice.dataset.workKey = key;
+    if (notice.textContent !== text) notice.textContent = text;
+  }
+  function clearWarning(key) {
+    const notice = typeof document === 'object' && document?.getElementById?.('ose-save-warning');
+    if (notice?.dataset?.workKey === key) notice.remove();
   }
 
   // Initialize synchronously before restoring/creating the in-memory activity. Session
@@ -90,12 +123,17 @@
     function write(key, raw) {
       if (typeof raw !== 'string') throw new TypeError('A serialized OpenSciEd record is required.');
       const result = check(key);
-      if (!result.ok) return result;
+      if (!result.ok) { warn(key, result.reason); return result; }
       try {
+        if (raw === state(key).raw) { clearWarning(key); return success(); }
         storage.setItem(key, raw);
         state(key).raw = raw;
+        clearWarning(key);
+        // Fresh evidence is observable even if the editor has not left the page.
+        // Resume bookkeeping failure must not demote a successful saved activity.
+        try { globalThis.OpenSciEdResume?.recordSave?.(); } catch (_) {}
         return success();
-      } catch (_) { return unavailable(); }
+      } catch (_) { warn(key, 'unavailable'); return unavailable(); }
     }
     // Confirmed in-activity reset: invalidate older editors of this key (including a
     // previously empty editor), but keep sibling keys such as Journey and Budget distinct.

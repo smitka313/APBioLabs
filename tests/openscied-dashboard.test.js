@@ -539,7 +539,7 @@ test('Resume ranks changed evidence, separately shows last opened, and renders a
   assert.match(s.el('#openscied-resume-link').href,/migration\.html#explain$/);
   assert.match(stamp.textContent,/^Last opened: /);
   assert.equal(stamp.dateTime,new Date(base+1000).toISOString());
-  const ledger=s.data[Resume.META_KEY];
+  const ledger=s.data[Resume.META_KEY+':b1-migration'];
   assert.doesNotMatch(ledger,/analysis|claim/);
   delete s.data['aplab:student'];
   refresh();
@@ -548,7 +548,7 @@ test('Resume ranks changed evidence, separately shows last opened, and renders a
   assert.match(s.el('#openscied-resume-link').textContent,/^Continue my saved Migration Map Explorer/);
   s.el('#download-openscied-results').fire('click');
   const payload=JSON.parse(await s.blob().text());
-  assert.equal(payload.work[Resume.META_KEY],undefined,'metadata never exports as student work');
+  assert.equal(Object.keys(payload.work).some(Resume.isMetaKey),false,'metadata never exports as student work');
 });
 
 test('same legacy timestamps yield curriculum order; Carbon Journey v3 keeps its numbered response', async () => {
@@ -613,9 +613,9 @@ test('dashboard direct-card clicks prime the first trip without promoting unchan
   s.events.pageshow();
   assert.match(s.el('#openscied-resume-link').href,/hawksbeard\.html/,'opening older unchanged work does not promote it');
   open('/openscied-b1-carrying-capacity.html','https://example.invalid');
-  assert.equal(JSON.parse(s.data[Resume.META_KEY])['b1-carrying-capacity'],undefined);
+  assert.equal(s.data[Resume.META_KEY+':b1-carrying-capacity'],undefined);
   open('/openscied-b1-carrying-capacity');
-  assert.equal(JSON.parse(s.data[Resume.META_KEY])['b1-carrying-capacity'].signature,'');
+  assert.equal(JSON.parse(s.data[Resume.META_KEY+':b1-carrying-capacity']).signature,'');
   now+=4000;
   s.data[carrying]=JSON.stringify({baseline:{round:1},comparison:null,answers:{},checks:{}});
   s.events.pageshow();
@@ -670,6 +670,9 @@ test('Junco setup-only changes do not outrank newer saved evidence', () => {
     [hawks]:JSON.stringify({v:1,prediction:'city',released:2,lastVisitedAt:now-1000})},[],Tracker);
   const tracker=Tracker.connect(s.data);
   assert.match(s.el('#junco-progress').textContent,/1 simulated trial/);
+  // The actual activity records its baseline when it opens. A dashboard visit
+  // alone no longer writes that baseline on the activity's behalf.
+  tracker.snapshot('/openscied-b4-junco','open');
   now+=1000;
   s.data[key]=save({...sim,site:'mountain',group:'foraging'});
   tracker.snapshot('/openscied-b4-junco','exit');

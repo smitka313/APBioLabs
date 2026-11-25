@@ -153,7 +153,12 @@ const setRange = async (p, id, v) => { await p.evaluate(([i, x]) => { const r = 
     T.ok(await p.locator('#logWrap .lbl-input').nth(1).inputValue() === 'Experiment A: Water level', 'a trial label can be edited');
     const rec = await p.evaluate(k => JSON.parse(localStorage.getItem(k)), KEY);
     T.ok(rec && rec.v === 1 && rec.trials.length === 2 && rec.settings.wet === 50 && rec.trials[1].label === 'Experiment A: Water level' && !('P' in rec.trials[1]), 'one saved record under ' + KEY + ', trials hold inputs only');
-    T.ok(Object.keys(await p.evaluate(() => { const o = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/b2-peat/.test(k)) o[k] = 1; } return o; })).join() === KEY, 'only one b2 storage key');
+    const peatStorage = await p.evaluate(() => ({
+      records: Object.keys(localStorage).filter(k => k.startsWith('aplab:openscied:b2-peat')),
+      resume: localStorage.getItem('aplab:pref:openscied-resume:v1:b2-peat-bog-lab')
+    }));
+    T.ok(peatStorage.records.length === 1 && peatStorage.records[0] === KEY, 'only one Peat Bog student-work record');
+    T.ok(!peatStorage.resume || !peatStorage.resume.includes('Experiment A: Water level'), 'Resume metadata never duplicates the trial label');
     await p.reload(); await p.waitForFunction(() => window.B2Peat);
     T.ok(await p.evaluate(() => B2Peat.state.trials.length) === 2 && await p.evaluate(() => B2Peat.state.S.wet) === 50, 'trials and settings survive a reload');
     await go(p, 'bog');

@@ -139,3 +139,28 @@ test('a forced recovery uses the captured label without trusting a changed ident
   assert.equal(get().name, 'Elsewhere', 'forced recovery does not mark an intact session permanently stale');
   assert.equal(S.reportIdentity(null, [dna], () => identity)(), null);
 });
+
+test('a scoped reset rejects unrelated work before creating any reset marker', () => {
+  const f = fixture({ [carbon]:'journey work', [budget]:'budget work', [dna]:'DNA work' });
+  const writer = f.open(D, [dna]);
+  assert.deepEqual(f.erase(C, [budget, dna]), { ok:false, reason:'changed' });
+  assert.equal(f.storage.getItem(S.scopeKey(C)), null);
+  assert.equal(f.storage.getItem(carbon), 'journey work');
+  assert.equal(f.storage.getItem(budget), 'budget work');
+  assert.equal(f.storage.getItem(dna), 'DNA work');
+  assert.deepEqual(writer.write(dna, 'updated DNA work'), { ok:true });
+});
+
+test('a failed write in one notebook cannot erase another activity or redraw its dataset', () => {
+  const hybrid = 'aplab:openscied:b5-hybrid:v1';
+  const raw = '{"v":1,"id":"00AB1234","rolls":40,"answers":{"claim":"saved claim"}}';
+  const f = fixture({ [hybrid]:raw, [dna]:'{"complete":true}' });
+  const writer = f.open('b5-hybrid',[hybrid]);
+  f.deny(hybrid);
+  assert.equal(writer.write(hybrid,raw).ok,true,'unchanged state needs no disk write');
+  assert.deepEqual(writer.write(hybrid,'{"attempt":"new answer"}'),{ok:false,reason:'unavailable'});
+  assert.equal(f.storage.getItem(S.globalKey),null);
+  assert.equal(f.open('b5-hybrid',[hybrid]).read(hybrid),raw);
+  assert.equal(f.open(D,[dna]).read(dna),'{"complete":true}');
+  assert.equal(fixture().open('b5-hybrid',[hybrid]).read(hybrid),null,'a separate profile does not share saved work');
+});
