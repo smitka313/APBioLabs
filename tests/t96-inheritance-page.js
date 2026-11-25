@@ -1,5 +1,5 @@
 /* Inheritance, Environment and Cancer Risk companion (OpenSciEd B.3 Lessons 8-9): page load, 14 sections, light-writing budget,
-   content note, no personal-health inputs, videos linked only, choices with instant feedback, exit ticket, tap-order, Question Tool,
+   content note, no personal-health inputs, videos inline on request, choices with instant feedback, exit ticket, tap-order, Question Tool,
    claim check, C-to-T example, saving and Resume, scene placeholders and registration contract, download, Clear dialog, layouts.
    Run: NODE_PATH=$(npm root -g) node tests/t96-inheritance-page.js */
 const T = require('./_h');
@@ -82,7 +82,7 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
     T.ok(/do not need to write about any real family/.test(await p.locator('#ideas').innerText()) && /Pause whenever you like/.test(await p.locator('#ideas').innerText()), 'reminder before Part A');
     T.ok(await p.locator('details.teacher-note').count() === 1, 'collapsible teacher note');
     T.ok(await p.locator('iframe, video, embed, object').count() === 0, 'no player mounts before a student chooses an optional clip');
-    const vids = await p.$eval('.ose-video-fallback a', as => as.map(a => a.href + '|' + a.rel + '|' + a.target));
+    const vids = await p.locator('#families .ose-video-fallback a').evaluateAll(as => as.map(a => a.href + '|' + a.rel + '|' + a.target));
     T.ok(vids.length === 3 && vids.every(v => /^https:\/\/youtu\.be\/.+\|noopener noreferrer\|_blank$/.test(v)), 'three fallback video links, new tab, noopener');
     const labels = await p.evaluate(() => Array.from(document.querySelectorAll('main textarea, main input, main select')).map(e => { const l = document.querySelector('label[for="' + e.id + '"]'); return (l ? l.textContent : '') + ' ' + (e.placeholder || '') + ' ' + (e.closest('fieldset') && e.closest('fieldset').querySelector('legend') ? e.closest('fieldset').querySelector('legend').textContent : ''); }));
     T.ok(!labels.some(t => /(your|my|their) (own )?(family|mother|father|parents?|grand|relatives?|health|medical|diagnos|cancer history)|have you (or|ever)|does anyone in your|do you know anyone/i.test(t)), 'no input asks for personal or family health information');
