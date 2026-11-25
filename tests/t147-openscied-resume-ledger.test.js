@@ -39,3 +39,27 @@ test('an old activity cannot restore its timestamp after its scoped results were
   assert.deepEqual(a.snapshot(migration,'exit'),{});
   assert.deepEqual(dashboard.snapshot(migration),{changed:180,opened:0,legacy:180});
 });
+
+test('new report-bearing classroom checks promote saved evidence but not visits',()=>{
+  for(const [scope,base,extra] of [
+    ['b5-wapusk',{fields:{}},{scaleDraft:['park']}],
+    ['b5-wapusk',{fields:{}},{scaleCheck:[]}],
+    ['b4-hawksbeard',{prediction:'city'},{denominatorChoice:'soil'}],
+    ['b4-rat-generations',{prediction:'same'},{analysisAttempt:'rats'}],
+    ['b2-peat-bog-lab',{trials:[{}]},{fields:{'graph-answer':'A warming trend'}}]
+  ]){
+    const f=fixture(),path='/openscied-'+scope+'.html';
+    const key='aplab:openscied:'+(scope==='b2-peat-bog-lab'?'b2-peat-bog':scope)+':v1';
+    f.storage.setItem(key,JSON.stringify({...base,lastVisitedAt:95}));
+    const editor=resume.connect(f.storage,f.clock,{scope}), dashboard=resume.connect(f.storage,f.clock);
+    editor.snapshot(path,'open');
+    f.at(120);
+    f.storage.setItem(key,JSON.stringify({...base,...extra,lastVisitedAt:120}));
+    editor.snapshot(path,'save');
+    assert.equal(dashboard.snapshot(path).changed,120,scope);
+    f.at(160);
+    f.storage.setItem(key,JSON.stringify({...base,...extra,lastVisitedAt:160}));
+    editor.snapshot(path,'exit');
+    assert.equal(dashboard.snapshot(path).changed,120,scope+' does not promote another visit');
+  }
+});
