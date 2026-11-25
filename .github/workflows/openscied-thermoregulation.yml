@@ -1,0 +1,26 @@
+name: Bear Thermoregulation Lab
+on:
+  pull_request:
+    paths:
+      - 'openscied-b5-thermoregulation*'
+      - 'assets/openscied-bear-thermoregulation.svg'
+      - 'assets/openscied-bear-profile-*.svg'
+      - 'assets/openscied-b5-treadmill-source.webp'
+      - 'tests/openscied-b5-thermoregulation*'
+      - '.github/workflows/openscied-thermoregulation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  thermoregulation-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/openscied-b5-thermoregulation-browser.js

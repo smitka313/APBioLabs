@@ -851,7 +851,7 @@ test('student gets five direct unit jumps, one named card link, and no live-regi
   const units = html.match(/<nav class="dashboard-unit-jumps"[^>]*>([\s\S]*?)<\/nav>/)?.[1] || '';
   assert.deepEqual([...units.matchAll(/href="#(unit[1-5])"/g)].map(m => m[1]), ['unit1','unit2','unit3','unit4','unit5']);
   const cards = [...html.matchAll(/<article class="dashboard-activity">([\s\S]*?)<\/article>/g)].map(m=>m[1]);
-  assert.equal(cards.length, 19);
+  assert.equal(cards.length, 20);
   const names = cards.map(card => {
     const image = card.match(/<a class="dashboard-preview"[^>]*>/)?.[0];
     assert.match(image || '', /tabindex="-1"/);
@@ -887,4 +887,13 @@ test('Wapusk tracks meaningful evidence, not tab browsing, and links Unit 5 inde
   const started=setup(false,{[key]:JSON.stringify({...base,fields:{observe:'Different seasons show different places.'}})});
   assert.equal(started.el('#wapusk-progress').textContent,'1 of 6 notebook responses saved');
   assert.equal(started.el('#wapusk-open').href,'openscied-b5-wapusk.html');
+});
+
+test('Thermoregulation ignores selectors without evidence and resumes meaningful work',()=>{
+  const key='aplab:openscied:b5-thermoregulation:v1',base={v:1,id:'99AA1177',fields:{},step:'treadmill',row:3,hum:Array(10).fill('')};
+  const empty=setup(false,{[key]:JSON.stringify(base)});
+  assert.equal(empty.el('#thermoregulation-progress').textContent,'Not started');
+  const work=setup(false,{[key]:JSON.stringify({...base,fields:{pattern:'The bear took 24 breaks.'},lastVisitedAt:Date.now()-5})});
+  assert.equal(work.el('#thermoregulation-progress').textContent,'1 of 5 notebook responses saved');
+  assert.match(work.el('#thermoregulation-open').href,/openscied-b5-thermoregulation\.html#treadmill$/);
 });
