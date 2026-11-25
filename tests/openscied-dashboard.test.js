@@ -851,7 +851,7 @@ test('student gets five direct unit jumps, one named card link, and no live-regi
   const units = html.match(/<nav class="dashboard-unit-jumps"[^>]*>([\s\S]*?)<\/nav>/)?.[1] || '';
   assert.deepEqual([...units.matchAll(/href="#(unit[1-5])"/g)].map(m => m[1]), ['unit1','unit2','unit3','unit4','unit5']);
   const cards = [...html.matchAll(/<article class="dashboard-activity">([\s\S]*?)<\/article>/g)].map(m=>m[1]);
-  assert.equal(cards.length, 20);
+  assert.equal(cards.length, 21);
   const names = cards.map(card => {
     const image = card.match(/<a class="dashboard-preview"[^>]*>/)?.[0];
     assert.match(image || '', /tabindex="-1"/);
@@ -896,4 +896,13 @@ test('Thermoregulation ignores selectors without evidence and resumes meaningful
   const work=setup(false,{[key]:JSON.stringify({...base,fields:{pattern:'The bear took 24 breaks.'},lastVisitedAt:Date.now()-5})});
   assert.equal(work.el('#thermoregulation-progress').textContent,'1 of 5 notebook responses saved');
   assert.match(work.el('#thermoregulation-open').href,/openscied-b5-thermoregulation\.html#treadmill$/);
+});
+
+test('Bear Ancestry ignores page-only visits and resumes the latest available stage', () => {
+  const key='aplab:openscied:b5-ancestry:v1', base={v:1,id:'12AB34CD',step:'explain',notes:{},prediction:null};
+  const empty=setup(false,{[key]:JSON.stringify(base)});
+  assert.equal(empty.el('#bear-ancestry-progress').textContent,'Not started');
+  const work=setup(false,{[key]:JSON.stringify({...base,notes:{skull:'The snout is long.'},prediction:0,checked:[0,1,2]})});
+  assert.equal(work.el('#bear-ancestry-progress').textContent,'2 of 4 investigation steps complete');
+  assert.match(work.el('#bear-ancestry-open').href,/openscied-b5-ancestry\.html#tree$/);
 });

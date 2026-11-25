@@ -30,7 +30,8 @@
     { id: 'junco', name: 'Junco Investigation', file: 'openscied-b4-junco.html', key: PREFIX + 'b4-junco:v1', clears: 'prediction, investigation progress, and written responses', progress: juncoProgress, ids: juncoResponseIds },
     { id: 'wildlife-corridor', name: 'Wildlife Corridor Lab', file: 'openscied-b4-wildlife-corridor.html', key: PREFIX + 'b4-wildlife-corridor:v1', clears: 'prediction, crossing design, model runs, and written responses', progress: wildlifeCorridorProgress, ids: wildlifeCorridorResponseIds },
     { id:'wapusk', name:'Three Bears in Wapusk', file: 'openscied-b5-wapusk.html', key:PREFIX + 'b5-wapusk:v1', clears:'evidence notebook and comparison answers', progress:wapuskProgress, ids:wapuskIds },
-    { id:'thermoregulation', name:'Bear Thermoregulation Lab', file: 'openscied-b5-thermoregulation.html', key:PREFIX+'b5-thermoregulation:v1', clears:'treadmill notebook, human readings, and matter and energy cards', progress:thermProgress, ids:thermIds }
+    { id:'thermoregulation', name:'Bear Thermoregulation Lab', file: 'openscied-b5-thermoregulation.html', key:PREFIX+'b5-thermoregulation:v1', clears:'treadmill notebook, human readings, and matter and energy cards', progress:thermProgress, ids:thermIds },
+    { id:'bear-ancestry', name:'Bear Ancestry Lab', file: 'openscied-b5-ancestry.html', key:PREFIX+'b5-ancestry:v1', clears:'trait notes, DNA comparisons, tree, and explanations', progress:bearAncestryProgress, ids:()=>['conclusion','revise'], answers:true }
   ];
   const SECTIONS = ['overview', 'background', 'cell-game', 'growth-model', 'analyze', 'submit'];
   // Written-response fields. The activity saves the ids of every response field it has (saved.responseIds), so the
@@ -562,6 +563,21 @@
     const section=['field','treadmill','human','model'].includes(s.step)?s.step:'field';
     return {started,section,visited:Number(s.lastVisitedAt)||0,stepsDone:n,stepsTotal:5,stepsLabel:'Notebook responses saved',summary:n+' of 5 notebook responses saved'};
   }
+  function bearAncestryProgress(raw){
+    const blank={summary:'Not started',started:false,section:'',visited:0};
+    let s;try{s=JSON.parse(raw);}catch(_){return blank;}
+    if(s?.v!==1||!/^[A-F0-9]{8}$/.test(s.id))return blank;
+    const hasNotes=['profile','skull','teeth','claw'].some(k=>written(s.notes||{},k));
+    if(!hasNotes)return blank;
+    const guess=[0,1,2].includes(s.prediction);
+    const dna=guess&&[0,1,2].every(i=>Array.isArray(s.checked)&&s.checked.includes(i));
+    const tree=dna&&s.treeGood===true;
+    const done=tree&&['conclusion','revise'].every(k=>written(s.answers||{},k));
+    const n=Number(guess)+Number(dna)+Number(tree)+Number(done);
+    const valid=['traits',...(guess?['dna']:[]),...(dna?['tree']:[]),...(tree?['explain']:[])];
+    const section=valid.includes(s.step)?s.step:valid.at(-1);
+    return {started:true,section,visited:Number(s.lastVisitedAt)||0,stepsDone:n,stepsTotal:4,stepsLabel:'Investigation steps completed',summary:n+' of 4 investigation steps complete'};
+  }
   // Published, fixed denominators. A zero is meaningful even before a student starts.
   const STEP_SCALES = {
     migration:[12,'Months with saved observations'],carrying:[12,'Population model rounds'],
@@ -570,7 +586,7 @@
     'cell-cycle':[2,'Cell game rounds completed'],'dna-workshop':[6,'Workshop practices completed'],
     'dna-p53':[2,'Interactive models used'],'inh-env':[6,'Interactive models used'],
     hawksbeard:[5,'Plant pairs released'],'rat-generations':[4,'Investigation parts completed'],junco:[3,'Investigation steps completed'],
-    'wildlife-corridor':[4,'Investigation steps completed'],wapusk:[6,'Notebook responses saved'],thermoregulation:[5,'Notebook responses saved']
+    'wildlife-corridor':[4,'Investigation steps completed'],wapusk:[6,'Notebook responses saved'],thermoregulation:[5,'Notebook responses saved'],'bear-ancestry':[4,'Investigation steps completed']
   };
   function init() {
     $('[data-ph="dashboard-identity"]')?.remove();
@@ -751,6 +767,12 @@
           activity.ids(saved).forEach(id => { responses[activity.id][id] = typeof fields[id] === 'string' ? fields[id] : ''; });
           // The DNA activity was shortened: answers saved by the longer version are no longer in its id list, so keep them in the copy.
           if (['hawksbeard','rat-generations'].includes(activity.id) && typeof saved?.prediction === 'string') responses[activity.id].prediction = saved.prediction;
+          if (activity.id === 'bear-ancestry' && saved) {
+            if ([0,1,2].includes(saved.prediction)) responses[activity.id].firstGuess=['Polar + Brown','Polar + Black','Brown + Black'][saved.prediction];
+            for (const k of ['profile','skull','teeth','claw']) {
+              if (written(saved.notes||{},k)) responses[activity.id][k+'Observation']=saved.notes[k];
+            }
+          }
           if (activity.id === 'junco' && saved) {
             if (written(saved, 'observation')) responses[activity.id].observation = saved.observation;
             if (written(saved, 'reason')) responses[activity.id].predictionReason = saved.reason;

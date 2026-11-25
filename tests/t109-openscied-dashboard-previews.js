@@ -17,7 +17,7 @@ const CORRIDOR_PREVIEW='assets/openscied-wildlife-corridor-preview.svg';
   // order in the script registry matches the page
   const js = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.js'), 'utf8');
   const files = [...js.matchAll(/file: '([^']+)'/g)].map(m => m[1]);
-  T.ok(JSON.stringify(files) === JSON.stringify(UNIT1.concat(UNIT2,UNIT3,UNIT4,['openscied-b5-wapusk.html','openscied-b5-thermoregulation.html'])), 'openscied-dashboard.js lists activities in page order through Unit 5');
+  T.ok(JSON.stringify(files) === JSON.stringify(UNIT1.concat(UNIT2,UNIT3,UNIT4,['openscied-b5-wapusk.html','openscied-b5-thermoregulation.html','openscied-b5-ancestry.html'])), 'openscied-dashboard.js lists activities in page order through Unit 5');
   const b = await T.launch(), srv = await T.serve();
   try {
     for (const width of [375, 768, 1366, 1920]) {
@@ -79,11 +79,11 @@ const CORRIDOR_PREVIEW='assets/openscied-wildlife-corridor-preview.svg';
         };
       }));
       const svgCards = m.filter(x=>x.svg);
-      T.ok(m.length === 20 && svgCards.length === 7 && m.filter(x=>x.img).length === 13, width + ' px: twenty cards: seven inline illustrations and thirteen linked SVG illustrations');
+      T.ok(m.length === 21 && svgCards.length === 7 && m.filter(x=>x.img).length === 14, width + ' px: twenty-one cards: seven inline illustrations and fourteen linked SVG illustrations');
       T.ok(svgCards.every(x => x.hidden === 'true' && !x.role), width + ' px: inline SVGs stay decorative (aria-hidden, no role)');
       const actionCounts = await Promise.all((await p.locator('.dashboard-activity').all()).map(card => card.getByRole('link').count()));
       T.ok(m.every(x => x.previewHidden && /^Open activity: .+/.test(x.label)) &&
-        new Set(m.map(x => x.label)).size === 20 && actionCounts.every(n => n === 1),
+        new Set(m.map(x => x.label)).size === 21 && actionCounts.every(n => n === 1),
         width + ' px: pointer artwork remains linked without duplicating the one named keyboard action for each activity');
       T.ok(m.every(x=>!x.pill) && svgCards.every(x=>x.shapes>40), width + ' px: no pill inside any picture, and every SVG has real art');
       const first = m[0], poster = first?.img;
