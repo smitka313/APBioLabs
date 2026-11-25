@@ -17,7 +17,7 @@ const PAGES = ['getting-started.html', 'sample-report.html', 'feedback.html'];
         const heroBg = hero && getComputedStyle(hero).backgroundColor, bodyBg = getComputedStyle(document.body).backgroundColor;
         const main = document.querySelector('main#main');
         return {
-          hero: !!hero, wrap: !!q(':scope > .wrap.wrap--wide.gutter'), crumbs: !!q('nav.crumbs[aria-label="Breadcrumb"] a[href="ap-biology.html"]') && !!q('nav.crumbs a[href="teachers.html"]'),
+          hero: !!hero, wrap: !!q(':scope > .wrap.wrap--wide.gutter'), crumbs: !!q('nav.crumbs[aria-label="Breadcrumb"] a[href="index.html"]') && !!q('nav.crumbs a[href="teachers.html"]'),
           eyebrow: !!(q('.eyebrow') && q('.eyebrow').textContent.trim()), h1: document.querySelectorAll('h1').length === 1 && !!q('h1'), lede: !!(q('p.lede') && q('p.lede').textContent.trim().length > 30),
           band: heroBg !== bodyBg, mainWrap: !!(main && main.querySelector(':scope > .wrap.wrap--wide.gutter')), sections: main ? main.querySelectorAll('section.tsec').length : 0,
           footer: !!document.querySelector('footer.site-footer .credit'), skip: !!document.querySelector('a.skip-link[href="#main"]'),
@@ -34,7 +34,7 @@ const PAGES = ['getting-started.html', 'sample-report.html', 'feedback.html'];
       T.ok(r.footer && r.skip, 'site footer and skip link');
       T.ok(r.sw <= r.cw && !r.wide.length, `no horizontal overflow (${r.sw} <= ${r.cw})` + (r.wide.length ? ' ' + r.wide.join(', ') : ''));
       if (file === 'feedback.html') T.ok(await p.evaluate(() => !!document.querySelector('a[href^="mailto:rsmitka@roseville.k12.mi.us"]') && !!document.querySelector('a[href="https://github.com/smitka313/APBioLabs/issues/new"]')), 'feedback email and GitHub links kept');
-      if (file === 'getting-started.html') T.ok(await p.evaluate(() => ['ap-biology.html', 'projector.html', 'teacher-dashboard.html', 'teachers.html'].every(h => document.querySelector(`main a[href="${h}"]`))), 'quick-start links kept');
+      if (file === 'getting-started.html') T.ok(await p.evaluate(() => ['index.html', 'projector.html', 'teacher-dashboard.html', 'teachers.html'].every(h => document.querySelector(`main a[href="${h}"]`))), 'quick-start links kept');
       T.ok(!p.errors.length, 'no page errors' + (p.errors.length ? ': ' + p.errors.join(' | ') : ''));
       await p.close();
     }
