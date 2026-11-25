@@ -48,6 +48,7 @@ fieldset.field > .field { margin: 0 0 8px 28px; }
 
 /* Tables with writing in them */
 .table-wrap { max-width: 100%; overflow-x: auto; }
+.table-wrap:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .checklist-table, .map-table, .progress-table, .rubric-table { width: 100%; table-layout: fixed; }
 .checklist-table th, .checklist-table td, .map-table th, .map-table td, .progress-table th, .progress-table td, .rubric-table th, .rubric-table td { white-space: normal; vertical-align: top; white-space: normal; }
 .checklist-table th[scope=row], .map-table th[scope=row], .progress-table th[scope=row], .rubric-table th[scope=row] { width: 21%; text-align: left; font-weight: 650; background: var(--surface-2); }

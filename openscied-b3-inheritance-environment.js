@@ -150,6 +150,10 @@
   /* ---------- tables and "Your data" boxes ---------- */
   function table(caption, head, rows) {
     const wrap = el('div', 'table-wrap'), t = el('table', 'data');
+    // Wide tables can scroll on phones; give keyboard users the same access.
+    wrap.tabIndex = 0;
+    wrap.setAttribute('role', 'region');
+    wrap.setAttribute('aria-label', caption);
     t.appendChild(el('caption', '', caption));
     const thead = el('thead'), hr = el('tr');
     head.forEach(function (h) { const th = el('th', '', h); th.scope = 'col'; hr.appendChild(th); });
