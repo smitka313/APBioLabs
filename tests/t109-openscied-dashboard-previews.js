@@ -1,23 +1,30 @@
 /* OpenSciEd dashboard previews: published unit and activity order, the registry order in the script,
-   external Unit 1 and Unit 4 illustrations plus the seven inline SVG previews, HTML captions below each picture, stable 8:5 boxes, no layout shift, and axe clean in light and dark.
+   self-contained SVG previews in every unit, HTML captions below each picture, stable 8:5 boxes, no layout shift, and axe clean in light and dark.
    Run: NODE_PATH=$(npm root -g) AXE=<path>/axe.min.js node tests/t109-openscied-dashboard-previews.js */
 const T = require('./_h');
 const fs = require('fs'), path = require('path');
 const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: /gc\.zgo\.at/.test(r.request().url()) ? 'application/javascript' : 'text/css', body: '' }));
 const UNIT1 = ['openscied-b1-migration.html', 'openscied-b1-carrying-capacity.html', 'openscied-b1-serengeti.html', 'openscied-b1-ripple.html'];
-const MIGRATION_PREVIEW = 'assets/migration-explorer-preview.svg';
-const CARRYING_PREVIEW = 'assets/carrying-capacity-preview.svg';
-const SERENGETI_PREVIEW = 'assets/openscied-serengeti-preview.svg';
+const MIGRATION_PREVIEW = 'assets/openscied-atlas-b1-migration.svg';
+const CARRYING_PREVIEW = 'assets/openscied-atlas-b1-carrying-capacity.svg';
+const SERENGETI_PREVIEW = 'assets/openscied-atlas-b1-serengeti.svg';
 const UNIT2 = ['openscied-b2-burn-lab.html', 'openscied-b2-fires.html', 'openscied-b2-peat-bog-lab.html', 'openscied-b2-carbon-journey.html'];
 const UNIT3 = ['openscied-b3-cancer-rates.html', 'openscied-b3-screening.html', 'openscied-b3-cell-cycle.html', 'openscied-b3-dna-workshop.html', 'openscied-b3-dna-p53.html', 'openscied-b3-inheritance-environment.html'];
 const UNIT4 = ['openscied-b4-hawksbeard.html','openscied-b4-rat-generations.html','openscied-b4-junco.html','openscied-b4-wildlife-corridor.html'];
-const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
-const CORRIDOR_PREVIEW='assets/openscied-wildlife-corridor-preview.svg';
+const HAWKSBEARD_PREVIEW = 'assets/openscied-atlas-b4-hawksbeard.svg';
+const CORRIDOR_PREVIEW='assets/openscied-atlas-b4-wildlife-corridor.svg';
 (async () => {
   // order in the script registry matches the page
   const js = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.js'), 'utf8');
   const files = [...js.matchAll(/file: '([^']+)'/g)].map(m => m[1]);
-  T.ok(JSON.stringify(files) === JSON.stringify(UNIT1.concat(UNIT2,UNIT3,UNIT4,['openscied-b5-wapusk.html','openscied-b5-thermoregulation.html','openscied-b5-ancestry.html'])), 'openscied-dashboard.js lists activities in page order through Unit 5');
+  const originalActivities=UNIT1.concat(UNIT2,UNIT3,UNIT4,['openscied-b5-wapusk.html','openscied-b5-thermoregulation.html','openscied-b5-ancestry.html']);
+  T.ok(JSON.stringify(files.slice(0,originalActivities.length)) === JSON.stringify(originalActivities), 'openscied-dashboard.js preserves the published activity order through Unit 5');
+  for (const activity of originalActivities) {
+    const file = '../assets/openscied-atlas-'+activity.replace(/^openscied-|\.html$/g,'')+'.svg';
+    const art = fs.readFileSync(path.join(__dirname,file),'utf8');
+    T.ok((art.match(/<(?:path|circle|ellipse|rect|polygon)\b/g)||[]).length>40 &&
+      !/<(?:[\w.-]+:)?(?:image|feImage)\b|data:image\//i.test(art), activity+' preview is detailed, self-contained vector art');
+  }
   const b = await T.launch(), srv = await T.serve();
   try {
     for (const width of [375, 768, 1366, 1920]) {
@@ -41,51 +48,48 @@ const CORRIDOR_PREVIEW='assets/openscied-wildlife-corridor-preview.svg';
       await p.waitForFunction(path=>{const img=document.querySelector('img[src="'+path+'"]');return img?.complete&&img.naturalWidth===960;},CARRYING_PREVIEW,{timeout:10000});
       await p.locator('img[src="'+HAWKSBEARD_PREVIEW+'"]').scrollIntoViewIfNeeded();
       await p.waitForFunction(path=>{const img=document.querySelector('img[src="'+path+'"]');return img?.complete&&img.naturalWidth===960;},HAWKSBEARD_PREVIEW,{timeout:10000});
-      const cancerImage=p.locator('img[src="assets/cancer-rates-preview.svg"]');
+      const cancerImage=p.locator('img[src="assets/openscied-atlas-b3-cancer-rates.svg"]');
       await cancerImage.scrollIntoViewIfNeeded();
       await cancerImage.evaluate(img=>img.decode());
-      const workshopImage=p.locator('img[src="assets/dna-workshop-preview.svg"]');
+      const workshopImage=p.locator('img[src="assets/openscied-atlas-b3-dna-workshop.svg"]');
       await workshopImage.scrollIntoViewIfNeeded();
       await workshopImage.evaluate(img=>img.decode());
-      const ratImage = p.locator('img[src="assets/rat-generations-preview.svg"]');
+      const ratImage = p.locator('img[src="assets/openscied-atlas-b4-rat-generations.svg"]');
       await ratImage.scrollIntoViewIfNeeded();
       await ratImage.evaluate(img => img.decode());
-      const juncoImage = p.locator('img[src="assets/junco-preview.svg"]');
+      const juncoImage = p.locator('img[src="assets/openscied-atlas-b4-junco.svg"]');
       await juncoImage.scrollIntoViewIfNeeded();
       await juncoImage.evaluate(img => img.decode());
       const corridorImage=p.locator('img[src="'+CORRIDOR_PREVIEW+'"]');
       await corridorImage.scrollIntoViewIfNeeded();
       await corridorImage.evaluate(img=>img.decode());
-      const rippleImage=p.locator('img[src="assets/openscied-ripple-preview.svg"]');
+      const rippleImage=p.locator('img[src="assets/openscied-atlas-b1-ripple.svg"]');
       await rippleImage.scrollIntoViewIfNeeded();
       await rippleImage.evaluate(img=>img.decode());
       const m = await p.$$eval('.dashboard-activity', cards => cards.map(c => {
-        const a = c.querySelector('.dashboard-preview'), svg = a && a.querySelector('svg'), img = a && a.querySelector('img'), media = svg || img, cap = c.querySelector('.dashboard-caption'), fig = c.querySelector('.dashboard-figure');
+        const a = c.querySelector('.dashboard-preview'), img = a && a.querySelector('img'), media = img, cap = c.querySelector('.dashboard-caption'), fig = c.querySelector('.dashboard-figure');
         const ar = a.getBoundingClientRect(), cr = cap.getBoundingClientRect(), fr = fig.getBoundingClientRect();
         const kids = [...cap.children].map(k => k.getBoundingClientRect());
         const action = c.querySelector('.dashboard-open');
         return {
           label: action?.getAttribute('aria-label') || '',
           previewHidden: a.getAttribute('aria-hidden') === 'true' && a.tabIndex === -1,
-          hidden: svg && svg.getAttribute('aria-hidden'), role: svg && svg.getAttribute('role'),
-          svgText: svg ? [...svg.querySelectorAll('text')].map(t => t.textContent.trim()) : [], pill: !!c.querySelector('.dashboard-preview-label'),
+          pill: !!c.querySelector('.dashboard-preview-label'),
           ratio: ar.width / ar.height, capBelow: cr.top >= ar.bottom - 0.5, capInside: cr.left >= fr.left - 0.5 && cr.right <= fr.right + 0.5,
           kidsInside: kids.every(k => k.left >= fr.left - 0.5 && k.right <= fr.right + 0.5), capText: cap.innerText.trim(), capH: cr.height, w: ar.width,
           sim: !!cap.querySelector('.dashboard-sim'), simText: cap.querySelector('.dashboard-sim')?.textContent.trim(),
           mediaW: media?.getBoundingClientRect().width,
-          svg: !!svg, shapes: svg?.querySelectorAll('path,circle,ellipse,rect').length || 0,
           img: img ? {src: img.getAttribute('src'), alt: img.getAttribute('alt'), w: img.naturalWidth, h: img.naturalHeight,
             complete: img.complete, widthAttr: img.getAttribute('width'), heightAttr: img.getAttribute('height')} : null
         };
       }));
-      const svgCards = m.filter(x=>x.svg);
-      T.ok(m.length === 21 && svgCards.length === 7 && m.filter(x=>x.img).length === 14, width + ' px: twenty-one cards: seven inline illustrations and fourteen linked SVG illustrations');
-      T.ok(svgCards.every(x => x.hidden === 'true' && !x.role), width + ' px: inline SVGs stay decorative (aria-hidden, no role)');
+      T.ok(m.length===files.length && m.every(x=>x.img?.src?.endsWith('.svg') && x.img.alt===''),
+        width + ' px: all published activities have their own decorative SVG image');
       const actionCounts = await Promise.all((await p.locator('.dashboard-activity').all()).map(card => card.getByRole('link').count()));
       T.ok(m.every(x => x.previewHidden && /^Open activity: .+/.test(x.label)) &&
-        new Set(m.map(x => x.label)).size === 21 && actionCounts.every(n => n === 1),
+        new Set(m.map(x => x.label)).size === files.length && actionCounts.every(n => n === 1),
         width + ' px: pointer artwork remains linked without duplicating the one named keyboard action for each activity');
-      T.ok(m.every(x=>!x.pill) && svgCards.every(x=>x.shapes>40), width + ' px: no pill inside any picture, and every SVG has real art');
+      T.ok(m.every(x=>!x.pill), width + ' px: data-type pills are HTML and sit outside the artwork');
       const first = m[0], poster = first?.img;
       T.ok(poster?.complete && poster.src===MIGRATION_PREVIEW && poster.w===960 && poster.h===600 &&
         poster.widthAttr==='960' && poster.heightAttr==='600' && Math.abs(poster.w/poster.h-1.6)<0.001,
@@ -96,8 +100,8 @@ const CORRIDOR_PREVIEW='assets/openscied-wildlife-corridor-preview.svg';
       T.ok(carrying?.img?.complete && carrying.img.src===CARRYING_PREVIEW &&
         carrying.img.w===960 && carrying.img.h===600 && carrying.img.alt==='' &&
         carrying.label === 'Open activity: Carrying Capacity',
-        width + ' px: second card has the original carrying capacity illustration and a named link');
-      const wapusk = m.find(x=>x.img?.src==='assets/openscied-wapusk-card.svg');
+        width + ' px: second card has the revised carrying capacity illustration and a named link');
+      const wapusk = m.find(x=>x.img?.src==='assets/openscied-atlas-b5-wapusk.svg');
       T.ok(wapusk?.img?.complete && wapusk.img.w===960 && wapusk.img.h===600 &&
         wapusk.img.widthAttr==='960' && wapusk.img.heightAttr==='600' &&
         wapusk.label==='Open activity: Three Bears in Wapusk',
@@ -108,16 +112,16 @@ const CORRIDOR_PREVIEW='assets/openscied-wildlife-corridor-preview.svg';
         hawksbeard.img.widthAttr==='960' && hawksbeard.img.heightAttr==='600' &&
         hawksbeard.label === 'Open activity: Hawksbeard Wind Lab',
         width + ' px: the Hawksbeard illustration loads at the reserved size and its primary link has a descriptive accessible name');
-      const rats = m.find(x=>x.img?.src==='assets/rat-generations-preview.svg');
-      T.ok(rats?.img?.complete && rats.img.src === 'assets/rat-generations-preview.svg' &&
+      const rats = m.find(x=>x.img?.src==='assets/openscied-atlas-b4-rat-generations.svg');
+      T.ok(rats?.img?.complete && rats.img.src === 'assets/openscied-atlas-b4-rat-generations.svg' &&
         rats.img.w === 960 && rats.img.h === 600 && rats.img.alt === '' &&
         rats.label === 'Open activity: Rat Generations',
-        width + ' px: Rat Generations keeps its original illustration and a named primary link');
-      const cancer=m.find(x=>x.img?.src==='assets/cancer-rates-preview.svg');
+        width + ' px: Rat Generations shows its revised illustration and a named primary link');
+      const cancer=m.find(x=>x.img?.src==='assets/openscied-atlas-b3-cancer-rates.svg');
       T.ok(cancer?.img?.complete && cancer.img.w===960 && cancer.img.h===600 &&
         cancer.img.alt==='' && cancer.label === 'Open activity: Cancer Rates Data Dive' && /Real data/.test(cancer.capText),
         width + ' px: Cancer Rates Data Dive has a named primary link and accurate real-data descriptor');
-      const junco=m.find(x=>x.img?.src==='assets/junco-preview.svg');
+      const junco=m.find(x=>x.img?.src==='assets/openscied-atlas-b4-junco.svg');
       T.ok(junco?.img?.complete && junco.img.w===960 && junco.img.h===600 && junco.img.alt==='' &&
         junco.label === 'Open activity: Junco Investigation' && junco.simText === 'Simulated + real data',
         width + ' px: Junco has a named primary link and a combined simulated/real-data descriptor');
@@ -125,21 +129,19 @@ const CORRIDOR_PREVIEW='assets/openscied-wildlife-corridor-preview.svg';
       T.ok(corridor?.img?.complete && corridor.img.w===960 && corridor.img.h===600 && corridor.img.alt==='' &&
         corridor.img.widthAttr==='960' && corridor.img.heightAttr==='600' &&
         corridor.label==='Open activity: Wildlife Corridor Lab' && corridor.simText==='Simulated',
-        width + ' px: Wildlife Corridor reserves its original model artwork and describes it as simulated');
-      const ripple=m.find(x=>x.img?.src==='assets/openscied-ripple-preview.svg');
+        width + ' px: Wildlife Corridor reserves its revised model artwork and describes it as simulated');
+      const ripple=m.find(x=>x.img?.src==='assets/openscied-atlas-b1-ripple.svg');
       T.ok(ripple?.img?.complete && ripple.img.w===960 && ripple.img.h===600 && ripple.img.alt==='' &&
         ripple.label==='Open activity: Serengeti Ripple Effects' && ripple.simText==='Simulated',
-        width + ' px: Ripple Effects shows the original illustration and simulated-data badge');
-      const workshop=m.find(x=>x.img?.src==='assets/dna-workshop-preview.svg');
+        width + ' px: Ripple Effects shows the revised illustration and simulated-data badge');
+      const workshop=m.find(x=>x.img?.src==='assets/openscied-atlas-b3-dna-workshop.svg');
       T.ok(workshop?.img?.complete && workshop.img.w===960 && workshop.img.h===600 &&
         workshop.img.alt==='' && workshop.label === 'Open activity: DNA Workshop: Build, Copy, Decode',
-        width + ' px: DNA Workshop keeps its original illustration and a named primary link');
+        width + ' px: DNA Workshop shows its revised illustration and a named primary link');
       T.ok(m.every(x => x.capBelow && x.capInside && x.kidsInside), width + ' px: every caption sits below the picture, inside the card column, without overlapping it');
       T.ok(m.every(x => x.sim && /Simulated|Illustrative map|Model \+ field data|Real data/.test(x.capText) && x.capText.length > 14), width + ' px: caption text and the accurate source/illustration tag are HTML text');
       T.ok(m.every(x => Math.abs(x.ratio - 1.6) < 0.02 && Math.abs(x.mediaW - x.w) < 3), width + ' px: preview keeps its 8:5 box and the art fills it');
       T.ok(m.every(x => x.capH < 60), width + ' px: caption never wraps past two lines');
-      // art text must stay inside the picture and never be a long caption
-      T.ok(svgCards.every(x => x.svgText.every(t => t.length <= 12)), width + ' px: text drawn inside the pictures is only short labels (' + [...new Set(m.flatMap(x => x.svgText))].join(' | ') + ')');
       T.ok(await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth) <= 0, width + ' px: no horizontal overflow');
       const cls = await p.evaluate(() => window.__cls);
       T.ok(cls <= 0.1, width + ' px: CLS ' + cls.toFixed(3) + ' <= 0.1');
