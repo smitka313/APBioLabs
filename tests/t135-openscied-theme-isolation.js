@@ -14,7 +14,7 @@ const control = (page, mode) => page.locator('.theme-switch button[data-mode="'+
 const theme = (page, mode) => page.waitForFunction(({key,mode}) => {
   const x = document.documentElement;
   const stored = localStorage.getItem(key);
-  return stored === (mode==='auto'?null:mode) && x.dataset.theme === (mode==='auto'?undefined:mode) &&
+  return stored === mode && x.dataset.theme === (mode==='auto'?undefined:mode) &&
     document.querySelector('.theme-switch button[aria-pressed="true"]')?.dataset.mode===mode;
 }, {key:KEY,mode});
 
@@ -24,6 +24,8 @@ async function isolated(browser, base, system, selected){
     await context.route('**/*',r=>new URL(r.request().url()).origin===new URL(base).origin?r.continue():r.abort());
     const page=await context.newPage();
     await page.goto(base+'openscied-dashboard.html');
+    await theme(page,'dark');
+    await control(page,'auto').click();
     await theme(page,'auto');
     await control(page,selected).click();
     for(const [name,step] of pages){

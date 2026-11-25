@@ -38,7 +38,7 @@ const fs = require('node:fs');
         await theme.getByRole('button', { name: 'Auto', exact: true }).click();
         assert.equal(await theme.getByRole('button', { name: 'Auto', exact: true }).getAttribute('aria-pressed'), 'true');
         assert.deepEqual(await palette(), system === 'light' ? light : dark);
-        assert.equal(await p.evaluate(() => localStorage.getItem('aplab:pref:theme')), null);
+        assert.equal(await p.evaluate(() => localStorage.getItem('aplab:pref:theme')), 'auto');
       }
       await p.emulateMedia({ colorScheme: 'light' });
       await theme.getByRole('button', { name: 'Dark', exact: true }).click();

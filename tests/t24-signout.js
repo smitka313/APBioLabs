@@ -12,7 +12,7 @@ async function ctxFor(b, o = {}) {
   await ctx.addInitScript(seed => { try {
     if (localStorage.getItem('__seeded')) return;
     localStorage.setItem('__seeded', '1');
-    Object.entries(seed).forEach(([k, v]) => localStorage.setItem(k, JSON.stringify(v)));
+    Object.entries(seed).forEach(([k, v]) => localStorage.setItem(k, k === 'aplab:pref:theme' ? v : JSON.stringify(v)));
   } catch (e) { /* ignore */ } }, o.seed || {});
   return ctx;
 }
@@ -108,7 +108,7 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   T.ok(after['aplab:ui:allParts'] === snap['aplab:ui:allParts'] && after['aplab:pref:theme'] === snap['aplab:pref:theme'], 'site-wide preferences (ui, theme) are kept');
   const extra = Object.keys(after).filter(k => !ALLOWED(k) && k !== 'aplab:anon');
   T.ok(extra.length === 0, 'nothing else left behind' + (extra.length ? ': ' + extra.join(', ') : ''));
-  T.ok(/index\.html$/.test(p.url()), 'lands on the home page: ' + p.url());
+  T.ok(/ap-biology\.html$/.test(p.url()), 'lands on the AP lab directory where the next student can sign in: ' + p.url());
   T.ok(beforeUnloadPrompts === 0 && !(await p.evaluate(() => Lab.backup.guardActive())), 'no leave-page prompt, no backup guard');
   T.ok(await p.locator('.backup-bar').count() === 0, 'no backup bar');
   T.ok(/Not signed in yet/.test(await p.locator('.id-line').first().innerText()), 'home shows the signed-out sign-in prompt');

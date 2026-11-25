@@ -13,7 +13,7 @@
   let LAB_ID = 'lab';
 
   /* ---------------- Page context ----------------
-     Detected from the filename (lab07.html → lab07, teacher-lab07.html → teacher page, index.html → home),
+     Detected from the filename (lab07.html → lab07, teacher-lab07.html → teacher page, ap-biology.html → lab directory),
      with the <title> as a fallback for hosts that rename files. */
   const FILE = (function () { try { return decodeURIComponent((location.pathname || '').split('/').pop() || '').toLowerCase(); } catch (e) { return ''; } })();
   const PAGE = (function () {
@@ -1308,7 +1308,7 @@
     memIdentity = lastStoredIdentity = lastEffectiveIdentity = null; memBackup = null;
     sessionSet(FLASH_KEY, 'signout');
     /* From a lab page go to the home page: reloading the lab would record a fresh "last visited" for nobody. */
-    if (IS_LAB) location.assign('index.html'); else location.reload();
+    if (IS_LAB) location.assign('ap-biology.html'); else location.reload();
   }
   function doStartOverAll(status) {
     const idn = storedIdentity();
