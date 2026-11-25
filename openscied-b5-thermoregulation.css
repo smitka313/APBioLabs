@@ -52,3 +52,16 @@
 .th-procedure{border-left:3px solid var(--accent);background:var(--surface-2);padding:.65rem .8rem;border-radius:0 8px 8px 0;margin:.75rem 0}
 .th-procedure ol{gap:.65rem;padding-left:1.35em}
 .th-procedure p:last-child{margin:.6rem 0 0;font-size:.91rem}
+
+.th-hero h1{max-width:21ch;font-size:clamp(1.75rem,5.4vw,4rem);line-height:1.03;overflow-wrap:normal;word-break:normal;text-wrap:balance}
+.th-hero h1 span{white-space:nowrap}
+.th-workspace{display:flex;align-items:flex-start;flex-wrap:wrap;gap:.5rem 1rem;justify-content:space-between;margin-top:.75rem;padding:.5rem .75rem;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.th-workspace #th-identity{min-width:0;flex:1 1 240px}.th-workspace .id-panel{margin:0}.th-workspace-tools{flex:0 1 auto}
+.th-identity-hint,.th-small{font-size:.86rem;margin:.28rem 0 0}
+.th-core-graph{position:relative;max-width:655px;width:100%;margin:.6rem auto;background:#fff;border-radius:6px}
+.th-core-graph img,#th-visual .th-core-graph img{display:block;margin:0;width:100%;height:auto;max-height:none}
+.th-core-graph svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.th-core-graph .th-point{fill:#fff;stroke:#126052;stroke-width:2.5}
+.th-core-graph .th-point-label{font-size:16px;font-weight:760;paint-order:stroke;stroke:#fff;stroke-width:5;fill:#174a44}
+.th-timer-dial{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}.th-timer-dial span{font-size:1.55rem;font-weight:750;font-variant-numeric:tabular-nums}.th-timer-dial progress{width:min(280px,70%);height:1.1rem}
+#th-reset-dialog{width:min(460px,calc(100% - 24px));padding:1rem;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink)}#th-reset-dialog::backdrop{background:#102132be}#th-reset-dialog label{display:block;font-weight:750}
