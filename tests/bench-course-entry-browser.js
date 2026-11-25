@@ -27,6 +27,10 @@ const T=require('./_h'),assert=require('node:assert/strict'),fs=require('node:fs
     const guides=await p.locator('.bench-guide').evaluateAll(l=>l.map(a=>a.getAttribute('href')));
     assert.deepEqual(guides,['teachers.html','openscied-teacher-guide.html']);
     await p.locator('.bench-choice-art').evaluateAll(list=>Promise.all(list.map(i=>i.decode())));
+    const cellCard=p.locator('.bench-os-art');
+    assert.equal(await cellCard.getAttribute('src'),'assets/bench-welcome-cell.svg');
+    assert(await cellCard.evaluate(img=>img.naturalWidth===960&&img.naturalHeight===364),
+      'welcome card has its own cell close-up at the same aspect ratio as the AP card');
     await layout('welcome');
     const theme=dark?'Light':'Dark';
     await p.getByRole('button',{name:theme,exact:true}).click();

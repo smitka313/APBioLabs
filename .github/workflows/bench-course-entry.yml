@@ -8,7 +8,7 @@ on:
       - 'bench-welcome.js'
       - 'openscied-dashboard.html'
       - 'assets/biology-lab-bench-logo*.svg'
-      - 'assets/bench-welcome-ap.svg'
+      - 'assets/bench-welcome-*.svg'
       - 'assets/bench-field-atlas.svg'
       - 'openscied-dashboard.css'
       - 'tests/bench-course-entry-browser.js'

@@ -14,7 +14,7 @@
 .bench-choice{background:var(--surface);border:1px solid var(--lined);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;min-width:0;box-shadow:0 10px 27px #112b1d0d}
 .bench-choice-art{display:block;width:100%;aspect-ratio:2.65;object-fit:cover;background:#243f3d}
 .bench-choice .bench-ap-art{object-position:center 50%}
-.bench-choice .bench-os-art{object-fit:contain;background:#1d3d35}
+.bench-choice .bench-os-art{object-position:center;background:#1d3d35}
 .bench-choice-body{padding:clamp(1rem,2.6vw,1.8rem);display:flex;flex:1;flex-direction:column;align-items:flex-start}
 .bench-choice-body p:not(.bench-kicker){margin:0 0 1rem;max-width:49ch}
 .bench-choice-meta{color:var(--muted);font-weight:650;font-size:.87rem;margin-bottom:1.05rem}
