@@ -53,14 +53,24 @@ const keys = [
             await img.decode();
             const [art,outer,card]=[img,img.parentElement,img.closest('article')].map(x=>x.getBoundingClientRect());
             return {nw:img.naturalWidth,nh:img.naturalHeight,loaded:img.complete,
+              width:img.getAttribute('width'),height:img.getAttribute('height'),
               alt:img.alt, decorative:img.parentElement.getAttribute('aria-hidden'),
               fits:Math.abs(art.width-outer.width)<=2&&Math.abs(art.height-outer.height)<=2
                 &&art.left>=card.left-1&&art.right<=card.right+1&&art.width>100,
               src:img.getAttribute('src')};
           });
           const [filename,nw,nh]=originals[key]??['openscied-atlas-'+key+'.svg',960,600];
-          assert.deepEqual(report,{nw,nh,loaded:true,alt:'',decorative:'true',fits:true,
-            src:'assets/'+filename},width+'px '+key);
+          const {nw:decodedWidth,nh:decodedHeight,...layout}=report;
+          assert.deepEqual(layout,{width:String(nw),height:String(nh),loaded:true,alt:'',decorative:'true',
+            fits:true,src:'assets/'+filename},width+'px '+key);
+          if (key==='b5-ancestry') {
+            // This original SVG has a viewBox but no inherent pixel size. Chromium
+            // reports a fallback natural size (300 × 144), not the viewBox dimensions.
+            assert.ok(decodedWidth>0&&decodedHeight>0&&Math.abs(decodedWidth/decodedHeight-nw/nh)<.01,
+              width+'px '+key+' preserves the original SVG aspect ratio');
+          } else {
+            assert.deepEqual([decodedWidth,decodedHeight],[nw,nh],width+'px '+key+' intrinsic size');
+          }
         }
         if (process.env.OPENSCIED_DASHBOARD_SCREENSHOTS) {
           fs.mkdirSync(process.env.OPENSCIED_DASHBOARD_SCREENSHOTS,{recursive:true});
