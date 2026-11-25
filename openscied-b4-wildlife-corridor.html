@@ -29,7 +29,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(_){}</script>
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="openscied-b4-wildlife-corridor.css?v=pairing-map">
+<link rel="stylesheet" href="openscied-b4-wildlife-corridor.css?v=panther-case">
 <link rel="stylesheet" href="openscied-submission-report.css">
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -39,7 +39,7 @@
   <div class="wc-top"><a href="openscied-dashboard.html#unit4">← Biology Companion Activities</a><span data-ph="theme"></span></div>
   <header class="wc-hero">
     <div class="wc-hero-copy">
-      <p class="wc-kicker">Unit 4 · Lessons 8–9 supplement</p>
+      <p class="wc-kicker">Unit 4 · Lessons 7–9 companion</p>
       <h1>Wildlife Corridor Lab</h1>
       <p>One landscape. Two habitat patches. How does a road change the mix of alleles on each side?</p>
     </div>
@@ -75,6 +75,46 @@
 
   <section class="wc-stage" id="wc-predict" data-wc-step="predict" aria-labelledby="wc-predict-title">
     <header class="wc-heading"><div><p class="wc-kicker">01 · Make a prediction</p><h2 id="wc-predict-title" tabindex="-1">What changes when a road splits a habitat?</h2></div><span class="wc-pill">Simulated</span></header>
+    <article class="wc-panel wc-panther" aria-labelledby="wc-panther-title">
+      <header class="wc-panther-heading"><div><p class="wc-kicker">Lesson 7 · Field evidence</p><h3 id="wc-panther-title">The Florida panther puzzle</h3></div><span class="wc-panther-tag">Real case</span></header>
+      <p>Some populations do well in cities. Florida panthers faced a different problem: as people developed more land, the habitat they could use shrank and became more divided.</p>
+      <div class="wc-panther-grid">
+        <figure class="wc-panther-map">
+          <figcaption><strong>Compare the ranges</strong> <span>Schematic · not to scale</span></figcaption>
+          <div class="wc-panther-toggle" role="group" aria-label="Panther range view">
+            <button type="button" class="btn" data-wc-panther-range="earlier" aria-pressed="true">Historical range</button>
+            <button type="button" class="btn" data-wc-panther-range="recent" aria-pressed="false">Recent breeding area</button>
+          </div>
+          <svg viewBox="0 0 540 300" role="img" aria-labelledby="wc-panther-map-title wc-panther-map-desc">
+            <title id="wc-panther-map-title">Schematic of the southeastern United States</title>
+            <desc id="wc-panther-map-desc">Historical Florida panther range was spread across Florida and parts of the Southeast.</desc>
+            <defs>
+              <linearGradient id="wc-panther-water" x2="0" y2="1"><stop stop-color="#224d5a"/><stop offset="1" stop-color="#153746"/></linearGradient>
+              <linearGradient id="wc-panther-land" x2="1" y2="1"><stop stop-color="#c8d3ab"/><stop offset="1" stop-color="#91ac8e"/></linearGradient>
+              <pattern id="wc-panther-hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(32)"><path d="M0 0v10" stroke="#643f25" stroke-width="3" opacity=".53"/></pattern>
+              <path id="wc-panther-earlier" d="M40 75Q81 36 146 59T253 59Q308 48 373 45L407 57 382 87 346 102 331 122 308 145 331 177 365 223 361 254 340 259 311 237 289 212 272 177 252 152 218 142 184 151 143 151 109 160 71 139 46 113Z"/>
+            </defs>
+            <rect width="540" height="300" rx="12" fill="url(#wc-panther-water)"/>
+            <path d="M0 0h480l-7 25-28 21-27 18-26 20-28 22-25 17-20 25 10 23 19 26 19 28 3 20-8 20-23 7-24-16-20-26-17-18-13-36-24-20-28-6-22 10-44 3-28 12-30-5-13 12-27-19-24 7L0 161Z" fill="url(#wc-panther-land)" stroke="#e2ecd1" stroke-width="2"/>
+            <g fill="none" stroke="#52776a" stroke-width="1.5" opacity=".68"><path d="M40 0v88h67v71M134 0l8 82-1 74M203 0l8 140M266 0l15 69 34 39 24 15M310 1l42 44 40 39M1 88h141m69 35h128m-196-53 124-1"/></g>
+            <g id="wc-panther-layer-earlier"><use href="#wc-panther-earlier" fill="#f1c075" stroke="#63422b" stroke-width="2"/><use href="#wc-panther-earlier" fill="url(#wc-panther-hatch)"/><text x="125" y="104" fill="#2e261f" font-size="18" font-weight="800">Historical range</text></g>
+            <g id="wc-panther-layer-recent" hidden><circle cx="343" cy="239" r="14" fill="#ffe29a" stroke="#493322" stroke-width="3"/><circle cx="343" cy="239" r="10" fill="url(#wc-panther-hatch)"/><path d="M358 237 383 220h21" stroke="#fff1ba" stroke-width="2" fill="none"/><text x="409" y="223" fill="#fff1ba" font-size="16" font-weight="800">Breeding</text><text x="409" y="243" fill="#fff1ba" font-size="16" font-weight="800">area</text></g>
+            <text x="283" y="179" fill="#173c35" font-size="16" font-weight="750">Florida</text><text x="52" y="227" fill="#c9e5e4" font-size="17" font-style="italic">Gulf of Mexico</text>
+            <path d="M487 59v-23l-5 8m5-8 5 8" stroke="#f2e5ae" stroke-width="2" fill="none"/><text x="481" y="28" fill="#f2e5ae" font-size="14">N</text>
+          </svg>
+          <p id="wc-panther-map-summary" aria-live="polite">The historical range stretched across much of the Southeast. Switch views to see where most breeding occurs now.</p>
+          <p class="wc-panther-source"><a href="https://myfwc.com/wildlifehabitats/wildlife/panther/description/">Source maps and sightings: Florida FWC</a></p>
+        </figure>
+        <div class="wc-panther-evidence">
+          <div><h4>Population evidence</h4><p>The Lesson 7 reading gives a low estimate of about <strong>10 panthers</strong> and a later estimate of roughly <strong>200</strong>. Its range estimate is only about <strong>5%</strong> of the original. A population can grow without returning to its historical range.</p></div>
+          <div><h4>Genetic evidence</h4><p>The reading reports heterozygosity values of <strong>0.16</strong> for Florida panthers and <strong>0.33</strong> for other mountain lion populations. This measure reflects how often an individual has two different versions of a gene at the places researchers checked.</p></div>
+          <div><h4>Survival and reproduction</h4><p>The reading describes road deaths, low survival of young, and reproductive problems. Which observations could your current natural selection model explain? Which need another explanation?</p></div>
+        </div>
+      </div>
+      <label for="wc-panther-note"><strong>Evidence notebook</strong> (optional): Record one clue and a question to test about isolation and genetic diversity.</label>
+      <textarea id="wc-panther-note" rows="2" maxlength="1200"></textarea>
+      <p class="wc-panther-source">Based on the Florida panther reading and discussion in <a href="https://openscied-uploads-production.s3.amazonaws.com/G9_UBN/parts/storyline.pdf">OpenSciEd B.4 Lesson 7</a>. The model below uses fictional animals, not these field values.</p>
+    </article>
     <div class="wc-cols">
       <article class="wc-panel wc-brief">
         <h3>Read the landscape</h3>
@@ -161,6 +201,7 @@
       <article class="wc-panel wc-evidence" aria-labelledby="wc-evidence-title">
         <h3 id="wc-evidence-title">Your results, next to your writing</h3>
         <div id="wc-explain-evidence"></div>
+        <div id="wc-panther-recall" class="wc-callout" hidden><strong>Your Florida panther evidence note</strong><p id="wc-panther-recall-text"></p></div>
         <p class="wc-callout"><strong>Movement is not gene flow by itself.</strong> Gene flow happens when a gene version from one population is passed to offspring in another. Here we model that inheritance. We do not count real animals crossing a road.</p>
       </article>
       <div class="wc-panel wc-writing">
@@ -184,19 +225,19 @@
 
   <dialog id="wc-reset-dialog" aria-labelledby="wc-reset-heading">
     <h2 id="wc-reset-heading">Start over?</h2>
-    <p>This clears the prediction, runs, and writing for this lab on this device. Download a report first if you want a copy.</p>
+    <p>This clears your panther evidence note, prediction, runs, and writing for this lab on this device. Download a report first if you want a copy.</p>
     <form method="dialog"><button type="submit" class="btn" autofocus>Keep working</button> <button type="button" class="btn" id="wc-confirm-reset">Clear this trial</button></form>
   </dialog>
 </main>
 <footer class="site-footer"><div class="wrap wrap--wide gutter">
   <p><strong>Created by Robert Smitka.</strong> Original material licensed <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license">CC BY-NC-SA 4.0</a>.</p>
-  <p>Independent supplement to <a href="https://openscied.org/instructional-materials/b-4-natural-selection-evolution/">OpenSciEd High School Biology B.4, Lessons 8–9</a>, <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. This activity uses an original fictional landscape, a simplified inheritance model, and new prompts. Not affiliated with or endorsed by OpenSciEd.</p>
+  <p>Independent supplement to <a href="https://openscied.org/instructional-materials/b-4-natural-selection-evolution/">OpenSciEd High School Biology B.4, Lessons 7–9</a>, <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. This activity uses an original fictional landscape, a simplified inheritance model, and new prompts. Not affiliated with or endorsed by OpenSciEd.</p>
   <p>Student work stays in this browser unless you choose to download a report. Analytics count page visits only.</p>
 </div></footer>
 <script src="lab.js"></script>
 <script src="openscied-save-session.js"></script>
 <script src="openscied-submission-report.js"></script>
 <script src="openscied-b4-wildlife-corridor-logic.js?v=pairing-map"></script>
-<script src="openscied-b4-wildlife-corridor.js?v=both-patches"></script>
+<script src="openscied-b4-wildlife-corridor.js?v=panther-case"></script>
 </body>
 </html>

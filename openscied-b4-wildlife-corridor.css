@@ -196,3 +196,24 @@
   82%,100% {left:var(--wc-copy-end);top:57%;opacity:0;}
 }
 @media(prefers-reduced-motion:reduce){.wc-pair-layer[data-animated="true"] .wc-map-copy {animation:none;}}
+
+/* Florida panther evidence case: paper reading surfaces beside a field-map panel. */
+.wc-panther{margin-bottom:1rem;border-top:3px solid var(--accent);min-width:0}
+.wc-panther-heading,.wc-panther-toggle,.wc-panther-map figcaption{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.42rem}
+.wc-panther-heading h3{margin:.17rem 0;font-size:clamp(1.14rem,2.8vw,1.55rem)}
+.wc-panther-tag{border:1px solid var(--line);border-radius:999px;padding:.2rem .52rem;font-size:.79rem;font-weight:800;background:var(--surface-2)}
+.wc-panther-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:.75rem;align-items:start;margin:.7rem 0}
+.wc-panther-map{margin:0;padding:.54rem;border-radius:.75rem;border:1px solid var(--line);background:var(--surface-2);min-width:0}
+.wc-panther-map figcaption span,.wc-panther-source{font-size:.83rem}
+.wc-panther-toggle{justify-content:flex-start;margin:.45rem 0}
+.wc-panther-toggle button{min-height:42px}
+.wc-panther-toggle [aria-pressed=true]{box-shadow:inset 0 -3px var(--accent);font-weight:800}
+.wc-panther-map svg{display:block;width:100%;height:auto}
+.wc-panther-map [hidden]{display:none}
+.wc-panther-map p,.wc-panther-evidence p{margin:.4rem 0 0}
+.wc-panther-evidence{display:grid;gap:.48rem}
+.wc-panther-evidence>div{border:1px solid var(--line);border-radius:.64rem;background:var(--surface);padding:.5rem .63rem}
+.wc-panther-evidence h4{margin:0}
+.wc-panther textarea{display:block;width:100%;box-sizing:border-box;margin:.3rem 0}
+#wc-panther-recall p{margin:.25rem 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:760px){.wc-panther-grid{grid-template-columns:minmax(0,1fr)}}
