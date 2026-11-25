@@ -25,7 +25,7 @@
   }catch(_){recovery=true;}
   if(s.seed===null)s.seed=newSeed();
   const datasetId='SD-'+s.seed.toString(16).toUpperCase().padStart(8,'0');
-  $('dataset').textContent='Dataset '+datasetId+' · Cases are generated when you start and stay with your saved work in this browser. Start over draws a new district.';
+  $('dataset').textContent='Dataset '+datasetId+' · Patient numbers usually differ from student to student. Your district stays with your saved work in this browser. Start over draws a new district.';
   const curated=s.caseMode==='equity'?M.equityCases(s.seed):[];
   const equity=curated.length===3;
   const cases=equity?curated:M.scenarios(s.seed);
@@ -374,7 +374,7 @@
       }
     }
     const n=s.caseChecks.length;
-    $('decision-score').textContent=n?'Among the '+n+' checked: '+counts[0]+' reached needed care with the hospital plan · '+counts[1]+' with the redesign.':'Check a case below to reveal both results on the board.';
+    $('decision-score').textContent=n?'Among the '+n+' checked: '+counts[0]+' reached needed care with the hospital plan · '+counts[1]+' with the redesign.':s.trial?'Choose a case to see its details below. Answer its comparison correctly to fill that row on the board.':'Run a redesign, then choose a case to compare both plans.';
   }
   let attainable;
   const bestGain=()=>attainable??=(M.bestGain(s.seed));
@@ -534,6 +534,7 @@
   }
   $('run').onclick=()=>{
     if($('run').disabled)return;
+    const previousChecks=s.caseChecks.length;
     clearTrip();
     if(!s.started){
       s.started=true;view='base';
@@ -551,7 +552,7 @@
     }
     save();render();trip(false);
     (s.trial?$('journey-title'):$('action-title')).focus();
-    saySafe(view==='base'?'Hospital plan recorded. Watch the selected patient, then move the ultrasound team.':'Redesign recorded. '+s.caseChecks.length+' of 3 earlier answers still match. Recheck changed results before submitting.');
+    saySafe(view==='base'?'Hospital plan recorded. Watch the selected patient, then move the ultrasound team.':previousChecks?'Redesign recorded. '+s.caseChecks.length+' of '+previousChecks+' earlier answers still match. Recheck changed results before submitting.':'Redesign recorded. Choose a case and compare the two plans.');
     if(view==='trial'&&ready())showMission(dispatchScore());
   };
   const comparisonLabels={base:'Hospital only',trial:'Redesign only',both:'Both plans',neither:'Neither plan'};
