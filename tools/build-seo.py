@@ -277,6 +277,9 @@ def structured_data(filename, title, description, label):
 def metadata(filename, title, description, label):
     canonical, image = url(filename), ORIGIN + '/img/og.png'
     alt = 'AP Bio Digital Lab Bench: lab simulation thumbnails beside the site title'
+    if filename == 'index.html':
+        image = ORIGIN + '/img/og-home.png'
+        alt = 'Biology Lab Bench microscope logo above illustrated AP Biology and OpenSciEd course cards.'
     lines = ['<!-- seo:start -->', '<title>' + escape(title) + '</title>',
              '<meta name="description" content="' + escape(description, quote=True) + '">',
              '<link rel="canonical" href="' + canonical + '">',

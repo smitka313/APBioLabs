@@ -106,7 +106,12 @@ class SearchContracts(unittest.TestCase):
                 self.assertEqual(p.meta['og:description'], p.meta['description'])
                 self.assertEqual(p.meta['twitter:description'], p.meta['description'])
                 self.assertEqual(p.meta['twitter:image'], p.meta['og:image'])
-                self.assertEqual(p.meta['og:image'], [ORIGIN + '/img/og.png'])
+                image_path = '/img/og-home.png' if filename == 'index.html' else '/img/og.png'
+                self.assertEqual(p.meta['og:image'], [ORIGIN + image_path])
+                if filename == 'index.html':
+                    png = (ROOT / image_path.lstrip('/')).read_bytes()
+                    self.assertEqual(png[:8], b'\x89PNG\r\n\x1a\n')
+                    self.assertEqual(tuple(int.from_bytes(png[i:i + 4], 'big') for i in (16, 20)), (1200, 630))
                 self.assertTrue(p.meta['og:image:alt'][0])
                 self.assertEqual(len(p.graphs), 1)
                 self.assertEqual(p.graphs[0]['@context'], 'https://schema.org')
