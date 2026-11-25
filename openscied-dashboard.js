@@ -472,9 +472,11 @@
     let s;try {s=JSON.parse(raw);}catch (_){return empty;}
     if(!s||s.v!==1||!Number.isInteger(s.seed)||s.seed<0||s.seed>0xffffffff||
       !Number.isInteger(s.action)||s.action<0||s.action>6||!['increase','same','decrease'].includes(s.prediction))return empty;
-    const section=['predict','model'].includes(s.step)||s.action===6&&['analyze','explain'].includes(s.step)?s.step:'model';
+    const modelDone=s.action===6, analyzeDone=modelDone&&s.analysisChecked===true;
+    const section=['predict','model'].includes(s.step)?s.step:
+      modelDone?(s.step==='explain'&&analyzeDone?'explain':'analyze'):'model';
     const n=ratGenerationsResponseIds().filter(id=>written(s.answers||{},id)).length;
-    const stepsDone=1+Number(s.action===6)+Number(s.analysisChecked===true||['rats','r','alleles'].includes(s.analysisAttempt))+Number(['claim','evidence','limits'].every(id=>written(s.answers||{},id)));
+    const stepsDone=1+Number(modelDone)+Number(analyzeDone)+Number(analyzeDone&&['claim','evidence','limits'].every(id=>written(s.answers||{},id)));
     return {summary:s.action+' of 6 model actions recorded'+(n?' · '+n+' of 4 responses saved':''),
       started:true,section,visited:Number.isFinite(s.lastVisitedAt)?s.lastVisitedAt:0,stepsDone,stepsTotal:4,stepsLabel:'Investigation parts completed'};
   }
@@ -550,10 +552,11 @@
     let s;try{s=JSON.parse(raw);}catch(_){return blank;}
     if(s?.v!==1||!/^[A-F0-9]{8}$/.test(s.id))return blank;
     const n=wapuskIds().filter(id=>written(s.fields||{},id)).length;
-    const started=n>0||s.check==='place'||s.check==='meeting';
+    const hasScales=Array.isArray(s.scaleDraft)||Array.isArray(s.scaleCheck);
+    const started=n>0||s.check==='place'||s.check==='meeting'||hasScales;
     if(!started)return blank;
     return {started,section:'',visited:Number(s.lastVisitedAt)||0,stepsDone:n,stepsTotal:6,stepsLabel:'Notebook responses saved',
-      summary:n===6&&s.finished===true?'Notebook complete':n+' of 6 notebook responses saved'};
+      summary:n===6&&s.finished===true?'Notebook complete':(!n&&hasScales?'Scale choices saved · ':'')+n+' of 6 notebook responses saved'};
   }
   function thermIds(){return ['predict','field','pattern','human','explain'];}
   function thermProgress(raw){

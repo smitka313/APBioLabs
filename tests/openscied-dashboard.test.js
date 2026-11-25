@@ -330,7 +330,7 @@ test('Hawksbeard continues the saved phase and includes its written answers in a
 
 test('Rat Generations resumes the saved stage and exports the prediction and written evidence', async () => {
   const key = 'aplab:openscied:b4-rat-generations:v1';
-  const raw = JSON.stringify({v:1,seed:5,step:'explain',action:6,lastVisitedAt:1800000000000,prediction:'increase',
+  const raw = JSON.stringify({v:1,seed:5,step:'explain',action:6,lastVisitedAt:1800000000000,prediction:'increase',analysisChecked:true,
     answers:{reason:'I predict a change.',claim:'The survivors were not a random subset.'}});
   const s = setup(false,{[key]:raw});
   assert.equal(s.el('#rat-generations-open').href,'openscied-b4-rat-generations.html#explain');
@@ -875,11 +875,14 @@ test('burn meter names the model milestone without a misleading assignment perce
   assert.ok(s.created.filter(e => e.className==='dashboard-activity-metric').every(e => !e.textContent.includes('%')));
 });
 
-test('Rat Analyze progress includes a valid attempt without requiring the right choice', () => {
+test('Rat Analyze saves attempts but counts completion only after a correct answer', () => {
   const key = 'aplab:openscied:b4-rat-generations:v1';
-  const s = setup(false, { [key]: JSON.stringify({v:1, seed:5, prediction:'same', action:6, step:'analyze', analysisAttempt:'rats', analysisChecked:false}) });
+  const s = setup(false, { [key]: JSON.stringify({v:1, seed:5, prediction:'same', action:6, step:'explain', analysisAttempt:'rats', analysisChecked:false}) });
   const meter = s.created.find(e => e.tag==='progress' && e.attrs['aria-label']?.includes('Rat Generations'));
-  assert.equal(meter.value, 3);
+  assert.equal(meter.value, 2);
+  assert.match(s.el('#rat-generations-open').href,/#analyze$/);
+  const corrected = setup(false, { [key]: JSON.stringify({v:1, seed:5, prediction:'same', action:6, step:'analyze', analysisAttempt:'alleles', analysisChecked:true}) });
+  assert.equal(corrected.created.find(e=>e.tag==='progress'&&e.attrs['aria-label']?.includes('Rat Generations')).value,3);
 });
 
 test('Wapusk tracks meaningful evidence, not tab browsing, and links Unit 5 independently',()=>{
@@ -887,6 +890,11 @@ test('Wapusk tracks meaningful evidence, not tab browsing, and links Unit 5 inde
   const base={v:1,id:'12345678',fields:{},step:'regions'};
   const empty=setup(false,{[key]:JSON.stringify(base)});
   assert.equal(empty.el('#wapusk-progress').textContent,'Not started');
+  for(const scales of [{scaleDraft:['park']},{scaleCheck:[]}]) {
+    const scaleOnly=setup(false,{[key]:JSON.stringify({...base,...scales})});
+    assert.match(scaleOnly.el('#wapusk-progress').textContent,/Scale choices saved · 0 of 6/);
+    assert.equal(scaleOnly.el('#wapusk-open').href,'openscied-b5-wapusk.html');
+  }
   const started=setup(false,{[key]:JSON.stringify({...base,fields:{observe:'Different seasons show different places.'}})});
   assert.equal(started.el('#wapusk-progress').textContent,'1 of 6 notebook responses saved');
   assert.equal(started.el('#wapusk-open').href,'openscied-b5-wapusk.html');

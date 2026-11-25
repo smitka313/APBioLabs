@@ -21,7 +21,7 @@
     'b1-ripple': [[pref+'b1-ripple:v1','answers checked choice reason predicted usual fewer claim limit finished']],
     'b2-burn-lab': [[pref+'b2-burn-lab:v1','fields burn',claimChecks]],
     'b2-fires': [[pref+'b2-fires:v1','fields cards decomp tilt',claimChecks]],
-    'b2-peat-bog-lab': [[pref+'b2-peat-bog:v1','settings climate warmingUsed trials trialLabel']],
+    'b2-peat-bog-lab': [[pref+'b2-peat-bog:v1','settings climate warmingUsed trials trialLabel fields']],
     'b2-carbon-journey': [
       [pref+'b2-carbon-journey:v1','rows answers pending done presentation coverageReviewed'],
       [pref+'b2-carbon-journey:budget:v1','furthest prediction explanation']
@@ -32,11 +32,11 @@
     'b3-dna-workshop': [[pref+'b3-dna-workshop:v1','progress answers']],
     'b3-dna-p53': [[pref+'b3-dna-p53:v1','fork expression fields feedback']],
     'b3-inheritance-environment': [[pref+'b3-inheritance-environment:v1','fields question pedigree twoGene meiosis skin planner yeast']],
-    'b4-hawksbeard': [[pref+'b4-hawksbeard:v1','prediction released answers']],
-    'b4-rat-generations': [[pref+'b4-rat-generations:v1','prediction action answers crosses analysisChecked']],
+    'b4-hawksbeard': [[pref+'b4-hawksbeard:v1','prediction released answers denominatorChoice']],
+    'b4-rat-generations': [[pref+'b4-rat-generations:v1','prediction action answers crosses analysisChecked analysisAttempt']],
     'b4-junco': [[pref+'b4-junco:v1','prediction revealed reason observation claim limits sim']],
     'b4-wildlife-corridor': [[pref+'b4-wildlife-corridor:v1','prediction generations crossing claim limits finished']],
-    'b5-wapusk': [[pref+'b5-wapusk:v1','fields check finished']],
+    'b5-wapusk': [[pref+'b5-wapusk:v1','fields check finished scaleDraft scaleCheck']],
     'b5-thermoregulation': [[pref+'b5-thermoregulation:v1','fields check hum sort']],
     'b5-ancestry': [[pref+'b5-ancestry:v1','notes prediction checked treeGood answers']],
     'b5-speciation': [[pref+'b5-speciation:v1','moves mathDraft mathChecked locked pins choices answers finished']],
@@ -62,6 +62,8 @@
   function project(saved, keys, extraFields=[]) {
     return Object.fromEntries(keys.split(' ').map(k=>{
       let value=saved[k];
+      // Null means never edited; an empty saved set is a deliberate response.
+      if (['scaleDraft','scaleCheck'].includes(k)&&Array.isArray(value)) value={recorded:true,choices:value};
       if (k==='fields' && Array.isArray(saved.responseIds) && saved.responseIds.length && value) {
         value=Object.fromEntries([...new Set([...saved.responseIds,...extraFields])].filter(id=>typeof id==='string' && Object.hasOwn(value,id)).map(id=>[id,value[id]]));
       }
