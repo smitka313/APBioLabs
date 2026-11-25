@@ -1,4 +1,4 @@
-/* The AP Bio home page advertises the OpenSciEd companions in two places: a prominent button in the hero and a band after the lab list.
+/* The AP Biology dashboard links to the OpenSciEd course in the masthead and in a dedicated band after the lab list.
    Run: NODE_PATH=$(npm root -g) AXE=<path>/axe.min.js node tests/t113-home-openscied-link.js */
 const T = require('./_h');
 const fs = require('fs');
@@ -12,12 +12,26 @@ const fs = require('fs');
       const m = await p.evaluate(() => {
         const hero = document.querySelector('.bench-brandbar nav a.bench-cross-route'), band = document.querySelector('.os-band'), btn = band && band.querySelector('a.btn--primary');
         const r = e => e.getBoundingClientRect();
+        const masthead = document.querySelector('.bench-brandbar');
+        const active = document.querySelector('.bench-brandbar nav [aria-current="page"]');
         return { heroHref: hero && hero.getAttribute('href'), heroText: hero ? hero.innerText : '', heroH: hero && r(hero).height, heroBg: hero && getComputedStyle(hero).backgroundColor,
+          heroColor: hero && getComputedStyle(hero).color, mastheadBg: getComputedStyle(masthead).backgroundColor,
+          activeBg: active && getComputedStyle(active).backgroundColor, activeHref: active && active.getAttribute('href'),
           bandHref: btn && btn.getAttribute('href'), bandText: band ? band.innerText : '', bandH: btn && r(btn).height, h2: !!(band && band.querySelector('h2')),
           bandAfterLabs: !!(band && document.querySelector('.bi .cards') && (document.querySelector('.bi .cards').compareDocumentPosition(band) & Node.DOCUMENT_POSITION_FOLLOWING)),
           over: document.documentElement.scrollWidth - document.documentElement.clientWidth };
       });
-      T.ok(m.heroHref === 'openscied-dashboard.html' && /OpenSciEd/.test(m.heroText) && m.heroH >= 40 && m.heroBg !== 'rgba(0, 0, 0, 0)', width + ' px: hero button is a solid 40 px+ button to the OpenSciEd dashboard (' + Math.round(m.heroH) + ' px)');
+      const luma = color => {
+        const rgb = color.match(/[\d.]+/g).slice(0, 3).map(n => {
+          const c = Number(n) / 255;
+          return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+        });
+        return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+      };
+      const values = [luma(m.heroColor), luma(m.mastheadBg)].sort((a, b) => b - a);
+      const contrast = (values[0] + 0.05) / (values[1] + 0.05);
+      T.ok(m.heroHref === 'openscied-dashboard.html' && /OpenSciEd/.test(m.heroText) && m.heroH >= 40 && contrast >= 4.5, width + ' px: readable 40 px+ masthead link to OpenSciEd (' + Math.round(m.heroH) + ' px; ' + contrast.toFixed(2) + ':1)');
+      T.ok(m.heroBg === 'rgba(0, 0, 0, 0)' && m.activeHref === 'ap-biology.html' && m.activeBg && m.activeBg !== 'rgba(0, 0, 0, 0)', width + ' px: only the current AP course has a filled pill');
       T.ok(m.bandHref === 'openscied-dashboard.html' && /Units 1–5/.test(m.bandText) && /not official/.test(m.bandText) && m.h2 && m.bandH >= 44 && m.bandAfterLabs, width + ' px: a band after the lab list names Units 1–5, says it is not official, and links to the dashboard');
       T.ok(m.over <= 0, width + ' px: no sideways scroll');
       if (process.env.AXE && width !== 768) {
