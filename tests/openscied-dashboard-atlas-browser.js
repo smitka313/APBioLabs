@@ -4,6 +4,23 @@ const fs = require('node:fs');
 const path = require('node:path');
 const T = require('./_h');
 
+const originals = {
+  "b5-wapusk": [
+    "openscied-wapusk-card.svg",
+    960,
+    600
+  ],
+  "b5-thermoregulation": [
+    "openscied-bear-thermoregulation.svg",
+    1000,
+    480
+  ],
+  "b5-ancestry": [
+    "openscied-bear-ancestry.svg",
+    1000,
+    480
+  ]
+};
 const keys = [
   'b1-migration','b1-carrying-capacity','b1-serengeti','b1-ripple',
   'b2-burn-lab','b2-fires','b2-peat-bog-lab','b2-carbon-journey',
@@ -41,8 +58,9 @@ const keys = [
                 &&art.left>=card.left-1&&art.right<=card.right+1&&art.width>100,
               src:img.getAttribute('src')};
           });
-          assert.deepEqual(report,{nw:960,nh:600,loaded:true,alt:'',decorative:'true',fits:true,
-            src:'assets/openscied-atlas-'+key+'.svg'},width+'px '+key);
+          const [filename,nw,nh]=originals[key]??['openscied-atlas-'+key+'.svg',960,600];
+          assert.deepEqual(report,{nw,nh,loaded:true,alt:'',decorative:'true',fits:true,
+            src:'assets/'+filename},width+'px '+key);
         }
         if (process.env.OPENSCIED_DASHBOARD_SCREENSHOTS) {
           fs.mkdirSync(process.env.OPENSCIED_DASHBOARD_SCREENSHOTS,{recursive:true});

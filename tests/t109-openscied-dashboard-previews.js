@@ -19,7 +19,7 @@ const CORRIDOR_PREVIEW='assets/openscied-atlas-b4-wildlife-corridor.svg';
   const files = [...js.matchAll(/file: '([^']+)'/g)].map(m => m[1]);
   const originalActivities=UNIT1.concat(UNIT2,UNIT3,UNIT4,['openscied-b5-wapusk.html','openscied-b5-thermoregulation.html','openscied-b5-ancestry.html']);
   T.ok(JSON.stringify(files.slice(0,originalActivities.length)) === JSON.stringify(originalActivities), 'openscied-dashboard.js preserves the published activity order through Unit 5');
-  for (const activity of originalActivities) {
+  for (const activity of UNIT1.concat(UNIT2,UNIT3,UNIT4)) {
     const file = '../assets/openscied-atlas-'+activity.replace(/^openscied-|\.html$/g,'')+'.svg';
     const art = fs.readFileSync(path.join(__dirname,file),'utf8');
     T.ok((art.match(/<(?:path|circle|ellipse|rect|polygon)\b/g)||[]).length>40 &&
@@ -101,7 +101,7 @@ const CORRIDOR_PREVIEW='assets/openscied-atlas-b4-wildlife-corridor.svg';
         carrying.img.w===960 && carrying.img.h===600 && carrying.img.alt==='' &&
         carrying.label === 'Open activity: Carrying Capacity',
         width + ' px: second card has the revised carrying capacity illustration and a named link');
-      const wapusk = m.find(x=>x.img?.src==='assets/openscied-atlas-b5-wapusk.svg');
+      const wapusk = m.find(x=>x.img?.src==='assets/openscied-wapusk-card.svg');
       T.ok(wapusk?.img?.complete && wapusk.img.w===960 && wapusk.img.h===600 &&
         wapusk.img.widthAttr==='960' && wapusk.img.heightAttr==='600' &&
         wapusk.label==='Open activity: Three Bears in Wapusk',
