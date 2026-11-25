@@ -77,6 +77,13 @@
     for(const [i,b] of [...$('markers').children].entries())b.setAttribute('aria-pressed',String(i===index));
     const row=marks[state.season][index];
     $('evidence').replaceChildren(el('h3',row?.[1]||'Inspect a marker'),el('p',row?.[4]||'Choose a symbol on the map for evidence about its habitat or what the record shows.'));
+    const profile={'△':'polar','◆':'brown','⬟':'black'}[row?.[0]];
+    $('evidence').classList.toggle('wb-evidence-with-profile',Boolean(profile));
+    if(profile){
+      const img=el('img');img.src='assets/openscied-bear-profile-'+profile+'.svg';
+      img.width=400;img.height=240;img.alt='';img.className='wb-evidence-profile';
+      $('evidence').append(img);
+    }
     if(row?.[0]==='◎'){const a=el('a','View the research photos (Figure 3)');a.href=study;$('evidence').append(a);}
   }
   function drawSeason(){
