@@ -3797,7 +3797,7 @@
      <script>try{var t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
      Lab.theme.get() gives 'light'|'dark'|'auto'; Lab.theme.set(mode); window event 'aplab:theme' fires after a change (token-driven canvases redraw). */
   const THEME_KEY = 'aplab:pref:theme';
-  let memTheme = document.documentElement.dataset.theme || 'auto';
+  let memTheme = document.documentElement?.dataset?.theme || 'auto';
   const themeGet = () => { try { const t = localStorage.getItem(THEME_KEY); return t === 'light' || t === 'dark' ? t : 'auto'; } catch (e) { return memTheme; } };
   function themeApply() {
     const m = themeGet(), root = document.documentElement;
