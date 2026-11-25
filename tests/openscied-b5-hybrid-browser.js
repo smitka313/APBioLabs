@@ -23,6 +23,13 @@ const server=http.createServer((req,res)=>{
     await p.route(/https:\/\/.*\/docx@[^/]+\/.*\.js$/,r=>r.fulfill({contentType:'application/javascript',body:fixture}));
    }
    await p.goto(base+'openscied-b5-hybrid.html#claim');
+   if(width===390){
+    const hero=await p.locator('.hy-hero').evaluate(e=>({
+     behind:getComputedStyle(e).backgroundImage,inFlow:getComputedStyle(e,':after').display,
+     below:getComputedStyle(e,':after').backgroundImage,titleFits:e.querySelector('h1').getBoundingClientRect().right<=e.getBoundingClientRect().right
+    }));
+    assert.equal(hero.behind,'none');assert.equal(hero.inFlow,'block');assert.match(hero.below,/openscied-atlas-b5-hybrid\.svg/);assert.equal(hero.titleFits,true);
+   }
    const at=k=>p.locator('#hy-'+k),stage=k=>p.locator('#'+k),go=k=>p.locator('[data-go="'+k+'"]');
    const save=()=>p.evaluate(()=>JSON.parse(localStorage.getItem('aplab:openscied:b5-hybrid:v1')));
    async function layout(name){

@@ -9,7 +9,6 @@
 .hy-shell textarea{display:block;width:100%;box-sizing:border-box;resize:vertical;line-height:1.5}
 .hy-shell label{font-weight:650}
 .hy-shell footer{font-size:.84rem;color:var(--muted);margin:1.3rem 0}
-.hy-shell .btn:disabled{opacity:1!important;background:var(--surface)!important;color:var(--muted)!important;border:1px dashed var(--muted)!important;box-shadow:none!important;cursor:not-allowed!important}
 .hy-row,.hy-nav{display:flex;flex-wrap:wrap;align-items:center;gap:.55rem .75rem}
 .hy-links{font-size:.9rem;margin-bottom:.7rem}
 .hy-hero{min-height:clamp(240px,28vw,355px);padding:clamp(1.15rem,4vw,3rem);border-radius:20px;background:#173650 url(assets/openscied-atlas-b5-hybrid.svg) center 46%/cover no-repeat;color:#f7fcfb;display:flex;flex-direction:column;justify-content:center;isolation:isolate;position:relative;overflow:hidden}
@@ -99,7 +98,7 @@
 .hy-shell dialog input{width:100%;margin:.4rem 0}
 #hy-report,.hy-backup{margin-top:.8rem}
 @media(max-width:850px){.hy-grid{grid-template-columns:1fr}.hy-hero{background-position:60% 52%}}
-@media(max-width:520px){.hy-nav{grid-template-columns:1fr 1fr}.hy-panel{border-radius:13px}.hy-tree-row{grid-template-columns:repeat(2,minmax(0,1fr))}.hy-hero:before{background:linear-gradient(90deg,#0a1e32dc,#0a1e3250)}.hy-shell :is(td,th){padding:.34rem .23rem}}
+@media(max-width:520px){.hy-nav{grid-template-columns:1fr 1fr}.hy-panel{border-radius:13px}.hy-tree-row{grid-template-columns:repeat(2,minmax(0,1fr))}.hy-hero{min-height:0;justify-content:flex-start;background:#102d44}.hy-hero:before{background:none}.hy-hero:after{content:"";display:block;flex:none;width:100%;aspect-ratio:2.45;border-radius:9px;background:#173650 url(assets/openscied-atlas-b5-hybrid.svg) center 63%/cover no-repeat}.hy-hero h1{max-width:100%;line-height:1.08}.hy-shell :is(td,th){padding:.34rem .23rem}}
 @media(prefers-reduced-motion:reduce){.hy-shell *,.hy-shell *::before,.hy-shell *::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 
 #hy-graph-dialog{width:min(61rem,calc(100% - 1.5rem))}
