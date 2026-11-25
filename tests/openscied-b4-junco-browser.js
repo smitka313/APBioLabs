@@ -348,6 +348,8 @@ async function exerciseNormalMotion(browser,base) {
     page.on('pageerror',error=>errors.push(error.message));
     page.setDefaultTimeout(8000);
     await page.goto(new URL(PAGE,base).href);
+    await selectStep(page,size,'field');
+    await id(page,'ju-field-entry').fill(OBSERVATION);
     await selectStep(page,size,'aviary');
     const art=id(page,'ju-aviary-art'), routineButton=id(page,'ju-aviary-replay');
     const routineCaption=id(page,'ju-aviary-routine-caption');
