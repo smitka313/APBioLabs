@@ -405,7 +405,9 @@
       state.question ? 'My question: ' + state.question.text : 'My question: not built yet'].forEach(function (t) { ul.appendChild(el('li', '', t)); });
     report.appendChild(ul);
     const tracker = progressTracker();
-    report.appendChild(table(tracker.title, tracker.columns, tracker.rows));
+    const trackerTable = table(tracker.title, tracker.columns, tracker.rows);
+    trackerTable.classList.add('report-tracker');
+    report.appendChild(trackerTable);
     BOXES.forEach(function (b) { b[1]().forEach(function (n) { report.appendChild(n); }); });
     textAnswers().forEach(function (t) { if (t.answer) { report.appendChild(el('h4', '', t.prompt)); report.appendChild(el('p', 'report-answer', t.answer)); } });
     report.appendChild(el('p', 'small muted', 'Simplified teaching models. Yeast and gamete results are simulated, skin-cancer values are approximate, and nothing here predicts anyone’s health or is a diagnosis.'));
