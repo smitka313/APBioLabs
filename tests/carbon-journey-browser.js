@@ -86,7 +86,7 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       const readWork = () => p.evaluate(() => localStorage.getItem('aplab:openscied:b2-carbon-journey:v1'));
       const saved = await readWork();
       await p.getByText('Example journey for solo work', {exact:true}).click();
-      assert.match(await p.locator('#q4').locator('..').innerText(), /Atmosphere → Producers.*Omnivores.*Soil/s);
+      assert.match(await p.locator('#q4').locator('..').innerText(), /Producers → Herbivores → Omnivores.*Atmosphere/s);
       assert.equal(await readWork(),saved,'the optional example does not modify student progress');
       assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       await p.locator('#question-prev').click();
@@ -128,6 +128,23 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       assert.equal(await p.locator('#restart').isDisabled(), true);
       assert.deepEqual(errors, []); console.log('PASS', width, height, 'viewport fit, inspect, map, prediction, official cards, reload, 10 rolls, totals, question paging, download, resets'); await ctx.close();
     }
+    const soilCtx = await browser.newContext({viewport:{width:390,height:844},colorScheme:'dark',reducedMotion:'reduce'});
+    try {
+      const p=await soilCtx.newPage();
+      const state=Array.from({length:6},(_,i)=>Journey.die(1336800262,i)).reduce(
+        (s,roll)=>Journey.record({...s,pending:roll}),Journey.initial(1336800262));
+      await p.addInitScript(value=>localStorage.setItem('aplab:openscied:b2-carbon-journey:v1',JSON.stringify(value)),{...state,coverageCheckpoint:'repeat'});
+      await p.goto(url);
+      assert.equal(await p.locator('#roll').isVisible(),false);
+      assert.match(await p.locator('#coverage-contrast').innerText(),/example, not your rolls/);
+      assert.equal(await p.locator('#coverage-contrast-route').innerText(),'Producers → Herbivores → Omnivores → Atmosphere');
+      assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+      await p.screenshot({path:path.join(root,'artifacts/l9/390-soil-streak-comparison.png'),fullPage:true});
+      await p.locator('#coverage-continue').click();
+      assert.equal(await p.locator('#roll').isVisible(),true);
+      const saved=await p.evaluate(()=>JSON.parse(localStorage.getItem('aplab:openscied:b2-carbon-journey:v1')));
+      assert.deepEqual(saved.rows,state.rows);
+    } finally { await soilCtx.close(); }
     const auditCtx = await browser.newContext({viewport:{width:390,height:844},colorScheme:'dark',reducedMotion:'reduce'});
     try {
       const p = await auditCtx.newPage();

@@ -11,11 +11,11 @@
      so the samples start at different masses. Nominal values per fuel (times are seconds in the flame):
        fuel      mass before   mass lost   ignites after   burns for   heat (kJ per g burned)   carbon factor   water factor
        grass          4 g         93 %          4 s           20 s              15                  0.44            0.55
-       leaves         4 g         90 %          6 s           30 s              16                  0.45            0.55
+       leaves         7 g         90 %          6 s           30 s              16                  0.45            0.55
        wood          10 g         97 %         14 s           90 s              18                  0.50            0.60
        charcoal      10 g         88 %         28 s          150 s              29                  0.90            0.12
        peat          30 g         78 %         45 s          260 s              20                  0.50            0.80
-     So peat loses the most grams (about 23 g), then wood (9.7), charcoal (8.8), grass (3.7) and leaves (3.6). Peat is slow to catch, then smolders (smoke and a
+     So peat loses the most grams (about 23 g), then wood (9.7), charcoal (8.8), leaves (6.3) and grass (3.7). Earlier browser records use the original 4 g leaf handful (3.6 g lost) and retain their original readings. Peat is slow to catch, then smolders (smoke and a
      glowing ember front, little flame) and burns longest. Peat keeps more ash because it has mineral content. Charcoal is mostly carbon, so it has the
      most heat and the most carbon dioxide per gram, and glows with little flame and little smoke. These are teaching values chosen to look like class data
      and to match the Teacher Edition's sample evidence: peat's mass reduced the most, its temperature change and BTB color change were the greatest,
@@ -23,9 +23,8 @@
    - Variation. Each student gets a seeded factor and each burned sample a smaller one: heat and mass lost about 8 percent in all (5 + 3), ignition
      time about 15 percent (8 + 7), burn time about 10 percent. A second sample of the same fuel therefore differs a little. The scale reads to 0.1 g
      with +/- 0.1 g noise on both weighings. The infrared thermometer shows whole degrees C. Each reading is the true glass temperature plus noise of +/- 0.5 degree, then rounded to the
-     nearest degree (so a reading is off by at most a degree, and usually by none). Starting temperature 22 C. Because the rise is only about 2 to 3 degrees for grass and leaves,
-     two fuels that give almost the same heat can differ by a degree or two in a table: that is thermometer noise, and the page says so. (The earlier version used +/- 1 degree on each reading,
-     which let two near-identical fuels differ by up to 5 degrees.)
+     nearest degree (so a reading is off by at most a degree, and usually by none). Starting temperature 22 C. Similar amounts of heat can give the same rounded reading.
+     New runs use different starting sample sizes for grass and leaves, not an artificial offset or additional decimal places on either instrument.
    - The apparatus. The fuel burns on a heat-safe tray under a large glass dome. A Petri dish of BTB (lid off) sits inside the dome beside the fuel, exposed to the
      air under the dome. The fuel sample is weighed on a balance before the burn and again after it (the sample sits under the dome during the burn). A laser
      (infrared) thermometer is used at those two weighings only, not during the burn, and it is aimed at the FUEL: before the burn at the sample (the dome is down over the
@@ -68,7 +67,7 @@
   // flame, smoke and glow (0 to 1) set how the picture is drawn; the table of nominal values is above.
   const FUELS = [
     { id: 'grass', label: 'Dried grass', mass: 4, water: 0.55, ignite: 4, burn: 20, loss: 0.93, kj: 15, co2: 0.44, flame: 1.0, smoke: 0.2, glow: 0.1, tone: 'a quick, bright flame' },
-    { id: 'leaves', label: 'Dried leaves', mass: 4, water: 0.55, ignite: 6, burn: 30, loss: 0.90, kj: 16, co2: 0.45, flame: 0.85, smoke: 0.4, glow: 0.2, tone: 'a quick flame with some smoke' },
+    { id: 'leaves', label: 'Dried leaves', mass: 7, water: 0.55, ignite: 6, burn: 30, loss: 0.90, kj: 16, co2: 0.45, flame: 0.85, smoke: 0.4, glow: 0.2, tone: 'a quick flame with some smoke' },
     { id: 'wood', label: 'Wood chips', mass: 10, water: 0.6, ignite: 14, burn: 90, loss: 0.97, kj: 18, co2: 0.50, flame: 0.75, smoke: 0.3, glow: 0.5, tone: 'a steady flame' },
     { id: 'charcoal', label: 'Charcoal', mass: 10, water: 0.12, ignite: 28, burn: 150, loss: 0.88, kj: 29, co2: 0.90, flame: 0.12, smoke: 0.05, glow: 1.0, tone: 'a red-orange glow, little flame, little smoke' },
     { id: 'peat', label: 'Peat', mass: 30, water: 0.8, ignite: 45, burn: 260, loss: 0.78, kj: 20, co2: 0.50, flame: 0.25, smoke: 1.0, glow: 0.8, tone: 'lots of smoke and a creeping glowing ember' }
@@ -79,7 +78,10 @@
   const SHORT_NARROW = { grass: 'Hay', leaves: 'Leaf', wood: 'Wood', charcoal: 'Char', peat: 'Peat' };   // for a phone-width chart: Lab.chart gives each bar label about 4 characters there, so no name is longer than 4 and none can break inside a word (Hay = dried grass)
   const fuelLabel = id => FUEL[id] ? FUEL[id].label : '';
   const normalizeFuel = id => FUEL[id] ? id : 'grass';
-  const massOf = id => FUEL[normalizeFuel(id)].mass;   // nominal grams of the handful
+  const LEGACY_MODEL_VERSION = 1, MODEL_VERSION = 2;
+  // Older saves lack modelVersion but still need to reproduce every weighing and readout.
+  const versionFor = saved => !saved || saved.modelVersion === MODEL_VERSION ? MODEL_VERSION : LEGACY_MODEL_VERSION;
+  const massOf = (id, version = MODEL_VERSION) => id === 'leaves' && version === LEGACY_MODEL_VERSION ? 4 : FUEL[normalizeFuel(id)].mass;
   const START_TEMP = 22;
   const START_BTB = 2;
   const MAX_SAMPLES = 3;          // samples of one fuel a student can burn
@@ -109,13 +111,13 @@
 
   /* ---------- one burned sample ---------- */
   // The numbers for sample n (1, 2, 3) of a fuel: always the same for the same seed, fuel and n.
-  function burnResult(seed, fuelId, n) {
+  function burnResult(seed, fuelId, n, modelVersion = MODEL_VERSION) {
     const id = normalizeFuel(fuelId), f = FUEL[id], k = clamp(Math.round(num(n) ? n : 1), 1, MAX_SAMPLES);
     const stu = makeRng(hash32(seedOf(seed) + ':student')), smp = makeRng(hash32(seedOf(seed) + ':' + id + ':' + k));
     const sHeat = spread(stu, 0.05), sLoss = spread(stu, 0.05), sIgn = spread(stu, 0.08);
     const heatF = sHeat * spread(smp, 0.03), lossF = sLoss * spread(smp, 0.03), ignF = sIgn * spread(smp, 0.07), burnF = spread(smp, 0.10);
     const lossFrac = clamp(f.loss * lossF, 0.05, 0.99);
-    const M = f.mass, burnedG = M * lossFrac;                                  // true grams that burned away
+    const M = massOf(id, modelVersion), burnedG = M * lossFrac;                                  // true grams that burned away
     const igniteS = Math.max(1, Math.round(f.ignite * ignF)), burnS = Math.max(1, Math.round(f.burn * burnF));
     const kjPerG = round1(f.kj * heatF), energyKj = kjPerG * burnedG;
     const dT = round1(clamp(DOME_SHARE * energyKj / DOME_KJ_PER_C, 2, 22));
@@ -200,6 +202,7 @@
     let weighed = null;
     if (s.weighed && FUEL[s.weighed.fuel] && !current) { const n = clamp(Math.round(num(s.weighed.n) ? s.weighed.n : 1), 1, MAX_SAMPLES); if (!seen[s.weighed.fuel + ':' + n]) weighed = { fuel: s.weighed.fuel, n }; }
     const out = { seed: s.seed >>> 0, fuel: normalizeFuel(s.fuel), current, records, weighed };
+    if (s.modelVersion === MODEL_VERSION) out.modelVersion = MODEL_VERSION;
     if (!current && s.review && records.some(row => row.fuel === s.review.fuel && row.n === s.review.n)) {
       out.review = { fuel: s.review.fuel, n: s.review.n };
     }
@@ -215,14 +218,14 @@
   // Table rows for the recorded samples, with every number recomputed from the seed.
   function tableRows(st) {
     const s = cleanState(st); if (!s) return [];
-    return s.records.map(r => Object.assign(burnResult(s.seed, r.fuel, r.n), { obs: r.obs })).sort((a, b) => FUEL_IDS.indexOf(a.fuel) - FUEL_IDS.indexOf(b.fuel) || a.n - b.n);
+    return s.records.map(r => Object.assign(burnResult(s.seed, r.fuel, r.n, versionFor(s)), { obs: r.obs })).sort((a, b) => FUEL_IDS.indexOf(a.fuel) - FUEL_IDS.indexOf(b.fuel) || a.n - b.n);
   }
   const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
   // One line per fuel the student has burned: the mean of its recorded samples (what a class would graph).
   function byFuel(rows) {
     return FUELS.map(f => {
       const r = rows.filter(x => x.fuel === f.id); if (!r.length) return null;
-      return { fuel: f.id, label: f.label, samples: r.length, igniteS: mean(r.map(x => x.igniteS)), burnS: mean(r.map(x => x.burnS)), tempRise: mean(r.map(x => x.tempRise)),
+      return { fuel: f.id, label: f.label, samples: r.length, massBefore: mean(r.map(x => x.massBefore)), igniteS: mean(r.map(x => x.igniteS)), burnS: mean(r.map(x => x.burnS)), tempRise: mean(r.map(x => x.tempRise)),
         massLost: mean(r.map(x => x.massLost)), btbAfter: mean(r.map(x => x.btbAfter)), btbChange: mean(r.map(x => x.btbChange)) };
     }).filter(Boolean);
   }
@@ -363,7 +366,7 @@
     return d;
   }
 
-  return { num, clamp, hash32, makeRng, FUELS, FUEL_IDS, FUEL, SHORT, SHORT_NARROW, fuelLabel, normalizeFuel, massOf, DISSOLVED_SHARE, btbFor, dropletLevel, DROP_FULL, START_TEMP, START_BTB, MAX_SAMPLES, TAIL, RATE, QUICK_S,
+  return { num, clamp, hash32, makeRng, FUELS, FUEL_IDS, FUEL, SHORT, SHORT_NARROW, fuelLabel, normalizeFuel, MODEL_VERSION, LEGACY_MODEL_VERSION, versionFor, massOf, DISSOLVED_SHARE, btbFor, dropletLevel, DROP_FULL, START_TEMP, START_BTB, MAX_SAMPLES, TAIL, RATE, QUICK_S,
     BTB_LABELS, BTB_RGB, btbLabel, btbColor, btbText, btbFromDissolved, burnResult, instrumentCaption, simSeconds, burnedFraction, stateAt, OBS, OBS_IDS, obsTruth,
     cleanState, samplesOf, nextSample, tableRows, byFuel, matchingReadouts, METRICS, chartSeries, checkPrediction, checkDataPick, PICKS, checkPick, claimLevel, evidenceChecks, evidenceFromGroups, evidenceDetail };
 });

@@ -13,13 +13,13 @@
    written here. Full contract text: docs/b2-burn-lab-scenes.md.
 
    SCENE STATE CONTRACT (all numbers finite; timestamps are ms since 1970; nothing here is ever a timer)
-     burn = { seed:uint32, fuel:'grass'|'leaves'|'wood'|'charcoal'|'peat' (the fuel last picked),
+     burn = { seed:uint32, modelVersion?:number, fuel:'grass'|'leaves'|'wood'|'charcoal'|'peat' (the fuel last picked),
               current: null | { fuel, n:1..3, startedAt:ms, skipped:bool, after:bool, obs?:[observation chip ids] }   the burn in progress, or finished but not yet recorded; after = the second weighing (balance and
                                                                                 laser thermometer read after the burn, dome lifted) has been done
               weighed: null | { fuel, n }                                       the first weighing (before the burn) is done for the next sample
               records: [ { fuel, n:1..3, obs:[observation chip ids] } ],         one per recorded sample
               updatedAt }
-              Times, masses, temperatures and BTB readings are NOT stored: they are recomputed from seed + fuel + n (B2BurnLogic.burnResult).
+              Times, masses, temperatures and BTB readings are NOT stored: they are recomputed from seed + fuel + n + modelVersion (B2BurnLogic.burnResult).
 
    SCENE REGISTRATION (either way works, so script order never matters)
      (window.B2Scenes = window.B2Scenes || []).push({ id:'burn', mount(host, api) {...} })   or   B2Burn.registerScene({ id, mount })
@@ -141,8 +141,8 @@
     const grouped = L.byFuel(L.tableRows(state.burn));
     if (!grouped.length) return [el('p', 'small muted', 'Weigh a fuel after burning to see its results here. Record at least two fuel types to compare.')];
     const round = v => Math.round(v * 10) / 10;
-    const result = [table('From your simulated burns', ['Fuel', 'Mass lost (g)', 'Temperature change (°C)', 'Final BTB color and number'],
-      grouped.map(g => [g.label, round(g.massLost).toFixed(1), round(g.tempRise).toFixed(1), L.btbText(round(g.btbAfter))]))];
+    const result = [table('From your simulated burns', ['Fuel', 'Starting mass (g)', 'Mass lost (g)', 'Temperature change (°C)', 'Final BTB color and number'],
+      grouped.map(g => [g.label, round(g.massBefore).toFixed(1), round(g.massLost).toFixed(1), round(g.tempRise).toFixed(1), L.btbText(round(g.btbAfter))]))];
     L.matchingReadouts(grouped).forEach(note => result.push(el('p', 'small', note)));
     if (grouped.length < 2) result.push(el('p', 'small muted', 'Record another type of fuel to compare.'));
     return result;
@@ -299,7 +299,7 @@
     report.appendChild(ul);
     const active = L.cleanState(state.burn)?.current;
     if (active) {
-      const result = L.burnResult(state.burn.seed, active.fuel, active.n);
+      const result = L.burnResult(state.burn.seed, active.fuel, active.n, L.versionFor(state.burn));
       if (L.simSeconds(active.startedAt, Date.now(), active.skipped, result.runS) >= result.runS) {
         const status = el('p','bn-pending','Finish weighing to save: ' + result.label + ', sample ' + result.n + '. ');
         status.appendChild(Object.assign(el('a','','Return to the burn demonstration'), { href:'#burn' }));
