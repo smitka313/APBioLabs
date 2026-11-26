@@ -1004,7 +1004,9 @@ test('Field Notebook counts meaningful work and backs up the exact written respo
   s.el('#download-openscied-results').fire('click');
   const archive=JSON.parse(await s.blob().text());
   assert.deepEqual(archive.responses['field-notebook'],fields);
-  assert.deepEqual(JSON.parse(archive.work[key]).pins,['people']);
+  // The device backup can carry a legacy JSON string or the structured v2 record.
+  const record=archive.work[key];
+  assert.deepEqual((typeof record==='string'?JSON.parse(record):record).pins,['people']);
   const before=setup(false,{[key]:'{"v":1,"fields":{},"step":"orient"}'});
   assert.equal(before.el('#field-notebook-progress').textContent,'Not started');
 });
