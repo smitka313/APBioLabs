@@ -3,6 +3,7 @@ const fs=require('node:fs'), vm=require('node:vm'), assert=require('node:assert/
 const path=require('node:path');
 const root=process.env.HANDOFF_BASE?path.resolve(process.env.HANDOFF_BASE):path.resolve(__dirname,'..');
 const source=fs.readFileSync(root+'/lab.js','utf8');
+const dashboardSource=fs.readFileSync(root+'/openscied-dashboard.js','utf8');
 const guard=require(root+'/openscied-save-session.js');
 const OLD={name:'First Student',period:'3'}, NEW={name:'Next Student',period:'4'};
 const MIG='aplab:openscied:b1-migration:v1', GAME='aplab:openscied-b1-serengeti:preview-v1';
@@ -17,7 +18,7 @@ function storage(seed={}) {
   });
   return s;
 }
-function page(localStorage,pathname='/index.html'){
+function page(localStorage,pathname='/index.html', beforeScriptLoad=()=>{}){
   const downloads=[], nav=[], noop=()=>{};
   let doc;
   class Element {
@@ -30,8 +31,8 @@ function page(localStorage,pathname='/index.html'){
     setAttribute(k,v){this.attributes[k]=String(v);if(k==='hidden'||k==='disabled')this[k]=true;if(k==='id'||k==='value')this[k]=String(v);}
     removeAttribute(k){delete this.attributes[k];}
     addEventListener(k,fn){(this.events[k]||=[]).push(fn);}
-    trigger(k){for(const fn of this.events[k]||[])fn({target:this,currentTarget:this,preventDefault:noop,stopPropagation:noop});}
-    click(){if(!this.disabled)this.trigger('click');}
+    trigger(k){let result;for(const fn of this.events[k]||[])result=fn({target:this,currentTarget:this,preventDefault:noop,stopPropagation:noop});return result;}
+    click(){if(!this.disabled)return this.trigger('click');}
     focus(){doc.activeElement=this;}
     append(...nodes){for(let n of nodes){if(typeof n==='string')n=new Element('#text',n);this.children.push(n);n.parent=this;}}
     remove(){if(this.parent)this.parent.children=this.parent.children.filter(n=>n!==this);}
@@ -47,6 +48,15 @@ function page(localStorage,pathname='/index.html'){
   const env={console,navigator:{},document:doc,location,localStorage,sessionStorage:storage(),
     setTimeout:noop,clearTimeout:noop,setInterval:noop,clearInterval:noop,addEventListener:noop,requestAnimationFrame:noop,cancelAnimationFrame:noop,
     Blob,URL:{createObjectURL:blob=>(downloads.push(blob),'blob:test'),revokeObjectURL:noop}};
+  doc.head=new Element('head');
+  doc.head.append=script=>{
+    assert.equal(script.src,'openscied-dashboard.js');
+    queueMicrotask(()=>{
+      beforeScriptLoad();
+      vm.runInNewContext(dashboardSource,env);
+      script.onload();
+    });
+  };
   env.window=env; vm.runInNewContext(source,env);
   return {Lab:env.Lab, doc, nav, downloads, el:tag=>new Element(tag), env};
 }
@@ -62,12 +72,30 @@ test('common sign-out sees OpenSciEd-only work and downloads exact raw values wi
   const s=withStudent({[MIG]:'{"v":1}',[GAME]:raw,[CAP]:'null','aplab:pref:theme':'light'});
   const p=page(s), dialog=p.Lab.data.signOut();
   assert.doesNotMatch(dialog.textContent,/No saved lab work/);
-  const download=dialog.querySelector('.dm-openscied-backup'); assert.ok(download); download.click();
+  const download=dialog.querySelector('.dm-openscied-backup'); assert.ok(download); await download.click();
   const payload=await parse(p.downloads[0]);
   assert.deepEqual(payload.work,{[MIG]:'{"v":1}',[GAME]:raw,[CAP]:'null'});
   assert.equal(payload.format,'openscied-saved-work-v1');
-  assert.equal(payload.student,null);assert.deepEqual(payload.responses,{});
+  assert.equal(payload.archiveRevision,2);assert.equal(payload.scope,'browser');
+  assert.equal(payload.student,null);assert.deepEqual(payload.datasetIds,{});
+  const d=dashboard(s); d.el('download-openscied-results').click();
+  const dashboardPayload=await parse(d.downloads[0]);
+  assert.deepEqual({...payload,exportedAt:null},{...dashboardPayload,exportedAt:null});
   assert.equal(s[GAME],raw);assert.deepEqual(p.nav,[]);
+});
+
+test('backup waiting for its script cannot download the next student’s work',async()=>{
+  const s=withStudent({[MIG]:migWork('original')});
+  const p=page(s,'/lab02.html',()=>{
+    confirm(page(s).Lab.data.signOut());
+    assert.equal(page(s).Lab.identity.set(NEW),true);
+    s.setItem(MIG,migWork('next student work'));
+  });
+  const dialog=p.Lab.data.signOut();
+  await dialog.querySelector('.dm-openscied-backup').click();
+  assert.equal(p.downloads.length,0);
+  assert.match(dialog.querySelector('.tool-status').textContent,/cleared in another tab/);
+  assert.equal(s.getItem(MIG),migWork('next student work'));
 });
 
 test('site sign-out invalidates old AP and OpenSciEd writers and removes the prior label before fresh sign-in',()=>{
