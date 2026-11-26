@@ -1,22 +1,66 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 450" role="img" aria-labelledby="title">
-<title id="title">Schematic map of the Serengeti ecosystem spanning Tanzania and Kenya</title>
+<svg xmlns="http://www.w3.org/2000/svg">
+<!-- New vector interpretation of the OpenSciEd B.1 Lesson 2 Serengeti Map,
+     Slides F–G and Station deck pp. 2, 7 and 10. Schematic; not legal or surveyed borders. -->
 <defs>
- <linearGradient id="land" x2=".8" y2="1"><stop stop-color="#f4dea0"/><stop offset="1" stop-color="#b88752"/></linearGradient>
- <pattern id="grass" width="40" height="36" patternUnits="userSpaceOnUse"><path d="M2 10l8-3m18 17l7-4M6 33l4-3" stroke="#67472f" opacity=".24" stroke-width="2" stroke-linecap="round"/></pattern>
- <linearGradient id="lake" x2="1" y2="1"><stop stop-color="#80c9c5"/><stop offset="1" stop-color="#469b9e"/></linearGradient>
+ <linearGradient id="earth" x2="0" y2="1"><stop stop-color="#f4e3ba"/><stop offset="1" stop-color="#d8bb81"/></linearGradient>
+ <pattern id="savanna" width="17" height="13" patternUnits="userSpaceOnUse"><path d="M2 9l3-2m5 3 3-2" stroke="#675039" opacity=".22" fill="none"/></pattern>
+ <pattern id="historical" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(34)"><path d="M2 0v10" stroke="#7f3e43" opacity=".6" stroke-width="3"/></pattern>
+ <pattern id="reserve" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="4" cy="4" r="1.7" fill="#59694b" opacity=".62"/></pattern>
+ <path id="later-park" d="M109 362l37-12 35 10 44 3 19 10 55-3 36 10 16-36 14-21-10-38-11-21-26-20-11-19 29-38 134 72-9 85 17 46-7 39-17 11 10 27-14 43-12 29-25 26-12-9-19-10 1 40-1 37-22 15-11 25-19-36-4-39-14-27-22-20-15-47-23-20-9-29-30-17-32-7-9-27-40-5z"/>
+ <path id="old-park" d="M111 361l40-12 22 10 45 17 36 9 37 7 32-1 36 17 45 16 57 24 51 28 58 39 53 37-15 32-30 29-19 34-55 6-85-14-77-7-31-32-36-39-30-48-20-43-25-54-15-6-13-12-22-3-30-1z"/>
+ <path id="mara" d="M336 187l24-27 38-20 28 26 24 11 46 42-1 30-23 11z"/>
+ <path id="ikoro" d="M294 238l24 6 26 20 11 21 10 38-14 21-23-8 9-19-12-23z"/>
+ <path id="grumeti" d="M109 362l33-17 47-7 40 5 52-1 17 10 30-16 23 44-52-10-55 3-19-10-44-3-35-10z"/>
+ <path id="maswa" d="M216 439l9 29 23 20 15 47 22 20 14 27 17 7 19 44 14 40 17-24 17-12-1 49-55 1-54 5-46 5-8-29 10-14 6-23 12-15 10-78-14-14-2-29-11-20z"/>
+ <path id="loliondo" d="M471 259l138 77-30 13-7 13-19 5 13 18-7 27 8 19 12-17 16-1 6 38 2 43 3 46-143-75-9-24 17-11 7-39-17-46z"/>
+ <path id="ngorongoro" d="M463 465l143 75 15 8-1 91-8 23-26 5-41 1-39-6-40 31-35 16-34 18-15 1 1-163 19 10 12 9 24-26 12-29z"/>
+ <path id="route" d="M394 588C330 566 285 497 241 425S295 348 352 315C383 280 356 241 394 203S433 204 438 229C470 289 465 338 457 394S464 487 414 564Q403 582 394 588Z"/>
 </defs>
-<path fill="url(#land)" d="M0 0h720v450H0z"/>
-<path fill="url(#grass)" d="M0 0h720v450H0z"/>
-<path fill="#8e9d66" opacity=".55" d="M169 45Q312 5 478 64L585 169Q614 213 542 271L582 358Q510 428 376 405L245 344 203 246 172 159Z"/>
-<path fill="url(#lake)" stroke="#316e6f" stroke-width="3" d="M0 0h144l33 27-10 41-38 20 3 27-43 20-8 29-44 10L0 151Z"/>
-<path d="M670 23q-51 57-39 99t-13 84q-23 39 13 78t-18 143m57-311-4 62 18 60m-35 80-17 55" fill="none" stroke="#876447" stroke-width="13" opacity=".44"/>
-<path d="M536 34q-62 23-88 66t-103 22-92 34-85 10M495 169q-29-6-56 23t-100 23-77 17-97-7" fill="none" stroke="#2c6c7b" stroke-width="5" stroke-linecap="round"/>
-<path d="M157 106l90 8 80 6 79-10 84 17 92 6 115 13" fill="none" stroke="#593b41" stroke-width="2.5" stroke-dasharray="10 5"/>
-<path d="M291 160L388 139 469 156 492 229 457 305 375 344 269 307 222 251 249 199Z" fill="#fce6a9" fill-opacity=".37" stroke="#644f2f" stroke-width="3" stroke-dasharray="13 5 3 5"/>
-<g fill="#32261d" font-family="system-ui,sans-serif" font-weight="750" font-size="22">
- <text x="27" y="60" fill="#143d42">Lake Victoria</text><text x="542" y="91">Kenya</text><text x="76" y="301">Tanzania</text>
- <text x="277" y="192">Serengeti</text><text x="277" y="218">National Park</text><text x="332" y="375">Southern plains</text><text x="496" y="338">Ngorongoro</text>
-</g>
-<g font-family="system-ui,sans-serif" fill="#143d42" font-size="18" font-weight="650"><text x="340" y="87">Mara River</text><text x="166" y="271">Grumeti River</text></g>
-<g transform="translate(664 351)" fill="#32261d"><path d="M16 0L0 40l16-9 16 9z"/><text x="10" y="-8" font-family="system-ui" font-size="16" font-weight="800">N</text></g>
+<symbol id="base" viewBox="40 100 610 650">
+ <path fill="url(#earth)" d="M40 100h610v650H40z"/><path fill="url(#savanna)" d="M40 100h610v650H40z"/>
+ <path d="M595 142q-14 75 12 120t4 114q-16 66 13 106l-3 83m-7 43-14 82m-21-457 16 29m-22 33 17 31m-8 243-15 32" stroke="#a9855a" fill="none" opacity=".7" stroke-width="8" stroke-linecap="round"/>
+ <path d="M40 100h101l-12 19-20 14-3 15-17 11 7 12-8 15 12 9 22 7-7 14-16-7-13-1-11-13-11 3-24-4zm0 263 18-9 19 2 10 13 12 1-1 15-14 6-17 18-27 8z" fill="#67a9a9" stroke="#357989" stroke-width="2.5"/>
+ <path d="M222 124l101 57 147 78 143 78 37 20" fill="none" stroke="#583a41" stroke-width="2.2" stroke-dasharray="8 5"/>
+ <g fill="none" stroke="#246e80" stroke-width="2.7" stroke-linecap="round">
+  <path d="M405 132l-9 20 2 24-11 29-18 13-16 20-23 5-20-10-38 6-30-9-47-13-38-11-35 2"/>
+  <path d="M565 266l-26 5-32 12-15 17-24 7-24 0-35 10-39 5-26 11-30 22-31 12-45 10-51-7-60-14-29 10"/>
+ </g>
+ <g fill="#3d2e23" font-family="system-ui,sans-serif" font-weight="750" text-anchor="middle" paint-order="stroke" stroke="#f5e4bc" stroke-width="3" stroke-linejoin="round">
+  <text x="538" y="170" font-size="25">KENYA</text><text x="144" y="522" font-size="25">TANZANIA</text>
+  <text x="107" y="240" font-size="17" fill="#194f5a">Lake Victoria</text><text x="216" y="211" font-size="14" fill="#194f5a">Mara River</text><text x="413" y="305" font-size="14" fill="#194f5a">Grumeti River</text>
+  <text x="575" y="270" font-size="13" transform="rotate(65 575 270)">Great Rift Valley</text>
+ </g>
+ <g transform="translate(74 683)" fill="#483326" font-family="system-ui"><path d="M14 0 1 33l13-8 13 8z"/><text x="8" y="-7" font-size="15" font-weight="750">N</text></g>
+</symbol>
+<symbol id="protection" viewBox="40 100 610 650">
+ <g stroke="#4f614b" stroke-width="2.5" fill="url(#reserve)" stroke-dasharray="6 3">
+  <use href="#mara"/><use href="#ikoro"/><use href="#grumeti"/><use href="#maswa"/><use href="#loliondo"/><use href="#ngorongoro"/>
+ </g>
+ <use href="#later-park" fill="#72956c" fill-opacity=".27" stroke="#3f6045" stroke-width="3.5"/>
+ <g font-family="system-ui,sans-serif" fill="#27362e" font-weight="780" font-size="14" text-anchor="middle" paint-order="stroke" stroke="#f4e6bd" stroke-width="3" stroke-linejoin="round">
+  <text x="445" y="185">Maasai Mara</text><text x="445" y="200">Game Reserve</text>
+  <path d="M242 281l85 23" fill="none" stroke="#3b4130" stroke-width="1.5"/><text x="232" y="270">Ikorongo</text><text x="232" y="285">Game Reserve</text>
+  <text x="215" y="358">Grumeti Game Reserve</text>
+  <text x="329" y="424" font-size="16">Serengeti National Park</text>
+  <text x="537" y="411">Loliondo Game</text><text x="537" y="428">Controlled Area</text>
+  <text x="283" y="654">Maswa Game</text><text x="283" y="670">Reserve</text>
+  <text x="505" y="593">Ngorongoro</text><text x="505" y="610">Conservation Area</text>
+ </g>
+</symbol>
+<symbol id="park-outline" viewBox="40 100 610 650">
+ <use href="#later-park" fill="none" stroke="#3f6045" stroke-width="3.5"/>
+</symbol>
+<symbol id="original" viewBox="40 100 610 650">
+ <use href="#old-park" fill="url(#historical)" stroke="#783942" stroke-width="4" stroke-dasharray="10 6"/>
+</symbol>
+<symbol id="landmarks" viewBox="40 100 610 650">
+ <use href="#later-park" fill="none" stroke="#3f6045" stroke-width="2" stroke-dasharray="6 4"/>
+ <g font-family="system-ui" fill="#392c23" text-anchor="middle" font-size="16" font-weight="750" paint-order="stroke" stroke="#f4e6bd" stroke-width="3"><text x="338" y="454">Serengeti National Park</text><text x="410" y="671">Southern plains</text><text x="531" y="613">Ngorongoro Crater</text></g>
+ <path d="M504 579q18-13 42-4t6 17q-18 10-35-2t-13-11z" fill="none" stroke="#896844" stroke-width="3"/>
+</symbol>
+<symbol id="migration" viewBox="40 100 610 650">
+ <use href="#route" fill="none" stroke="#fff5dd" stroke-width="11" stroke-linecap="round"/>
+ <use href="#route" fill="none" stroke="#8a4928" stroke-width="5" stroke-dasharray="9 5" stroke-linecap="round"/>
+ <g fill="#8a4928" stroke="#fff5dd" stroke-width="1"><path d="m242 447-10-19 19 6z"/><path d="m374 266-3-24 18 14z"/><path d="m464 348 6 22-20-11z"/></g>
+</symbol>
 </svg>

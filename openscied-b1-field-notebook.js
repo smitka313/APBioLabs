@@ -6,12 +6,18 @@
   const element=(tag,txt)=>Object.assign(document.createElement(tag),{textContent:txt});
   const say=msg=>{$('status').textContent=msg;};
   if(!M){say('The notebook did not load. Reload this page to try again.');return;}
-  let state=M.clean(null), session, unreadable=false, map='region';
-  const coordinates={plains:[391,340],woodland:[266,231],mara:[430,119],park:[347,239],ngorongoro:[520,305]};
+  let state=M.clean(null), session, unreadable=false, map='region', exhibit=0, month=0;
+  const coordinates={plains:[386,657],woodland:[266,396],mara:[404,242],park:[370,439],ngorongoro:[549,551]};
+  const attempts={};
   const mapDescriptions={
-    region:'Lake Victoria is west of the ecosystem. The Mara and Grumeti rivers cross the region.',
-    route:'The dashed route crosses the schematic park outline, including into Kenya. It is not a tracking record.',
-    protection:'Solid outline: national park. Dashed outlines: examples of neighboring protected areas. These simplified shapes are not official boundaries.'
+    region:'Land and water: Lake Victoria lies west, the Rift Valley lies east, and the Mara and Grumeti cross the region.',
+    route:'The dotted line is a simplified annual route. The circle represents an approximate area for the selected month, not a GPS location.',
+    protection:'Compare the original outline with the later park. The later map also distinguishes the neighboring protected areas.'
+  };
+  const keys={
+    region:[['river','River'],['border','International border'],['park','Later park outline']],
+    route:[['route','Typical migration route'],['herd','Selected month'],['park','Later park outline']],
+    protection:[['historic','Original national park'],['park','Later national park'],['reserve','Neighboring protected area']]
   };
   try {session=api.open(localStorage,scope,[key],undefined,{routeMetadata:['step','station','lastVisitedAt']});state=M.clean(JSON.parse(session.read(key)));} catch (_) {unreadable=true;}
   const identity=api?.reportIdentity?.(session,[key],()=>window.Lab?.identity?.get?.()??null)??(()=>null);
@@ -32,9 +38,53 @@
   const station=()=>M.stations.find(st=>st.id===state.station);
   function setMap(next){
     map=next;
+    const current=M.months[month], boundary=$('boundary').value;
     all('[data-map]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.map===map)));
     all('[data-layer]').forEach(g=>g.toggleAttribute('hidden',g.dataset.layer!==map));
-    $('map-caption').textContent=mapDescriptions[map]+' Schematic, not to scale.';
+    $('month-control').hidden=map!=='route';
+    $('boundary-control').hidden=map!=='protection';
+    all('[data-herd-marker],[data-herd-center]').forEach(c=>{c.setAttribute('cx',current[1]);c.setAttribute('cy',current[2]);});
+    all('[data-boundary-later]').forEach(x=>x.toggleAttribute('hidden',boundary==='original'));
+    all('[data-boundary-old]').forEach(x=>x.toggleAttribute('hidden',boundary==='later'));
+    $('map-key').replaceChildren(...keys[map].filter(([k])=>map!=='protection'||boundary==='both'||(boundary==='original')===(k==='historic')).map(([k,txt])=>{
+      const row=element('li',''), swatch=element('span','');
+      swatch.className='sf-map-symbol sf-map-symbol--'+k;swatch.setAttribute('aria-hidden','true');
+      row.append(swatch,element('span',txt));return row;
+    }));
+    const detail=map==='route'?' '+current[0]+': '+current[3]+'.':
+      map==='protection'?' Showing '+(boundary==='both'?'both outlines':boundary==='later'?'the later park and neighbors':'the original outline')+'.':'';
+    $('map-caption').textContent=mapDescriptions[map]+detail+' Approximate lesson map; not for navigation.';
+    const mapGraphic=document.querySelector('.sf-map .sf-map-visual');
+    mapGraphic.setAttribute('aria-label','Serengeti field map. '+$('map-caption').textContent);
+  }
+  function showExhibit(){
+    const st=station(), current=M.exhibits[st.id][exhibit];
+    $('exhibit-title').textContent=current[0];
+    $('exhibit-text').textContent=current[1];
+    $('exhibit-source').textContent=current[2];
+    $('locate').textContent=st.id==='movement'?'Show the herd in '+(exhibit===2?'September':'October'):
+      st.id==='conservation'?'Compare park outlines':'Locate this station';
+    all('[data-exhibit]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.exhibit)===exhibit)));
+    renderProgress();
+  }
+  function showCheck(){
+    const st=station(), [prompt,choices,right,why]=M.checks[st.id];
+    $('check-prompt').textContent=prompt;
+    function feedback(){
+      const i=attempts[st.id];
+      $('check-feedback').textContent=i==null?'':i===right?'That fits the evidence. '+why:'Look again at the exhibits. '+why;
+    }
+    $('check-options').replaceChildren(...choices.map((choice,i)=>{
+      const b=element('button',choice);b.type='button';b.className='btn';
+      b.setAttribute('aria-pressed',String(attempts[st.id]===i));
+      b.onclick=()=>{
+        attempts[st.id]=i;
+        Array.from($('check-options').children).forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+        feedback();say($('check-feedback').textContent);
+      };
+      return b;
+    }));
+    feedback();
   }
   function showStation(fillNote=true){
     const st=station();
@@ -45,10 +95,14 @@
     $('location').textContent='Map marker: '+st.location;
     $('evidence-text').textContent=st.evidence;
     $('source').textContent=M.references[st.id];
+    $('exhibits').replaceChildren(...M.exhibits[st.id].map((card,i)=>{
+      const b=element('button',String(i+1)+'. '+card[0]);b.type='button';b.className='btn';b.dataset.exhibit=i;
+      b.onclick=()=>{exhibit=i;showExhibit();say(card[0]+' opened.');};return b;
+    }));
     $('note-label').textContent=st.prompt;
     if(fillNote) $('note').value=state.fields[st.id]||'';
     $('movement-video').hidden=st.id!=='movement';$('people-video').hidden=st.id!=='people';
-    renderProgress();
+    showCheck();showExhibit();
   }
   function renderProgress(){
     const p=M.progress(state);
@@ -58,13 +112,17 @@
       b.setAttribute('aria-current',step===state.step?'step':'false');
     });
     all('[data-go]').forEach(b=>{b.disabled=b.dataset.go==='explore'?!p.questions:!p.evidence;});
-    const pinned=state.pins.includes(state.station);
+    const pinned=M.pinList(state,state.station).includes(exhibit);
     all('[data-map-pin]').forEach(b=>{
       const st=M.stations.find(x=>x.id===b.dataset.station);
       b.dataset.pinned=String(state.pins.includes(st.id));
       b.setAttribute('aria-label',st.name+(state.pins.includes(st.id)?', evidence pinned':''));
     });
-    $('pin').textContent=pinned?'Remove evidence pin':'Pin this evidence';
+    all('[data-exhibit]').forEach(b=>{
+      const i=Number(b.dataset.exhibit);
+      b.textContent=String(i+1)+'. '+M.exhibits[state.station][i][0]+(M.pinList(state,state.station).includes(i)?' · Pinned':'');
+    });
+    $('pin').textContent=pinned?'Remove exhibit pin':'Pin this exhibit';
     $('pin').setAttribute('aria-pressed',String(pinned));
     $('collected').textContent=p.used+' of '+M.stations.length+' stations with evidence · collect from at least 2 to continue.';
     $('finish').disabled=!p.ready||p.complete;
@@ -76,7 +134,10 @@
   function recap(){
     const rows=M.stations.filter(st=>state.pins.includes(st.id)||state.fields[st.id]?.trim()).map(st=>{
       const row=element('div','');row.className='sf-evidence-recap-row';row.append(element('strong',st.name));
-      if(state.pins.includes(st.id)) row.append(element('p',st.evidence));
+      for(const index of M.pinList(state,st.id)){
+        const [title,body,source]=M.exhibits[st.id][index];
+        row.append(element('p',title+' — '+body+' ('+source+')'));
+      }
       if(state.fields[st.id]?.trim()) row.append(element('p','My note: '+state.fields[st.id]));
       return row;
     });
@@ -98,12 +159,12 @@
   for(const st of M.stations){
     const b=element('button',st.icon+' · '+st.name);
     b.type='button';b.className='btn';b.dataset.station=st.id;
-    const open=()=>{state.station=st.id;setMap(st.view);showStation();say(st.name+' station opened.');};
+    const open=()=>{state.station=st.id;exhibit=0;setMap(st.view);showStation();say(st.name+' station opened.');};
     b.onclick=open;
     $('stations').append(b);
     const pin=element('button',st.icon), [x,y]=coordinates[st.place];
     pin.className='sf-map-pin';pin.type='button';pin.dataset.station=st.id;pin.dataset.mapPin='';
-    pin.style.setProperty('--x',x/7.2+'%');pin.style.setProperty('--y',y/4.5+'%');
+    pin.style.setProperty('--x',(x-40)/6.1+'%');pin.style.setProperty('--y',(y-100)/6.5+'%');
     pin.onclick=open;$('map-pins').append(pin);
   }
   for(const id of ['system','components','interactions','decisions']){
@@ -117,11 +178,26 @@
   });
   $('note').addEventListener('input',()=>change(state.station,$('note').value));
   $('pin').onclick=()=>{
-    const id=state.station, pinned=state.pins.includes(id);
-    state.pins=pinned?state.pins.filter(x=>x!==id):[...state.pins,id];
+    const pinned=M.togglePin(state,state.station,exhibit);
     if(!M.progress(state).ready) state.finished=false;
-    if(save()) say(pinned?'Evidence pin removed.':'Evidence pinned to your notebook.');
+    if(save()) say(pinned?'Exhibit pinned to your notebook.':'Exhibit pin removed.');
     renderProgress();
+  };
+  M.months.forEach((m,i)=>{const option=element('option',m[0]);option.value=String(i);$('month').append(option);});
+  $('month').onchange=()=>{month=Number($('month').value);setMap(map);say(M.months[month][0]+': '+M.months[month][3]+'.');};
+  $('boundary').onchange=()=>{setMap(map);say($('map-caption').textContent);};
+  $('enlarge').onclick=()=>{
+    const graphic=document.querySelector('.sf-map .sf-map-visual').cloneNode(true), legend=$('map-key').cloneNode(true);
+    legend.removeAttribute('id');
+    $('large-map').replaceChildren(graphic,legend);
+    $('enlarged-caption').textContent=$('map-caption').textContent;
+    $('map-dialog').showModal();
+  };
+  $('locate').onclick=()=>{
+    const st=station();
+    if(st.id==='movement'){month=exhibit===2?8:9;$('month').value=String(month);}
+    if(st.id==='conservation')$('boundary').value='both';
+    setMap(st.view);$('field-map').focus();say($('map-caption').textContent);
   };
   all('[data-map]').forEach(b=>{b.onclick=()=>setMap(b.dataset.map);});
   all('[data-era]').forEach(b=>{b.onclick=()=>{
@@ -152,7 +228,11 @@
       status:recovery?'recovery':p.complete?'final':'draft',student:identity(recovery),
       missing:[!p.questions&&'Write two different investigation questions.',!p.evidence&&'Gather evidence from at least two stations.',!p.complete&&'Finish the explanation and remaining question.'].filter(Boolean),
       sections:[section('Investigation questions',['question1','question2']),
-        {title:'Station evidence',items:[{type:'table',title:'Evidence and notes',columns:['Station','Source','Pinned evidence','My note'],rows:M.stations.filter(st=>state.pins.includes(st.id)||state.fields[st.id]?.trim()).map(st=>[st.name,M.references[st.id],state.pins.includes(st.id)?st.evidence:'',state.fields[st.id]||''])}]},
+        {title:'Station evidence',items:[{type:'table',title:'Evidence and notes',columns:['Station','Source','Pinned evidence','My note'],rows:M.stations.flatMap(st=>{
+          const selected=M.pinList(state,st.id), note=state.fields[st.id]||'';
+          return selected.length?selected.map((i,row)=>{const [title,evidence,source]=M.exhibits[st.id][i];return [st.name,source,title+' — '+evidence,row===0?note:''];}):
+            note.trim()?[[st.name,M.references[st.id],'',note]]:[];
+        })}]},
         section('Graphic organizer',['system','components','interactions','decisions']),section('Explain and share',['claim','wonder'])]
     };
   };

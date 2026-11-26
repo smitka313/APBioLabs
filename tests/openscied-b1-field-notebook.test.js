@@ -49,3 +49,77 @@ test('all four original videos are optional, caption-preferred in-page players w
   assert.deepEqual(frames,ids);
   ids.forEach(id=>assert.ok(html.includes('https://youtu.be/'+id+'"')));
 });
+
+test('exhibits retain provenance, preserve earlier pins and count distinct stations',()=>{
+  const old=M.clean({v:1,fields:{question1:'Why protect this land?',question2:'What changed?'},pins:['people']});
+  assert.deepEqual(M.pinList(old,'people'),[0],'legacy station pin remains visible on the first exhibit');
+  assert.equal(M.togglePin(old,'people',1),true);
+  assert.deepEqual(M.pinList(old,'people'),[0,1]);
+  assert.equal(M.progress(old).used,1);
+  assert.equal(M.togglePin(old,'movement',3),true);
+  assert.equal(M.progress(old).evidence,true);
+  assert.equal(M.togglePin(old,'people',0),false);
+  assert.deepEqual(M.pinList(M.clean(JSON.parse(JSON.stringify(old))),'people'),[1]);
+  assert.ok(Object.values(M.exhibits).every(group=>group.length>=3&&group.every(c=>c[2])));
+  assert.equal(new Set(M.months.map(m=>m[0])).size,12);
+});
+
+test('all activity element lookups resolve to unique HTML IDs or explicit generated fields',()=>{
+  const files=['openscied-b1-field-notebook.html','openscied-b1-field-notebook.js'];
+  const [html,js]=files.map(f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8'));
+  const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);
+  assert.equal(new Set(ids).size,ids.length);
+  for(const m of js.matchAll(/\$\('([a-z-]+)'\)/g))assert.ok(ids.includes('sf-'+m[1]),'Missing element: '+m[1]);
+});
+
+test('the real activity script initializes and drives exhibits and map controls from the HTML contract',()=>{
+  const vm=require('node:vm');
+  const raw=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+  const source=raw('openscied-b1-field-notebook.html');
+  const data={};
+  const storage={getItem:k=>data[k]??null,setItem:(k,v)=>{data[k]=v;},removeItem:k=>delete data[k]};
+  const entries=[];
+  function el(attrs={}){
+    const dataset=Object.fromEntries(Object.keys(attrs).filter(k=>k.startsWith('data-')).map(k=>[k.slice(5).replace(/-([a-z])/g,(_,c)=>c.toUpperCase()),attrs[k]]));
+    const e={attrs,dataset,mounted:Object.keys(attrs).length>0,style:{setProperty(){}},hidden:Object.hasOwn(attrs,'hidden'),value:attrs.id==='sf-boundary'?'both':'',
+      children:[],events:{},append(...a){a.forEach(n=>{n.mounted=true});this.children.push(...a);},replaceChildren(...a){this.children.forEach(n=>{n.mounted=false});a.forEach(n=>{n.mounted=true});this.children=a;},
+      setAttribute(k,v){this.attrs[k]=String(v);},toggleAttribute(k,v){if(v)this.attrs[k]='';else delete this.attrs[k];},
+      focus(){},addEventListener(k,fn){this.events[k]=fn;},showModal(){this.open=true;},close(){this.open=false;},
+      cloneNode(){return el({...this.attrs});},removeAttribute(k){delete this.attrs[k];}};
+    entries.push(e);return e;
+  }
+  const ids={};
+  for(const m of source.matchAll(/<([a-z][a-z0-9-]*)\b([^<>]*)>/gi)){
+    const attrs=Object.fromEntries([...m[2].matchAll(/([\w-]+)(?:="([^"]*)")?/g)].map(a=>[a[1],a[2]??'']));
+    if(attrs.id||Object.keys(attrs).some(k=>k.startsWith('data-'))||attrs.class?.includes('sf-map-visual')){
+      const n=el(attrs);if(attrs.id)ids[attrs.id]=n;
+    }
+  }
+  const element=id=>ids['sf-'+id];
+  const match=(e,css)=>{
+    const m=css.match(/^\[data-([a-z-]+)\]$/);
+    if(m)return Object.hasOwn(e.dataset,m[1].replace(/-([a-z])/g,(_,c)=>c.toUpperCase()));
+    return css==='.sf-map .sf-map-visual'&&e.attrs.class?.includes('sf-map-visual');
+  };
+  let collect;
+  const doc={createElement:()=>el(),getElementById:id=>ids[id],querySelector:sel=>entries.find(n=>match(n,sel)),
+    querySelectorAll:sel=>entries.filter(n=>n.mounted&&sel.split(',').some(q=>match(n,q)))};
+  const window={SerengetiFieldNotebook:M,OpenSciEdSaveSession:require('../openscied-save-session.js'),
+    OpenSciEdSubmission:{mount(c){collect=c.collect;}},addEventListener(){}};
+  vm.runInNewContext(raw('openscied-b1-field-notebook.js'),{window,document:doc,localStorage:storage,location:{reload(){}}});
+  assert.equal(element('stations').children.length,5);
+  assert.equal(typeof collect,'function');
+  for(const [key,value] of [['question1','What changed?'],['question2','Why?']]){
+    const n=element(key);n.value=value;n.events.input();
+  }
+  element('stations').children[2].onclick();
+  assert.match(element('map-caption').textContent,/Jan:/);
+  element('month').value='9';element('month').onchange();
+  assert.match(element('map-caption').textContent,/Oct: Maasai Mara/);
+  element('exhibits').children[1].onclick();element('pin').onclick();
+  element('stations').children[4].onclick();element('pin').onclick();
+  const report=collect();
+  assert.match(JSON.stringify(report.sections),/800–1,000 km/);
+  assert.match(JSON.stringify(report.sections),/Nata elder/);
+  assert.deepEqual(JSON.parse(data['aplab:openscied:b1-field-notebook:v1']).pinnedCards,{movement:[1],people:[0]});
+});

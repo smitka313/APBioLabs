@@ -56,3 +56,28 @@
 .sf-shell .sf-hero{background-position:center 56%}
 .sf-shell .sf-layers .btn{font-size:.88rem}
 .sf-station-art{display:block;width:100%;height:auto;border-radius:8px;margin-bottom:.8rem;background:#c9a66c}
+.sf-map-visual{display:block;width:100%;height:auto;background:#dec698}
+.sf-map-options,.sf-map-key,.sf-exhibits{display:flex;flex-wrap:wrap;align-items:center;gap:.55rem}
+.sf-map-options{margin:.55rem 0}
+.sf-map-options>button{margin-inline-start:auto}
+.sf-shell .sf-layer-control{margin:0;display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}
+.sf-layer-control select{min-height:42px;max-width:100%;font:inherit;padding:.35rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px}
+.sf-map-key{list-style:none;padding:0;margin:.65rem 0;font-size:.82rem}
+.sf-map-key li{display:inline-flex;align-items:center;gap:.35rem}
+.sf-map-symbol{display:inline-block;width:1.1rem;height:.8rem;background:#f5e4bc;border:2px solid #456448;border-radius:2px}
+.sf-map-symbol--historic{border:2px dashed #783942;background:repeating-linear-gradient(135deg,#f5e4bc 0 4px,#a06b70 4px 6px)}
+.sf-map-symbol--reserve{border-style:dashed;background:radial-gradient(circle,#526847 1px,#f5e4bc 2px) left top/5px 5px}
+.sf-map-symbol--route{height:0;border:none;border-top:3px dashed #a35b39;border-radius:0}
+.sf-map-symbol--river{height:0;border:none;border-top:3px solid #397b91;border-radius:0}
+.sf-map-symbol--border{height:0;border:none;border-top:2px dashed #976070;border-radius:0}
+.sf-map-symbol--herd{width:.8rem;background:#b87754;border-color:#6d2f2a;border-radius:50%}
+.sf-exhibit-heading,.sf-exhibit-card h4{margin:.55rem 0}
+.sf-exhibits .btn{font-size:.88rem;text-align:left}
+.sf-exhibit-card{border:1px solid var(--line);padding:.7rem;border-radius:8px;margin:.65rem 0;background:var(--surface-2)}
+.sf-check-options{display:grid;gap:.4rem}
+.sf-check-options .btn{text-align:left;justify-content:flex-start}
+#sf-check-feedback:empty{display:none}
+#sf-map-dialog{max-width:min(92vw,660px);max-height:90vh;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:12px}
+#sf-map-dialog h2{margin:0}
+#sf-large-map svg{max-height:66vh}
+.sf-exhibit-actions{display:flex;flex-wrap:wrap;gap:.55rem}.sf-map:focus-visible{outline-offset:3px}
