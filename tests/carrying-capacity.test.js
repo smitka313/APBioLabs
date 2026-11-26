@@ -121,13 +121,18 @@ test('confirmed comparison replacement is atomic and leaves baseline and written
   assert.deepEqual(saved.answers,fixture.answers);
 });
 
-test('Round 1 feedback explains which directional expectations the observed increase supports',()=>{
+test('Round 1 feedback connects actual feeding and births to the prediction and the first grass shortage',()=>{
   const fs=require('node:fs'),vm=require('node:vm');
   const text=fs.readFileSync(require.resolve('../openscied-b1-carrying-capacity.js'),'utf8');
   const start=text.indexOf('  function renderRoundOnePrediction('),end=text.indexOf('  function renderLab(',start);
   const note={},context=vm.createContext({state:{selected:'baseline',baseline:L.run({},1),answers:{prediction:'My free text'}},$:()=>note});
   vm.runInContext(text.slice(start,end)+'\nrenderRoundOnePrediction()',context);
-  assert.match(note.textContent,/grew by 1.*If you expected growth, the first round supports that part/);
-  assert.match(note.textContent,/if you expected the herd to shrink or stay the same, the first result differs/i);
-  assert.match(note.textContent,/One round does not show what will happen over 12 rounds or with less grass/);
+  assert.match(note.textContent,/grew by 1.*2 of 2 wildebeest found grass \(18 grass units were available\), and 1 calf was added/);
+  assert.match(note.textContent,/Your prediction: “My free text”/);
+  assert.match(note.textContent,/One round does not show whether the herd will keep growing/);
+  assert.match(note.textContent,/less than one grass unit per wildebeest/);
+  context.state.answers.prediction='';
+  vm.runInContext('renderRoundOnePrediction()',context);
+  assert.match(note.textContent,/Before Round 2, predict whether this growth will continue/);
+  assert.doesNotMatch(note.textContent,/Your prediction:/);
 });
