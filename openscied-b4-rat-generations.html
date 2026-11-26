@@ -75,7 +75,8 @@
   </section>
   <section id="rg-model" data-rg-step="model" aria-labelledby="rg-model-title" hidden>
     <div class="rg-stage"><div><p class="eyebrow">02 · Run the colony model</p><h2 id="rg-model-title" tabindex="-1">Follow five generations</h2></div><span class="rg-chip" id="rg-trial-id"></span></div>
-    <p class="rg-intro">Birth comes first. This model applies selection for the first time after Generation 3 is born, so you can compare the colony before and after. Real colonies do not follow a fixed schedule.</p>
+    <p class="rg-intro"><strong>Why start selection after Generation 3 births?</strong> In Part 1, no warfarin is present, so you can see how R passes through the colony before the environment changes. In Part 2, you compare the same Generation 3 cohort before and after selection. The lesson sets that timing, not the rats’ biology.</p>
+    <p class="rg-intro"><strong>What selection acts on:</strong> The lesson models an inherited change in a protein involved in blood clotting. Warfarin interferes with clotting. Under the lesson’s simplified rule, rats with an R allele survive the modeled exposure; other rats do not. Exposure doesn’t give a rat an R allele. These are modeled outcomes, not survival predictions for real rats.</p>
     <p class="rg-intro">For each assigned pair, match P1 and P2 to their nests and build its Punnett square. Complete every assigned pair to produce the next generation.</p>
     <div class="rg-timeline" id="rg-timeline" aria-label="Model timeline"></div>
     <div class="rg-event rg-panel" id="rg-events" aria-labelledby="rg-event-title">
@@ -109,7 +110,7 @@
       <div class="rg-panel">
         <h3>Plot your trial</h3>
         <div class="rg-metrics" id="rg-metrics" aria-label="Measure to plot"></div><div id="rg-chart"></div>
-        <p class="rg-muted">Survivors and starting counts are separate snapshots. A trait percentage can go up even when the colony gets smaller. Pairings vary by trial, but the model uses expected offspring counts rather than chance inheritance in each pup. Real litters can differ from those expected shares by chance. In small real populations, which alleles get passed on can change their frequency by chance alone. This is called <strong>genetic drift</strong>. Our model varies pairings but does not draw each pup’s alleles independently, so it does not show the full effect of drift.</p>
+        <p class="rg-muted">Survivors and births are separate snapshots. A trait percentage can go up even when the colony gets smaller. The generation record uses the expected offspring counts from the lesson; it does not randomly sample each pup’s alleles.</p>
       </div>
       <div class="rg-panel">
         <h3>Your generation record</h3><div id="rg-analysis-table"></div>
@@ -122,6 +123,14 @@
         </details>
       </div>
     </div>
+    <section class="rg-panel rg-concept" aria-labelledby="rg-drift-title">
+      <h3 id="rg-drift-title">Try chance alone <span class="rg-muted">(optional)</span></h3>
+      <p>Keep both parents the same: <strong>RB × BB</strong>. The Punnett square predicts <strong>2 RB and 2 BB</strong> out of four pups on average, or <strong>2 R copies out of 8 (25%)</strong>. Sampling each pup separately can give a different mix even with no selection.</p>
+      <p>Compare two simulated litters. A change in allele frequency due to chance alone is called <strong>genetic drift</strong>. This one-cross example shows how random inheritance can contribute to drift; it does not model a whole population over many generations.</p>
+      <div class="rg-actions"><button type="button" id="rg-drift-draw" class="btn">Sample two litters</button></div>
+      <div id="rg-drift-output"></div>
+      <p class="rg-muted">Practice only. These samples do not change your generation record or report.</p>
+    </section>
     <div class="rg-panel rg-concept"><h3>Quick check: Which denominator?</h3>
       <form id="rg-check"><fieldset><legend>Suppose you are calculating the frequency of R. What goes on the bottom of the fraction?</legend>
         <label class="rg-choice"><input type="radio" name="rg-concept" value="rats"><span>Number of rats in that snapshot</span></label>
@@ -133,7 +142,8 @@
   <section id="rg-explain" data-rg-step="explain" aria-labelledby="rg-explain-title" hidden>
     <div class="rg-stage"><div><p class="eyebrow">04 · Make an evidence-based explanation</p><h2 id="rg-explain-title" tabindex="-1">Explain what changed, and why</h2></div></div>
     <div class="rg-columns rg-explain-grid">
-      <div class="rg-panel rg-evidence"><h3>Your trial evidence</h3><div id="rg-evidence-summary"></div><details class="rg-details" open><summary>Every generation and selection step</summary><div id="rg-evidence-table"></div></details>
+      <div class="rg-panel rg-evidence"><h3>Your trial evidence</h3><div id="rg-evidence-summary"></div>
+        <p class="rg-muted"><strong>Model limit:</strong> This run uses one simplified trait and expected litter outcomes. It is not a measurement of survival or a forecast of resistance in a real city.</p><details class="rg-details" open><summary>Every generation and selection step</summary><div id="rg-evidence-table"></div></details>
         <details class="rg-details"><summary>Class reading connection</summary><p>The historical reading compares rats from a farm population and rats from a laboratory population. In your assigned reading, compare each group’s survivors with its starting group. How is that evidence different from a simulated generation?</p><p>The Tokyo percentage from class is a real-world question to explain, not a target that the model is set to produce.</p></details>
       </div>
       <div class="rg-panel rg-writing">
@@ -157,7 +167,7 @@
   <div class="rg-footer"><p id="rg-save">Your progress stays in this browser. Preview your report to keep a classroom copy.</p><button type="button" class="btn btn--ghost" id="rg-reset">Start a new trial…</button></div>
   <p id="rg-status" role="status" aria-live="polite" aria-atomic="true"></p>
   <details class="rg-details rg-method"><summary>What the model does and does not show</summary>
-    <p>This is a classroom simulation, not a pest-control investigation. It models two alleles, one simplified trait, fixed expected offspring counts, and nonoverlapping generations. In this model, warfarin selection starts after Generation 3 births so you can compare generations before and after a change. Nothing special happens biologically at Generation 3. During the selection steps, RR and RB survive and BB does not. Rats do not acquire R because they need it; offspring can inherit it from parents. No rat population measurements come from this simulation.</p>
+    <p>This is a classroom simulation, not a pest-control investigation. It models two alleles, one simplified trait, fixed expected offspring counts, and nonoverlapping generations. In this model, warfarin selection starts after Generation 3 births so you can compare generations before and after a change. Generation 3 is a comparison point chosen by the lesson, not an age or biological threshold. During the selection steps, RR and RB survive and BB does not. Rats do not acquire R because they need it; offspring can inherit it from parents. No rat population measurements come from this simulation.</p>
   </details>
   <div id="rg-submission-report"></div>
 </main>

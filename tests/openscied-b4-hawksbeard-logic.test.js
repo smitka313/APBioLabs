@@ -150,3 +150,14 @@ test('published plot composition and common garden are separate from simulated t
   assert.equal(commonGarden.plantsPerSite,30);
   assert.equal(H.makeTrial(0).published,undefined);
 });
+
+
+test('the explanation puts both modeling limits beside the trial evidence',()=>{
+  const fs=require('node:fs'), path=require('node:path');
+  const html=fs.readFileSync(path.join(__dirname,'..','openscied-b4-hawksbeard.html'),'utf8');
+  const explain=html.slice(html.indexOf('<section id="hb-explain"'),html.indexOf('<div class="hb-footerbar">'));
+  const limit=explain.match(/<p id="hb-evidence-limit"[^>]*>(.*?)<\/p>/)?.[1]||'';
+  assert.match(limit,/simulated soil landings, not germination, survival, or reproduction/);
+  assert.match(limit,/both soil amount and patch arrangement.*cannot separate/);
+  assert.ok(explain.indexOf('id="hb-evidence-limit"')<explain.indexOf('<details class="hb-published"'));
+});

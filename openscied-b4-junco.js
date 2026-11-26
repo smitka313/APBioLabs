@@ -99,7 +99,9 @@
     return xx&&yy?xy/Math.sqrt(xx*yy):null;
   }
   const points=D.cort.rows.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
-  const identified=points.some(p=>p.site==='urban')&&points.some(p=>p.site==='mountain');
+  const identified=points.every(p=>ownSite(p.site))&&points.some(p=>p.site==='urban')&&points.some(p=>p.site==='mountain');
+  const origin=p=>ownSite(p.site)?sites[p.site]:'Not identified';
+  function ownSite(site){return site==='urban'||site==='mountain';}
   function cortReading(full=false){
     const filter=full?'all':state.filter;
     const d=D.cort, rows=points.filter(p=>!identified||filter==='all'||p.site===filter), r=corr(rows);
@@ -122,17 +124,17 @@
     $('cort-status').textContent=summary;
     if(!points.length)return;
     const yName='Individual exploration score (PC1)', xName=d.xLabel||'CORT';
-    const graphSeries=identified?(state.filter==='all'?Object.keys(sites):[state.filter]).map(site=>({name:sites[site],color:seriesColors[Object.keys(sites).indexOf(site)],points:rows.filter(p=>p.site===site),line:false,dots:true,fit:state.fit?'linear':undefined})):[{name:'All plotted birds',points:rows,line:false,dots:true,fit:state.fit?'linear':undefined}];
+    const graphSeries=identified?(state.filter==='all'?Object.keys(sites):[state.filter]).map(site=>({name:sites[site],color:seriesColors[Object.keys(sites).indexOf(site)],points:rows.filter(p=>p.site===site),line:false,dots:true,fit:state.fit?'linear':undefined})):[{name:'All plotted birds · population not identified',points:rows,line:false,dots:true,fit:state.fit?'linear':undefined}];
     const ext=(axis,f)=>Math.max(1,Math.ceil(Math.max(...points.map(p=>p[axis]))*1.06/f)*f);
     graph('chart',{type:'xy',xLabel:xName,yLabel:yName,xMin:Math.min(0,...points.map(p=>p.x)),xMax:ext('x',d.xStep||10),yMin:Math.min(0,...points.map(p=>p.y)),yMax:ext('y',d.yStep||5),series:graphSeries});
     $('cort-x').textContent=xName;
-    $('cort-id').textContent=identified?'Population':'Bird (dot)';
+    $('cort-id').textContent='Bird (dot)';
     $('cort-pool-note').hidden=identified;
     $('cort-populations').hidden=identified;
     const tbody=$('cort-table').tBodies[0];
-    tbody.replaceChildren(...rows.map((p,i)=>{
+    tbody.replaceChildren(...rows.map(p=>{
       const tr=mk('tr');tr.dataset.site=p.site||'all';
-      [identified?(sites[p.site]||'Not identified'):i+1,fmt(p.x),fmt(p.y)].forEach(v=>tr.append(mk('td',v)));return tr;
+      [points.indexOf(p)+1,fmt(p.x),fmt(p.y),origin(p)].forEach(v=>tr.append(mk('td',v)));return tr;
     }));
   }
   function pairLine(d,group,caption){
@@ -330,14 +332,14 @@
       const items=[
         {type:'text',text:summary},
         {type:'text',text:'CORT and exploration can be related without CORT causing the behavior. The shared aviary does not prove that a difference was inherited.'},
-        ...(!identified?[{type:'text',text:'The published figure does not label each dot by population. The pooled pattern may partly reflect differences between populations; it does not establish a pattern within either group.'}]:[])
+        ...(!identified?[{type:'text',text:'The published figure does not label each dot by population. The pooled pattern may partly reflect differences between populations; it does not establish a pattern within either group. The Junco Data Excursion has a Location field for site-specific analysis.'}]:[])
       ];
       if(d.published)items.push({type:'text',text:d.published.note+' Published model: n = '+d.published.n+', R² = '+d.published.rSquared+', P = '+d.published.p+'.'});
       if(rows.length){
         if(Number.isFinite(r))items.push({type:'text',text:'All classroom points: n = '+rows.length+', correlation r = '+fmt(r)+'. This is not the published model result.'});
         items.push({type:'table',title:'Classroom points approximated from the published figure',
-          columns:[identified?'Population':'Bird (dot)',d.xLabel||'CORT','Individual exploration score (PC1)'],
-          rows:rows.map((row,i)=>[identified?(sites[row.site]||'Not identified'):i+1,fmt(row.x),fmt(row.y)])});
+          columns:['Bird (dot)',d.xLabel||'CORT','Individual exploration score (PC1)','Population of origin'],
+          rows:rows.map(row=>[points.indexOf(row)+1,fmt(row.x),fmt(row.y),origin(row)])});
       }
       items.push({type:'text',text:d.source+': '+d.url});
       sections.push({title:'Hormone and exploration clue · published evidence',items});
