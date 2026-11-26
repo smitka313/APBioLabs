@@ -77,6 +77,7 @@
   border-radius: 12px;
   background: #223b31;
 }
+.dashboard-panorama-picture { display: block; }
 .dashboard-hero-art {
   display: block;
   width: 100%;
@@ -329,3 +330,4 @@ time.dashboard-last-opened:not([hidden]) { display: block; margin: .22rem 0 .45r
   .dashboard-hero-grid { display: block; padding: 0; }
   .dashboard-activity { break-inside: avoid; }
 }
+

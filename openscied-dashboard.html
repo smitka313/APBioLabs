@@ -16,7 +16,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="bench-brand.css">
-<link rel="stylesheet" href="openscied-dashboard.css?v=field-atlas-1">
+<link rel="stylesheet" href="openscied-dashboard.css?v=field-atlas-2">
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
@@ -31,7 +31,10 @@
     </div>
   </div>
   <figure class="dashboard-panorama">
-    <img class="dashboard-hero-art" src="assets/bench-field-atlas.svg" width="1200" height="226" alt="Field-guide illustration of a wildebeest, a forest fire, a cell, a rat, and a polar bear." fetchpriority="high">
+    <picture class="dashboard-panorama-picture">
+      <source media="(max-width: 580px)" srcset="assets/bench-field-atlas-mobile.svg" width="600" height="272">
+      <img class="dashboard-hero-art" src="assets/bench-field-atlas.svg" width="1200" height="226" alt="Field-guide illustration of a wildebeest, a forest fire, a cell, a rat, and a polar bear." fetchpriority="high">
+    </picture>
   </figure>
   <div class="wrap wrap--wide gutter">
     <div class="hero-grid dashboard-hero-grid">
@@ -262,5 +265,6 @@
 <script src="openscied-dashboard.js?v=save-guard-1"></script>
 </body>
 </html>
+
 
 

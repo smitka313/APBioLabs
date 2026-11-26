@@ -46,8 +46,10 @@ const keys = [
           return {src:img.currentSrc,alt:img.alt,loaded:img.naturalWidth>0,width:img.naturalWidth,height:img.naturalHeight};
         });
         assert.ok(panorama.loaded && /wildebeest.*polar bear/i.test(panorama.alt));
-        assert.match(panorama.src,/bench-field-atlas\.svg$/);
-        assert.deepEqual([panorama.width,panorama.height],[1200,226]);
+        const isPhone = width <= 580;
+        const bannerFile = isPhone ? 'bench-field-atlas-mobile.svg' : 'bench-field-atlas.svg';
+        assert.equal(new URL(panorama.src).pathname, '/assets/' + bannerFile);
+        assert.deepEqual([panorama.width,panorama.height],isPhone ? [600,272] : [1200,226]);
         for (const key of keys) {
           const poster=page.locator('.dashboard-preview[href="openscied-'+key+'.html"] img');
           await poster.scrollIntoViewIfNeeded();
