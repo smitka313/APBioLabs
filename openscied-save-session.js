@@ -54,12 +54,37 @@
     if (scope !== null) checkScope(scope);
     const all = trackedKeys(keys);
     if (scope !== null && all.some(key => ownerOf(key) !== scope)) return changed();
-    const mark = invalidate(storage, scope, nonce);
-    if (!mark.ok) return mark;
+    const markerKey = scope === null ? globalKey : scopeKey(scope);
+    const journal = [];
+    let globalEpoch, mark;
+    const ours = () => storage.getItem(markerKey) === mark &&
+      (scope === null || storage.getItem(globalKey) === globalEpoch);
     try {
-      all.forEach(key => storage.removeItem(key));
+      globalEpoch = storage.getItem(globalKey);
+      const rows = all.map(key => [key, storage.getItem(key)]);
+      mark = nonce();
+      if (!invalidate(storage, scope, () => mark).ok || !ours()) return unavailable();
+      for (const [key, prior] of rows) {
+        if (!ours() || storage.getItem(key) !== prior) throw new Error('Saved work changed.');
+        if (prior === null) continue;
+        journal.push([key, prior]);
+        storage.removeItem(key);
+        if (storage.getItem(key) !== null) throw new Error('Could not remove saved work.');
+      }
+      if (!ours() || all.some(key => storage.getItem(key) !== null)) throw new Error('Could not verify the clear.');
       return success();
-    } catch (_) { return { ...unavailable(), partial:true }; }
+    } catch (_) {
+      let restored = true;
+      for (const [key, prior] of journal.reverse()) {
+        try {
+          if (!ours()) { restored = false; break; }
+          const current = storage.getItem(key);
+          if (current === null) storage.setItem(key, prior);
+          if (storage.getItem(key) !== prior) restored = false;
+        } catch (_) { restored = false; }
+      }
+      return restored ? unavailable() : { ...unavailable(), partial:true };
+    }
   }
 
   // A write can be denied even while controls and local model state still work.

@@ -18,7 +18,7 @@ function storage(seed={}) {
   });
   return s;
 }
-function page(localStorage,pathname='/index.html', beforeScriptLoad=()=>{}){
+function page(localStorage,pathname='/index.html', beforeScriptLoad=()=>{}, program=source){
   const downloads=[], nav=[], noop=()=>{};
   let doc;
   class Element {
@@ -47,7 +47,7 @@ function page(localStorage,pathname='/index.html', beforeScriptLoad=()=>{}){
   const location={pathname,reload:()=>nav.push('reload'),assign:file=>nav.push(file)};
   const env={console,navigator:{},document:doc,location,localStorage,sessionStorage:storage(),
     setTimeout:noop,clearTimeout:noop,setInterval:noop,clearInterval:noop,addEventListener:noop,requestAnimationFrame:noop,cancelAnimationFrame:noop,
-    Blob,URL:{createObjectURL:blob=>(downloads.push(blob),'blob:test'),revokeObjectURL:noop}};
+    Blob,TextEncoder,TextDecoder,btoa,atob,URL:{createObjectURL:blob=>(downloads.push(blob),'blob:test'),revokeObjectURL:noop}};
   doc.head=new Element('head');
   doc.head.append=script=>{
     assert.equal(script.src,'openscied-dashboard.js');
@@ -57,7 +57,7 @@ function page(localStorage,pathname='/index.html', beforeScriptLoad=()=>{}){
       script.onload();
     });
   };
-  env.window=env; vm.runInNewContext(source,env);
+  env.window=env; vm.runInNewContext(program,env);
   return {Lab:env.Lab, doc, nav, downloads, el:tag=>new Element(tag), env};
 }
 function confirm(box,id='signout',typed='First'){
@@ -476,7 +476,7 @@ test('the Word report captures visible answers and its teacher data before chart
   let answer='First measurement: 7.1', name='First Student', release, isRendering=false;
   const hold=new Promise(resolve=>{release=resolve;});
   const output=vm.runInNewContext('({'+method+'})',{
-    flushSaves:()=>{},
+    flushSaves:()=>{}, peerLabChange:false,
     collectReport:()=>({answer,name}),
     progressPayload:()=>({data:{answer},student:{name}}),
     makeResumeCode:async payload=>JSON.stringify(payload),
@@ -668,4 +668,95 @@ test('a rejected restore write rolls back both overwritten and removed answers',
   assert.equal(s.getItem(model),'"before restore"');
   assert.equal(s.getItem(rejected),null);
   assert.deepEqual(p.nav,[]);
+});
+
+test('AP Word export does not combine a stale visible answer with newer data from an ordinary peer edit',async()=>{
+  // Use actual field binding, collection, encoding and decoding; return the
+  // Word builder's input to observe both reports without loading an external renderer.
+  const reportSource=source
+    .replace('async function renderCharts(rep) {','async function renderCharts(rep) { return rep;')
+    .replace('async function buildDocx(rep) {','async function buildDocx(rep) { return rep;');
+  assert.notEqual(reportSource,source);
+  assert.ok(reportSource.includes('async function buildDocx(rep) { return rep;'));
+  const key='aplab:lab02:field:measurement',s=withStudent({[key]:'"first answer displayed"'});
+  const p=page(s,'/lab02.html',undefined,reportSource);
+  const field=p.el('textarea');field.dataset={save:'measurement',label:'Measurement'};field.closest=()=>null;field.matches=()=>false;
+  const section=p.el('section');
+  section.dataset={step:'Analyze'};section.querySelectorAll=()=>[field];
+  p.doc.querySelectorAll=sel=>sel==='section.step'?[section]:[];
+  p.Lab.bindAutosave(section);
+  assert.equal(field.value,'first answer displayed');
+  page(s,'/lab02.html').Lab.store.set('field:measurement','newer answer saved elsewhere');
+  let rep;
+  try { rep=await p.Lab.report.docx({timelapse:false}); }
+  catch(e) { if(/changed.*another tab/i.test(e.message)) rep=null; else throw e; }
+  if (rep) {
+    const embedded=await p.Lab.progressFile.readCode(rep.embed);
+    assert.equal(rep.sections[0].items[0].a,embedded.data['field:measurement']);
+  }
+  assert.equal(s.getItem(key),'"newer answer saved elsewhere"');
+  // Reopening the lab reads the latest answer in both parts of the export.
+  field.value='newer answer saved elsewhere';
+  const reloaded=page(s,'/lab02.html',undefined,reportSource);
+  reloaded.doc.querySelectorAll=p.doc.querySelectorAll;
+  const reviewed=await reloaded.Lab.report.docx({timelapse:false});
+  const embedded=await reloaded.Lab.progressFile.readCode(reviewed.embed);
+  assert.equal(reviewed.sections[0].items[0].a,'newer answer saved elsewhere');
+  assert.equal(embedded.data['field:measurement'],reviewed.sections[0].items[0].a);
+});
+
+test('device-wide sign-out cannot lose AP answers just because a later storage deletion is blocked',()=>{
+  const s=withStudent({[AP]:'"saved AP answer"',[MIG]:migWork('saved evidence')});
+  s.blocked.remove=MIG;
+  const p=page(s,'/ap-biology.html');
+  const d=p.Lab.data.signOut();confirm(d);
+  assert.deepEqual(p.nav,[]);
+  assert.equal(JSON.parse(s.getItem('aplab:student')).name,OLD.name);
+  assert.match(d.querySelector('.tool-status').textContent,/Could not finish clearing/);
+  assert.equal(s.getItem(AP),'"saved AP answer"');
+});
+
+test('dashboard-wide OpenSciEd clear cannot lose one activity if storage blocks clearing another',()=>{
+  const s=withStudent({[MIG]:migWork('notes from migration'),[GAME]:'{"answer":"board evidence"}'}),d=dashboard(s);
+  s.blocked.remove=MIG;
+  d.el('clear-openscied-results').click(); dashboardConfirm(d);
+  assert.match(d.el('openscied-clear-error').textContent,/Could not clear/);
+  assert.equal(s.getItem(MIG),migWork('notes from migration'));
+  assert.equal(s.getItem(GAME),'{"answer":"board evidence"}');
+});
+
+test('bulk erase restores AP and OpenSciEd records if the final sign-out removal fails',()=>{
+  const s=withStudent({[AP]:'"AP evidence"',[MIG]:migWork('companion evidence')});
+  s.blocked.remove='aplab:student';
+  const p=page(s,'/ap-biology.html'),dialog=p.Lab.data.signOut();confirm(dialog);
+  assert.deepEqual(p.nav,[]);
+  assert.deepEqual(JSON.parse(s.getItem('aplab:student')),OLD);
+  assert.equal(s.getItem(AP),'"AP evidence"');
+  assert.equal(s.getItem(MIG),migWork('companion evidence'));
+  assert.match(dialog.querySelector('.tool-status').textContent,/saved work was kept/);
+  delete s.blocked.remove;
+  dialog.querySelector('.dm-confirm').click();
+  assert.deepEqual(p.nav,['reload']);
+});
+
+test('Start over all rolls back work if its new Dataset number cannot be saved',()=>{
+  const first='aplab:dataset:lab01:first student|3', second='aplab:dataset:lab02:first student|3';
+  const s=withStudent({[AP]:'"must survive"',[first]:'2',[second]:'2'});
+  s.blocked.set=second;
+  const p=page(s,'/ap-biology.html'),dialog=p.Lab.data.startOverAll();confirm(dialog,'startover','ERASE');
+  assert.deepEqual(p.nav,[]);
+  assert.equal(s.getItem(AP),'"must survive"');
+  assert.equal(s.getItem(first),'2');
+  assert.equal(s.getItem(second),'2');
+  assert.match(dialog.querySelector('.tool-status').textContent,/saved work was kept/);
+});
+
+test('OpenSciEd distinguishes a kept copy from a rollback it could not finish',()=>{
+  const s=withStudent({[MIG]:migWork('blocked'),[GAME]:'{"old":"record"}'}), d=dashboard(s);
+  s.blocked.remove=MIG; s.blocked.set=GAME;
+  d.el('clear-openscied-results').click(); dashboardConfirm(d);
+  assert.equal(s.getItem(GAME),null);
+  assert.equal(s.getItem(MIG),migWork('blocked'));
+  assert.match(d.el('openscied-clear-error').textContent,/records could not be put back/);
+  assert.equal(d.el('confirm-openscied-clear').disabled,true);
 });

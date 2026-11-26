@@ -25,7 +25,7 @@ function reportFor(rows, { stale = false } = {}) {
   const end = page.indexOf('\n  /* The design run is saved', start);
   assert.ok(start >= 0 && end > start);
   vm.runInContext(page.slice(start, end), context);
-  const collect = shared.indexOf('  function collectReport() {');
+  const collect = shared.indexOf('  function collectReport(');
   const collectEnd = shared.indexOf('  /* Chart SVG', collect);
   assert.ok(collect >= 0 && collectEnd > collect);
   vm.runInContext(shared.slice(collect, collectEnd), context);
