@@ -17,7 +17,7 @@
     { id: 'ripple', name: 'Serengeti Ripple Effects', file: 'openscied-b1-ripple.html', key: PREFIX + 'b1-ripple:v1', clears: 'connections, prediction, run results, and written responses', progress: rippleProgress, ids: rippleResponseIds },
     { id: 'b2-burn', name: 'Burning Fuels: What Burns and Why', file: 'openscied-b2-burn-lab.html', key: PREFIX + 'b2-burn-lab:v1', clears: 'burn results and answers', progress: b2BurnProgress, ids: inhEnvResponseIds },
     { id: 'b2-fires', name: 'Fires: Peat, Decomposition & Earth\u2019s Tilt', file: 'openscied-b2-fires.html', key: PREFIX + 'b2-fires:v1', clears: 'model results and answers', progress: b2FiresProgress, ids: inhEnvResponseIds },
-    { id: 'peat-bog', name: 'Peat Bog Carbon Lab', file: 'openscied-b2-peat-bog-lab.html', key: PREFIX + 'b2-peat-bog:v1', clears: 'bog settings, recorded trials, and global warming settings', progress: peatBogProgress, ids: noResponseIds },
+    { id: 'peat-bog', name: 'Peat Bog Carbon Lab', file: 'openscied-b2-peat-bog-lab.html', key: PREFIX + 'b2-peat-bog:v1', clears: 'bog settings, recorded trials, the graph explanation, and global warming settings', progress: peatBogProgress, ids: noResponseIds },
     { id: 'carbon-journey', name: 'Carbon Atom Journey', file: 'openscied-b2-carbon-journey.html', key: PREFIX + 'b2-carbon-journey:v1', extraKeys: [CARBON_BUDGET_KEY], clears: 'carbon journey, budget trials, predictions and answers', progress: carbonJourneyProgress, ids: carbonResponseIds, answers: true },
     { id: 'cancer-rates', name: 'Cancer Rates Data Dive', file: 'openscied-b3-cancer-rates.html', key: PREFIX + 'b3-cancer-rates:v1', clears: 'prediction, case-file work, pinned comparisons, and written responses', progress: cancerRatesProgress, ids: cancerRatesResponseIds },
     { id: 'screening', name: 'Cancer Screening Design Lab', file: 'openscied-b3-screening.html', key: PREFIX + 'b3-screening:v1', clears: 'clinic plans and written recommendations', progress: screeningProgress, ids: screeningIds },
@@ -429,7 +429,7 @@
       stepsDone:milestones,stepsTotal:3,stepsLabel:'Model evidence milestones complete',
       summary: started ? models + ' of 3 interactive models used · ' + answers + ' of ' + ids.length + ' answers saved' + (claim ? ' · Claim checklist saved' : '') : 'Not started' };
   }
-  // Peat Bog Carbon Lab (Unit B.2): a simulator with no written answers. Progress is the recorded trials plus whether the bog or warming settings were changed (all simulated data).
+  // Peat Bog Carbon Lab (Unit B.2): an explanation is saved work, but only recorded trials count toward the comparison meter.
   const PEAT_SECTIONS = ['overview', 'bog', 'graph', 'zombie', 'warming', 'trials', 'model'];
   const PEAT_DEFAULTS = { tilt: 23.44, temp: 10, co2: 420, o2: 21, wet: 75, burn: 0 }, PEAT_CLIMATE = { fossil: 10, forest: 100, year: 2100 };
   function noResponseIds() { return []; }
@@ -447,14 +447,16 @@
     // The page saves warmingUsed once any Global warming control or "Test the bog in this year" is used (even if the student ends on today's values).
     // Saves from before that flag existed fall back to comparing the climate settings with today's.
     const warmChanged = saved.warmingUsed === true || (!!saved.climate && Object.keys(PEAT_CLIMATE).some(k => typeof saved.climate[k] === 'number' && saved.climate[k] !== PEAT_CLIMATE[k]));
-    const started = !!(trials || bogChanged || warmChanged || written(saved,'trialLabel'));
-    const fallback = trials ? 'trials' : warmChanged ? 'warming' : bogChanged ? 'bog' : 'overview';
+    const graphAnswered = written(saved.fields ?? {}, 'graph-answer');
+    const started = !!(trials || bogChanged || warmChanged || graphAnswered || written(saved,'trialLabel'));
+    const fallback = trials ? 'trials' : warmChanged ? 'warming' : graphAnswered ? 'graph' : bogChanged ? 'bog' : 'overview';
     return { started, section: PEAT_SECTIONS.includes(saved.lastSection) ? saved.lastSection : fallback,
       visited: Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
       stepsDone:Math.min(conditions.size,2),stepsTotal:2,stepsLabel:'Trials saved for a comparison',
       summary: started ? trials + ' simulated trial' + (trials === 1 ? '' : 's') + ' recorded' +
         (trials>=2 && conditions.size===1 ? ' · The trials use the same conditions' : '') +
-        ' · bog settings ' + (bogChanged ? 'changed' : 'unchanged') + ' · warming controls ' + (warmChanged ? 'used' : 'not used') : 'Not started' };
+        ' · bog settings ' + (bogChanged ? 'changed' : 'unchanged') + ' · warming controls ' + (warmChanged ? 'used' : 'not used') +
+        (graphAnswered ? ' · graph explanation saved' : '') : 'Not started' };
   }
   // Burning Fuels (Unit B.2, Lesson 2): the activity saves the ids of every response; the burn scene may save recorded samples.
   const BURN_SECTIONS = ['overview', 'ideas', 'fuels', 'burn', 'sense', 'sort', 'peat', 'wrapup'];
