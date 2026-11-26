@@ -666,10 +666,17 @@ async function report(page, size, pair, michigan) {
     check(pdf.subarray(0,5).toString()==='%PDF-' && pdf.length>1000,'Chromium generates a real printable PDF');
     let pdfText;
     try { pdfText=clean(execFileSync('pdftotext',[pdfPath,'-'],{encoding:'utf8'})); }
-    catch(error) { if(error.code!=='ENOENT') throw error; }
+    catch(error) {
+      if(error.code!=='ENOENT') throw error;
+      if(process.env.REQUIRE_CANCER_PDF_TEXT==='1'){
+        throw new Error('pdftotext is required for the Cancer Rates PDF content check.',{cause:error});
+      }
+      console.log('skip: install pdftotext to verify the generated PDF text locally');
+    }
     if(pdfText!==undefined){
-      check(required.every(token=>pdfText.includes(token)) && !pdfText.includes('Print or save as PDF'),
-        'actual PDF includes the evidence and excludes browser controls');
+      check(required.every(token=>pdfText.includes(token)) && /Class period:? 3\b/i.test(pdfText) &&
+        !pdfText.includes('Print or save as PDF'),
+        'actual PDF includes the class period and evidence, and excludes browser controls');
     }
     check(await page.evaluate(()=>window.__auditPrintCount)===0,'the live activity never invokes window.print()');
     check(await page.evaluate(key=>localStorage.getItem(key),SAVE)===beforePrint,'opening and rendering the print report leave saved activity work intact');
