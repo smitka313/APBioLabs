@@ -104,7 +104,8 @@
   function showStation(fillNote=true){
     const st=station();
     all('[data-station]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.station===st.id)));
-    $('art').setAttribute('href','assets/serengeti-field-stations.svg#'+st.id);
+    // Standalone SVGs keep paints and clip paths local on Safari/iOS. The caption describes the art.
+    $('art').setAttribute('src','assets/serengeti-field-station-'+st.id+'.svg');
     $('art-caption').textContent=st.artCaption;
     $('evidence-type').textContent='Station '+st.icon+' / '+st.name;
     $('evidence-title').textContent=st.title;

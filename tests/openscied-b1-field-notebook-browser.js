@@ -2,17 +2,19 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs/promises');
 const path=require('node:path');
-const {chromium}=require('playwright');
+const {chromium,webkit}=require('playwright');
+const mobileSafari=process.env.FIELD_BROWSER==='webkit';
 const {ROOT,serve}=require('./_h');
 (async()=>{
  const site=await serve();
  let browser;
  try{
-  browser=await chromium.launch();
+  browser=await (mobileSafari?webkit:chromium).launch();
   const out=path.join(ROOT,'artifacts','field-notebook');
   await fs.mkdir(out,{recursive:true});
-  for(const [width,mode] of [[390,'dark'],[768,'dark'],[1366,'light'],[1920,'light']]){
-   const cx=await browser.newContext({viewport:{width,height:900},hasTouch:width===390,reducedMotion:'reduce'});
+  const sizes=mobileSafari?[[390,'dark']]:[[390,'dark'],[768,'dark'],[1366,'light'],[1920,'light']];
+  for(const [width,mode] of sizes){
+   const cx=await browser.newContext({viewport:{width,height:900},hasTouch:width===390,isMobile:mobileSafari,reducedMotion:'reduce'});
    try{
     await cx.addInitScript(m=>localStorage.setItem('aplab:pref:theme',m),mode);
     await cx.route('**/*',r=>new URL(r.request().url()).origin===new URL(site.url).origin?r.continue():r.abort());
@@ -44,13 +46,25 @@ const {ROOT,serve}=require('./_h');
     for(const [key,caption] of stations){
      await p.locator('#sf-stations [data-station="'+key+'"]').click();
      assert.match(await by('art-caption').innerText(),caption);
-     assert.equal(await by('art').getAttribute('href'),'assets/serengeti-field-stations.svg#'+key);
-     // An unresolved external SVG fragment has no drawn bounding box.
-     await p.waitForFunction(()=>document.querySelector('#sf-art').getBBox().height>=195);
+     assert.equal(await by('art').getAttribute('src'),'assets/serengeti-field-station-'+key+'.svg');
+     await by('art').evaluate(async img=>{await img.decode();});
+     assert.equal(await by('art').evaluate(img=>img.naturalWidth),560);
+     if(key==='biodiversity'){
+      // A decoded image alone is not enough: the iOS bug made the torsos transparent.
+      const rgb=await by('art').evaluate(img=>{
+       const canvas=document.createElement('canvas');canvas.width=560;canvas.height=200;
+       const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0);
+       return [[72,118],[85,123],[234,131],[202,130]].map(([x,y])=>Array.from(ctx.getImageData(x,y,1,1).data));
+      });
+      const difference=(a,b)=>a.slice(0,3).reduce((d,c,i)=>d+Math.abs(c-b[i]),0);
+      assert.ok(difference(rgb[0],rgb[1])>65,'giraffe torso is filled against the backdrop');
+      assert.ok(difference(rgb[2],rgb[3])>65,'lion torso is filled against the backdrop');
+     }
      const art=await p.locator('.sf-station-art').boundingBox();
      assert.ok(art&&Math.abs(art.width/art.height-2.8)<.05,'plate stays proportional at '+width);
-     await p.locator('.sf-station-figure').screenshot({path:path.join(out,width+'-art-'+key+'.png')});
+     await p.locator('.sf-station-figure').screenshot({path:path.join(out,(mobileSafari?'webkit-':'')+width+'-art-'+key+'.png')});
     }
+    if(mobileSafari)continue;
     const move=p.getByRole('button',{name:'Movement of animals',exact:true});
     await move.focus();
     await p.keyboard.press('Enter');
