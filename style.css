@@ -1155,3 +1155,31 @@ main#labs:empty { min-height: 100vh; }
     width: 11em;
   }
 }
+
+/* OpenSciEd investigation navigation: one visual language for both gated
+   buttons and section links. Activity layouts and unlock rules stay local. */
+html[data-openscied] nav:is(
+  [aria-label="Activity steps"], [aria-label="Activity sections"],
+  [aria-label="Investigation steps"], [aria-label="Investigation sections"],
+  [aria-label="Workshop steps"]
+) :is(button, li > a[href^="#"]):not(.nav-arrow) {
+  border-radius: var(--r-sm);
+}
+html[data-openscied] nav:is(
+  [aria-label="Activity steps"], [aria-label="Activity sections"],
+  [aria-label="Investigation steps"], [aria-label="Investigation sections"],
+  [aria-label="Workshop steps"]
+) button:not(.nav-arrow) {
+  min-block-size: 42px;
+  font-weight: 700;
+}
+html[data-openscied] nav:is(
+  [aria-label="Activity steps"], [aria-label="Activity sections"],
+  [aria-label="Investigation steps"], [aria-label="Investigation sections"],
+  [aria-label="Workshop steps"]
+) :is(button, li > a[href^="#"]):is([aria-current]:not([aria-current="false"]), [aria-pressed="true"]):not(:disabled) {
+  color: var(--ink);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
