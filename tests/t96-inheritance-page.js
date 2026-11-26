@@ -170,6 +170,8 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
       { group: 5, strain: 'sensitive', spf: 50, minutes: 15, dose: 0.3, colonies: 190 }, { group: 6, strain: 'sensitive', foil: true, minutes: 15, dose: 0, colonies: 198 }] }));
     T.ok(/✓/.test(await p.locator('#cer-ev-1-note').innerText()), 'the mark updates when the dishes are counted (no stale text)');
     await p.check('#cer-ev-4');
+    T.ok(/✓ Supported:.*White-labeled graph.*not proof of cause/.test(await p.locator('#cer-ev-4-note').innerText()),
+      'the published graph selection receives its own evidence judgment and limitation');
     T.ok(await p.locator('#cer-level').getAttribute('data-level') === 'linked', 'claim, evidence and reasoning gives Linked');
     await p.check('#cer-caveat');
     T.ok(await p.locator('#cer-level').getAttribute('data-level') === 'organized', 'adding a limit gives Organized');
@@ -220,12 +222,21 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
     await go(p, 'plan');
     T.ok(/seven UV-exposed dishes plus one dark control/.test(await p.locator('#planner-scene canvas').getAttribute('aria-label')) &&
       /plus one dark control/.test(await p.locator('#planner-desc').textContent()), 'the class preset distinguishes seven UV dishes from one dark control');
+    T.ok(/only check your understanding.*use the controls at the top of the planner/.test(await p.locator('#ctrl-practice-note').innerText()),
+      'the Section 11 practice check distinguishes itself from the experiment controls');
+    await go(p, 'yeast');
+    await p.evaluate(dishes => B3Inh.saveState('yeast', { dishes: dishes.map(d =>
+      d.spf ? { ...d, colonies: 210 - d.spf * 2 } : d) }), correctDishes);
+    await p.check('#cer-ev-3');
     await go(p, 'wrapup');
     await p.locator('#wrap-sentence').fill('Genes, UV exposure, and chance can affect cancer risk.');
     await p.getByRole('button', {name:'Preview report'}).click();
     const scopedReport = p.locator('dialog.osr-dialog'), paper = scopedReport.locator('article');
     T.ok(await scopedReport.getByRole('heading',{name:'Environment & UV Evidence · Lesson 9'}).isVisible(), 'Lesson 9 is a complete independent pathway');
     const exportedText=await paper.innerText();
+    T.ok(/Dishes with higher SPF had more colonies · ✕ Not supported:/.test(exportedText) &&
+      /A skin-cancer graph rises with UV · ✓ Supported:/.test(exportedText),
+      'the report does not present a selected, unsupported evidence claim as earned; it also preserves graph feedback');
     T.ok(/Earlier Lesson 8 work · not part of this assignment/i.test(exportedText) && /My meiosis order/.test(exportedText),
       'prior completed Lesson 8 responses remain available under a separate heading');
     T.ok(/UV time \(among exposed dishes\)/.test(exportedText) && /Relative UV dose/.test(exportedText) && /0\.50/.test(exportedText),
@@ -330,3 +341,4 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
   } finally { await browser.close(); server.close(); }
   T.done('t96-inheritance-page');
 })().catch(e => { console.error(e); process.exit(1); });
+

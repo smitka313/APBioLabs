@@ -135,6 +135,12 @@ const tableRows = (p, caption) => p.evaluate(([sel, cap]) => {
     T.ok(fork.stage === 'complete', 'the saved run records how far it got (stage: ' + fork.stage + ')');
     T.ok(fork.after.top.correct === 24 && fork.after.bottom.substitutions === 0 && fork.p53.a.tried >= 1 && fork.steps.unzipped, 'saved fork.after, p53 and steps follow the contract');
     T.ok(/✓ Copy complete|two double strands/.test(await p.locator('#dna-fork-desc').innerText()), 'end state says two double strands');
+    const completeSites = JSON.stringify(s.sites), attemptsBeforeRetest = s.p53.c.tried;
+    await p.getByRole('button',{name:'Add p53 (c) to the top strand',exact:true}).click();
+    const retried = await st(p);
+    T.ok(retried.p53.c.tried === attemptsBeforeRetest + 1 && JSON.stringify(retried.sites) === completeSites &&
+      /p53 \(c\).*no substitution there/.test(await p.locator('.fork-result').innerText()),
+      'visible p53 (c) control still records a test after repair and clearly reports no substitution');
     T.ok(p.problems.length === 0, 'no page errors in the full run ' + p.problems.join(' | '));
 
     // ---------------- reset dialog ----------------
@@ -230,3 +236,4 @@ const tableRows = (p, caption) => p.evaluate(([sel, cap]) => {
   } finally { await browser.close(); server.close(); }
   T.done('t94-dna-fork-flow');
 })();
+

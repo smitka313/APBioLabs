@@ -152,3 +152,65 @@ test('Inheritance model tables label both gamete sets and retain real dose and f
   assert.match(result[1][1],/UV time \(among exposed dishes\)/);
   assert.equal(result[2][0].rows[0][3],'0.50');
 });
+
+
+test('Screening shows current counts after rechecking instead of the earlier redesign snapshot',()=>{
+  const s={caseChecks:[]},caseIds=[1,2,3];
+  const results=controllerSlice('screening','  const comparisonCount=','  function drawCases(){',{
+    s,caseIds,ready:()=>s.caseChecks.length===caseIds.length
+  },`const counts=[redesignStatus()];s.caseChecks=[1,2,3];counts.push(redesignStatus());
+    s.caseChecks=[1,3];counts.push(redesignStatus());counts`);
+  assert.match(results[0],/0 of 3.*remaining cases/);
+  assert.match(results[1],/3 of 3.*All comparisons are current/);
+  assert.match(results[2],/2 of 3.*remaining cases/);
+});
+
+test('Screening provides ordered and honest trip steps when driving is stopped or completed',()=>{
+  const card={place:'North Fork',screen:{place:'hub'},scan:{place:'mobile'}};
+  const route=controllerSlice('screening','  function itinerary(p){','  function drawItinerary(',{
+    card, label:k=>k==='hub'?'the hospital':'the mobile clinic'
+  },`['screen-missed','follow-up-missed','imaged'].map(outcome=>itinerary({...card,outcome}))`);
+  assert.equal(route[0].length,2);
+  assert.match(route[0].at(-1),/^No drive to the hospital/);
+  assert.equal(route[1].length,4);
+  assert.match(route[1].at(-1),/^No follow-up drive to the mobile clinic/);
+  assert.equal(route[2].length,4);
+  assert.match(route[2].at(-1),/^Drive to the mobile clinic for ultrasound follow-up/);
+});
+
+test('Inheritance attributes graph evidence and keeps a contradicted dish claim visibly unsupported',()=>{
+  const L=load('openscied-b3-inheritance-logic.js');
+  const dish=(spf,colonies)=>({strain:'sensitive',spf,dose:15/spf,colonies,minutes:15});
+  const verdicts=controllerSlice('inheritance-environment','  const EV_KEY =','  function renderClaim(speak)',{
+    L,num:Number.isFinite,dishes:[dish(15,180),dish(30,140),dish(50,100)]
+  },'evidenceVerdicts(dishes)');
+  assert.equal(verdicts['cer-ev-3'].status,'unsupported');
+  assert.match(verdicts['cer-ev-3'].message,/UV-sensitive dishes do not show this/);
+  assert.equal(verdicts['cer-ev-4'].status,'supported');
+  assert.match(verdicts['cer-ev-4'].message,/White-labeled graph.*not proof of cause/);
+});
+
+test('Cell Cycle distinguishes the round limit count from the actions count',()=>{
+  const r={playerTurns:[18],turns:22};
+  const values=controllerSlice('cell-cycle','  const TURN_LIMIT_LABEL=','  // Why the round ended,',{
+    r
+  },'[TURN_LIMIT_LABEL,ACTION_LABEL,turnSlots(r),r.turns,turnSlots({turns:22}),TURN_COUNT_NOTE]');
+  assert.deepEqual(values.slice(2,5),[18,22,'Not recorded']);
+  assert.match(values[0],/including skipped turns/);
+  assert.match(values[1],/including extra rolls/);
+  assert.match(values[5],/checkpoint-card flips/);
+});
+
+test('A visible p53 (c) control registers a test after the strand is repaired',()=>{
+  const scene=content('dna-replication-scene.js');
+  const code=scene.slice(scene.indexOf('    function doP53(v, k)'),scene.indexOf('    function doReset()'));
+  const L=load('openscied-b3-dna-p53-logic.js');
+  const result=vm.runInNewContext(`let held={},busy=false,lastResult='',saved=0;
+    const anim={},sites={top:'cc'},p53={c:{tried:0,removed:0}};
+    const stage=()=> 'complete',persist=()=>saved++,say=()=>{},refresh=()=>{},dur=()=>0;
+    ${code}
+    doP53('c','top');[p53.c.tried,p53.c.removed,sites.top,saved,lastResult]`,
+    {L,NAME:{top:'top strand'},P53_PATH:{c:true}});
+  assert.deepEqual([...result.slice(0,4)],[1,0,'cc',1]);
+  assert.match(result[4],/no substitution there/);
+});

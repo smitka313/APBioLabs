@@ -138,3 +138,6 @@
 
 /* Keep facility names legible as a patient marker passes behind them. */
 .sd-board .sd-site { z-index:5; } .sd-board .sd-map-event { z-index:6; }
+
+
+.sd-trip{margin:.45rem 0}.sd-trip h4,.sd-trip p{margin:.25rem 0}.sd-trip ol{margin:.3rem 0;padding-inline-start:1.35rem}

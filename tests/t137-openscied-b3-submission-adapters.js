@@ -63,7 +63,7 @@ const configuration = [
       $:sel=>({value:fields[sel.slice(1)]||''}),roundEvidence:n=>state.game.roundResults[n],trialGroups:()=>groups,
       setLabel:g=>'Set '+g.index,MAKING_SENSE_ROWS:rows,MAKING_SENSE_IDS:sense,MAKING_SENSE_PROMPTS:[],ANALYSIS_PROMPTS:[['Analysis','analysis']],RESPONSE_IDS:ids
     },finish(){
-      state.game.roundResults={1:{legacy:true},2:{blue:0,red:0,destroyed:3,turns:7,endedBy:'early'}};
+      state.game.roundResults={1:{legacy:true},2:{blue:0,red:0,destroyed:3,playerTurns:[5],turns:7,endedBy:'early'}};
       const settings=[{age:50,size:'average',tissue:'skin'}, {age:50,size:'average',tissue:'skin'}];
       for (const [i,c] of settings.entries()) groups.push({index:i+1,...c,trials:Array(3).fill({...c,divisions:0,modelVersion:2,cancerCount:0}),mean:0,changes:[null,0,0]});
       sense.forEach(id=>fields[id]=answer);
@@ -72,7 +72,9 @@ const configuration = [
       for (const c of [{age:70,size:'average',tissue:'skin'}, {age:50,size:'large',tissue:'skin'}, {age:50,size:'average',tissue:'colon'}]){
         groups.push({index:groups.length+1,...c,trials:Array(3).fill({...c,divisions:0,modelVersion:2,cancerCount:0}),mean:0,changes:[null,0,0]});
       }
-    },specific:s=>JSON.stringify(s.sections).includes('Ended early') && JSON.stringify(s.sections).includes('Not recorded')};
+    },specific:s=>JSON.stringify(s.sections).includes('Ended early') && JSON.stringify(s.sections).includes('Not recorded') &&
+      s.sections[0].items[0].columns.slice(-2).join('|')==='Turn slots used (including skipped turns)|Game actions (including extra rolls)' &&
+      s.sections[0].items[0].rows[1].slice(-2).join('|')==='5|7'};
   }],
   ['dna-p53','download-work',() => {
     const state={fork:null,expression:{runs:[]},legacy:{retired:answer}}, answers={a:answer};
@@ -143,6 +145,12 @@ for (const [activity,legacy,fixture] of configuration) {
     const start=source.indexOf('  function checkedCaseNotes()');
     const end=source.indexOf('  function report()',start);
     check(start>=0 && end>start,'loads the production checked exhibit formatter into the report fixture');
+    vm.runInContext(source.slice(start,end),sandbox);
+  }
+  if (activity==='cell-cycle') {
+    const start=source.indexOf('  const TURN_LIMIT_LABEL=');
+    const end=source.indexOf('  // Why the round ended',start);
+    check(start>=0 && end>start,'loads the production turn-count helpers into the report fixture');
     vm.runInContext(source.slice(start,end),sandbox);
   }
   vm.runInContext(source.slice(ctor,mount),sandbox);

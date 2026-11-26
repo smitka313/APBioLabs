@@ -427,8 +427,16 @@
       lines,'Review my evidence',$('to-explain'));
     $('edit-plan').hidden=won;
   }
+  const comparisonCount=()=>s.caseChecks.length+' of '+caseIds.length;
+  function comparisonProgress(){
+    return comparisonCount()+' comparisons checked.';
+  }
+  function redesignStatus(){
+    return 'Redesign recorded. '+comparisonProgress()+' '+(ready()?
+      'All comparisons are current for this plan.':'Check the remaining cases before submitting.');
+  }
   function drawCases(){
-    $('case-progress').textContent=s.trial?s.caseChecks.length+' of 3 comparisons checked.':'Hospital results are ready. Test the redesign to compare all three.';
+    $('case-progress').textContent=s.trial?comparisonProgress():'Hospital results are ready. Test the redesign to compare all three.';
     drawDecision();
     const scoreBox=$('mission-score');
     scoreBox.hidden=!ready();$('lost-access').hidden=true;
@@ -464,7 +472,31 @@
     return a===crossroads||b===crossroads?[a,b]:[a,crossroads,b];
   }
   const reduce=matchMedia('(prefers-reduced-motion: reduce)');
-  function clearTrip(){cancelAnimationFrame(animation);$('traveler').hidden=true;$('map-event').hidden=true;$('route').setAttribute('visibility','hidden');}
+  function clearTrip(){
+    cancelAnimationFrame(animation);$('traveler').hidden=true;$('map-event').hidden=true;
+    $('route').setAttribute('visibility','hidden');$('trip-itinerary').hidden=true;
+  }
+  function itinerary(p){
+    const rows=['Start at home in '+p.place+'.'];
+    if(p.outcome==='screen-missed'){
+      rows.push('No drive to '+label(p.screen.place)+': the screening visit did not fit the patient’s budget or time.');
+      return rows;
+    }
+    rows.push('Drive to '+label(p.screen.place)+' for screening.');
+    if(p.outcome==='imaged'||p.outcome==='follow-up-missed'){
+      rows.push('Return home after screening.');
+      rows.push(p.outcome==='imaged'?'Drive to '+label(p.scan.place)+' for ultrasound follow-up.':
+        'No follow-up drive to '+label(p.scan.place)+': the ultrasound visit did not fit the patient’s remaining budget or time.');
+    }
+    return rows;
+  }
+  function drawItinerary(planName,p,outcome){
+    const box=$('trip-itinerary'), list=$('trip-stops');
+    $('trip-heading').textContent=planName+'Patient '+p.id+' route';
+    list.replaceChildren(...itinerary(p).map(text=>el('li',text)));
+    $('trip-result').textContent=outcome;
+    box.hidden=false;
+  }
   function marker(at,p,stalled){
     const e=$('traveler');$('traveler-id').textContent=stalled?'!':String(p.id);e.dataset.stalled=String(stalled);
     e.style.setProperty('--x',at[0]/10+'%');e.style.setProperty('--y',at[1]/6.4+'%');e.hidden=false;
@@ -483,12 +515,17 @@
     const event=$('map-event');event.hidden=false;drawSites(view==='trial'&&s.trial?s.trial:M.baseline);
     const planName=view==='base'?'Hospital plan · ':'Redesign · ';
     const ending=planName+'Patient '+p.id+': '+outcomes[p.outcome]+'. '+p.reason;
+    drawItinerary(planName,p,ending);
     if(scroll)$('board').scrollIntoView({block:'nearest',behavior:'auto'});
     $('route').setAttribute('points',stops.map(pt=>pt.join(',')).join(' '));$('route').setAttribute('visibility',stops.length>1?'visible':'hidden');
     if(reduce.matches||stops.length===1){marker(end,p,last);event.textContent=ending;return;}
-    const startAt=performance.now(), ms=660;
+    marker(start,p,false);
+    event.textContent=planName+'Patient '+p.id+' is starting at home.';
+    let startAt;
+    const ms=660;
     function tick(t){
-      const n=Math.min(stops.length-1,(t-startAt)/ms),i=Math.floor(n);
+      startAt??=t;
+      const n=Math.min(stops.length-1,Math.max(0,(t-startAt)/ms)),i=Math.floor(n);
       if(i===stops.length-1){marker(end,p,last);event.textContent=ending;return;}
       const a=stops[i],b=stops[i+1],f=n-i;
       marker([a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f],p,false);
@@ -595,7 +632,9 @@
     }
     save();render();trip(false);
     (s.trial?$('journey-title'):$('action-title')).focus();
-    saySafe(view==='base'?'Hospital plan recorded. Watch the selected patient, then move the ultrasound team.':previousChecks?'Redesign recorded. '+s.caseChecks.length+' of '+previousChecks+' earlier answers still match. Recheck changed results before submitting.':'Redesign recorded. Choose a case and compare the two plans.');
+    const changed=previousChecks-s.caseChecks.length;
+    saySafe(view==='base'?'Hospital plan recorded. Watch the selected patient, then move the ultrasound team.':
+      redesignStatus()+(changed?' This redesign changed '+changed+' previously checked '+(changed===1?'result.':'results.'):''));
     if(view==='trial'&&ready())showMission(dispatchScore());
   };
   const comparisonLabels={base:'Hospital only',trial:'Redesign only',both:'Both plans',neither:'Neither plan'};
@@ -607,6 +646,7 @@
       s.caseAnswers={...s.caseAnswers,[id]:choice};s.caseChecks=s.caseChecks.filter(x=>x!==id);s.finished=false;save();render();
       const explain=(name,p)=>name+': '+(milestone(p)?'all needed care completed.':p.reason);
       $('case-feedback').textContent='Not quite. '+explain('Hospital',a)+' '+explain('Redesign',b);
+      saySafe(redesignStatus());
       return;
     }
     const wasReady=ready();
@@ -614,6 +654,7 @@
     if(!s.caseChecks.includes(id))s.caseChecks.push(id);
     save();render();drawDecision(id);
     $('case-feedback').textContent=ready()?'Correct. All three comparisons are checked. You can now recommend a plan.':'Correct. Choose an unchecked case to compare next.';
+    saySafe(redesignStatus());
     if(!wasReady&&ready())showMission(dispatchScore());
   };
   for(const b of document.querySelectorAll('[data-sd-step]'))b.onclick=()=>nav(b.dataset.sdStep);
@@ -663,6 +704,7 @@
     });
     const practiceItems=practiceRows.length?[{type:'table',title:'Practice cost-sheet bookings (not district results)',columns:['Patient','Practice plan setup','Visits booked'],rows:practiceRows}]:[];
     return {title:'Cancer Screening Design Lab',unit:'OpenSciEd Biology B.3 · Engineering extension',source:'Fictional classroom simulation. Costs in made-up credits. No real patient records or cancer diagnosis.',status:!savable()?'recovery':complete()?'final':'draft',student:student(),datasetId,missing,
+      keyResults:[{label:'Patient comparisons checked',value:comparisonCount()}],
       sections:[{title:'Evidence',items:[...caseItems,...choices,...losses,...missionItems,...comparison,...plan,...priceItems,...practiceItems]},
       {title:'My recommendation',items:[{type:'answer',prompt:'Which plan would you fund?',value:s.claim},{type:'answer',prompt:'Who might still get left out?',value:s.limit}]}]};
   }
@@ -686,3 +728,4 @@
     catch(_){$('copy-fallback').hidden=false;$('copy-text').value=contents;$('copy-text').select();say('Clipboard unavailable. Copy the selected report text manually.');}
   };
 })();
+

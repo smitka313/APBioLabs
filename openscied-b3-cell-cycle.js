@@ -283,7 +283,8 @@
     $('#turn-history').innerHTML=logs.map(function(line){return '<li>'+line+'</li>';}).join('');
   }
   function tally(players,turns){
-    const r={blue:0,red:0,destroyed:0,sentBack:0,skipped:0,turns:turns,players:players.length};
+    const r={blue:0,red:0,destroyed:0,sentBack:0,skipped:0,turns:turns,players:players.length,
+      playerTurns:players.map(p=>Math.min(TURNS_PER_ROUND,p.turnsUsed))};
     players.forEach(function(p){r.blue+=p.blue;r.red+=p.red;r.destroyed+=p.destroyed;r.sentBack+=p.sentBack;r.skipped+=p.skipped;});
     return r;
   }
@@ -292,12 +293,16 @@
   // every player reaches the turn cap ('turns'), or the group presses "End this round now" ('early').
   function finishRound(endedBy){
     const g=state.game;
-    g.complete=true;g.roundResults[g.round]=Object.assign(tally(g.playersState,g.turns),{endedBy:endedBy||'turns',playerTurns:g.playersState.map(function(p){return Math.min(TURNS_PER_ROUND,p.turnsUsed);}),
+    g.complete=true;g.roundResults[g.round]=Object.assign(tally(g.playersState,g.turns),{endedBy:endedBy||'turns',
       perPlayer:g.playersState.map(function(p){return {id:p.id,blue:p.blue,red:p.red,destroyed:p.destroyed,sentBack:p.sentBack,skipped:p.skipped,turns:Math.min(TURNS_PER_ROUND,p.turnsUsed)};})});
     g.endNotice=true;   // show the Round complete / Game over dialog until it is dismissed (kept across a reload)
     const r=g.roundResults[g.round];
     setEvent(roundName(g.round)+' complete',roundEndReason(r)+' Cells made this round: '+plural(r.blue,'blue chip')+' (non-cancer cells) and '+plural(r.red,'red chip')+' (cancer cells in this game model).','🏁','Round complete');
   }
+  const TURN_LIMIT_LABEL='Turn slots used (including skipped turns)';
+  const ACTION_LABEL='Game actions (including extra rolls)';
+  const TURN_COUNT_NOTE='Turn slots count toward each player’s round limit, including any turn they lost. Game actions count dice rolls and checkpoint-card flips, including extra rolls but not lost turns.';
+  const turnSlots=r=>Array.isArray(r.playerTurns)&&r.playerTurns.every(Number.isFinite)?r.playerTurns.reduce((a,b)=>a+b,0):'Not recorded';
   // Why the round ended, with the real turn counts. Older saves have no endedBy: say only what is known.
   function roundEndReason(r){
     if(!r||r.legacy)return 'Round complete.';
@@ -331,7 +336,7 @@
       row('Blue chips · non-cancer cells',r=>r.blue)+row('Red chips · cancer cells (game model)',r=>r.red)+
       row('Percent of new cells that were non-cancer',r=>pct(r.blue,r.blue+r.red))+row('Percent of new cells that were cancer cells',r=>pct(r.red,r.blue+r.red))+
       row('Cells destroyed by p53',r=>r.destroyed)+row('Times a checkpoint sent a cell back',r=>r.sentBack)+row('Checkpoints skipped (p53 not working)',r=>r.skipped)+
-      row('Turns taken (including extra rolls)',r=>r.turns)+'</tbody></table></div>';
+      row(TURN_LIMIT_LABEL,turnSlots)+row(ACTION_LABEL,r=>r.turns)+'</tbody></table></div><p class="small">'+TURN_COUNT_NOTE+'</p>';
   }
   function renderSummary(){
     const g=state.game,el=$('#round-summary');
@@ -726,7 +731,7 @@
   }
   // Round complete (Round 1) / Game over (Round 2): a modal dialog with the reason the round ended, each player's
   // results (no winner: the OpenSciEd game has none) and one clear next step. Escape or Close dismisses it.
-  const STAT_ROWS=[['blue','Blue chips · non-cancer cells'],['red','Red chips · cancer cells (game model)'],['destroyed','Cells destroyed by p53'],['sentBack','Times sent back by a checkpoint'],['skipped','Checkpoints skipped'],['turns','Turns used']];
+  const STAT_ROWS=[['blue','Blue chips · non-cancer cells'],['red','Red chips · cancer cells (game model)'],['destroyed','Cells destroyed by p53'],['sentBack','Times sent back by a checkpoint'],['skipped','Checkpoints skipped'],['turns',TURN_LIMIT_LABEL]];
   function playerRows(r){
     if(!r||r.legacy)return null;
     if(Array.isArray(r.perPlayer))return r.perPlayer;
@@ -744,6 +749,7 @@
     const g=state.game,r=g.roundResults[g.round],over=g.round===2,esc=function(t){return String(t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
     let html='<span class="game-kicker">'+(over?'Round 1 and Round 2 played':roundName(1))+'</span><h2 id="round-end-title" tabindex="-1">'+(over?'Game over':'Round 1 complete')+'</h2>';
     html+='<p class="round-end-reason">'+esc(roundEndReason(r))+'</p>';
+    if(!r.legacy)html+='<p class="small">'+ACTION_LABEL+': '+r.turns+'. '+TURN_COUNT_NOTE+'</p>';
     if(!over){
       const rows=playerRows(r)||[];
       html+='<div class="table-wrap"><table class="data round-end-table"><caption>Round 1 results for each player</caption><thead><tr><th scope="col">Result</th>'+rows.map(function(x){return '<th scope="col">Player '+x.id+'</th>';}).join('')+(rows.length>1?'<th scope="col">All players</th>':'')+'</tr></thead><tbody>'+
@@ -1283,11 +1289,11 @@
         {label:'Written responses entered',value:answered(RESPONSE_IDS) + ' of ' + RESPONSE_IDS.length}
       ],sections:[
         {title:'Cell game evidence',items:[
-          ...(rounds.length ? [{type:'table',columns:['Round','Status','Blue chips','Red chips','Destroyed cells','Turns'],
+          ...(rounds.length ? [{type:'table',columns:['Round','Status','Blue chips','Red chips','Destroyed cells',TURN_LIMIT_LABEL,ACTION_LABEL],
             rows:rounds.map(([n,r]) => [n,r.legacy?'Completed with earlier version':r.inProgress?'In progress':r.endedBy==='early'?'Ended early':'Complete',
-              r.legacy?'Not recorded':r.blue,r.legacy?'Not recorded':r.red,r.legacy?'Not recorded':r.destroyed,r.legacy?'Not recorded':r.turns])}]
+              r.legacy?'Not recorded':r.blue,r.legacy?'Not recorded':r.red,r.legacy?'Not recorded':r.destroyed,r.legacy?'Not recorded':turnSlots(r),r.legacy?'Not recorded':r.turns])}]
             : [{type:'text',text:'No rounds recorded yet.'}]),
-          {type:'text',text:'Blue chips represent non-cancer cells; red chips represent cancer cells in the game model.'}
+          {type:'text',text:'Blue chips represent non-cancer cells; red chips represent cancer cells in the game model. '+TURN_COUNT_NOTE}
         ]},
         {title:'Growth model: recorded trial sets',items:groups.length ? [{type:'table',columns:['Set / settings','Divisions by trial','Mean divisions','Control changes by trial','Cancer-state units by trial'],
           rows:groups.map(g => [setLabel(g),g.trials.map(t=>t.divisions).join(', '),g.mean.toFixed(1),
@@ -1306,3 +1312,4 @@
 
   window.OpenSciEdSubmission?.mount({target:'#ose-submission-report',collect:submissionReport});
 })();
+

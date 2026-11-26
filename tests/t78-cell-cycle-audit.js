@@ -149,8 +149,15 @@ function savedGame(round = 2) {
     assert.equal((await read()).game.complete,true);
     assert.equal((await read()).game.roundResults[2].red,1);
     assert.match(await p.locator('#round-summary').textContent(),/Round 1 and Round 2/);
+    await p.locator('#round-end-dialog').waitFor({state:'visible'});
+    assert.match(await p.locator('#round-end-dialog').innerText(),/Game actions \(including extra rolls\): 1/);
+    assert.match(await p.locator('#round-end-dialog').getByRole('row',{
+      name:/Turn slots used/
+    }).innerText(),/75/);
+    assert.match(await p.locator('#round-summary').innerText(),/Turn slots used.*75.*Game actions.*1/s);
     T.ok(true,'Round 2 can end on a red chip from "Move directly to Finish" and records the comparison');
     assert.deepEqual(p.errors,[]);
   } finally {await ctx.close();await browser.close();server.close();}
   T.done('cell-cycle-audit');
 })().catch(error => {console.error(error);process.exitCode=1;});
+
