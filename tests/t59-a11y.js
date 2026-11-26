@@ -191,13 +191,30 @@ async function keyboard(b) {
   // The other pages: skip link first, and it lands in main
   for (const [pg, sel] of [['ap-biology.html', 'main#labs'], ['teachers.html', 'main#main'], ['teacher-dashboard.html', 'main#main'], ['projector.html', 'main#setup']]) {
     const ctx = await T.ctxFor(b); await ctx.route(/gc\.zgo\.at/, r => r.abort());
-    const p = await T.open(ctx, pg); await sleep(300);
+    const p = await T.open(ctx, pg, pg === 'projector.html' ? 'lab05' : ''); await sleep(300);
     await p.evaluate(() => { document.activeElement && document.activeElement.blur(); window.scrollTo(0, 0); });
     await p.keyboard.press('Tab');
     const first = await p.evaluate(() => { const e = document.activeElement, r = e.getBoundingClientRect(); return e.matches('a.skip-link') && r.top >= 0 && r.bottom <= innerHeight; });
     await p.keyboard.press('Enter'); await sleep(300); await p.keyboard.press('Tab');
     const inMain = await p.evaluate(s => { const m = document.querySelector(s); return !!m && (m.contains(document.activeElement) || document.activeElement === m); }, sel);
     T.ok(first && inMain, `${pg}: "Skip to content" is the first Tab stop and the next Tab is inside ${sel}`);
+    if (pg === 'projector.html') {
+      const focusId = () => p.evaluate(() => document.activeElement.id);
+      const skipTarget = () => p.locator('a.skip-link').getAttribute('href');
+      T.ok(await p.evaluate(() => location.hash === '#lab05') && await p.inputValue('#lab') === 'lab05', 'projector: setup skip preserves the lab deep link');
+      await p.focus('#start'); await p.keyboard.press('Enter');
+      T.ok(await focusId() === 'display' && await skipTarget() === '#display', 'projector: Start focuses the presentation and updates the skip target');
+      await p.keyboard.press('Shift+Tab');
+      T.ok(await p.evaluate(() => document.activeElement.matches('a.skip-link')), 'projector: skip link can be reached from the presentation');
+      await p.keyboard.press('Enter');
+      T.ok(await focusId() === 'display' && await p.evaluate(() => location.hash === '#lab05'), 'projector: activating skip focuses the visible presentation without rewriting the lab deep link');
+      await p.keyboard.press('Tab');
+      T.ok(await focusId() === 'b-setup', 'projector: the next Tab reaches the presentation controls');
+      await p.keyboard.press('Enter');
+      T.ok(await focusId() === 'start' && await skipTarget() === '#setup', 'projector: Setup restores the setup skip target and returns focus to Start');
+      await p.keyboard.press('Enter'); await p.keyboard.press('Escape');
+      T.ok(await focusId() === 'start' && await skipTarget() === '#setup', 'projector: Escape restores the setup skip target and returns focus to Start');
+    }
     T.ok(p.errors.length === 0, `${pg}: no page errors ${p.errors.join(' | ')}`);
     await ctx.close();
   }
