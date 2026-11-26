@@ -1163,8 +1163,14 @@ html[data-openscied] nav:is(
   [aria-label="Investigation steps"], [aria-label="Investigation sections"],
   [aria-label="Workshop steps"]
 ) :is(button, li > a[href^="#"]):not(.nav-arrow) {
-  min-block-size: 42px;
   border-radius: var(--r-sm);
+}
+html[data-openscied] nav:is(
+  [aria-label="Activity steps"], [aria-label="Activity sections"],
+  [aria-label="Investigation steps"], [aria-label="Investigation sections"],
+  [aria-label="Workshop steps"]
+) button:not(.nav-arrow) {
+  min-block-size: 42px;
   font-weight: 700;
 }
 html[data-openscied] nav:is(

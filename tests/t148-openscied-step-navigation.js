@@ -24,8 +24,9 @@ async function verifyNav(page, base, width, mode){
         disabled:el.disabled,width:r.width,scroll:el.scrollWidth,client:el.clientWidth};
     }));
     assert.equal(stats.filter(s=>s.active).length,1,file+' has exactly one active step');
-    assert.ok(stats.every(s=>s.height>=41.5&&s.radius==='6px'&&s.weight==='700'),file+' uses common navigation targets');
-    assert.match(stats.find(s=>s.active).ring,/inset.*-3px/,file+' marks the current step with an inset underline');
+    assert.ok(stats.every(s=>s.radius==='6px'&&(selector.includes(' > a')?s.height>=24:s.height>=41.5&&s.weight==='700')),file+' uses common navigation targets');
+    const activeRing=stats.find(s=>s.active).ring;
+    assert.ok(activeRing.includes('inset')&&activeRing.includes('-3px'),file+' marks the current step with an inset underline: '+activeRing);
     if(file.includes('dna-workshop')){
       assert.ok(Math.max(...stats.map(s=>s.height))-Math.min(...stats.map(s=>s.height))<=1,'fixed grid has even steps');
       assert.equal(new Set(stats.map(s=>s.row)).size,width<=800?2:1,'six DNA steps use even rows on narrow screens');

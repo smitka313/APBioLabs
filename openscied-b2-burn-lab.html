@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <script src="domain-redirect.js"></script>
+<script>if (!location.hash || location.hash === "#overview") document.documentElement.classList.add("burn-start");</script>
 <!-- seo:start -->
 <title>Burning Fuels: What Burns and Why — a companion for OpenSciEd Biology B.2 | Lab Bench</title>
 <meta name="description" content="A free, independent companion for OpenSciEd Biology B.2 Lesson 2. Run a virtual burn demonstration of grass, leaves, wood, charcoal and peat, and track BTB color, temperature and mass to see where the matter and energy go.">
@@ -32,7 +33,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=optional">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="openscied-submission-report.css">
-<link rel="stylesheet" href="openscied-b2-burn-lab.css?v=overview-compact-1">
+<link rel="stylesheet" href="openscied-b2-burn-lab.css?v=overview-compact-2">
 <script>try{var t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -51,7 +52,7 @@
 </header>
 <nav class="step-nav" aria-label="Activity steps">
   <div class="wrap wrap--wide gutter"><ol>
-    <li><a href="#overview"><span class="n">1</span><span>Overview</span></a></li>
+    <li><a href="#overview" aria-current="true"><span class="n">1</span><span>Overview</span></a></li>
     <li><a href="#ideas"><span class="n">2</span><span>First ideas</span></a></li>
     <li><a href="#fuels"><span class="n">3</span><span>The fuels</span></a></li>
     <li><a href="#burn"><span class="n">4</span><span>Burn demonstration</span></a></li>
@@ -85,6 +86,10 @@
         <li>Answers are mostly dropdowns and taps with instant feedback. Only three short text boxes.</li>
       </ul></div></details>
     </div>
+    <nav class="pager companion-pager" aria-label="Move between activity sections">
+      <span class="pager-gap"></span><span class="pager-mid">Section 1 of 8</span>
+      <a class="btn pager-next btn--primary" href="#ideas" rel="next">Next →: First ideas</a>
+    </nav>
   </section>
 
   <!-- 2 ---------------------------------------------------------------- -->

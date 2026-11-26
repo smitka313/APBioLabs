@@ -19,6 +19,21 @@
 /* Overview has its own compact roadmap. Simulation sections keep the shared
    viewport-height pager treatment; a short welcome does not need it. */
 body.paged #overview.step.is-current { min-height: 0; }
+/* Before the pager script runs, the default Overview already occupies its final
+   space. Do not briefly render all later sections above the footer. */
+@media screen {
+  html.burn-start body:not(.paged) main { padding-block: 6px 40px; }
+  html.burn-start body:not(.paged) main > .step:not(#overview) { display: none; }
+  html.burn-start body:not(.paged) #overview.step { align-content: start; border-bottom: 0; padding-block: 22px 26px; }
+  html.burn-start body:not(.paged) #overview > .pager { display: flex; }
+  .site-footer .wrap:not(:has(.bench-footer-home))::before {
+    content: ""; display: block; width: min(196px,100%);
+    aspect-ratio: 550 / 144; margin-block-end: .65rem;
+  }
+}
+@media screen and (min-width: 761px) and (max-height: 760px) {
+  html.burn-start body:not(.paged) #overview.step { padding-top: 12px; gap: 12px; }
+}
 .burn-overview-notes, .burn-overview-roadmap { display: grid; gap: 10px; }
 .burn-overview-notes > *, .burn-overview-roadmap > li { min-width: 0; }
 .burn-overview-notes .callout { align-content: start; }

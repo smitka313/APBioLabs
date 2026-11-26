@@ -40,9 +40,21 @@ const setBurn = async (p, fuel, frac, records, opts) => {
     for (const [w, h, dark, tag] of [[390, 844, true, '390-dark'], [768, 1024, false, '768'], [1366, 900, false, '1366-light'], [1920, 1080, false, '1920']]) {
       const ctx = await T.ctxFor(browser, { width: w, height: h, dark });
       const p = await ctx.newPage(); await stub(p);
-      await p.addInitScript(() => { window.__cls = 0; new PerformanceObserver(l => { for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value; }).observe({ type: 'layout-shift', buffered: true }); });
+      await p.addInitScript(() => {
+        window.__cls = 0; window.__layoutShifts = [];
+        const bounds = r => [r.x, r.y, r.width, r.height].map(Math.round);
+        new PerformanceObserver(l => {
+          for (const e of l.getEntries()) if (!e.hadRecentInput) {
+            window.__cls += e.value;
+            window.__layoutShifts.push({ value:e.value, sources:e.sources.map(({node,previousRect,currentRect})=>({
+              node:node?.id || node?.className || node?.nodeName, before:bounds(previousRect), after:bounds(currentRect)
+            })) });
+          }
+        }).observe({ type: 'layout-shift', buffered: true });
+      });
       await p.goto(server.url + PAGE); await p.waitForFunction(() => window.B2Burn && document.querySelector('.step.is-current')); await p.waitForTimeout(500);
-      T.ok(await p.evaluate(() => window.__cls) <= 0.1, tag + ': CLS on load at most 0.1 (' + (await p.evaluate(() => window.__cls)).toFixed(3) + ')');
+      const { cls, shifts } = await p.evaluate(() => ({cls:window.__cls, shifts:window.__layoutShifts}));
+      T.ok(cls <= 0.1, tag + ': CLS on load at most 0.1 (' + cls.toFixed(3) + ')' + (cls > .1 ? ' ' + JSON.stringify(shifts) : ''));
       const shot = async n => p.screenshot({ path: path.join(OUT, 'b2burn-' + tag + '-' + n + '.png'), fullPage: true });
       await go(p, 'overview'); await check(p, tag + ' overview');
       const layout = await p.locator('#overview').evaluate(overview => {
