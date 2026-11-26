@@ -55,7 +55,9 @@
 
 .sf-shell .sf-hero{background-position:center 56%}
 .sf-shell .sf-layers .btn{font-size:.88rem}
-.sf-station-art{display:block;width:100%;height:auto;border-radius:8px;margin-bottom:.8rem;background:#c9a66c}
+.sf-station-figure{margin:.7rem 0 .85rem}
+.sf-station-art{display:block;width:100%;height:auto;border-radius:8px;background:#c9a66c}
+.sf-station-figure figcaption{margin:.35rem 0 0;color:var(--muted)}
 .sf-map-visual{display:block;width:100%;height:auto;background:#dec698}
 .sf-map-options,.sf-map-key,.sf-exhibits{display:flex;flex-wrap:wrap;align-items:center;gap:.55rem}
 .sf-map-options{margin:.55rem 0}

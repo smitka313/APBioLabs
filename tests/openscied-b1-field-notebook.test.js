@@ -12,6 +12,15 @@ test('five unique stations with lesson source references, and no automatic evide
   assert.deepEqual(M.progress(M.clean(null)),{questions:false,used:0,evidence:false,ready:false,complete:false,started:false,done:0});
 });
 
+test('every station has a matching illustrated plate and a distinct plain-text caption',()=>{
+  const asset=fs.readFileSync(path.join(__dirname,'../assets/serengeti-field-stations.svg'),'utf8');
+  const symbols=[...asset.matchAll(/<symbol id="([^"]+)" viewBox="0 0 560 200"/g)].map(m=>m[1]);
+  assert.deepEqual(symbols,M.stations.map(s=>s.id));
+  const captions=M.stations.map(s=>s.artCaption);
+  assert.ok(captions.every(c=>typeof c==='string'&&c.length>40));
+  assert.equal(new Set(captions).size,captions.length);
+});
+
 test('duplicate questions do not unlock stations, and a note plus pin on one station counts once',()=>{
   const s=M.clean({v:1,fields:{question1:'Who decided?',question2:' who decided? ',movement:'Herds moved beyond the park.'},
     pins:['movement','movement','nope'],finished:true});
@@ -112,6 +121,11 @@ test('the real activity script initializes and drives exhibits and map controls 
   for(const [key,value] of [['question1','What changed?'],['question2','Why?']]){
     const n=element(key);n.value=value;n.events.input();
   }
+  M.stations.forEach((st,i)=>{
+    element('stations').children[i].onclick();
+    assert.equal(element('art').attrs.href,'assets/serengeti-field-stations.svg#'+st.id);
+    assert.equal(element('art-caption').textContent,st.artCaption);
+  });
   element('stations').children[2].onclick();
   assert.match(element('map-caption').textContent,/Jan:/);
   element('month').value='9';element('month').onchange();

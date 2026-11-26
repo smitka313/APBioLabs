@@ -9,18 +9,23 @@
   // The schematic is not a reconstruction of surveyed borders or tracked animal positions.
   const stations = [
     { id:'habitats', name:'Habitats', icon:'01', title:'More than open grass', location:'Southern plains and river country', place:'plains', view:'region',
+      artCaption:'From left to right: open grassland, savanna with scattered acacias, and woodland by a river.',
       evidence:'The ecosystem includes grasslands, savanna, and woodland. The Mara and Grumeti rivers run through the region; Lake Victoria lies to the west. The Rift Valley and rocky outcrops help shape where herds can travel, but the herds cross rivers.',
       prompt:'Name one living and one nonliving part of a habitat you see.' },
     { id:'biodiversity', name:'Biodiversity', icon:'02', title:'Life in the same landscape', location:'Savanna and woodland', place:'woodland', view:'region',
+      artCaption:'From left to right: a giraffe, a lion, and a close-up of ants on an acacia branch. Not to scale.',
       evidence:'Wildebeest, zebras, elephants, and ostriches share the Serengeti with less visible organisms, including acacia trees, ants, and butterflies. Acacia thorns shelter ants, which can help defend the trees.',
       prompt:'What would a map showing only the largest animals leave out?' },
     { id:'movement', name:'Movement of animals', icon:'03', title:'The herd crosses lines on a map', location:'Northern route and the Mara River', place:'mara', view:'route',
+      artCaption:'Wildebeest wade through the Mara River and climb the far bank. A crocodile waits in the current.',
       evidence:'Wildebeest migrate each year. In 1956, researchers began gathering evidence about their movement. They found that the herds regularly traveled outside the park. The station’s map shows a route of about 650 km; an individual can walk farther over a year. The Mara crossing adds steep banks, fast water, and predators.',
       prompt:'If some animals use land outside the park, what would a park-only plan miss?' },
     { id:'conservation', name:'Conservation areas', icon:'04', title:'One park, several kinds of protection', location:'Serengeti National Park and neighboring areas', place:'park', view:'protection',
+      artCaption:'Two park outlines on a field map: the original is hatched and dashed; the later outline is solid. Use the interactive map to compare them.',
       evidence:'Serengeti National Park was established in 1951. Additional reserves and conservation areas helped protect parts of the wider ecosystem. They did not all have the same managers or rules. The lesson contrasts park rules with areas where some residence or grazing was allowed; rules vary by place and period.',
       prompt:'Why might identifying where animals travel matter when setting boundaries?' },
     { id:'people', name:'People of the Serengeti', icon:'05', title:'Who got to decide?', location:'Ngorongoro and the wider Serengeti', place:'ngorongoro', view:'protection',
+      artCaption:'A cattle herder and a field researcher share the landscape. This scene is illustrative, not a portrait of people quoted in the exhibits.',
       evidence:'Ikoma, Nata, and Maasai communities lived and worked in the region before the park. British colonial authorities held decision-making power when it was established. Maasai residents contested eviction and exclusion from decisions. In one account, a Nata elder recalled losing access to grazing land and having to travel farther for firewood.',
       prompt:'How did people’s relationships with the land shape what they wanted protected?' }
   ];

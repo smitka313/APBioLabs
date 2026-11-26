@@ -105,6 +105,7 @@
     const st=station();
     all('[data-station]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.station===st.id)));
     $('art').setAttribute('href','assets/serengeti-field-stations.svg#'+st.id);
+    $('art-caption').textContent=st.artCaption;
     $('evidence-type').textContent='Station '+st.icon+' / '+st.name;
     $('evidence-title').textContent=st.title;
     $('location').textContent='Map marker: '+st.location;

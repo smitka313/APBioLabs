@@ -34,6 +34,23 @@ const {ROOT,serve}=require('./_h');
     assert.ok(await page('explore').isVisible());
     assert.ok(await go('explain').isDisabled());
     assert.equal(await p.locator('iframe').count(),0);
+    const stations=[
+      ['habitats',/open grassland.*woodland/],
+      ['biodiversity',/giraffe.*lion.*ants/],
+      ['movement',/Wildebeest.*Mara River/],
+      ['conservation',/hatched and dashed.*solid/],
+      ['people',/cattle herder.*field researcher/]
+    ];
+    for(const [key,caption] of stations){
+     await p.locator('#sf-stations [data-station="'+key+'"]').click();
+     assert.match(await by('art-caption').innerText(),caption);
+     assert.equal(await by('art').getAttribute('href'),'assets/serengeti-field-stations.svg#'+key);
+     // An unresolved external SVG fragment has no drawn bounding box.
+     await p.waitForFunction(()=>document.querySelector('#sf-art').getBBox().height>=195);
+     const art=await p.locator('.sf-station-art').boundingBox();
+     assert.ok(art&&Math.abs(art.width/art.height-2.8)<.05,'plate stays proportional at '+width);
+     await p.locator('.sf-station-figure').screenshot({path:path.join(out,width+'-art-'+key+'.png')});
+    }
     const move=p.getByRole('button',{name:'Movement of animals',exact:true});
     await move.focus();
     await p.keyboard.press('Enter');
