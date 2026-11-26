@@ -847,7 +847,10 @@
       bindControl(byId(k), byId('n-' + k), function (x, now) { state.warmingUsed = true; state.climate = L.sanitizeClimate(Object.assign({}, state.climate, { [k]: x })); updateClimate(now); });
     });
     byId('climateReset').addEventListener('click', function () {
-      state.warmingUsed = true; state.climate = L.sanitizeClimate({}); updateClimate(true); flash('Back to today’s values: 10 Gt, 100% forests and peatlands, year 2100.', true);
+      state.warmingUsed = true;
+      state.climate = L.sanitizeClimate({});
+      updateClimate(true);
+      flash('Model settings reset. Showing the projection for ' + state.climate.year + '.', true);
     });
     byId('sendBog').addEventListener('click', function () {
       const vals = L.bogForYear(rows, state.climate.year);
