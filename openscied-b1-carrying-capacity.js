@@ -43,7 +43,7 @@
       wrong: 'Not quite. Other limits could also slow growth. Population counts alone cannot distinguish food from those other possibilities.'
     }
   };
-  const fresh = () => ({baseline:L.create(), comparison:null, selected:'baseline', page:'run', question:'claim', evidenceTrial:'baseline', evidenceRound:0, grass:50, answers:{}, checks:{}});
+  const fresh = () => ({baseline:L.create(), comparison:null, comparisonRevision:0, selected:'baseline', page:'run', question:'claim', evidenceTrial:'baseline', evidenceRound:0, grass:50, answers:{}, checks:{}});
   const cleaned = (r) => {
     const x = L.restore(r);
     return x && x.round <= ROUNDS && x.roleSlots === 20 && x.startingPopulation === 2 ? x : null;
@@ -57,6 +57,7 @@
       const a = cleaned(raw.baseline), b = cleaned(raw.comparison);
       if (a?.grassPercent === 100) state.baseline = a;
       if (state.baseline.round === ROUNDS && b && [50,75].includes(b.grassPercent)) state.comparison = b;
+      if (Number.isSafeInteger(raw.comparisonRevision) && raw.comparisonRevision>0) state.comparisonRevision=raw.comparisonRevision;
       if (raw.selected === 'comparison' && state.comparison) state.selected = 'comparison';
       if (stages.includes(raw.page)) state.page = raw.page;
       if (questions.includes(raw.question)) state.question = raw.question;
@@ -80,7 +81,7 @@
   };
   const speak = (text) => { $('#cc-status').textContent = text; };
   // The models are deterministic. Replay is a review copy, never a replacement for assessed work.
-  let comparisonReplay = null;
+  let comparisonReplay = null, comparisonReplaceMode = 'restart';
   const current = () => (state.selected === 'comparison' && comparisonReplay) || state[state.selected];
   const rounds = (s) => [{x:0,y:s.startingPopulation}, ...s.rows.map((r) => ({x:r.round,y:r.ending}))];
   const escapeText = (value) => String(value ?? '').replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -106,7 +107,7 @@
   let chart, marks = [];
   const range = window.CarryingRange.mount($('#cc-range-app'), {announce:speak,getSaveSession,onSaveConflict:showSaveConflict,onMarks:(selected)=>{
     marks = selected;
-    if (chart && state.page === 'run') chart.update({hLines:marks});
+    if (chart && state.page === 'run') chart.update({hLines:comparisonReplay&&state.selected==='comparison'?[]:marks});
   }});
   const field = window.CarryingField.mount($('#cc-field-app'),{announce:speak,getSaveSession,onSaveConflict:showSaveConflict});
   function renderRoundOnePrediction() {
@@ -116,9 +117,11 @@
     if(note.hidden)return;
     const prediction=state.answers.prediction?.trim();
     const guess=prediction?.length>160?prediction.slice(0,157)+'…':prediction;
-    const result='Round 1: The herd went from '+first.starting+' to '+first.ending+' wildebeest with all grass available.';
-    note.textContent=guess ? result+' You predicted: “'+guess+'” Did the first change match your prediction? One round does not show what will happen over 12 rounds or with less grass.' :
-      result+' Was that what you expected? Before running round 2, predict what will happen over the rest of the run.';
+    const change=first.ending-first.starting;
+    const result='Round 1: The herd went from '+first.starting+' to '+first.ending+' wildebeest with all grass available. It '+(change>0?'grew by '+change:change<0?'shrank by '+Math.abs(change):'stayed the same')+'.';
+    const limit='One round does not show what will happen over 12 rounds or with less grass.';
+    note.textContent=guess ? result+' You predicted: “'+guess+'” '+(change>0?'If you expected growth, the first round supports that part. If you expected the herd to shrink or stay the same, the first result differs. ':'Did you predict this direction of change? ')+limit :
+      result+' Before running round 2, predict whether this growth will continue over the rest of the run.';
   }
   function renderLab() {
     const s = current(), last = s.rows.at(-1), done = s.round === ROUNDS, compared = !!state.comparison;
@@ -140,6 +143,8 @@
     $('#cc-replay').hidden = replaying;
     $('#cc-replay-setting').hidden = replaying;
     $('#cc-stop-replay').hidden = !replaying;
+    $('#cc-replace-comparison').hidden = !compared || replaying;
+    $('#cc-adopt-replay').hidden = !replaying || !done;
     $('#cc-compare-hint').textContent = replaying ? 'Practice replay · not recorded. Your saved comparison, prediction, estimates and written work are unchanged.' : compared ? 'Both runs stay on the graph. Choose which run to show on the board and in the table.' : ready ? 'Baseline complete. Choose how much grass will be available in the second run.' : 'Finish the baseline to unlock the comparison.';
     $('#cc-compare-controls').hidden = !ready || compared;
     $('#cc-run-switches').hidden = !compared;
@@ -150,10 +155,10 @@
     if (state.page === 'run') {
       const series = [{name:'Baseline · 100% grass',line:true,dots:true,points:rounds(state.baseline)}];
       if (compared) series.push({name:(replaying?'Practice replay':'Comparison')+' · '+(replaying?comparisonReplay:state.comparison).grassPercent+'% grass',line:true,dots:true,dash:[6,4],points:rounds(replaying?comparisonReplay:state.comparison)});
-      const spec = {responsive:true,height:300,xLabel:'Round',yLabel:'Wildebeest (model individuals)',xMin:0,xMax:ROUNDS,yMin:0,yMax:L.BASELINE.roleSlots,series,simTag:false,hLines:marks};
+      const spec = {responsive:true,height:300,xLabel:'Round',yLabel:'Wildebeest (model individuals)',xMin:0,xMax:ROUNDS,yMin:0,yMax:L.BASELINE.roleSlots,series,simTag:false,hLines:replaying?[]:marks};
       if (chart) chart.update(spec); else chart = Lab.chart('#cc-chart',spec);
     }
-    range.update({baseline:state.baseline,comparison:state.comparison});
+    range.update({baseline:state.baseline,comparison:state.comparison,comparisonRevision:state.comparisonRevision});
   }
   function updateExplainProgress() {
     const done = requiredQuestions.filter(id=>state.answers[id]?.trim()).length;
@@ -322,6 +327,47 @@
     state.selected='comparison';renderLab();$('#cc-next').focus();
     speak('Practice comparison ready with '+grassPercent+'% grass. Your recorded work is unchanged.');
   });
+  function comparisonReplacement(existing, trial) {
+    if(!existing.comparison || ![50,75].includes(trial?.grassPercent) ||
+      !Number.isSafeInteger(existing.comparisonRevision ?? 0) ||
+      (existing.comparisonRevision ?? 0)>=Number.MAX_SAFE_INTEGER)return null;
+    return {...existing,comparison:trial,comparisonRevision:(existing.comparisonRevision??0)+1,
+      selected:'comparison',grass:trial.grassPercent,
+      evidenceTrial:existing.evidenceTrial==='comparison'?'baseline':existing.evidenceTrial,
+      evidenceRound:existing.evidenceTrial==='comparison'?0:existing.evidenceRound};
+  }
+  function openComparisonReplacement(mode) {
+    if(!state.comparison || (mode==='adopt' && comparisonReplay?.round!==ROUNDS))return;
+    comparisonReplaceMode=mode;
+    const adopt=mode==='adopt';
+    const dialog=$('#cc-replace-dialog');
+    $('#cc-replace-setting').hidden=adopt;
+    $('#cc-replace-grass').value=state.comparison.grassPercent;
+    $('#cc-replace-detail').textContent='Your saved '+state.comparison.grassPercent+'% comparison ('+state.comparison.round+' of '+ROUNDS+' rounds) will be replaced'+
+      (adopt?' by these '+ROUNDS+' rounds at '+comparisonReplay.grassPercent+'%.':'. The new comparison starts at round 0.');
+    $('#cc-replace-confirm').textContent=adopt?'Save practice as comparison':'Restart comparison only';
+    dialog.showModal();
+  }
+  $('#cc-replace-comparison').addEventListener('click',()=>openComparisonReplacement('restart'));
+  $('#cc-adopt-replay').addEventListener('click',()=>openComparisonReplacement('adopt'));
+  $('#cc-replace-confirm').addEventListener('click',()=>{
+    const grassPercent=Number($('#cc-replace-grass').value);
+    const adopting=comparisonReplaceMode==='adopt';
+    const trial=adopting?(comparisonReplay?.round===ROUNDS?comparisonReplay:null):
+      [50,75].includes(grassPercent)?L.create({grassPercent}):null;
+    const next=comparisonReplacement(state,trial);
+    if(!next)return;
+    // Persist the whole replacement before changing the active board or discarding any work.
+    let result;
+    if(!preservedSave)try{result=saveSession?.write(KEY,JSON.stringify(next));}catch(_){}
+    $('#cc-replace-dialog').close();
+    if(!result?.ok){showSaveConflict(result);return;}
+    state=next;comparisonReplay=null;$('#cc-grass').value=state.grass;$('#cc-replay-grass').value=state.grass;
+    $('#cc-save-status').textContent='Work saves on this device';
+    renderLab();
+    (adopting?$('#cc-replace-comparison'):$('#cc-next')).focus();
+    speak('Saved comparison replaced. The baseline, prediction and written responses are unchanged. Review any writing that refers to the previous comparison.');
+  });
   $('#cc-stop-replay').addEventListener('click',()=>{
     comparisonReplay=null;renderLab();$('#cc-replay').focus();
     speak('Showing the recorded comparison.');
@@ -379,6 +425,6 @@
     const clarify = () => host.querySelectorAll('p.small.muted').forEach((p)=>{if(p.textContent.includes('simulated data')) p.textContent='These details label your classroom report and text download. The model gives the same result for the same settings.';});
     clarify(); new MutationObserver(clarify).observe(host,{childList:true,subtree:true});
   } catch {}
-  range.update({baseline:state.baseline,comparison:state.comparison});
+  range.update({baseline:state.baseline,comparison:state.comparison,comparisonRevision:state.comparisonRevision});
   go(state.page,false);
 })();

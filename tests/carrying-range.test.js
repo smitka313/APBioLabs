@@ -42,3 +42,10 @@ test('baseline and grass shortage estimates share the model-role scale without s
     assert.equal(entry.startLine,previousStart);
   }
 });
+
+test('replacement makes earlier estimates stale even when returning to an identical grass setting',()=>{
+  const original=range.dataset(trial(50)).fingerprint;
+  assert.equal(original,range.dataset(trial(50),0).fingerprint,'legacy comparison estimates still match without a replacement');
+  assert.notEqual(original,range.dataset(trial(50),2).fingerprint,'old 50% estimates must not return after a new 50% run');
+  assert.notEqual(range.dataset(trial(50),2).fingerprint,range.dataset(trial(50),3).fingerprint);
+});
