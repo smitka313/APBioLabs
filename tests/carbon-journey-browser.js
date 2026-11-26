@@ -1,4 +1,5 @@
 const { chromium } = require('playwright');
+const Journey = require('../openscied-b2-carbon-journey-logic');
 const http = require('node:http'), fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
 (async () => {
   const root = path.resolve(__dirname, '..');
@@ -46,7 +47,10 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
         if (width < 851) await fits('#skip-prediction');
         if (i === 0) { await shot('predict'); await p.locator('[data-guess="ocean"]').click(); }
         else await p.locator('#skip-prediction').click();
-        assert.ok((await p.locator('#official-card').textContent()).length > 70);
+        const raw = await p.evaluate(() => localStorage.getItem('aplab:openscied:b2-carbon-journey:v1'));
+        const outcome = Journey.outcome(Journey.readSaved(raw));
+        assert.equal(await p.locator('#official-card').textContent(), Journey.cardText(outcome.text));
+        assert.equal(await p.locator('#energy').textContent(), Journey.energyMeaning(outcome.energy));
         assert.ok(await p.locator('#record').isVisible());
         if (width < 851) { await fits('#record'); assert.ok(await p.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1)); }
         const expected = await p.locator('#destination').textContent();

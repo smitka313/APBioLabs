@@ -368,13 +368,20 @@
     try { saved = JSON.parse(raw); if (!saved || saved.v !== 1) throw Error('Unknown saved format'); }
     catch (e) { return { summary: 'Saved work could not be read. Download a copy before restarting.', started: false, section: 'overview', visited: 0 }; }
     const fields = saved.fields || {}, ids = inhEnvResponseIds(saved), answers = ids.filter(id => written(fields, id)).length;
+    // Current records tell us which responses the activity's own choice counter uses.
+    // Keep the older combined count for saves that do not identify the choices yet.
+    const choices = Array.isArray(saved.choiceResponseIds)
+      ? Array.from(new Set(saved.choiceResponseIds.filter(id => ids.includes(id)))) : [];
+    const choiceCount = choices.filter(id => written(fields, id)).length;
     const models = usedInheritanceScenes(saved);
     const started = !!(answers || models || written(saved.question || {},'text'));
     const fallback = answers && answers === ids.length ? 'wrapup' : saved.yeast ? 'uvdna' : saved.planner ? 'yeast' : saved.skin ? 'plan' : models ? 'passing' : answers ? 'ideas' : 'overview';
+    const responseSummary = choices.length ? choiceCount + ' of ' + choices.length + ' choice questions answered'
+      : answers + ' of ' + ids.length + ' answers saved (choices and writing)';
     return { started, section: INH_SECTIONS.includes(saved.lastSection) ? saved.lastSection : fallback,
       visited: Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
       stepsDone:models,stepsTotal:6,stepsLabel:'Interactive models used',
-      summary: started ? models + ' of 6 interactive models used · ' + answers + ' of ' + ids.length + ' answers saved (choices and writing)' : 'Not started' };
+      summary: started ? models + ' of 6 interactive models used · ' + responseSummary : 'Not started' };
   }
   // Fires: Peat, Decomposition & Earth's Tilt (Unit B.2, Lessons 3 and 5): the activity saves the ids of every response; three scenes may save state.
   const B2_SECTIONS = ['overview', 'ideas', 'plan', 'yeast', 'cards', 'sense3', 'hypothesis', 'tilt', 'sense5', 'peat', 'wrapup'];

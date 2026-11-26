@@ -45,6 +45,19 @@ async function auditNotesAndRain(browser,base){
     const field=p.locator('#observation'),play=p.locator('#play');
     await play.tap();
     ok(await play.getAttribute('aria-pressed')==='true','the year starts before note editing');
+    ok(await field.evaluate(el=>el.readOnly)&&await p.locator('#month-note-playback').isVisible(),
+      'playing shows a stop-before-writing hint and keeps the editor read-only');
+    await p.waitForFunction(()=>document.querySelector('#month-title').textContent==='June');
+    ok(await field.getAttribute('data-editor-month')==='4','an advancing map does not silently rebind the draft editor');
+    await field.tap();
+    ok(await play.getAttribute('aria-pressed')==='false'&&await field.getAttribute('data-editor-month')==='5'&&!(await field.evaluate(el=>el.readOnly)),
+      'direct touch pauses and binds to the frozen month before any text is entered');
+    await field.fill('Direct touch in June.');
+    await p.waitForTimeout(1900);
+    ok(await p.locator('#month-title').textContent()==='June'&&await field.inputValue()==='Direct touch in June.',
+      'a scheduled tick cannot replace a draft begun by directly touching the editor');
+    await p.locator('[data-month="4"]').tap();
+    await play.tap();
     await p.locator('#pause-and-note').tap();
     ok(await field.evaluate(input=>input===document.activeElement)&&await p.locator('#month-note-month').textContent()==='May',
       'the stable map shortcut pauses the displayed month and focuses its note on touch');
@@ -57,8 +70,8 @@ async function auditNotesAndRain(browser,base){
       await p.locator('#visit-progress').textContent()==='Months with notes: 0 of 12',
       'a draft is visible on its month without being counted as a notebook entry');
     await p.locator('#next').tap();
-    ok(await p.locator('#month-note-month').textContent()==='June'&&await field.inputValue()==='',
-      'moving manually opens a separate June draft');
+    ok(await p.locator('#month-note-month').textContent()==='June'&&await field.inputValue()==='Direct touch in June.',
+      'moving manually restores the separate June draft');
     await field.fill('June has its own observation.');
     await p.locator('[data-month="4"]').tap();
     ok(await field.inputValue()==='May draft belongs with May.','returning to May restores the original draft');

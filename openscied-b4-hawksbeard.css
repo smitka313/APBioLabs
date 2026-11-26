@@ -6,11 +6,12 @@
 .hb-hero-copy{padding:clamp(13px,2.3vw,25px);align-self:center}
 .hb-hero h1{font-size:clamp(1.7rem,4.6vw,3.1rem);line-height:1.02;margin:4px 0 6px}
 .hb-hero p,.hb-stagehead p{margin:0}
-.hb-hero img{width:100%;height:clamp(118px,16vw,167px);object-fit:cover;object-position:50% 53%;align-self:center;filter:var(--hb-hero-art-filter,none)}
-/* Dim only the decorative art, not the text, and respect an explicit light override. */
-:root[data-theme="dark"] .hb-hero{--hb-hero-art-filter:brightness(.62) saturate(.86)}
+.hb-hero img{width:100%;height:clamp(118px,16vw,167px);object-fit:cover;object-position:50% 53%;align-self:center}
+.hb-hero-dusk,:root[data-theme="dark"] .hb-hero-day{display:none}
+:root[data-theme="dark"] .hb-hero-dusk{display:block}
 @media(prefers-color-scheme:dark){
- :root:not([data-theme="light"]) .hb-hero{--hb-hero-art-filter:brightness(.62) saturate(.86)}
+ :root:not([data-theme="light"]) .hb-hero-day{display:none}
+ :root:not([data-theme="light"]) .hb-hero-dusk{display:block}
 }
 .hb-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:12px 0}
 .hb-steps button{min-width:0;min-height:42px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-weight:750;cursor:pointer;padding:5px 3px}

@@ -168,7 +168,7 @@
       </fieldset>
       <details class="disclose"><summary>What this simulation models</summary><div class="inner"><ul>
         <li>Yeast use sugar and make carbon dioxide, which makes foam. In this model, activity rises through the 43 °C test setting, falls at 55 °C, and is low at 5 °C.</li>
-        <li>Class example after 20 minutes: 10 mm at 18 °C, 38 mm at 27 °C, and 62 mm at 43 °C. Your simulated readings may differ from the example.</li>
+        <li>Fixed model benchmark at 20 minutes: 10 mm at 18 °C, 38 mm at 27 °C, and 62 mm at 43 °C. Your simulated readings can differ because beaker size and readings vary in the model.</li>
         <li>Readings are whole mm with a little error. One simulated minute takes 4 seconds. Real foam also depends on the yeast brand, its age and how it was stirred.</li>
       </ul></div></details>
     </div>
@@ -191,7 +191,7 @@
         <p class="scene-desc" id="cards-desc">Text description: five cards to sort into what goes in and what comes out.</p>
         <p class="scene-notice" id="cards-notice" hidden>The card activity could not load. Reload the page to try again.</p>
       </div>
-      <p class="small"><strong>Class example:</strong> After 20 minutes: 10 mm of foam at 18 °C and 62 mm at 43 °C. This is a fixed comparison example, not a reading from your own run.</p>
+      <p class="small"><strong>Class example:</strong> After 20 minutes: 10 mm of foam at 18 °C and 62 mm at 43 °C. These are fixed model benchmarks, not your results or real lab measurements.</p>
       <div class="pick-row"><label for="cards-rate-hot">In this example, the 43 °C reaction went ___ than at 18 °C.</label>
         <select id="cards-rate-hot"><option value="">Choose</option><option value="faster">faster</option><option value="slower">slower</option><option value="same">at the same speed</option></select>
         <p class="feedback" id="feedback-cards-rate-hot"></p></div>
@@ -212,8 +212,8 @@
   <section class="step wrap wrap--wide gutter" id="sense3" data-step="Make sense: decomposition">
     <header><div class="eyebrow">Part A · Lesson 3 · 6 · Making Sense</div><h2>What did the yeast show?</h2></header>
     <div class="step-body">
-      <div class="your-data panel" id="data-sense-foam" aria-labelledby="data-sense-foam-title"><h3 id="data-sense-foam-title">Your last recorded foam reading</h3><div class="your-data-body" id="data-sense-foam-body"><p class="muted">Run the test first. Your readings will appear here.</p></div></div>
-      <p class="small"><strong>Class example:</strong> At 20 minutes, compare 18 °C (10 mm of foam) with 43 °C (62 mm), even if you tried different ones. Use your own recorded readings for claims about your run. In this model, 55 °C makes little foam.</p>
+      <div class="your-data panel" id="data-sense-foam" aria-labelledby="data-sense-foam-title"><h3 id="data-sense-foam-title">Your simulated results</h3><div class="your-data-body" id="data-sense-foam-body"><p class="muted">Run the test first. Your readings will appear here.</p></div></div>
+      <p class="small"><strong>Class example:</strong> At 20 minutes, compare 18 °C (10 mm of foam) with 43 °C (62 mm), even if you tried different ones. The 62 mm is a fixed model benchmark; use the values in <strong>Your simulated results</strong> to describe your own run. In this model, 55 °C makes little foam.</p>
       <p class="your-data-line" id="pred-note"></p>
       <div class="panel sentence-row"><p class="sentence">
         <select id="sense-amount" aria-label="More or less sugar"><option value="">choose</option><option value="more">More</option><option value="less">Less</option></select>
@@ -305,7 +305,8 @@
       </fieldset>
       <details class="disclose"><summary>What this simulation models</summary><div class="inner"><ul>
         <li>Light on the plant is the cosine of the lamp’s angle: full light at 0°, about 0.71 at 45°, about 0.34 at 70°, none under foil.</li>
-        <li>Over the night the plant makes carbon dioxide by respiring (the same every time) and uses it by photosynthesis (more with more light). Net carbon dioxide change sets the BTB number: 1 deep blue, 2 blue (the start), up to 6 yellow.</li>
+        <li>For each tube, <strong>CO₂ change = plant size × (respiration per size − photosynthesis per size)</strong>, in relative model units. Respiration per size is 0.30; photosynthesis per size is <strong>1.10 × light ÷ (0.35 + light)</strong>. Light is a fraction from 0 to 1 (for example, 71% is about 0.71). Negative means the plant removed more CO₂ than it released.</li>
+        <li>BTB starts at 2.0. For a CO₂ decrease, the model adds the signed change divided by 0.60 to 2.0. For a CO₂ increase, it adds 13 times the change. The model caps BTB at 1.0–6.0 and rounds to one decimal. Different CO₂ changes can give the same color name or even the same rounded BTB number.</li>
         <li>Plant size varies a little, so tubes with the same setting differ a little. Real BTB is less tidy: its color depends on its starting pH and the water. The starch test shows leftover sugar stored as starch.</li>
       </ul></div></details>
     </div>

@@ -297,9 +297,10 @@
           </dl>
           <p class="ju-dot-example"><strong>Try one dot:</strong> Find the far-right dot, at about <strong>38.4 ng/mL</strong> and <strong>−0.8</strong>. Those are one bird’s maximum CORT and exploration score. The coordinates are estimated, and the graph doesn’t identify its population.</p>
         </section>
-        <p class="ju-chart-note">Look at the dots before turning on the best-fit line. A correlation is a pattern between two measurements, not proof that one causes the other. The published dots are not labeled by population. A difference between the groups could contribute to the overall pattern, even if it is weaker or absent within either group.</p>
+        <p class="ju-chart-note">Look at the dots before turning on the best-fit line. A correlation is a pattern between two measurements, not proof that one causes the other. A difference between the groups could contribute to the overall pattern, even if it is weaker or absent within either group.</p>
         <div class="ju-tools" id="ju-cort-tools"><label for="ju-filter">Show <select id="ju-filter"><option value="all">Both populations</option><option value="urban">UC San Diego</option><option value="mountain">Mt. Laguna</option></select></label><label class="ju-fit" for="ju-fit"><input id="ju-fit" type="checkbox"> Show best-fit line</label></div>
-        <div id="ju-chart" class="ju-plot"></div>
+        <p class="ju-chart-note" id="ju-cort-populations"><strong>Both populations combined.</strong> Each dot’s population is unknown in this figure. Use the aviary bars, not these dots, to compare UC San Diego and Mt. Laguna.</p>
+        <div id="ju-chart" class="ju-plot" aria-describedby="ju-cort-populations"></div>
         <p id="ju-cort-status" class="ju-chart-note"></p>
         <details class="ju-data" id="ju-cort-details"><summary>Read the plotted values</summary><p id="ju-cort-pool-note">Rows number the dots in the table. The source does not identify each bird’s population.</p><table id="ju-cort-table"><thead><tr><th scope="col" id="ju-cort-id">Bird (dot)</th><th scope="col" id="ju-cort-x">CORT</th><th scope="col">Exploration score</th></tr></thead><tbody></tbody></table></details>
       </article>

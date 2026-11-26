@@ -969,11 +969,10 @@
     const shared=roleSetup.mode!=='solo';
     const recorder=preserveRaw?null:reportIdentity();
     if(shared)sections.unshift({title:'Shared-device play',items:[{type:'text',text:
-      'This is a group record. The recorder is the signed-in student, not a list of the players.'+
-      (recorder?.name?' Recorded by: '+recorder.name+(recorder.period?' · Class period: '+recorder.period:'')+'.':' No recorder name was entered.')}]});
+      'This is a group record. The recorder is the signed-in student, not a list of the players.'}]});
     return {title:'Serengeti Board Game',unit:'Unit B.1 · Lesson 7',
       source:'Adapted from OpenSciEd B.1 Lesson 7. The board game simulates change from the starting wildebeest population, not field counts. Dice model chance; births, available food and water, and predator population responses are not modeled.',
-      status:recovering?'recovery':missing.length?'draft':'final',missing,student:shared?null:recorder,allowIdentityEdit:!shared,
+      status:recovering?'recovery':missing.length?'draft':'final',missing,student:shared?null:recorder,recorder:shared?(recorder||{}):null,allowIdentityEdit:!shared,
       keyResults:[{label:'Seasons completed',value:finishedSeasons+' / 4'},
         ...(state?[{label:'Net modeled change',value:signed(summary.change),note:'Relative to the starting population; not a field count'}]:[]),
         {label:'Events and hunts recorded',value:rows.length}],sections};

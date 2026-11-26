@@ -71,7 +71,7 @@ async function fits(page) {
         for (const [label, button] of [['next', next], ['finish', finish]]) {
           const style = await buttonStyle(button);
           ok(await button.isDisabled() && style.opacity === 1 && style.contrast >= 4.5 &&
-            style.background !== enabledStyle.background && style.cursor === 'not-allowed' && style.border === 'dashed',
+            style.background !== enabledStyle.background && style.cursor === 'not-allowed' && style.border === 'solid',
           `${width} carrying ${label} control reads as disabled after round 12 without fading text`);
         }
         ok(await page.locator('#cc-range-jump').isVisible() && await page.locator('#cc-range-jump').isEnabled() && await fits(page),
@@ -96,12 +96,13 @@ async function fits(page) {
 
         await page.goto(server.url + HAWKSBEARD);
         const dark = (theme || os) === 'dark';
-        const art = await page.locator('.hb-hero img').evaluate(img => ({
-          filter: getComputedStyle(img).filter,
-          loaded: img.complete && img.naturalWidth > 0
-        }));
-        ok(art.loaded && (dark ? /brightness\(0\.[0-7]/.test(art.filter) : art.filter === 'none'),
-          `${width} Hawksbeard artwork is softened only when the active theme is dark`);
+        const art = page.locator('.hb-hero img:visible');
+        ok(await art.count() === 1 && (await art.getAttribute('src')).endsWith(dark
+          ? 'hawksbeard-preview-dusk.svg' : 'hawksbeard-preview.svg'),
+          `${width} Hawksbeard uses dedicated dusk artwork only in dark theme`);
+        await art.evaluate(img=>img.decode());
+        ok(await art.evaluate(img=>img.naturalWidth > 0 && getComputedStyle(img).filter === 'none'),
+          `${width} Hawksbeard artwork loads without a filter over its details`);
         ok(await fits(page), `${width} Hawksbeard page fits in ${dark ? 'dark' : 'light'} mode`);
         const testNote = page.locator('#hb-predict .hb-tip');
         const testNoteText = await testNote.textContent();

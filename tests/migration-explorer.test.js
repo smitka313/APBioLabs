@@ -101,9 +101,24 @@ test('editing pauses the exact playback controller and keeps separate drafts on 
     cut('  function changeMonth(','  function go(')+
     cut("  $('#month-slider').oninput","  $('#record-region').onclick"),context);
   context.renderMonth();
+  field.value='Initial May draft.';field.fire('input');
   play.fire('click');assert.equal(play.attrs['aria-pressed'],'true');
+  assert.equal(field.readOnly,true,'no editing against a moving month');
+  assert.equal($('#record').disabled,true);
+  assert.equal($('#month-note-playback').hidden,false);
+  const queued=[...intervals.values()][0];queued();
+  assert.equal(state.month,5,'the map keeps playing');
+  assert.equal(field.dataset.editorMonth,'4','the editor is not rebound on an autoplay tick');
+  assert.equal(field.value,'Initial May draft.');
   field.focus();assert.equal(play.attrs['aria-pressed'],'false','focus interrupts playback before the next tick');
+  queued();assert.equal(state.month,5,'a frame already queued does not advance after focus');
+  assert.equal(field.dataset.editorMonth,'5','the editor binds to the frozen month before the next keystroke');
+  assert.equal(field.readOnly,false);
+  assert.equal($('#record').disabled,false);
+  assert.equal($('#month-note-playback').hidden,true);
+  vm.runInContext('changeMonth(4)',context);
   play.fire('click');
+  queued();assert.equal(state.month,4,'an earlier timer does not advance a new Play');
   $('#pause-and-note').fire('click');
   assert.equal(play.attrs['aria-pressed'],'false','the note shortcut also freezes the chosen month');
   assert.equal(document.activeElement,field,'the shortcut moves focus to the editing field');
@@ -127,7 +142,7 @@ test('the three rainfall displays keep the original graph and provide a dark tre
 test('the field evidence panel states sampling and outbreak limits before students compare cards',()=>{
   const html=fs.readFileSync(path.join(__dirname,'../openscied-b1-migration.html'),'utf8');
   const evidence=html.slice(html.indexOf('id="collection-cards"'),html.indexOf('id="card-groups"'));
-  for(const phrase of ['monthly group averages for sampled male wildebeest','several studies','outbreak year','whole herd'])assert.ok(evidence.includes(phrase),phrase);
+  for(const phrase of ['monthly group averages for sampled male wildebeest','several studies','outbreak year','whole herd','126 carcasses sampled in 1968–1973','not the number behind any one card'])assert.ok(evidence.includes(phrase),phrase);
 });
 test('published evidence charts disable the toolkit simulation label',()=>{
   for(const collection of ['cards','rainfall']){

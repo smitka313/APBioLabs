@@ -97,20 +97,50 @@ function routeRepeating(s) {
  const heard=new Set(s.rows.slice(0,-3).map(row=>row.card));
  return s.rows.slice(-3).every(row=>!!row.card&&heard.has(row.card));
 }
-// Preserve the published event and its saved category. Explain the model's
-// shorthand in the UI, so students do not mistake energy for moving atoms.
+// A Soil loop should surface a missing consumer example early. This is a
+// separate evidence queue; no reference card can move an atom or add a roll.
+function coverageQueue(s) {
+ const missing=missingCoverage(s);
+ const tail=s.rows.slice(-3);
+ if(s.coverageCheckpoint!=='repeat'||tail.length!==3||!tail.every(row=>row.from==='soil'&&row.to==='soil'))return missing;
+ const consumer=missing.find(card=>card.from==='herbivores'||card.from==='omnivores');
+ return consumer?[consumer,...missing.filter(card=>card!==consumer)]:missing;
+}
+// Keep the four saved/official buckets. Display labels describe the model
+// without teaching that energy is matter or that the tracked atom is fuel.
+const energyLabels=[
+ 'No energy transfer tracked',
+ 'Energy transfer with matter',
+ 'Energy changes as atoms rearrange',
+ 'Energy transfer and atom rearrangement'
+];
+function energyLabel(category){return energyLabels[energy.indexOf(category)] || category;}
+function energyCategory(label){
+ const i=energyLabels.indexOf(label);
+ return i<0?label:energy[i];
+}
 function energyMeaning(category) {
  return [
-  'No energy transfer is tracked in this event. The atom stays in the same kind of molecule.',
-  'Matter moves between places without changing this atom’s molecule. Energy can be transferred with moving matter; it is not an atom.',
+  'This event does not track an energy transfer.',
+  'Matter moves between places. Energy can be transferred with moving matter; it is not an atom.',
   'The atoms are rearranged. Energy can change form as molecules are rearranged.',
   'Matter moves and atoms are rearranged. Energy is transferred or changes form; it does not cycle with this carbon atom.'
  ][energy.indexOf(category)] || '';
 }
 function cardText(value) {
- // Display correction for an obvious duplicated preposition; the source
- // transcription and persisted roll still keep the original wording.
- return typeof value==='string'?value.replace('burned to for energy','burned for energy'):'';
+ // Display and report language only. The original transcription and saved
+ // category above stay intact for reproducible outcomes and older journals.
+ if(typeof value!=='string')return '';
+ return value
+  .replace('burned to for energy','burned for energy')
+  .replace('You are eaten by a decomposer and are digested used for energy through cellular respiration.','A decomposer digests the molecule that contains you. Cellular respiration transfers stored chemical energy.')
+  .replace('used to generate energy during cellular respiration','broken down during cellular respiration, transferring stored energy')
+  .replace('to generate energy to move and stay warm','to transfer stored energy for movement and warmth')
+  .replace('The matter (biomass) and energy flows to a new system in the same arrangement of atoms.','Its biomass moves into the soil.')
+  .replace('Lots of energy remains in the same arrangement of atoms that could be burned for later use.','The fossil fuel stores chemical energy that can be transferred later by burning.')
+  .replace('The energy flows to another system in the same arrangement of atoms and will be used to power human-made activities.','The fuel still stores chemical energy until people use it.')
+  .replace(/(?:The )?Energy (?:remains in the same arrangement of atoms|flows to [^.]+|changes result from the atoms rearranging)\./gi,'')
+  .replace(/ {2,}/g,' ').trim();
 }
 function readSaved(raw){
  try {
@@ -119,7 +149,7 @@ function readSaved(raw){
   let s=initial(v.seed);
   const legacy=v.version===1?v.rows.length:Math.max(0,Math.min(v.rows.length,Number.isInteger(v.legacyRows)?v.legacyRows:0));
   for(let i=0;i<v.rows.length;i++){
-   const r=v.rows[i];
+   const r={...v.rows[i],energy:energyCategory(v.rows[i]?.energy)};
    if(r.from!==current(s)||r.turn!==s.rows.length+1||!Number.isInteger(r.die)||r.die<1||r.die>6||!valid(r.to)||!matter.includes(r.matter)||!energy.includes(r.energy))throw Error();
    if(i<legacy){s.rows.push({...r,note:String(r.note||'').slice(0,1000),legacy:true});s.legacyRows++;}
    else {
@@ -145,4 +175,4 @@ function readSaved(raw){
  } catch {return null;}
 }
 function restore(raw,seed){return readSaved(raw) ?? initial(seed);}
-return {stations,matter,energy,die,initial,current,outcome,record,totals,tour,missingCoverage,routeRepeating,energyMeaning,cardText,readSaved,restore};});
+return {stations,matter,energy,die,initial,current,outcome,record,totals,tour,missingCoverage,coverageQueue,routeRepeating,energyLabel,energyMeaning,cardText,readSaved,restore};});

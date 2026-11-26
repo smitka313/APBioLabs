@@ -225,6 +225,14 @@ async function report(page) {
     await page.locator('#dw-record-text').inputValue() === text,
     'explicit Copy writes just the displayed investigation report once');
   await page.keyboard.press('Escape');
+  await page.getByRole('button',{name:'Preview report',exact:true}).click();
+  const paper=page.locator('dialog.osr-dialog article');
+  const wordSource=await paper.innerText();
+  check(Object.values(NOTES).every(note=>wordSource.includes(note)) &&
+    await paper.getByRole('heading',{name:'Match products to processes',exact:true}).isVisible() &&
+    await paper.getByRole('heading',{name:/Use two products from your workshop to correct them/}).isVisible(),
+    'the Word report includes all six saved observations and labels the final reflection with its original heading and prompt');
+  await page.getByRole('button',{name:'Close report',exact:true}).click();
 }
 async function dashboard(page, base) {
   await page.goto(base+'openscied-dashboard.html');
@@ -601,9 +609,9 @@ async function exercise(browser,base,size) {
     const disabled=await page.locator('#dw-next').evaluate(el=>{
       const css=getComputedStyle(el);
       const channels=css.backgroundColor.match(/\d+/g).slice(0,3);
-      return css.borderTopStyle==='dashed' && new Set(channels).size===1;
+      return css.borderTopStyle==='solid' && new Set(channels).size===1;
     });
-    check(disabled,label+' a disabled Next uses neutral gray and a dashed border');
+    check(disabled,label+' a disabled Next uses neutral gray and a solid border');
     await fits(page,'main, #dw-board, #dw-board [data-dw-slot]',label+' initial board');
     await shot(page,label+'-starting-nucleotide');
     const phosphate=source(page,'phosphate');

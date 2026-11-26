@@ -23,7 +23,7 @@
 .ice-nav .btn{justify-content:flex-start;text-align:left;min-height:44px;line-height:1.2}
 .ice-nav .btn span{font-variant-numeric:tabular-nums}
 .ice-nav .btn[aria-current=step],.ice-phase .btn[aria-pressed=true],.ice-chip[aria-pressed=true],.ice-roster .btn[aria-pressed=true]{border:2px solid var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
-.ice-shell button:disabled{opacity:1!important;background:var(--panel)!important;color:var(--muted)!important;border:1px dashed var(--muted)!important;box-shadow:none!important;cursor:not-allowed!important}
+.ice-shell button:disabled{opacity:1!important;background:var(--surface-2)!important;color:var(--muted)!important;border:1px solid color-mix(in srgb,var(--muted) 65%,var(--line))!important;box-shadow:none!important;cursor:not-allowed!important}
 .ice-caption{font-size:.86rem;color:var(--muted)}
 .ice-status:empty{margin:0}
 .ice-status:not(:empty){border-left:4px solid var(--accent);padding:.4rem .65rem;margin:.45rem 0 .7rem;background:var(--panel)}

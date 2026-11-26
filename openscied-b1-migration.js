@@ -77,6 +77,7 @@
     if(month!==null)state.observations[month]=observation.value;
   }
   function showDraft(month){
+    if(timer)return; // Autoplay updates the map, never the editor or its month.
     const draft=typeof state.observations[month]==='string'?state.observations[month]:'';
     if(editorMonth()!==month)observation.dataset.editorMonth=String(month);
     if(observation.value!==draft)observation.value=draft;
@@ -94,14 +95,28 @@
       b.dataset.draft=String(hasDraft);
       b.setAttribute('aria-label','Explore '+L.MONTHS[m]+(hasNote?(unavailable||corrupt?' · note in this tab':' · note saved'):'')+(hasDraft?' · draft not yet in notebook':''));
     });
-    $('#record').textContent=months.includes(state.month)?'Update month note':'Save month note';
+    const month=editorMonth();
+    $('#record').textContent=months.includes(month)?'Update month note':'Save month note';
     const feedback=$('#month-note-status');
-    if(+feedback.dataset.noteMonth!==state.month){feedback.textContent='';feedback.hidden=true;}
+    if(+feedback.dataset.noteMonth!==month){feedback.textContent='';feedback.hidden=true;}
   }
   function observeMonth(){if(!state.visited.includes(state.month))state.visited.push(state.month);}
   const scene=MigrationScene.init($('#migration-map'),$('#field-scene'),$('#map-wrap'));
   let timer=0;
-  function pause(){clearInterval(timer);timer=0;$('#play').textContent='Play year';$('#play').setAttribute('aria-pressed','false');}
+  function setPlaybackUI(playing){
+    $('#play').textContent=playing?'Pause year':'Play year';
+    $('#play').setAttribute('aria-pressed',String(playing));
+    observation.readOnly=playing;
+    $('#record').disabled=playing;
+    $('#month-note-playback').hidden=!playing;
+  }
+  function pause(){
+    if(!timer)return;
+    clearInterval(timer);timer=0;
+    setPlaybackUI(false);
+    showDraft(state.month);
+    renderNoteProgress();
+  }
   function pauseForObservation(){
     if(!timer)return;
     pause();
@@ -127,7 +142,7 @@
     if(cards.length){box.append(el('p','Monthly group averages for sampled males, not measurements of individual animals.','mx-caption'));cards.forEach(c=>box.append(el('span',L.GROUPS[c.group]+': '+c.fat+'% fat')));const b=el('button','Compare these three cards →');b.type='button';b.onclick=()=>{state.filter=String(m);$('#card-month').value=state.filter;renderCards();go('evidence');collection('cards');};box.append(b);}else box.append(el('span','The supplied health cards cover May–October. Explore the map without inventing missing data.'));
     host.append(box);scene.set(m,{weather:state.weather,region:state.region});$('#large-prev').disabled=m===0;$('#large-next').disabled=m===11;$('#previous').disabled=m===0;$('#next').disabled=m===11;renderNoteProgress();
   }
-  function changeMonth(m,user=true){keepDraft();state.month=L.monthIndex(m);if(user)observeMonth();region(L.fieldRegion(state.month));}
+  function changeMonth(m,user=true){if(!timer)keepDraft();state.month=L.monthIndex(m);if(user)observeMonth();region(L.fieldRegion(state.month));}
   // Preserve the incoming fragment during startup: adding #explore can anchor-scroll past the title.
   function go(page,focus=true){if(!['explore','evidence','explain'].includes(page))page='explore';pause();state.page=page;$$('.mx-page').forEach(n=>n.hidden=n.id!==page);$$('[data-page]').forEach(b=>{if(b.dataset.page===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});if(!hydrating&&location.hash!=='#'+page)history.replaceState(null,'','#'+page);if(focus){$('#'+page+'-title').focus({preventScroll:true});$('.mx-pages').scrollIntoView({block:'start'});}if(page==='explore')scene.resize();if(page==='evidence')renderCharts();if(page==='explain')renderNotes();save();}
   function view(v){state.view=v;renderInspector();$$('.mx-viewpanel').forEach(n=>n.hidden=n.id!=='view-'+v);$$('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===v)));if(v==='field')scene.resize();save();}
@@ -310,7 +325,19 @@
   L.MONTHS.forEach((m,i)=>{const b=el('button',m.slice(0,3));b.type='button';b.dataset.month=i;b.setAttribute('aria-label','Explore '+m);b.onclick=()=>{pause();changeMonth(i);};$('#month-buttons').append(b);});
   $$('[data-page]').forEach(b=>b.onclick=()=>go(b.dataset.page));$$('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));$$('[data-view]').forEach(b=>b.onclick=()=>view(b.dataset.view));$$('[data-region]').forEach(b=>b.onclick=()=>region(b.dataset.region,true));$$('[data-collection]').forEach(b=>b.onclick=()=>collection(b.dataset.collection));
   $('#month-slider').oninput=e=>{pause();changeMonth(+e.target.value);};$('#previous').onclick=()=>{pause();changeMonth(Math.max(0,state.month-1));};$('#next').onclick=()=>{pause();changeMonth(Math.min(11,state.month+1));};
-  $('#play').onclick=()=>{if(timer){pause();return;}if(state.month===11)changeMonth(0);observeMonth();$('#play').textContent='Pause year';$('#play').setAttribute('aria-pressed','true');timer=setInterval(()=>{if(!timer)return;if(document.activeElement===observation){pauseForObservation();return;}if(state.month>=11){pause();say('Year complete. Compare your observations and investigate the evidence.');return;}changeMonth(state.month+1);if(state.month===11){pause();say('Year complete. Compare your observations and investigate the evidence.');}},1800);};
+  $('#play').onclick=()=>{
+    if(timer){pause();return;}
+    keepDraft();
+    if(state.month===11)changeMonth(0);
+    observeMonth();
+    const id=setInterval(()=>{
+      if(timer!==id)return; // Ignore a tick queued by an earlier Play.
+      if(document.activeElement===observation){pauseForObservation();return;}
+      changeMonth(state.month+1);
+      if(state.month===11){pause();say('Year complete. Compare your observations and investigate the evidence.');}
+    },1800);
+    timer=id;setPlaybackUI(true);
+  };
   document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
   $('#weather').onchange=e=>{state.weather=e.target.checked;renderMonth();save();};
   const noteArea=$('.mx-record');
@@ -324,7 +351,7 @@
     view('field');
     observation.focus();
   });
-  observation.addEventListener('input',()=>{pauseForObservation();keepDraft();renderNoteProgress();save();});
+  observation.addEventListener('input',()=>{if(timer)return;keepDraft();renderNoteProgress();save();});
   $('#record').onclick=()=>{
     pauseForObservation();
     const field=observation,month=editorMonth(),feedback=$('#month-note-status');

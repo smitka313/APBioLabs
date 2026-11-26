@@ -595,6 +595,9 @@ async function dashboardGuide(page, base) {
   check(await card.getByRole('link').count() === 1 && await action.isVisible() &&
     await action.getAttribute('href') === FILE+'#explain',
     'the saved card has one accessible Continue link that opens the saved Explain step');
+  const meter=card.getByRole('progressbar',{name:'Rat Generations · Investigation parts completed'});
+  check(await meter.getAttribute('aria-valuetext')==='4 of 4 investigation parts completed',
+    'the dashboard counts all four parts after the last required response is saved');
   const artwork = card.locator('a.dashboard-preview');
   await artwork.scrollIntoViewIfNeeded();
   check(await artwork.isVisible(), 'the card keeps its clickable artwork visible');
@@ -787,9 +790,14 @@ async function play(browser, base, cfg) {
     });
     check(true,label+' a six-line response remains editable with a visible first line when returning to its start');
     if(cfg.width===1366) await writePrintPreview(page,'#rg-explain',path.join(OUT,label+'-print-preview.pdf'));
+    const progress=page.locator('#rg-progress'), hint=page.locator('#rg-step-hint');
+    check(/3 of 4/.test(await progress.textContent()) && /model limits response/.test(await hint.textContent()) &&
+      await hint.isVisible(), label+' Explain identifies the specific missing writing before counting the part');
     for (const [key, value] of Object.entries(EXAMPLE_TEXT)) {
       await page.locator('#rg-' + key).fill(value);
     }
+    check(/4 of 4/.test(await progress.textContent()) && await hint.isHidden(),
+      label+' the last required response completes all four parts in the activity');
     await fits(page, 'main, #rg-explain, #rg-evidence-table, #rg-claim, #rg-evidence, #rg-limits', label + ' explanation');
     await screenshot(page, label + '-explanation');
     if (cfg.touch) await axe(page, '#rg-explain', label + ' explanation');
