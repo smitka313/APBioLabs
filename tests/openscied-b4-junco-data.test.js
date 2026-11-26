@@ -51,6 +51,17 @@ test('the classroom CORT scatterplot is a documented digitization, with no inven
     'the digitized classroom correlation must remain distinct from the published adjusted result');
 });
 
+test('pooled CORT evidence identifies missing origins and points to location-aware evidence',()=>{
+  const {readFileSync}=require('node:fs'), {join}=require('node:path');
+  const html=readFileSync(join(__dirname,'..','openscied-b4-junco.html'),'utf8');
+  const script=readFileSync(join(__dirname,'..','openscied-b4-junco.js'),'utf8');
+  assert.match(html,/id="ju-cort-populations"[^>]*>.*Junco Data Excursion.*Location column/);
+  assert.match(html,/id="ju-cort-limit"[^>]*>.*pooled plot does not establish.*within either population/);
+  assert.match(html,/<th scope="col">Population of origin<\/th>/);
+  assert.match(script,/columns:\['Bird \(dot\)'.*'Population of origin'\]/);
+  assert.match(script,/const origin=p=>ownSite\(p.site\)\?sites\[p.site\]:'Not identified'/);
+});
+
 const flight = require('../openscied-b4-junco-flight.js');
 test('walk-up trials are reproducible, use equal steps between sites, and report the crossed distance',()=>{
   const seed=23183, sums={};

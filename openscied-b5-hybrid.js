@@ -260,9 +260,7 @@ function downloadJSON(){
    progress:{completed:done(),total:4},pinnedYear:s.year,
    climate:{measure:'September sea-ice area',unit:'million km²',pinnedValues:yearRow==null?[]:D.graph.flatMap(g=>{
      const value=point(g,yearRow);return value==null?[]:[{series:g.label,value,kind:g.key==='obs'?'observed':'projected'}];
-   })},flips:s.rolls,coinFlips:bits().map((bit,index)=>{
-     const gene=index%4,trait=D.traits[gene];return {mating:Math.floor(index/4)+1,gene:trait.key,side:face(bit),simulatedTrait:D.phenotype(gene,bit)};
-   }),conditions:summaries(),report:r.sections};
+   })},flips:s.rolls,coinFlips:D.coinFlipDetails(s.id,s.rolls),conditions:summaries(),report:r.sections};
  window.OpenSciEdB5ReportFiles?.download(JSON.stringify(payload,null,2),'application/json','arctic-bear-futures-backup.json');
  say('Downloaded the Lesson 6 '+(r.status==='recovery'?'recovery file.':'backup.'));
 }

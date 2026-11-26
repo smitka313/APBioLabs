@@ -67,6 +67,15 @@
       return ((num^(num>>>14))>>>0)/4294967296;
     };
   }
+  // Optional chance comparison only. Independently sample one of four equally
+  // probable Punnett cells per pup, with replacement; never change lesson counts.
+  function sampleLitter(a,b,seed,draw=0) {
+    if(!validSeed(seed)||!validSeed(draw))throw new RangeError('Invalid sample seed or draw');
+    const cells=cross(a,b), internalSeed=(seed ^ 0x4729a96b)>>>0;
+    const random=stream(internalSeed,draw);
+    const pups=Object.freeze(Array.from({length:cells.length},()=>cells[Math.floor(random()*cells.length)]));
+    return Object.freeze({pups,counts:summarize(pups.map(genotype=>({genotype})))});
+  }
   function shuffle(group, random) {
     const copy=[...group];
     for (let i=copy.length-1;i>0;i--) {
@@ -126,5 +135,5 @@
       return state;
     } catch (_) { return null; }
   }
-  return Object.freeze({create,step,preview,serialize,restore,summarize,cross,STEPS,GENOTYPES});
+  return Object.freeze({create,step,preview,serialize,restore,summarize,cross,sampleLitter,STEPS,GENOTYPES});
 });

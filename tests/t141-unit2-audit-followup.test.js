@@ -63,10 +63,11 @@ test('Burning Fuels places the actual recorded per-fuel averages next to the thr
   state.burn.records.push({fuel:'peat',n:1,obs:[]},{fuel:'peat',n:2,obs:[]});
   const result = generate()[0];
   assert.equal(result.rows.length, 2);
+  assert.deepEqual(Array.from(result.head),['Fuel','Starting mass (g)','Mass lost (g)','Temperature change (°C)','Final BTB color and number']);
   const format = raw => (Math.round(raw * 10) / 10).toFixed(1);
   const groups = L.byFuel(L.tableRows(state.burn));
   for (const [i, group] of groups.entries()) {
-    assert.deepEqual(Array.from(result.rows[i]),[group.label,format(group.massLost),format(group.tempRise),L.btbText(Number(format(group.btbAfter)))]);
+    assert.deepEqual(Array.from(result.rows[i]),[group.label,format(group.massBefore),format(group.massLost),format(group.tempRise),L.btbText(Number(format(group.btbAfter)))]);
   }
   for (const [kind, key] of [['lostmost','massLost'],['warmest','tempRise'],['yellowest','btbAfter']]) {
     const top = [...groups].sort((a,b)=>Number(format(b[key]))-Number(format(a[key])))[0];
@@ -145,10 +146,11 @@ test('Carbon Journey repeats recorded totals beside Q2 and offers an optional se
   assert.match(html, /This example does not change your journal or totals/);
   assert.match(html, /totalGroups.forEach\([\s\S]*?renderQuestionTotals\(totalGroups\)/);
   const L=logic('carbon-journey');
-  let sample=L.initial(70);
-  for(let i=0;i<10;i++) sample=L.record({...sample,pending:L.die(70,i)});
-  assert.equal(sample.rows.length,10);
-  assert.ok(new Set(sample.rows.map(row=>row.from)).size>=6);
+  const sample=L.exampleRows();
+  assert.equal(sample.length,10);
+  assert.equal(new Set(sample.map(row=>row.from)).size,7);
+  assert.match(html, /L\.exampleRows\(\)\.map/, 'verify the actual example used on the page');
+  assert.deepEqual(L.consumerExample().map(row=>row.card),['pHerb','bEaten','cRespire']);
 });
 
 test('Fires distinguishes a 59 mm student trial from the fixed 62 mm model benchmark', () => {

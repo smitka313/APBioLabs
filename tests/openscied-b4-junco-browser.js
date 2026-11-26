@@ -395,6 +395,11 @@ async function verifyCortData(page,label) {
   check((await id(page,'ju-cort-id').textContent())==='Bird (dot)' && rowIds.length===40 &&
     rowIds.every((value,i)=>value===String(i+1)) && /does not identify/.test(await id(page,'ju-cort-pool-note').textContent()),
     label+' pooled data table uses numbered dots without guessed origins');
+  const populationValues=await id(page,'ju-cort-table').locator('tbody tr > td:last-child').allTextContents();
+  check(populationValues.length===40&&populationValues.every(value=>value==='Not identified')&&
+    (await id(page,'ju-cort-table').locator('thead th').allTextContents()).includes('Population of origin')&&
+    await populations.getByRole('link',{name:/Junco Data Excursion/}).isVisible(),
+    label+' every dot explicitly says origin is unidentified and students can open the location-aware source');
   check(await id(page,'ju-evidence').isVisible() &&
     /Field distance.*Aviary exploration/.test(tidy(await id(page,'ju-evidence').textContent())),
     label+' both evidence summaries are visible immediately beside the synthesis');

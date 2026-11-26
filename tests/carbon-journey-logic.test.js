@@ -426,12 +426,30 @@ test('blank journey Restart is inert, then unlocks for actual journey work and r
   a.equal(unreadable.get('#restart').disabled, false);
 });
 
-test('Soil-loop reference shows a missing animal without changing official seeded outcomes',()=>{
+test('the contrast is a genuine, reproducible example of both animal stations',()=>{
+  const rows=L.exampleRows(), consumer=L.consumerExample();
+  a.deepEqual(rows,L.exampleRows());
+  a.deepEqual(rows.map(r=>r.die),[4,5,2,1,3,1,4,6,6,4]);
+  a.deepEqual(consumer.map(({from,die,to})=>[from,die,to]),[
+    ['producers',1,'herbivores'],['herbivores',3,'omnivores'],['omnivores',1,'atmosphere']
+  ]);
+  a.equal(rows[3].stage,'producerExit');
+  a.equal(new Set(rows.map(r=>r.from)).size,7);
+  for(const row of rows){
+    const [to,m,e]=oracle[row.stage==='producerExit'?'producerExit':row.from][row.die-1];
+    a.deepEqual([row.to,row.matter,row.energy],[to,L.matter[m],L.energy[e]]);
+  }
+});
+
+test('Soil-loop reference shows both animals without changing official seeded outcomes',()=>{
   let state=L.initial(1336800262);
   for(let i=0;i<6;i++)state=L.record({...state,pending:L.die(state.seed,i)});
   state.coverageCheckpoint='repeat';
   const raw=JSON.stringify(state), page=openFictionalJourney(raw,'#play');
   a.match(page.get('#coverage-route').textContent,/Herbivores → Omnivores/);
+  a.equal(page.get('#coverage-contrast').hidden,false);
+  a.equal(page.get('#coverage-contrast-route').textContent,'Producers → Herbivores → Omnivores → Atmosphere');
+  a.equal(page.read(),raw,'showing the comparison does not write student data');
   a.match(page.get('#coverage-reason').textContent,/dice, location and journal stay the same/);
   page.get('#coverage-continue').click();
   const after=JSON.parse(page.read());
@@ -439,6 +457,11 @@ test('Soil-loop reference shows a missing animal without changing official seede
   a.deepEqual(after.rows,state.rows);
   a.equal(after.seed,state.seed);
   a.equal(L.die(after.seed,after.rows.length),6);
+  a.equal(page.get('#coverage-contrast').hidden,true);
+  let completed=after;
+  for(let i=after.rows.length;i<10;i++)completed=L.record({...completed,pending:L.die(after.seed,i)});
+  a.deepEqual(completed.rows.map(r=>r.die),[6,2,5,4,2,2,6,6,4,2]);
+  a.deepEqual(L.totals(completed,'from',['soil','herbivores','omnivores']).map(x=>x.count),[4,0,0]);
 });
 
 test('editable Journey downloads clean actual Turn 8 and energy labels without changing saved official rolls',()=>{

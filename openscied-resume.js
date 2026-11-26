@@ -45,7 +45,7 @@
   };
   const record = value => value && typeof value === 'object' && !Array.isArray(value);
   const safeDate = (n, now) => Number.isFinite(n) && n > 0 && n <= now ? n : 0;
-  const nestedUI = new Set(['updatedAt','lastVisitedAt','openedAt','lastSection','scrollTop','lastViewed','endNotice']);
+  const nestedUI = new Set(['updatedAt','lastSavedAt','lastVisitedAt','openedAt','lastSection','scrollTop','lastViewed','endNotice']);
   function route(path) {
     const m = /(?:^|\/)openscied-(b[1-5]-[a-z0-9-]+)(?:\.html)?\/?$/.exec(path || '');
     return m && Object.hasOwn(sources,m[1]) ? m[1] : '';
@@ -112,28 +112,61 @@
       // sufficient to stop using those old dates until the activity is opened again.
       return {old:epoch.every(value=>value===null)&&record(legacy)?legacy:{},epoch};
     }
-    function snapshot(path, mode='dashboard') {
+    function snapshot(path, mode='dashboard', write=null) {
       const id=route(path);
       if (!id) return {};
       try {
         if (!current()) return {};
         const now=clock(), {old,epoch}=metadata(id);
-        let stamp=0;
-        const data=sources[id].map(([key,fields,extraFields])=>{
+        if (write && (write.scope!==id || write.raw!==storage.getItem(write.key) ||
+            write.epoch[0]!==epoch[0] || write.epoch[1]!==epoch[1] ||
+            write.epoch[2]!==storage.getItem(saveEpoch+'key:'+write.key))) return {};
+        let stamp=0, savedStamp=0, priorStamp=0, editStamp=0;
+        function read(raw,fields,extraFields){
           try {
-            const raw=JSON.parse(storage.getItem(key));
-            if (!record(raw)) return null;
-            stamp=Math.max(stamp,safeDate(raw.lastVisitedAt,now));
-            const p=project(raw,fields,extraFields);
-            return Object.keys(p).length ? p : null;
-          } catch (_) { return null; }
+            const saved=JSON.parse(raw);
+            if (!record(saved)) return {};
+            const p=project(saved,fields,extraFields);
+            return { saved, evidence:Object.keys(p).length ? p : null };
+          } catch (_) { return {}; }
+        }
+        const data=sources[id].map(([key,fields,extraFields])=>{
+          const {saved,evidence}=read(storage.getItem(key),fields,extraFields);
+          if (evidence) {
+            stamp=Math.max(stamp,safeDate(saved.lastVisitedAt,now));
+            savedStamp=Math.max(savedStamp,safeDate(saved.lastSavedAt,now));
+          }
+          if (write?.key===key) {
+            const prior=read(write.previous,fields,extraFields);
+            let previousEvidence=JSON.stringify(prior.evidence??null);
+            for (const step of [...(write.steps||[]),write]) {
+              const state=step===write?evidence:read(step.raw,fields,extraFields).evidence;
+              const fingerprint=JSON.stringify(state??null);
+              if (previousEvidence!==fingerprint) editStamp=safeDate(step.at,now)||now;
+              previousEvidence=fingerprint;
+            }
+            if (prior.evidence) priorStamp=Math.max(priorStamp,safeDate(prior.saved.lastSavedAt,now)||safeDate(prior.saved.lastVisitedAt,now));
+          } else if (evidence) {
+            priorStamp=Math.max(priorStamp,safeDate(saved.lastSavedAt,now)||safeDate(saved.lastVisitedAt,now));
+          }
+          return evidence??null;
         });
         const signature=data.some(Boolean) ? fingerprint(JSON.stringify(data)) : '';
         const previous=safeDate(old.changed,now);
         const opened=mode==='open' ? now : safeDate(old.opened,now);
-        const changed=signature ? old.signature===signature ? previous :
-          (mode==='save'||mode==='exit') && old.signature!==undefined ? Math.max(stamp,previous,now) :
-          stamp || (old.signature==='' ? opened : 0) : 0;
+        let changed=0;
+        if (signature) {
+          if (write) {
+            // Use the actual transition, not the age of the activity's route save.
+            changed=editStamp ? Math.max(previous,editStamp) :
+              old.signature===undefined ? priorStamp : previous;
+          } else if (old.signature===signature) changed=previous;
+          else if ((mode==='save'||mode==='exit') && old.signature!==undefined) changed=Math.max(stamp,previous,now);
+          // If a storage event beats the record-save event across tabs, keep the
+          // last verified time until the metadata arrives. Old saves bootstrap once.
+          else if (previous) changed=Math.max(previous,savedStamp);
+          else changed=savedStamp||stamp||(old.signature==='' ? opened : 0);
+        }
         const next={signature,changed,opened,epoch};
         // Cards only read metadata: visiting or refreshing the dashboard cannot
         // turn an older observation into a new save or wake another dashboard up.
@@ -148,13 +181,15 @@
   }
   const api={META_KEY,isMetaKey,connect,route};
   if(typeof module==='object'&&module.exports){module.exports=api;return;}
+  if (root.OpenSciEdResume?.recordSave) return; // An activity may also include the script explicitly.
   root.OpenSciEdResume=api;
   const path=root.location.pathname;
   const scope=route(path);
   if(!scope)return; // The dashboard calls snapshot for each card directly.
   let tracker;
   try { tracker=connect(root.localStorage,Date.now,{scope}); } catch (_) { return; }
-  root.OpenSciEdResume.recordSave=()=>tracker.snapshot(path,'save');
+  root.OpenSciEdResume.recordSave=write=>tracker.snapshot(path,'save',write);
+  root.OpenSciEdSaveSession?.flushResumeWrites?.(root.OpenSciEdResume.recordSave);
   const open=()=>tracker.snapshot(path,'open');
   const exit=()=>tracker.snapshot(path,'exit');
   open();

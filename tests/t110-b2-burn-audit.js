@@ -22,16 +22,16 @@ const answerAll = (p, skip) => p.evaluate(skipIds => {
 }, skip || []);
 
 (async () => {
-  // ---------- A2: thermometer noise ----------
+  // ---------- A2: older saved data retain the original near tie and whole-degree thermometer noise ----------
   let maxDiff = 0, worst = 0, bad = 0;
   for (const s of seeds) {
-    const g = L.burnResult(s, 'grass', 1), l = L.burnResult(s, 'leaves', 1);
+    const g = L.burnResult(s, 'grass', 1), l = L.burnResult(s, 'leaves', 1, L.LEGACY_MODEL_VERSION);
     maxDiff = Math.max(maxDiff, Math.abs(g.tempRise - l.tempRise));
     for (const f of ALL) { const r = L.burnResult(s, f, 1); worst = Math.max(worst, Math.abs(r.tempBefore - 22), Math.abs(r.tempAfter - Math.max(r.tempBefore, Math.round(22 + r.dT)))); if (r.tempAfter < r.tempBefore || !Number.isInteger(r.tempAfter)) bad++; }
   }
   T.ok(maxDiff <= 1, 'A2: across 2000 students, grass and leaves (true rise 2.5 and 2.6 C) never differ by more than 1 C in the table (largest: ' + maxDiff + ' C; was up to 5 C)');
   T.ok(worst <= 1 && bad === 0, 'A2: every reading is within 1 C of the true value, whole degrees, and never cooler after than before (worst ' + worst + ')');
-  const g1 = L.burnResult(1, 'grass', 1), l1 = L.burnResult(1, 'leaves', 1), p1 = L.burnResult(1, 'peat', 1);
+  const g1 = L.burnResult(1, 'grass', 1), l1 = L.burnResult(1, 'leaves', 1, L.LEGACY_MODEL_VERSION), p1 = L.burnResult(1, 'peat', 1);
   T.ok(Math.abs(l1.dT - g1.dT) < 0.2 && p1.tempRise - g1.tempRise >= 10, 'A2: heat constants are unchanged (grass ' + g1.dT + ', leaves ' + l1.dT + ', peat ' + p1.dT + ' C true rise); peat still clearly warmest');
   // the same student's mass, BTB and timing numbers did not move (the noise still uses one draw per reading)
   const ref = L.burnResult(12345, 'wood', 2);
@@ -84,6 +84,17 @@ const answerAll = (p, skip) => p.evaluate(skipIds => {
       await q.reload(); await q.locator('[data-bn="saved"]').waitFor();
       await q.reload(); await q.locator('[data-bn="saved"]').waitFor();
       T.ok((await data()).records.map(row=>row.fuel).join(',')==='grass,wood','old already-weighed pending burn migrates once without disturbing saved samples');
+      await q.locator('[data-bn="next"]').click();
+      await q.locator('#bn-fuel').selectOption('leaves');
+      await q.locator('[data-bn="weigh"]').click();
+      await q.locator('[data-bn="burn"]').click();
+      await q.locator('[data-bn="after"]').click();
+      const leaf = await q.evaluate(() => {
+        const st=B2Burn.getState().burn;
+        const [grass, leaves]=['grass','leaves'].map(fuel=>B2Burn.logic.tableRows(st).find(r=>r.fuel===fuel));
+        return {version:st.modelVersion, before:leaves.massBefore, higherBtb:leaves.btbAfter>grass.btbAfter};
+      });
+      T.ok(leaf.version===2 && Math.abs(leaf.before-7)<.11 && leaf.higherBtb,'the new leaf sample differs from grass on the actual saved burn table');
       T.ok(await q.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'pending and recorded controls do not overflow the phone');
     } finally { await phone.close(); }
     // A browsing-only tab shares the existing burn data but updates the route.

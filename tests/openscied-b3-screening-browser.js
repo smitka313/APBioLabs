@@ -8,7 +8,7 @@ const out=path.join(ROOT,'artifacts','screening');
  try{
   browser=await chromium.launch();await fs.mkdir(out,{recursive:true});
   for(const width of [390,768,1366,1920]){
-   const ctx=await browser.newContext({viewport:{width,height:900},colorScheme:width===390?'dark':'light',reducedMotion:width===1366?'no-preference':'reduce',hasTouch:width===390});
+   const ctx=await browser.newContext({viewport:{width,height:900},colorScheme:width===390?'dark':'light',reducedMotion:width===1366?'no-preference':'reduce',hasTouch:width===390,deviceScaleFactor:width===390?3:1});
    try{
     const origin=new URL(server.url).origin;await ctx.route('**/*',r=>new URL(r.request().url()).origin===origin?r.continue():r.abort());
     const p=await ctx.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
@@ -20,6 +20,15 @@ const out=path.join(ROOT,'artifacts','screening');
       if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify({v:1,seed:1161}));
     });
     await p.goto(server.url+'openscied-b3-screening.html');
+    const checkClinicVan=async()=>{
+      const bounds=await site('mobile').evaluate(button=>{
+        const van=button.querySelector('.sd-clinic-van');
+        if(!van)return null;
+        const icon=van.getBoundingClientRect(),label=button.getBoundingClientRect(),map=button.closest('.sd-board').getBoundingClientRect();
+        return {gap:label.top-icon.bottom,inside:icon.width>0&&icon.top>=map.top&&icon.left>=map.left&&icon.right<=map.right};
+      });
+      assert.ok(bounds?.inside&&bounds.gap>=6,'Parked van clears the Mobile clinic border at '+width+' px');
+    };
     const shot=async name=>{
       assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
       assert.ok(await p.locator('.sd-board').evaluate(e=>{const r=e.getBoundingClientRect();return [...e.querySelectorAll('.sd-home,.sd-site')].every(s=>{const b=s.getBoundingClientRect();return b.left>=r.left&&b.right<=r.right&&b.top>=r.top&&b.bottom<=r.bottom;});}));
@@ -104,7 +113,7 @@ const out=path.join(ROOT,'artifacts','screening');
     await p.screenshot({path:path.join(out,width+'-patient-intake.png'),fullPage:true,animations:'disabled'});
     assert.equal(await id('stage').textContent(),'Step 1 of 3');
     assert.ok(await id('quick').isHidden());assert.ok(await id('advanced').isHidden());assert.ok(await id('cost-details').isHidden());
-    await id('run').click();await shot('hospital-setup');
+    await id('run').click();await checkClinicVan();await shot('hospital-setup');
     assert.equal(await id('stage').textContent(),'Step 2 of 3');
     assert.ok(await id('quick').isVisible());assert.ok(await id('tool-machine').isHidden());
     assert.ok(await id('to-explain').isHidden());assert.ok(await id('patients').isHidden());
@@ -124,6 +133,8 @@ const out=path.join(ROOT,'artifacts','screening');
     else if(width===768){await id('tool-team').press('Enter');await site('mobile').press('Enter');}
     else await drag(id('tool-team'),site('mobile'));
     assert.match(await id('mobile-items').textContent(),/Ultrasound · Sonographer/);
+    await checkClinicVan();
+    if(width===390)await site('mobile').locator('.sd-clinic-van').screenshot({path:path.join(out,'390-mobile-clinic-van-3x.png')});
     assert.match(await id('hub-items').textContent(),/Screening/);
     assert.match(await id('budget').textContent(),/615 \/ 720/);
     await p.reload();assert.match(await id('mobile-items').textContent(),/Ultrasound · Sonographer/);

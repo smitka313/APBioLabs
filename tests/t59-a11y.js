@@ -70,7 +70,14 @@ const KEYS = {
   lab04: { part: 'sa-v', pre: fillAll('predict-sav', 'predict-bags', 'predict-plasmo', 'predict-soak', 'predict-design'), btn: '#p1-run', key: ' ', done: p => D.tlDone(p, 'agar') },
   lab05: { part: 'sink-disks', pre: fillAll('predict-floatassay', 'predict-design'), btn: '#inf-pull', key: 'Enter', done: p => p.waitForFunction(() => !document.querySelector('#inf-pull').disabled && Lab.store.get('inf') != null || /sunk|sink/i.test((document.querySelector('#inf-fb') || {}).textContent || ''), null, { timeout: 25000 }) },
   lab06: { part: 'microrespirometer', pre: async p => { await fillAll('predict-microresp', 'predict-gas', 'predict-design')(p); await D.setv(p, '#p-speed', '6'); }, btn: '#p-run', key: ' ', done: p => D.tlDone(p, 'microresp') },
-  lab07: { part: 'root-tips', pre: async p => { await fillAll('predict-roottips', 'predict-meiosis', 'predict-sordaria', 'predict-design')(p); await p.click('[data-treat="control"]'); }, btn: '#rt-prep', key: 'Enter', done: () => sleep(2000) },
+  lab07: { part: 'root-tips', pre: async p => {
+    // The prediction controls are mounted by the lab. Do not silently skip
+    // them on a slow runner or navigate away before the save has completed.
+    await p.locator('#p-predict-roottips').waitFor({ state: 'attached' });
+    await fillAll('predict-roottips', 'predict-meiosis', 'predict-sordaria', 'predict-design')(p);
+    await p.waitForFunction(text => Lab.store.get('field:predict-roottips') === text, PRED, { timeout: 15000 });
+    await p.click('[data-treat="control"]');
+  }, btn: '#rt-prep', key: 'Enter', done: () => sleep(2000) },
   lab08: { part: 'transform', pre: async () => {}, btn: '#do-step', key: ' ', done: p => p.waitForFunction(() => !document.querySelector('#do-step').disabled, null, { timeout: 40000 }) },
   lab09: { part: 'run-a-gel', pre: async p => { await p.evaluate(() => document.querySelector('#g1-layout').click()); }, btn: '#g1-run', key: ' ', done: async p => { await sleep(3000); await p.focus('#g1-run'); await p.keyboard.press(' '); await sleep(800); } },
   lab10: { part: 'part-1-npp', pre: typePred('p-p1-diagram'), btn: '#p1-plus7', key: 'Enter', done: () => sleep(1500) },
@@ -344,3 +351,4 @@ async function responsive(b) {
   await b.close(); srv.close();
   T.done('t59-a11y');
 })();
+

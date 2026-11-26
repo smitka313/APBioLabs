@@ -24,7 +24,7 @@
   let session;
   try {session=guard?.open(window.localStorage,scope,[KEY]);} catch (_) {}
   const sharedReportIdentity=guard?.reportIdentity?.(session,[KEY],()=>window.Lab?.identity?.get?.() ?? null) ?? (()=>null);
-  let state=newRecord(), model, invalid=false, writeBlocked=false, viewAction=null, activePair='', warned='';
+  let state=newRecord(), model, invalid=false, writeBlocked=false, viewAction=null, activePair='', warned='', driftDraw=0;
   function decode(raw) {
     const s=JSON.parse(raw);
     const trial=s&&M.restore({v:s.v,seed:s.seed,step:s.action});
@@ -291,7 +291,7 @@
     }else{
       title='Generation '+entry.generation+' offspring recorded';
       why=entry.counts.total+' offspring replaced the parent generation. Each pair contributed four expected offspring.';
-      if(entry.generation===3)why+=' This is the birth count. The model starts selection now so you can compare births before and after a change. Generation 3 is not a biological threshold.';
+      if(entry.generation===3)why+=' This is the baseline for the next step: apply a new selection pressure to these same rats and compare who survives. Their alleles do not change.';
       if(entry.generation===5)why+=' This final record is offspring, not an additional survivor count.';
     }
     set('event-title',title);set('event-explanation',why);
@@ -548,6 +548,17 @@
     $('input[name=rg-concept][value="'+state.analysisAttempt+'"]').checked=true;
     set('check-feedback',analysisFeedback(state.analysisAttempt));
   }
+  $('#rg-drift-draw').addEventListener('click',()=>{
+    const trial=++driftDraw, first=M.sampleLitter('RB','BB',state.seed,2*trial-2), second=M.sampleLitter('RB','BB',state.seed,2*trial-1);
+    const description=sample=>sample.pups.join(', ')+'; '+fraction(sample.counts.redAlleles,2*sample.counts.total)+' allele copies are R';
+    const list=node('ul','','rg-evidence-list');
+    [first,second].forEach((sample,i)=>list.append(node('li','Simulated litter '+(i+1)+': '+description(sample)+'.')));
+    const summary=first.counts.redAlleles===second.counts.redAlleles
+      ? 'These two draws had the same R frequency. Sample again: chance does not guarantee a difference.'
+      : 'These litters have different R frequencies even though the parents and environment were the same.';
+    $('#rg-drift-output').replaceChildren(list,node('p',summary,'rg-muted'));
+    announce('Sample '+trial+'. Litter one: '+description(first)+'. Litter two: '+description(second)+'. '+summary,true);
+  });
   $('#rg-check').addEventListener('change',e=>{
     const input=e.target;
     if(input.name!=='rg-concept')return;
@@ -573,7 +584,8 @@
   $('#rg-confirm-reset').addEventListener('click',()=>{
     const next={...newRecord(),lastVisitedAt:Date.now()},result=session?.reset(KEY,JSON.stringify(next));
     if(!result?.ok) {$('#rg-reset-dialog').close();return notSaved(result?.reason);}
-    state=next;model=M.create(state.seed);viewAction=null;activePair='';set('check-feedback','');
+    state=next;model=M.create(state.seed);viewAction=null;activePair='';driftDraw=0;set('check-feedback','');
+    $('#rg-drift-output').replaceChildren();
     for(const name of ['analysis-table','evidence-table','evidence-summary','metrics'])$('#rg-'+name).replaceChildren();
     for(const r of $$('input[name=rg-concept]'))r.checked=false;
     fill();render();saved();$('#rg-reset-dialog').close();go('predict',{persist:false});

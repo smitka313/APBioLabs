@@ -106,6 +106,8 @@ fieldset.src { border: 0; margin: 0; padding: 0; display: grid; gap: 4px; min-wi
 .sentence-check select, .sentence-check input[type=text] { min-height: 36px; }
 
 .report-answer { margin: 0 0 6px; white-space: pre-wrap; }
+.investigation-report { min-inline-size: 0; }
+.report-tracker table.data :is(th, td) { white-space: normal; overflow-wrap: anywhere; vertical-align: top; }
 .investigation-report h4 { margin: 12px 0 2px; font-size: .95rem; }
 .report-checks { margin: 6px 0; }
 .submit-card { display: grid; gap: 12px; }

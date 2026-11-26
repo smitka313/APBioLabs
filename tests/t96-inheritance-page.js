@@ -37,7 +37,8 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
     T.ok(/Lessons 8–9 of OpenSciEd Biology Unit B\.3: Inheritance & Variation of Traits/.test(foot), 'footer credits OpenSciEd Biology B.3 Lessons 8-9');
     T.ok(await p.locator('.site-footer a[href="https://creativecommons.org/licenses/by-nc/4.0/"]').count() === 1 && await p.locator('.site-footer a[href="https://www.openscied.org/"]').count() >= 1, 'footer links CC BY-NC 4.0 and openscied.org');
     T.ok(/Adapted and reorganized as an interactive companion; the models, reading summaries and questions are new/.test(foot) && /Not affiliated with, endorsed by, or sponsored by OpenSciEd/.test(foot), 'footer states what changed and the non-endorsement');
-    T.ok(/GoatCounter/.test(foot) && /Nothing you type/.test(foot), 'privacy line');
+    T.ok(/counts anonymous page visits without cookies/.test(foot) && /Nothing you type/.test(foot) && !/GoatCounter/i.test(foot), 'plain privacy line');
+    T.ok(await p.locator('script[data-goatcounter]').count() === 1, 'one page-visit tracker remains');
     T.ok(await p.locator('.attribution a[href="https://creativecommons.org/licenses/by-nc/4.0/"]').count() === 1, 'attribution block links the license');
 
     // --- sections and navigation ---
@@ -230,6 +231,15 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
     await p.check('#cer-ev-3');
     await go(p, 'wrapup');
     await p.locator('#wrap-sentence').fill('Genes, UV exposure, and chance can affect cancer risk.');
+    const trackerIds=['tr-a1','tr-a2','tr-b1','tr-b2','tr-b3'];
+    for(const id of trackerIds)await p.check('#'+id);
+    const trackerRows=[
+      ['How a pedigree shows inherited risk.','Checked'],
+      ['How crossing over makes new combinations.','Checked'],
+      ['How UV damages DNA.','Checked'],
+      ['How melanin protects.','Checked'],
+      ['Why a graph pattern is not proof of cause.','Checked'],
+    ];
     await p.getByRole('button', {name:'Preview report'}).click();
     const scopedReport = p.locator('dialog.osr-dialog'), paper = scopedReport.locator('article');
     T.ok(await scopedReport.getByRole('heading',{name:'Environment & UV Evidence · Lesson 9'}).isVisible(), 'Lesson 9 is a complete independent pathway');
@@ -245,6 +255,10 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
       'the Word report preview preserves both previously recorded gamete sets');
     T.ok(!/Lakita’s pedigree|Two-gene inheritance/.test(exportedText),
       'the Lesson 9 report omits untouched family models rather than labeling them missing');
+    const rowsOf = table => table.locator('tbody tr').evaluateAll(rows=>rows.map(row=>Array.from(row.cells,cell=>cell.textContent.trim())));
+    T.ok(await paper.getByRole('heading',{name:'My progress tracker',exact:true}).isVisible() &&
+      JSON.stringify(await rowsOf(paper.getByRole('table',{name:'Progress tracker · 5 of 5 checked'})))===JSON.stringify(trackerRows),
+      'Lesson 9 preview explicitly preserves all five tracker checks, including melanin and graph patterns');
     await scopedReport.getByRole('button',{name:'Close report'}).click();
 
     // --- placeholders and the registration contract ---
@@ -299,12 +313,23 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
     await p.waitForFunction(() => document.querySelector('#wrapup.is-current'));
     T.ok(/choice questions answered/.test(await p.locator('#investigation-report').innerText()) && /Risk comes from genes/.test(await p.locator('#investigation-report').innerText()), 'report shows picks and written answers');
 
+    T.ok(JSON.stringify(await rowsOf(p.locator('#investigation-report').getByRole('table',{name:'Progress tracker · 5 of 5 checked'})))===JSON.stringify(trackerRows),
+      'on-page print summary preserves all five checks after reload');
+    await p.uncheck('#tr-b3');
+    await p.getByRole('button',{name:'Preview report'}).click();
+    T.ok(JSON.stringify(await rowsOf(paper.getByRole('table',{name:'Progress tracker · 4 of 5 checked'})))===
+      JSON.stringify(trackerRows.map(([label,status],i)=>[label,i===4?'Not checked':status])),
+      'a reopened preview distinguishes the deselected item from the four checks');
+    await scopedReport.getByRole('button',{name:'Close report'}).click();
+    await p.check('#tr-b3');
+
     // --- download ---
     await p.locator("details.ose-report-other > summary").click();
     const [dl] = await Promise.all([p.waitForEvent('download'), p.locator('#download-work').click()]);
     const payload = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));
     T.ok(payload.format === 'openscied-b3-inheritance-environment-progress-v1' && payload.student && payload.student.name === 'Test Student' && /SIMULATED/.test(payload.dataNote), 'download has format, student, and the simulated label');
     T.ok(payload.choices.find(c => c.id === 'exit-q1').result === 'correct' && payload.chips.length >= 4 && payload.written.find(w => w.id === 'wrap-sentence').answer !== '' && payload.question.ok, 'download captures what students picked');
+    T.ok(JSON.stringify(payload.chips.find(chip=>chip.id==='tracker')?.chosen)===JSON.stringify(trackerRows.map(row=>row[0])), 'JSON work backup agrees with the preview tracker');
     T.ok(Object.keys(payload).every(k => !/health|family|diagnos/i.test(k)), 'download has no personal-health fields');
 
     // --- clear this activity ---

@@ -604,6 +604,9 @@ async function play(browser, base, cfg) {
     check(await page.locator('#hb-explain-summary').isVisible(),
       at + ' keeps the student’s own released evidence on the explanation screen');
     await hasVisibleTable(page, '#hb-explain-table');
+    const limit=page.locator('#hb-evidence-limit');
+    check(await limit.isVisible()&&/soil landings, not germination, survival, or reproduction.*soil amount and patch arrangement/i.test(await limit.innerText()),
+      at+' the landing and habitat-design limits are visible beside the Explain evidence');
     const carried = await resultRows(page, '#hb-explain-table', baseline.seed, at + ' explanation table');
     check(JSON.stringify(carried) === JSON.stringify(compared), at + ' carries the exact comparison data into Explain');
     const source = '#hb-published [data-hb-source-content]';
