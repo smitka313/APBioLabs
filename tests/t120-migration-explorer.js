@@ -100,7 +100,8 @@ async function auditNotesAndRain(browser,base){
     const limits=await p.locator('.mx-evidence-intro').textContent();
     ok(/group averages for sampled male wildebeest/.test(limits)&&/several studies/.test(limits)&&/outbreak year/.test(limits)&&/whole herd/.test(limits),
       'sex, time/sample limits, and outbreak context are visible beside the field cards');
-    ok(/90% bone-marrow fat in May and 23% in August/.test(limits)&&/different sampled groups/.test(limits)&&/do not report group sample sizes/.test(limits),
+    ok(/90% bone-marrow fat in May and 23% in August/.test(limits)&&/different sampled groups/.test(limits)&&/do not report the sample size for either group/.test(limits)&&
+      /126 carcasses sampled in 1968–1973 in one study, not the number behind any one card/.test(limits),
       'field cards explain the apparent swing without inventing sample sizes or tracking the same animals');
     await p.locator('[data-collection="rainfall"]').tap();
     ok(await darkGraph('#collection-rainfall .mx-rain-grid > :last-child'),'Investigate adapts its source image to dark mode too');
