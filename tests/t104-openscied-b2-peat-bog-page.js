@@ -138,8 +138,16 @@ const setRange = async (p, id, v) => { await p.evaluate(([i, x]) => { const r = 
     await setRange(p, 'fossil', 15);
     T.ok(/621 ppm/.test(await p.locator('#gh-svg').evaluate(e => e.textContent)) && /\+2\.3 °C/.test(await p.locator('#gh-svg').evaluate(e => e.textContent)), 'more fossil fuel: 621 ppm, +2.3 C');
     T.ok(await p.locator('#climate-table tbody tr').count() === 16, 'climate table alternative has 16 rows');
-    await p.click('#climateReset');
-    await setRange(p, 'year', 2100); await p.click('#sendBog');
+    T.ok((await p.locator('#projection-hint').innerText()).includes('projection through 2100'), 'chart note explains that the selected year is part of a projection');
+    await setRange(p, 'year', 2050);
+    await setRange(p, 'forest', 75);
+    const resetClimate = p.getByRole('button', { name: 'Reset model settings', exact: true });
+    await resetClimate.click();
+    T.ok((await p.locator('#year').inputValue()) === '2100' &&
+      +(await p.locator('#fossil').inputValue()) === 10 && +(await p.locator('#forest').inputValue()) === 100,
+      'reset restores the original climate settings and selects the 2100 projection');
+    await p.waitForFunction(() => document.getElementById('announcer').textContent.includes('Showing the projection for 2100.'));
+    await p.click('#sendBog');
     await p.waitForFunction(() => document.querySelector('#bog.is-current'));
     T.ok(+await p.locator('#s-co2').inputValue() === 520 && +await p.locator('#s-temp').inputValue() === 11, 'Test the bog in 2100 sets CO2 520 ppm and 11 C');
 

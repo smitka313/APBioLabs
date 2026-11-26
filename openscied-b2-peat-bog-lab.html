@@ -105,7 +105,7 @@
       </div>
       <details class="disclose"><summary>How to use this simulator</summary><div class="inner help">
         <h3>Set an exact number</h3><p>Type the number in the box next to a slider and press <strong>Enter</strong>. Or click the slider’s round handle and use the <strong>left</strong> and <strong>right arrow keys</strong>.</p>
-        <h3>Start over</h3><p>Choose <strong>Reset</strong> under Quick scenarios, or the Reset button next to Record this trial, to put every bog setting back to the start. <strong>Reset to today</strong> resets the global warming sliders.</p>
+        <h3>Start over</h3><p>Choose <strong>Reset</strong> under Quick scenarios, or the Reset button next to Record this trial, to put every bog setting back to the start. <strong>Reset model settings</strong> restores the starting settings and selects the 2100 projection.</p>
         <h3>Read the bog picture</h3><p>Moving shapes show materials moving. Thicker, faster arrows mean a faster rate. Each material has its own color <em>and</em> shape: gray circles = carbon dioxide, blue diamonds = oxygen, teal drops = water, purple squares = dead plants becoming peat, yellow stars = sunlight. The dashed teal line is the water level. The striped blue layer is permafrost (frozen peat). The <strong>Pause motion</strong> button stops the movement.</p>
         <h3>Read the number boxes</h3><p>Rates go from 0 (stopped) to 100 (fastest). The ↑ and ↓ badges show how much a number changed. <strong>Peat carbon</strong>: positive (✓ green) means a carbon sink and the peat grows. Negative (✕ red) means carbon is released to the atmosphere and the peat shrinks.</p>
         <h3>Get more help</h3><p>Choose an <strong>i</strong> button to explain a term. Choose a speaker button to hear a note read aloud with your device’s built-in voice. Nothing is sent anywhere.</p>
@@ -288,8 +288,9 @@
             <span class="hint">Compared with today. Protecting them keeps photosynthesis pulling in CO₂. Draining, clearing, or burning them releases stored carbon.</span>
           </div>
           <div class="ctrl">
-            <div class="ctrl-top"><label for="year">Show year</label><span class="numwrap"><input type="number" class="num" id="n-year" inputmode="numeric" aria-label="Type a year from 2025 to 2100"></span></div>
-            <input type="range" id="year" min="2025" max="2100" step="1" value="2100">
+            <div class="ctrl-top"><label for="year">Show year</label><span class="numwrap"><input type="number" class="num" id="n-year" inputmode="numeric" aria-label="Type a year from 2025 to 2100" aria-describedby="projection-hint"></span></div>
+            <input type="range" id="year" min="2025" max="2100" step="1" value="2100" aria-describedby="projection-hint">
+            <span class="hint" id="projection-hint">The graphs show a projection through 2100 using the settings above, not a prediction of what will happen.</span>
           </div>
           <div class="flowbars" id="carbon-bars">
             <div><span class="sub">Carbon each year (billion tonnes)</span><button class="info" type="button" aria-expanded="false" aria-controls="tip-flows" aria-label="How do I read these bars?" title="How do I read these bars?"><span aria-hidden="true">i</span></button><span class="tip" id="tip-flows" hidden><b>Gt</b> = gigatonnes, or billions of tonnes of carbon. Bars marked “adds” put carbon in the air. Bars marked “removes” take it out. If the “adds” bars are bigger, CO₂ in the air goes up.</span></div>
@@ -299,7 +300,7 @@
             <div class="flowbar"><span>Taken up by oceans <em>(removes ▼)</em></span><div class="bar" aria-hidden="true"><span id="b-ocean" class="fill-o2"></span></div><span class="num" id="n-ocean"></span></div>
             <p class="small" id="balanceText"></p>
           </div>
-          <div class="row"><button class="btn btn--primary" id="sendBog" type="button">Test the bog in this year</button><button class="btn" id="climateReset" type="button">Reset to today</button></div>
+          <div class="row"><button class="btn btn--primary" id="sendBog" type="button">Test the bog in this year</button><button class="btn" id="climateReset" type="button">Reset model settings</button></div>
           <p class="small" id="sendInfo"></p>
           <p class="small muted">Sets the bog to that year’s CO₂ level. The Arctic warms about 2.5 times faster than the planet as a whole in this model (real estimates run from about 2 to 4 times), so its summer temperature rises more.</p>
         </div>
