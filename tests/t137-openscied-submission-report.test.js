@@ -105,6 +105,8 @@ function mountedReport(options = {}) {
   const createDocument = () => ({ body: new Node('body'), head: new Node('head'), createElement: tag => new Node(tag),
     documentElement: { lang:'en' }, importNode: copyNode, baseURI:'https://example.test/activity', querySelectorAll: () => [] });
   const doc = createDocument();
+  if (options.localPrintCSS) doc.styleSheets = [{href:'https://example.test/openscied-submission-report.css?v=2',
+    cssRules:[{cssText:'.osr-paper { color: black; }'}]}];
   const events = {}, downloads = [], printed = [], tabPrinted = [], work = new Map();
   const printTab = { document:createDocument(), opener: {}, print: () => tabPrinted.push('print'), close() {} };
   let popupAttempts = 0;
@@ -205,4 +207,18 @@ test('a blocked print tab keeps the report preview and offers the Word fallback'
   assert.deepEqual(f.printed, []);
   assert.ok(f.doc.body.all().some(n => /Allow pop-ups.*Word report/.test(n.textContent || '')));
   assert.equal(f.doc.body.querySelector('.osr-label').textContent, 'Activity complete');
+});
+
+
+test('an isolated printable report works immediately when the activity already loaded its stylesheet', () => {
+  const f = mountedReport({ printInNewTab:true, localPrintCSS:true });
+  f.button('Print or save as PDF').click();
+  const sheet=f.printTab.document.body.querySelector('.osr-print-sheet');
+  const button=sheet.all().find(n=>n.tag==='button');
+  const head=f.printTab.document.head.children;
+  assert.equal(button.disabled,false);
+  assert.ok(head.some(n=>n.tag==='style' && n.textContent.includes('.osr-paper { color: black; }')));
+  assert.ok(!head.some(n=>n.tag==='link'),'no stylesheet request is needed in the opened tab');
+  button.click();
+  assert.deepEqual(f.tabPrinted,['print']);
 });

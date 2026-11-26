@@ -446,9 +446,22 @@
       const viewport = view.createElement('meta');
       viewport.name = 'viewport';
       viewport.content = 'width=device-width,initial-scale=1';
-      const stylesheet = view.createElement('link');
-      stylesheet.rel = 'stylesheet';
-      stylesheet.href = new URL('openscied-submission-report.css', doc.baseURI).href;
+      const cssURL = new URL('openscied-submission-report.css', doc.baseURI);
+      let cssText = '';
+      // Reuse the same-origin rules already loaded in the activity. Some browsers
+      // won't finish a new stylesheet request in an isolated about:blank tab.
+      for (const sheet of Array.from(doc.styleSheets || [])) {
+        if (!sheet.href || new URL(sheet.href).pathname !== cssURL.pathname) continue;
+        try { cssText = Array.from(sheet.cssRules, rule => rule.cssText).join('\n'); }
+        catch (_) { /* Fall back to the normal stylesheet link. */ }
+        if (cssText) break;
+      }
+      const stylesheet = view.createElement(cssText ? 'style' : 'link');
+      if (cssText) stylesheet.textContent = cssText;
+      else {
+        stylesheet.rel = 'stylesheet';
+        stylesheet.href = cssURL.href;
+      }
 
       const paper = view.importNode(preview, true);
       const oldHeading = paper.querySelector('.osr-title');
@@ -463,13 +476,15 @@
       const tools = node('div', 'osr-tools');
       const print = action('Print or save as PDF', true);
       const help = node('p', 'osr-screen-help', 'Choose “Save as PDF” in the print window. Close this tab to return to your activity.');
-      const status = node('p', 'osr-live', 'Preparing the print layout…');
+      const status = node('p', 'osr-live', cssText ? '' : 'Preparing the print layout…');
       status.setAttribute('role', 'status');
-      print.disabled = true;
-      stylesheet.addEventListener('load', () => { print.disabled = false; status.textContent = ''; }, { once: true });
-      stylesheet.addEventListener('error', () => {
-        status.textContent = 'Could not load the print layout. Try opening this tab again, or download the Word report instead.';
-      }, { once: true });
+      print.disabled = !cssText;
+      if (!cssText) {
+        stylesheet.addEventListener('load', () => { print.disabled = false; status.textContent = ''; }, { once: true });
+        stylesheet.addEventListener('error', () => {
+          status.textContent = 'Could not load the print layout. Try opening this tab again, or download the Word report instead.';
+        }, { once: true });
+      }
       print.addEventListener('click', () => {
         try { tab.print(); }
         catch (_) { status.textContent = 'Could not open the print window. Try using your browser’s Print command or downloading the Word report.'; }
