@@ -6,14 +6,15 @@ const element=()=>({hidden:false,dataset:{},children:[],textContent:'',
   setAttribute(k,v){this[k]=v;},removeAttribute(k){if(k==='datetime')delete this.dateTime;}
 });
 function fixture(initial={},restored=false){
-  let now=100,ok=true,allowed=true,lastRaw,storage;
-  const output=element(),window={addEventListener(_,cb){storage=cb;}};
+  let now=100,ok=true,allowed=true,lastRaw;
+  const listeners=new Map(),output=element(),window={addEventListener(type,cb){listeners.set(type,cb);}};
   class FakeDate extends Date {static now(){return now;}}
   vm.runInNewContext(fs.readFileSync(file,'utf8'),{window,document:{createElement:element},Date:FakeDate});
   const session={write(key,raw){lastRaw=raw;return {ok};}};
   const receipt=window.OpenSciEdB5Workspace.mount({output,key:'work',session,canSave:()=>allowed,restored:()=>restored,getRecord:()=>initial});
   return {output,receipt,attempted:()=>lastRaw,stamp:()=>output.children[1].dateTime,show:()=>output.dataset.saveState,
-    setTime:value=>now=value,setWrite:value=>ok=value,allow:value=>{allowed=value;storage({key:'work'});}};
+    setTime:value=>now=value,setWrite:value=>ok=value,allow:(value,event=true)=>{allowed=value;if(event)listeners.get('storage')?.({key:'work'});},
+    showPage:persisted=>listeners.get('pageshow')?.({persisted})};
 }
 test('only successful work changes get a receipt; navigation and stale tabs do not refresh it',()=>{
   const f=fixture();
@@ -46,4 +47,18 @@ test('restored legacy work does not inherit an invented timestamp',()=>{
   const modern=fixture({lastSavedAt:80},true);
   assert.equal(modern.show(),'saved');
   assert.equal(modern.stamp(),new Date(80).toISOString());
+});
+
+test('a restored tab refreshes its save receipt without writing a timestamp',()=>{
+  const f=fixture({lastSavedAt:80},true);
+  f.setTime(250);
+  f.showPage(true);
+  assert.equal(f.show(),'saved');
+  assert.equal(f.stamp(),new Date(80).toISOString());
+  assert.equal(f.attempted(),undefined);
+  f.allow(false,false);
+  f.showPage(true);
+  assert.equal(f.show(),'blocked','the guard changed while the page was cached');
+  assert.equal(f.stamp(),undefined);
+  assert.equal(f.attempted(),undefined);
 });

@@ -53,6 +53,8 @@
     root.addEventListener('storage', e => {
       if (e.key === null || e.key === key || e.key.startsWith('aplab:pref:openscied-save-session:v1:')) refresh();
     });
+    // Back-forward cache restores may not replay storage events.
+    root.addEventListener('pageshow', e => { if (e.persisted) refresh(); });
     refresh();
     return { write, refresh };
   }
