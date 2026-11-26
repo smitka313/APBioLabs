@@ -68,6 +68,25 @@ const OUT = process.env.OUT || require('os').tmpdir();
   const p5 = await phone.newPage(); await p5.goto(srv.url + 'lab05.html#float-assay'); await p5.waitForTimeout(800);
   T.ok(await p5.evaluate(() => Lab.pages.current().id === 'float-assay'), 'part-slug routing unaffected');
 
+  // A restore confirmation cannot overwrite work saved by a peer tab
+  // after the confirmation appeared, and a successful restore retires that peer.
+  const conflict = await phone.newPage();
+  await conflict.goto(info.url);
+  const conflictApply = conflict.locator('#resume-apply');
+  await conflictApply.waitFor({ state: 'visible' });
+  const peerAnswer = 'An answer saved after this confirmation opened.';
+  await ph.evaluate(answer => Lab.store.set('field:restore-conflict-fixture', answer), peerAnswer);
+  await conflictApply.click();
+  T.ok(/Saved work changed/.test(await conflict.locator('#resume-banner').innerText()) &&
+    await conflict.evaluate(() => Lab.store.get('field:restore-conflict-fixture')) === peerAnswer,
+    'an older transfer-link confirmation cannot replace an answer just saved in another tab');
+  await conflict.goto('about:blank');
+  await conflict.goto(info.url);
+  await Promise.all([conflict.waitForNavigation({ waitUntil: 'load' }), conflictApply.click()]);
+  await ph.evaluate(() => Lab.store.set('field:restore-conflict-fixture', 'stale peer write'));
+  T.ok(await conflict.evaluate(() => Lab.store.get('field:restore-conflict-fixture')) === null,
+    'a successful restore replaces the previous records and prevents the old tab from bringing them back');
+
   // ---- too much data for a QR code ----
   const big = await T.ctxFor(b);
   const pb = await T.open(big, 'lab05.html', 'submit', srv.url);
