@@ -280,6 +280,33 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   T.ok(p.errors.length === 0, 'no page errors' + (p.errors.length ? ': ' + p.errors.join(' | ') : ''));
   await ctx.close();
 
+  /* ---------- 4. Shared-device confirmation and scoped restart, two actual tabs ---------- */
+  console.log('Two-tab handoff');
+  ctx = await ctxFor(b, { seed: base() });
+  p = await T.open(ctx, 'lab05.html', '', srv.url);
+  const peer = await T.open(ctx, 'lab05.html', '', srv.url);
+  await p.evaluate(() => Lab.data.signOut());
+  const handoff = p.locator('.dm-card');
+  await handoff.locator('.dm-text').fill('Jordan');
+  await peer.evaluate(() => Lab.store.set('field:zz-test', 'new result in second tab'));
+  await handoff.locator('.dm-text').press('Enter');
+  T.ok(await handoff.getByRole('button', { name: 'Sign out and erase' }).isDisabled() &&
+    /Saved work changed/.test(await handoff.locator('.tool-status').textContent()) &&
+    JSON.parse((await dump(p))['aplab:lab05:field:zz-test']) === 'new result in second tab',
+    'a saved answer in another tab invalidates the sign-out confirmation');
+  await handoff.getByRole('button', { name: 'Cancel' }).click();
+  await p.evaluate(() => Lab.data.startOverLab());
+  const scoped = p.locator('.dm-card');
+  await scoped.getByRole('checkbox').check();
+  await Promise.all([p.waitForNavigation({ waitUntil: 'load' }), scoped.getByRole('button', { name: 'Erase Lab 5 work' }).click()]);
+  await peer.evaluate(() => Lab.store.set('field:zz-test', 'stale answer must not return'));
+  const afterScoped = await dump(p);
+  T.ok(!afterScoped['aplab:lab05:field:zz-test'] &&
+    JSON.parse(afterScoped['aplab:lab02:field:zz-test']) === 'hardy' && afterScoped[OPENSCIED] &&
+    JSON.parse(afterScoped['aplab:student']).name === ME.name,
+    'the old Lab 5 editor cannot restore its erased answer; sibling work and sign-in stay');
+  await ctx.close();
+
   await b.close(); srv.close();
   T.done('t24-signout');
 })();

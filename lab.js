@@ -49,10 +49,16 @@
   // Keep this key compatible with OpenSciEdSaveSession even on pages without it.
   const OPENSCIED_EPOCH_KEY = 'aplab:pref:openscied-save-session:v1:global';
   const OPENSCIED_RESUME_KEY = 'aplab:pref:openscied-resume:v1';
-  let handoffEpoch = null;
-  try { handoffEpoch = localStorage.getItem(HANDOFF_KEY); } catch (_) { /* Storage may be disabled. */ }
+  const LAB_RESET_KEY = IS_LAB ? `aplab:pref:ap-lab-reset:v1:${LAB_ID}` : null;
+  let handoffEpoch = null, labResetEpoch = null;
+  try {
+    handoffEpoch = localStorage.getItem(HANDOFF_KEY);
+    if (LAB_RESET_KEY) labResetEpoch = localStorage.getItem(LAB_RESET_KEY);
+  } catch (_) { /* Storage may be disabled. */ }
   function staleEditor() {
-    try { return localStorage.getItem(HANDOFF_KEY) !== handoffEpoch; } catch (_) { return false; }
+    try { return localStorage.getItem(HANDOFF_KEY) !== handoffEpoch ||
+      (LAB_RESET_KEY !== null && localStorage.getItem(LAB_RESET_KEY) !== labResetEpoch); }
+    catch (_) { return false; }
   }
   function workspaceStatus() {
     try { return wiped || localStorage.getItem(HANDOFF_KEY) !== handoffEpoch ? 'changed' : 'current'; }
@@ -60,7 +66,7 @@
   }
   const staleEditorMessage = 'This device was cleared in another tab. Reload this page before saving or signing in.';
   window.addEventListener('storage', e => {
-    if (e.key === HANDOFF_KEY && staleEditor() && IS_LAB) Lab.toast(staleEditorMessage, {type:'error', key:'handoff'});
+    if (IS_LAB && (e.key === HANDOFF_KEY || e.key === LAB_RESET_KEY) && staleEditor()) Lab.toast(staleEditorMessage, {type:'error', key:'handoff'});
   });
   function storageFailed() { if (storageBad) return; storageBad = true; setTimeout(function () { if (Lab._storageWarn) Lab._storageWarn(); }, 0); }
 
@@ -1004,8 +1010,15 @@
       if (v != null) { if (f.type === 'checkbox') f.checked = v; else f.value = v; }
       let t, typed = false; const status = f.closest('.prompt') && $('.saved', f.closest('.prompt'));
       const answer = f.tagName === 'TEXTAREA' || !!f.dataset.label;
-      const save = () => { store.set(key, f.type === 'checkbox' ? f.checked : f.value); if (status) status.textContent = 'Saved on this device'; if (typed && answer) savedToast(); typed = false; };
-      saveFns.push(() => { clearTimeout(t); save(); });
+      const save = () => {
+        if (wiped || staleEditor()) { if (status && !wiped) status.textContent = 'Not saved. Reload this tab before continuing.'; typed = false; return; }
+        store.set(key, f.type === 'checkbox' ? f.checked : f.value);
+        if (status) status.textContent = 'Saved on this device';
+        if (typed && answer) savedToast();
+        typed = false;
+      };
+      // Flushing an untouched field in another tab must not restore its old value.
+      saveFns.push(() => { clearTimeout(t); if (typed) save(); });
       f.addEventListener('input', () => { typed = true; clearTimeout(t); t = setTimeout(save, 400); workChanged(); });
       f.addEventListener('change', save);
     });
@@ -1273,10 +1286,11 @@
     try { Lab.timelapse.eraseAll(); } catch (e) { /* recorded runs live in IndexedDB */ }
     try { Object.keys(sessionStorage).filter(k => k.startsWith('aplab:')).forEach(k => sessionStorage.removeItem(k)); } catch (e) { /* ignore */ }
   }
+  const clearMarker = () => globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36) + ':' + nativeRandom().toString(36).slice(2);
   function invalidateOpenSciEdEditors() {
     if (staleEditor()) throw new Error(staleEditorMessage);
     // This non-personal marker survives the clear, even from an AP page.
-    const marker = globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36) + ':' + nativeRandom().toString(36).slice(2);
+    const marker = clearMarker();
     localStorage.setItem(OPENSCIED_EPOCH_KEY, marker);
     if (localStorage.getItem(OPENSCIED_EPOCH_KEY) !== marker) throw new Error('Could not protect the OpenSciEd clear.');
     localStorage.setItem(HANDOFF_KEY, marker);
@@ -1328,14 +1342,45 @@
     sessionSet(FLASH_KEY, 'reset');
     location.reload();
   }
-  function doStartOverLab() {
-    if (staleEditor()) { Lab.toast(staleEditorMessage, {type:'error'}); return; }
-    const id = LAB_ID, bm = gstore.get('bookmark'), last = gstore.get('last');
+  function doStartOverLab(status) {
+    const id = LAB_ID;
     const drop = new Set([`aplab:progress:${id}`, `aplab:hint:${id}`, `aplab:backup:${id}`]);
-    if (bm && bm.lab === id) drop.add('aplab:bookmark');
-    if (last && last.lab === id) drop.add('aplab:last');
+    if (gstore.get('bookmark')?.lab === id) drop.add('aplab:bookmark');
+    if (gstore.get('last')?.lab === id) drop.add('aplab:last');
+    const collect = () => Object.keys(localStorage).filter(k => k.startsWith(`aplab:${id}:`) || drop.has(k));
+    const removed = [];
+    try {
+      if (!LAB_RESET_KEY || staleEditor()) throw new Error(staleEditorMessage);
+      const rows = collect().map(key => [key, localStorage.getItem(key)]);
+      // Invalidate other open copies of this lab before removing any answers.
+      const mark = clearMarker();
+      localStorage.setItem(LAB_RESET_KEY, mark);
+      if (localStorage.getItem(LAB_RESET_KEY) !== mark) throw new Error('Could not protect the lab reset.');
+      labResetEpoch = mark;
+      for (const row of rows) {
+        localStorage.removeItem(row[0]);
+        if (localStorage.getItem(row[0]) !== null) throw new Error('Could not clear a saved record.');
+        removed.push(row);
+      }
+      if (staleEditor() || collect().length) throw new Error('Could not verify the lab reset.');
+    } catch (e) {
+      // Restore any records already removed unless another tab has since reset
+      // the workspace or written a newer record under the same key.
+      let restored = true;
+      for (const [key, raw] of removed) {
+        try {
+          if (raw === null) continue;
+          if (staleEditor()) { restored = false; break; }
+          if (localStorage.getItem(key) === null) localStorage.setItem(key, raw);
+          if (localStorage.getItem(key) !== raw) restored = false;
+        } catch (_) { restored = false; }
+      }
+      status(e?.message === staleEditorMessage ? staleEditorMessage :
+        restored ? 'Could not clear this lab. Your saved work was not cleared. Check browser storage and try again.' :
+          'Could not finish clearing this lab. Some records may have been removed. Check your backup before trying again.', true);
+      return;
+    }
     noFlush = true; wiped = true; if (Lab._allowLeave) Lab._allowLeave();
-    lsKeys().filter(k => k.startsWith(`aplab:${id}:`) || drop.has(k)).forEach(lsRemove);
     try { Lab.timelapse.erase(id); } catch (e) { /* ignore */ }
     try { sessionStorage.removeItem(shownKey()); } catch (e) { /* ignore */ }
     memBackup = null;
@@ -1353,10 +1398,10 @@
     const inerted = [];
     const uid = 'dm-' + o.id;
     const backup = activeBackup.get(o.save);
-    const confirmBtn = h('button', { class: 'btn btn--danger-solid dm-confirm', type: 'button', disabled: true, onclick: () => { if (!confirmBtn.disabled && !backup?.pending) o.onConfirm(); } }, o.confirmText);
+    const confirmBtn = h('button', { class: 'btn btn--danger-solid dm-confirm', type: 'button', disabled: true, onclick: () => { if (!confirmBtn.disabled && !backup?.pending && !backup?.reviewRequired) o.onConfirm(); } }, o.confirmText);
     let gateEl, gateNode, gateMatches;
     function syncConfirmation() {
-      confirmBtn.disabled = !!backup?.pending || !gateMatches();
+      confirmBtn.disabled = !!backup?.pending || !!backup?.reviewRequired || !gateMatches();
     }
     if (o.gate.kind === 'check') {
       gateEl = h('input', { type: 'checkbox', id: uid + '-gate', class: 'dm-check' });
@@ -1418,7 +1463,7 @@
     const status = h('p', { class: 'tool-status', role: 'status', 'aria-live': 'polite' });
     const say = (t, bad) => { status.textContent = t; status.classList.toggle('is-bad', !!bad); };
     const kids = [];
-    const backupState = { pending: false, cancelled: false, onChange: null };
+    const backupState = { pending: false, cancelled: false, reviewRequired: false, onChange: null };
     const asyncDownloads = [];
     function setDownloadPending(pending, failed) {
       backupState.pending = pending;
@@ -1508,24 +1553,42 @@
       status.textContent = message; status.classList.toggle('is-bad', !!bad);
     };
   }
-  function confirmSiteClear(save, clear) {
-    const status = reportClearError(save);
-    if (activeBackup.get(save)?.pending) return;
-    // If an already-open activity saved for the first time while this dialog
-    // was open, offer its backup before honoring the destructive confirmation.
-    const openSciEd = save.querySelector('.dm-openscied-work');
-    if (openSciEd?.hidden) {
+  // Snapshot the saved work covered by the confirmation, not separate
+  // navigation or backup bookkeeping keys. Missing and blank AP fields are
+  // equivalent, but changing a real answer to blank still changes the snapshot.
+  function clearWorkVersion(onlyLab) {
+    const records = Object.keys(localStorage).filter(key => onlyLab ? key.startsWith(`aplab:${onlyLab}:`) :
+      key === 'aplab:student' || /^aplab:lab\d{2}:/.test(key) || openSciEdKey(key));
+    return JSON.stringify(records.sort().map(key => [key, localStorage.getItem(key)]).filter(([key, raw]) =>
+      raw !== null && !(/^aplab:lab\d{2}:field:/.test(key) && (raw === '""' || raw === 'false'))));
+  }
+  function prepareClear(save, clear, onlyLab) {
+    const status = reportClearError(save), backup = activeBackup.get(save);
+    let version;
+    try { version = clearWorkVersion(onlyLab); } catch (_) { /* Recheck before erasing. */ }
+    function stop(message) {
+      backup.reviewRequired = true;
+      backup.onChange?.(true);
+      status(message, true);
+    }
+    const cannotCheck = 'Could not check saved work. Nothing was cleared. Check browser storage and reopen this dialog.';
+    return () => {
+      if (backup.pending || backup.reviewRequired) return;
+      if (staleEditor()) { stop(staleEditorMessage); return; }
       try {
-        if (Object.keys(openSciEdWork()).length) {
-          openSciEd.hidden = false;
-          const noWork = save.querySelector('.dm-no-work'); if (noWork) noWork.hidden = true;
-          status('OpenSciEd work was saved while this dialog was open. Download a backup if you need it, then confirm again.');
-          openSciEd.querySelector('button').focus();
+        if (version === undefined) { stop(cannotCheck); return; }
+        if (clearWorkVersion(onlyLab) !== version) {
+          const archive = save.querySelector('.dm-openscied-work');
+          if (archive?.hidden && Object.keys(openSciEdWork()).length) {
+            archive.hidden = false;
+            const noWork = save.querySelector('.dm-no-work'); if (noWork) noWork.hidden = true;
+          }
+          stop('Saved work changed while this dialog was open. Nothing was cleared. Download a backup of the latest work, then cancel and reopen this dialog to erase.');
           return;
         }
-      } catch (_) { /* Strict erase verifies access and reports any failure. */ }
-    }
-    clear(status);
+      } catch (_) { stop(cannotCheck); return; }
+      clear(status);
+    };
   }
   function signOutDialog(opener, opts = {}) {
     if (staleEditor()) { Lab.toast(staleEditorMessage, {type:'error'}); return null; }
@@ -1539,7 +1602,7 @@
       body: [save], save,
       gate: first ? { kind:'text', label:`To confirm, type your first name (${first})`, expect:first, hint:'The button below turns on when the name matches.' }
         : { kind:'text', label:'To confirm, type ERASE (capital letters)', expect:'ERASE', exact:true, hint:'The button below turns on when you type ERASE.' },
-      confirmText: 'Sign out and erase', onConfirm: () => confirmSiteClear(save, doSignOut),
+      confirmText: 'Sign out and erase', onConfirm: prepareClear(save, doSignOut),
     });
   }
   function startOverAllDialog(opener) {
@@ -1554,7 +1617,7 @@
       warn: `This erases AP Biology and OpenSciEd work saved in this browser. ${idn ? 'Your name and class stay, and ' : ''}you get fresh simulated data (a new Dataset ID). It can't be undone.`,
       body: [h('div', { class: 'dm-save' }, h('p', { class: 'dm-save-title' }, 'AP Biology lab records:'), list), save], save,
       gate: { kind: 'text', label: 'To confirm, type ERASE (capital letters)', expect: 'ERASE', exact: true, hint: 'The button below turns on when you type ERASE.' },
-      confirmText: 'Erase all my lab work', onConfirm: () => confirmSiteClear(save, doStartOverAll),
+      confirmText: 'Erase all my lab work', onConfirm: prepareClear(save, doStartOverAll),
     });
   }
   function startOverLabDialog(opener) {
@@ -1565,7 +1628,7 @@
       warn: `This erases every answer, data table and saved result on Lab ${no}${p && p.total ? ` (${p.done} of ${p.total} parts done)` : ''} from this computer. Your name, your class and your other labs are not touched. It can't be undone.`,
       body: [save], save,
       gate: { kind: 'check', label: `I've saved anything I need from Lab ${no}.` },
-      confirmText: `Erase Lab ${no} work`, onConfirm: doStartOverLab,
+      confirmText: `Erase Lab ${no} work`, onConfirm: prepareClear(save, doStartOverLab, LAB_ID),
     });
   }
 
