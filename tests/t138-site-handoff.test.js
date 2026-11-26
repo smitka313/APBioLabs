@@ -31,7 +31,7 @@ function page(localStorage,pathname='/index.html', beforeScriptLoad=()=>{}){
     setAttribute(k,v){this.attributes[k]=String(v);if(k==='hidden'||k==='disabled')this[k]=true;if(k==='id'||k==='value')this[k]=String(v);}
     removeAttribute(k){delete this.attributes[k];}
     addEventListener(k,fn){(this.events[k]||=[]).push(fn);}
-    trigger(k){let result;for(const fn of this.events[k]||[])result=fn({target:this,currentTarget:this,preventDefault:noop,stopPropagation:noop});return result;}
+    trigger(k,details={}){let result;for(const fn of this.events[k]||[])result=fn({target:this,currentTarget:this,preventDefault:noop,stopPropagation:noop,...details});return result;}
     click(){if(!this.disabled)return this.trigger('click');}
     focus(){doc.activeElement=this;}
     append(...nodes){for(let n of nodes){if(typeof n==='string')n=new Element('#text',n);this.children.push(n);n.parent=this;}}
@@ -52,7 +52,7 @@ function page(localStorage,pathname='/index.html', beforeScriptLoad=()=>{}){
   doc.head.append=script=>{
     assert.equal(script.src,'openscied-dashboard.js');
     queueMicrotask(()=>{
-      beforeScriptLoad();
+      if (beforeScriptLoad()===false) { script.onerror(); return; }
       vm.runInNewContext(dashboardSource,env);
       script.onload();
     });
@@ -319,4 +319,69 @@ test('a clean-device restore rolls back the imported AP record when browser stor
   assert.equal(s.getItem('aplab:student'),null); assert.equal(ap.Lab.identity.get(),null);
   assert.equal(s.getItem('aplab:lab02:field:model'),null);
   assert.deepEqual(ap.nav,[]);
+});
+
+for (const [name,open,id,word] of [
+  ['Sign out', p=>p.Lab.data.signOut(), 'signout','First'],
+  ['Start over', p=>p.Lab.data.startOverAll(), 'startover','ERASE']
+]) {
+  test(name+' cannot erase while preparing a requested OpenSciEd archive',async()=>{
+    const original=migWork('only copy of student work');
+    const s=withStudent({[MIG]:original}),p=page(s,'/ap-biology.html'),dialog=open(p);
+    const gate=dialog.querySelector('#dm-'+id+'-gate'),erase=dialog.querySelector('.dm-confirm');
+    gate.value=word; gate.trigger('input');
+    assert.equal(erase.disabled,false);
+    const pending=dialog.querySelector('.dm-openscied-backup').click();
+    assert.equal(erase.disabled,true);
+    assert.match(dialog.querySelector('.tool-status').textContent,/Erase is paused/);
+    gate.trigger('input'); gate.trigger('keydown',{key:'Enter'});
+    erase.click();
+    assert.equal(erase.disabled,true);
+    assert.equal(s.getItem(MIG),original);
+    assert.deepEqual(p.nav,[]);
+    await pending;
+    assert.equal((await parse(p.downloads[0])).work[MIG],original);
+    assert.equal(erase.disabled,false);
+    assert.match(dialog.querySelector('.tool-status').textContent,/Check your browser’s downloads/);
+    erase.click();
+    assert.equal(s.getItem(MIG),null);
+    assert.deepEqual(p.nav,['reload']);
+  });
+}
+
+test('a failed backup preserves work and requires fresh confirmation; retry can download',async()=>{
+  const original=migWork('keep this work');
+  const s=withStudent({[MIG]:original}); let first=true;
+  const p=page(s,'/ap-biology.html',()=>{if(first){first=false;return false;}});
+  const dialog=p.Lab.data.signOut(), gate=dialog.querySelector('#dm-signout-gate');
+  const download=dialog.querySelector('.dm-openscied-backup'), erase=dialog.querySelector('.dm-confirm');
+  gate.value='First'; gate.trigger('input'); await download.click();
+  assert.match(dialog.querySelector('.tool-status').textContent,/Nothing was erased/);
+  assert.equal(gate.value,''); assert.equal(erase.disabled,true);
+  erase.click(); assert.equal(s.getItem(MIG),original);assert.equal(p.downloads.length,0);
+  await download.click();assert.equal((await parse(p.downloads[0])).work[MIG],original);
+  assert.equal(erase.disabled,true);
+});
+
+test('cancel during backup stops the pending download and retains work',async()=>{
+  const original=migWork('do not erase');
+  const s=withStudent({[MIG]:original}),p=page(s,'/ap-biology.html'),dialog=p.Lab.data.signOut();
+  const pending=dialog.querySelector('.dm-openscied-backup').click();
+  dialog.querySelector('.dm-cancel').click();await pending;
+  assert.equal(p.downloads.length,0);assert.equal(s.getItem(MIG),original);
+  assert.equal(p.doc.querySelector('.dm-card'),null);
+});
+
+test('both OpenSciEd archive paths include the Peat Bog graph explanation in readable responses',async()=>{
+  const key='aplab:openscied:b2-peat-bog:v1', answer='The model showed that decomposition rose when it warmed.';
+  const raw=JSON.stringify({v:1,lastSection:'graph',fields:{'graph-answer':answer},trials:[]});
+  const s=withStudent({[key]:raw}),d=dashboard(s),a=page(s,'/lab02.html');
+  d.el('download-openscied-results').click();
+  await a.Lab.data.signOut().querySelector('.dm-openscied-backup').click();
+  for(const file of [d.downloads[0],a.downloads[0]]){
+    const payload=await parse(file);
+    assert.equal(payload.work[key],raw);
+    assert.equal(payload.responses['peat-bog']['graph-answer'],answer);
+    assert.equal(payload.student,null);
+  }
 });

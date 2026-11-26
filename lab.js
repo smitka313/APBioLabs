@@ -1346,23 +1346,36 @@
   /* The dialog. o: {id, title, warn, body: [nodes], confirmText, gate: {kind:'check'|'text', label, expect?}, onConfirm, opener}.
      role=alertdialog, background inert, Tab stays inside, Esc and Cancel close it and put focus back on the opener. */
   let dmEl = null;
+  const activeBackup = new WeakMap();
   function dataDialog(o) {
     if (dmEl) return dmEl;
     const opener = o.opener || document.activeElement;
     const inerted = [];
     const uid = 'dm-' + o.id;
-    const confirmBtn = h('button', { class: 'btn btn--danger-solid dm-confirm', type: 'button', disabled: true, onclick: () => { if (!confirmBtn.disabled) o.onConfirm(); } }, o.confirmText);
-    let gateEl, gateNode;
+    const backup = activeBackup.get(o.save);
+    const confirmBtn = h('button', { class: 'btn btn--danger-solid dm-confirm', type: 'button', disabled: true, onclick: () => { if (!confirmBtn.disabled && !backup?.pending) o.onConfirm(); } }, o.confirmText);
+    let gateEl, gateNode, gateMatches;
+    function syncConfirmation() {
+      confirmBtn.disabled = !!backup?.pending || !gateMatches();
+    }
     if (o.gate.kind === 'check') {
       gateEl = h('input', { type: 'checkbox', id: uid + '-gate', class: 'dm-check' });
-      gateEl.addEventListener('change', () => { confirmBtn.disabled = !gateEl.checked; });
+      gateMatches = () => gateEl.checked;
+      gateEl.addEventListener('change', syncConfirmation);
       gateNode = h('div', { class: 'dm-gate' }, h('label', { class: 'dm-check-label', for: uid + '-gate' }, gateEl, h('span', null, o.gate.label)));
     } else {
       gateEl = h('input', { type: 'text', id: uid + '-gate', class: 'dm-text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', 'aria-describedby': uid + '-gate-hint' });
       const want = String(o.gate.expect), norm = v => o.gate.exact ? String(v).trim() : normName(v).toLowerCase();
-      gateEl.addEventListener('input', () => { confirmBtn.disabled = norm(gateEl.value) !== norm(want); });
+      gateMatches = () => norm(gateEl.value) === norm(want);
+      gateEl.addEventListener('input', syncConfirmation);
       gateEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); if (!confirmBtn.disabled) confirmBtn.click(); } });
       gateNode = h('div', { class: 'dm-gate field' }, h('label', { for: uid + '-gate' }, o.gate.label), gateEl, o.gate.hint ? h('p', { class: 'small muted', id: uid + '-gate-hint' }, o.gate.hint) : null);
+    }
+    if (backup) {
+      backup.onChange = failed => {
+        if (failed) gateEl.value = ''; // A failed backup requires a fresh decision to erase.
+        syncConfirmation();
+      };
     }
     const title = h('h2', { class: 'dm-title', id: uid + '-title', tabindex: '-1' }, o.title);
     const warn = h('p', { class: 'dm-warn', id: uid + '-desc' }, o.warn);
@@ -1384,6 +1397,7 @@
     function close(restore) {
       if (!dmEl) return;
       document.removeEventListener('keydown', key, true);
+      if (backup) { backup.cancelled = true; backup.onChange = null; }
       scrim.remove(); dmEl = null; document.body.classList.remove('has-dm');
       inerted.forEach(x => x.removeAttribute('inert'));
       if (restore && opener && opener.isConnected) { try { opener.focus(); } catch (e) { /* gone */ } }
@@ -1401,6 +1415,7 @@
     const status = h('p', { class: 'tool-status', role: 'status', 'aria-live': 'polite' });
     const say = (t, bad) => { status.textContent = t; status.classList.toggle('is-bad', !!bad); };
     const kids = [];
+    const backupState = { pending: false, cancelled: false, onChange: null };
     if (IS_LAB && opts.current !== false) {
       const docx = h('button', { class: 'btn btn--sm', type: 'button', onclick: async () => {
         docx.disabled = true; say('Building your Word file…');
@@ -1426,21 +1441,32 @@
           h('p', { class:'small muted' }, 'The backup includes the saved records, including anything the site could not read. It is not a classroom submission.'),
           h('button', { class:'btn btn--sm dm-openscied-backup', type:'button', onclick:async event => {
             const button = event.currentTarget;
+            if (backupState.pending || backupState.cancelled) return;
+            let failed = false;
             button.disabled = true;
+            backupState.pending = true;
+            backupState.onChange?.();
+            say('Preparing OpenSciEd backup. Erase is paused until the download starts.');
             try {
               if (staleEditor()) throw new Error(staleEditorMessage);
               if (opts.downloadOpenSciEd) {
                 if (opts.downloadOpenSciEd() !== true) throw new Error('Could not download OpenSciEd work.');
               } else {
                 const backup = await openSciEdBackup();
-                if (!Object.keys(backup.work).length) { say('No OpenSciEd work remains to download.'); return; }
+                if (backupState.cancelled) return;
+                if (!Object.keys(backup.work).length) { failed = true; say('No OpenSciEd work remains to download. Check this browser before erasing.', true); return; }
                 downloadBlob(new Blob([JSON.stringify(backup,null,2)], {type:'application/json'}), 'openscied-saved-work.json');
               }
               say('OpenSciEd backup requested. Check your browser’s downloads before clearing this device.');
             } catch (e) {
-              say(e?.message === staleEditorMessage ? staleEditorMessage :
-                'Could not download OpenSciEd work. Check your connection and browser storage, then try again before clearing this device.', true);
-            } finally { button.disabled = false; }
+              failed = true;
+              if (!backupState.cancelled) say(e?.message === staleEditorMessage ? staleEditorMessage :
+                'Could not download OpenSciEd work. Nothing was erased. Try the backup again before clearing.', true);
+            } finally {
+              backupState.pending = false;
+              button.disabled = false;
+              backupState.onChange?.(failed);
+            }
           } }, 'Download OpenSciEd backup')));
       }
       if (openSciEdUnreadable) kids.push(h('p', {class:'small muted'}, 'OpenSciEd work could not be checked. Check browser storage before clearing this device.'));
@@ -1448,7 +1474,9 @@
     if (!IS_LAB && !others.length && !openSciEdFound && !openSciEdUnreadable) kids.push(h('p', { class: 'small muted dm-no-work' }, 'No saved lab work was found on this computer.'));
     if (!IS_LAB && others.length) kids.push(h('p', { class: 'small muted' }, 'To keep a lab report (.docx) too, open that lab first and use Submit.'));
     kids.push(status);
-    return h('div', { class: 'dm-save', role: 'group', 'aria-label': 'Save your work first' }, h('p', { class: 'dm-save-title' }, 'Save your work first:'), ...kids);
+    const save = h('div', { class: 'dm-save', role: 'group', 'aria-label': 'Save your work first' }, h('p', { class: 'dm-save-title' }, 'Save your work first:'), ...kids);
+    if (opts.openSciEd) activeBackup.set(save, backupState);
+    return save;
   }
 
   function reportClearError(save) {
@@ -1459,6 +1487,7 @@
   }
   function confirmSiteClear(save, clear) {
     const status = reportClearError(save);
+    if (activeBackup.get(save)?.pending) return;
     // If an already-open activity saved for the first time while this dialog
     // was open, offer its backup before honoring the destructive confirmation.
     const openSciEd = save.querySelector('.dm-openscied-work');
@@ -1484,7 +1513,7 @@
       id: 'signout', opener, eyebrow: opts.switchStudent ? 'Shared device' : 'Sign out',
       title: opts.switchStudent ? 'Switch to a different student?' : `Sign out ${name}?`,
       warn: 'This removes the current sign-in and all AP Biology and OpenSciEd work saved in this browser. Download anything you need first. The next student signs in after the clear finishes.',
-      body: [save],
+      body: [save], save,
       gate: first ? { kind:'text', label:`To confirm, type your first name (${first})`, expect:first, hint:'The button below turns on when the name matches.' }
         : { kind:'text', label:'To confirm, type ERASE (capital letters)', expect:'ERASE', exact:true, hint:'The button below turns on when you type ERASE.' },
       confirmText: 'Sign out and erase', onConfirm: () => confirmSiteClear(save, doSignOut),
@@ -1500,7 +1529,7 @@
     return dataDialog({
       id: 'startover', opener, eyebrow: 'Start over', title: 'Start over with all labs?',
       warn: `This erases AP Biology and OpenSciEd work saved in this browser. ${idn ? 'Your name and class stay, and ' : ''}you get fresh simulated data (a new Dataset ID). It can't be undone.`,
-      body: [h('div', { class: 'dm-save' }, h('p', { class: 'dm-save-title' }, 'AP Biology lab records:'), list), save],
+      body: [h('div', { class: 'dm-save' }, h('p', { class: 'dm-save-title' }, 'AP Biology lab records:'), list), save], save,
       gate: { kind: 'text', label: 'To confirm, type ERASE (capital letters)', expect: 'ERASE', exact: true, hint: 'The button below turns on when you type ERASE.' },
       confirmText: 'Erase all my lab work', onConfirm: () => confirmSiteClear(save, doStartOverAll),
     });
