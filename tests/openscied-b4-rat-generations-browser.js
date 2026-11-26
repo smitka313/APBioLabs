@@ -8,6 +8,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { chromium } = require('playwright');
+const { sampleLitter } = require('../openscied-b4-rat-generations-logic.js');
 const { verifyLongResponse, writePrintPreview } = require('./openscied-b4-written-response-check');
 const { serve, ROOT } = require('./_h');
 
@@ -768,6 +769,17 @@ async function play(browser, base, cfg) {
     await enterStage(page, 'analyze', cfg);
     const analyzed = await parity(page, '#rg-analysis-table', model, label + ' Analyze table');
     await plots(page, model, cfg, label);
+    const beforeChance=await save(page);
+    for(let click=0;click<2;click++){
+      await use(page.locator('#rg-drift-draw'),cfg);
+      const litters=await page.locator('#rg-drift-output li').allTextContents();
+      check(litters.length===2&&litters.every((line,i)=>{
+        const sampled=sampleLitter('RB','BB',seed,2*click+i);
+        return line.includes(sampled.pups.join(', '))&&line.includes(sampled.counts.redAlleles+' / 8');
+      }),label+' chance practice displays both seeded samples and their actual R copy counts');
+    }
+    check(compact(await save(page),beforeChance),label+' chance practice does not change the saved colony or assignment');
+    await fits(page, '#rg-drift-draw, #rg-drift-output', label + ' chance comparison');
     await fits(page, 'main, #rg-analyze, #rg-chart, #rg-analysis-table', label + ' analysis');
     await screenshot(page, label + '-analysis');
     if (cfg.width === 1366) {

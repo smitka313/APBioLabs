@@ -168,14 +168,14 @@ test('Junco does not leak unrevealed evidence and distinguishes published and il
   const points=D.cort.rows.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
   const src=source('junco');
   const bind={
-    D,state,points,identified:false,invalid:false,key:'key', session:{check:()=>({ok:true})},choices:{same:'About the same'},
+    D,state,invalid:false,key:'key', session:{check:()=>({ok:true})},choices:{same:'About the same'},
     sites:{urban:'UC San Diego',mountain:'Mt. Laguna'},fieldLabels:{foraging:'Birds looking for food',incubating:'Females sitting on eggs'},aviaryLabels:{female:'Females',male:'Males'},
     datasetId:seed=>'JU-'+seed.toString(16).toUpperCase().padStart(8,'0'),
     $:id=>({value:id==='name'?'Student label':'3',labels:[{textContent:id}],textContent:'STALE DOM SENTINEL'}),
     fmt:value=>Number.isFinite(value)?String(Number(value.toFixed(2))):String(value),window:{JuncoFlight:flight}
   };
   const helpers=between(src,'const errName=','function summary(')+between(src,'function corr(','const points=')+
-    between(src,'function cortReading(','function cort()');
+    between(src,'const points=','function cort()');
   const report=collect('junco','ju',bind,helpers);
   const legacy=()=>vm.runInNewContext(helpers+between(src,'function pairLine(','function evidence()')+
     between(src,'function submissionReport()','function download()')+'plainTextReport();',{...bind});
@@ -211,6 +211,9 @@ test('Junco does not leak unrevealed evidence and distinguishes published and il
       .split('\n').filter(line=>/^\d+ \|/.test(line)).length,points.length,'TXT contains every plotted row');
     assert.equal(plotted.columns[0],'Bird (dot)','Pooled evidence numbers dots rather than suggesting an identified population');
     assert.deepEqual(plotted.rows.map(row=>row[0]),points.map((_,i)=>i+1));
-    assert.ok(!plotted.columns.includes('Population'),'No population attribution is invented for pooled source data');
+    assert.equal(plotted.columns.at(-1),'Population of origin');
+    assert.ok(plotted.rows.every(row=>row.at(-1)==='Not identified'),'No population attribution is invented for pooled source data');
+    assert.match(fullText,/Individual exploration score \(PC1\) \| Population of origin/);
+    assert.equal(fullText.split('\n').filter(line=>/^\d+ \|.* \| Not identified$/.test(line)).length,points.length,'TXT marks origin as unidentified for every pooled point');
   }
 });

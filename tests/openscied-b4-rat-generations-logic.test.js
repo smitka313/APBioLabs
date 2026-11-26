@@ -27,6 +27,33 @@ test('all Punnett crosses produce the prescribed four-cell genotype counts',()=>
   assert.throws(()=>L.cross('BR','RR'),TypeError);
 });
 
+test('independent litter sampling shows chance variation without touching lesson outcomes',()=>{
+  const baseline=flow(5).at(-1);
+  const expected=new Set(['RB','BB']), seen=new Set(); let copies=0;
+  for(let seed=0;seed<32;seed++)for(let draw=0;draw<32;draw++){
+    const litter=L.sampleLitter('RB','BB',seed,draw);
+    assert.deepEqual(litter,L.sampleLitter('RB','BB',seed,draw));
+    assert.equal(litter.pups.length,4);
+    assert.ok(litter.pups.every(g=>expected.has(g)));
+    assert.equal(litter.counts.redAlleles,litter.pups.filter(g=>g==='RB').length);
+    assert.equal(litter.counts.redAlleleFraction,litter.counts.redAlleles/8);
+    seen.add(litter.counts.redAlleles);copies+=litter.counts.redAlleles;
+  }
+  assert.deepEqual([...seen].sort(),[0,1,2,3,4]);
+  assert.ok(Math.abs(copies/(32*32)-2)<0.1,'mean agrees with independently calculated expectation of 2 R copies');
+  assert.deepEqual(L.sampleLitter('RR','BB',0).pups,['RB','RB','RB','RB']);
+  assert.throws(()=>L.sampleLitter('RB','BB',0,-1),RangeError);
+  assert.deepEqual(flow(5).at(-1),baseline,'optional sample does not modify lesson outcomes');
+});
+test('the working model shows the rationale, biological mechanism, and limits up front',()=>{
+  const fs=require('node:fs'), path=require('node:path');
+  const html=fs.readFileSync(path.join(__dirname,'..','openscied-b4-rat-generations.html'),'utf8');
+  const main=html.slice(html.indexOf('<section id="rg-model"'),html.indexOf('<div class="rg-timeline"'));
+  assert.match(main,/In Part 1.*In Part 2.*same Generation 3 cohort/s);
+  assert.match(main,/protein involved in blood clotting.*Exposure doesn’t give a rat an R allele/s);
+  assert.match(html,/<section class="rg-panel rg-concept" aria-labelledby="rg-drift-title">/);
+});
+
 test('the first three generations remain unexposed; carrier and allele frequencies are distinct',()=>{
   const a=flow(0), b=flow(5);
   for (const steps of [a,b]) {
