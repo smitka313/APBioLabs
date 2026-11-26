@@ -73,7 +73,7 @@ test('backup preserves exact values without relabeling them to the current brows
   const payload = JSON.parse(await s.blob().text());
   assert.equal(payload.student, null);
   assert.doesNotMatch(JSON.stringify(payload), /Fictional Other Student/);
-  assert.equal(payload.format, 'openscied-saved-work-v2');
+  assert.equal(payload.format, 'openscied-saved-work-v1');
   assert.deepEqual(payload.work, Object.fromEntries(Object.entries(before).filter(([k]) => k.startsWith('aplab:openscied:'))));
   assert.deepEqual({ ...s.data }, before);
 });
@@ -88,7 +88,8 @@ test('backup indexes exact activity report IDs without attributing a shared arch
   const s=setup(false,known);
   s.el('#download-openscied-results').fire('click');
   const archive=JSON.parse(await s.blob().text());
-  assert.equal(archive.format,'openscied-saved-work-v2');
+  assert.equal(archive.format,'openscied-saved-work-v1');
+  assert.equal(archive.archiveRevision,2);
   assert.equal(archive.scope,'browser');
   assert.equal(archive.student,null);
   assert.deepEqual(archive.datasetIds,{ripple:'SR-00000000',junco:'JU-000007F1','bear-hybrid':'HY-FE8D9975'});
@@ -850,7 +851,7 @@ test('dashboard hands off to the guarded student-switch flow and provides standa
   assert.equal(s.mountOptions?.sharedDevice, true);
   assert.equal(s.mountOptions.downloadOpenSciEd(), true);
   const payload = JSON.parse(await s.blob().text());
-  assert.equal(payload.format, 'openscied-saved-work-v2');
+  assert.equal(payload.format, 'openscied-saved-work-v1');
   assert.equal(payload.student, null);
   assert.deepEqual({ ...s.data }, before);
   s.blockBackup();

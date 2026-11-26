@@ -872,7 +872,7 @@
           } catch (_) { /* Keep unreadable budget data in the raw backup. */ }
         }
         // Only per-activity reports can attribute a student. Browser backups may contain mixed or older work.
-        const payload = { format: 'openscied-saved-work-v2', exportedAt: new Date().toISOString(), scope: onlyKeys ? 'activity' : 'browser', student: null, datasetIds, work, responses };
+        const payload = { format: 'openscied-saved-work-v1', archiveRevision: 2, exportedAt: new Date().toISOString(), scope: onlyKeys ? 'activity' : 'browser', student: null, datasetIds, work, responses };
         const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
         const link = document.createElement('a');
         link.href = url; link.download = 'openscied-saved-work.json';
