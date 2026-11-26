@@ -394,8 +394,8 @@ async function firstCross(page, row, cfg, seed, label) {
     [0,1].some(role=>targetsOf('header','R',role).length===1&&targetsOf('cell','R',role).length===2),
     label+' the same reusable B fits both parents’ headers and offspring slots; R fits every R position');
   check(compact(cells, chosen.cells) && await square.getAttribute('data-rg-ready') === 'true' &&
-    await next.isEnabled() && (await save(page)).action === 0 && (await save(page)).seed === seed,
-    label + ' every expected Punnett cell is built and the original trial can now advance');
+    await next.isDisabled() && (await save(page)).action === 0 && (await save(page)).seed === seed,
+    label + ' the first square is complete but the other assigned pair still gates the generation');
   await fits(page, 'main, #rg-punnett, #rg-punnett [data-rg-source], #rg-punnett [data-rg-target]',
     label + ' complete interactive cross');
   await screenshot(page, label + '-cross-complete');
@@ -405,7 +405,7 @@ async function firstCross(page, row, cfg, seed, label) {
     check(await pair.getAttribute('aria-pressed') === 'true' &&
       await square.getAttribute('data-rg-builder') === chosen.id,
       'reload returns directly to the same selected Punnett cross');
-    check(await square.getAttribute('data-rg-ready') === 'true' && await next.isEnabled() &&
+    check(await square.getAttribute('data-rg-ready') === 'true' && await next.isDisabled() &&
       compact(await page.locator('#rg-punnett [data-rg-cell]').evaluateAll(nodes =>
         nodes.map(node => node.dataset.rgCell || node.textContent.trim())), chosen.cells) &&
       (await save(page)).action === 0 && (await save(page)).seed === seed,
@@ -413,13 +413,26 @@ async function firstCross(page, row, cfg, seed, label) {
     await exactNest(page,chosen.parents[0],0,'completed cross reload');
     await exactNest(page,chosen.parents[1],1,'completed cross reload');
   }
-  const optional = row.pairs.find(candidate => candidate.id !== chosen.id);
-  if (optional) {
-    await use(page.locator('#rg-pairs [data-rg-pair="' + optional.id + '"]'), cfg);
-    check(await square.getAttribute('data-rg-ready') === 'false' && await next.isEnabled(),
-      label + ' browsing a second first-generation cross does not revoke the completed one');
-    await use(pair, cfg);
+  const remaining = row.pairs.filter(candidate => candidate.id !== chosen.id);
+  if(remaining.length) {
+    const count=page.locator('#rg-produce-hint'), nextPair=page.locator('#rg-next-pair');
+    check(await count.textContent()===`1 of ${row.pairs.length} assigned crosses complete. Finish every assigned pair to unlock this generation.`,
+      label+' explains that every assigned cross is required');
+    await use(nextPair,cfg);
+    check(await square.getAttribute('data-rg-builder') === remaining[0].id &&
+      await square.getAttribute('data-rg-ready') === 'false' && await next.isDisabled(),
+      label+' Next unfinished pair opens the remaining work without unlocking the generation');
+    for(const cross of remaining)await finishSquare(page,cross,cfg,label);
   }
+  check(await next.isEnabled(),label+' Produce unlocks only after all assigned crosses are complete');
+}
+
+async function finishSquare(page,cross,cfg,label) {
+  await use(page.locator('#rg-pairs [data-rg-pair="'+cross.id+'"]'),cfg);
+  const input=cfg.touch?'tap':'keyboard';
+  for(const role of [0,1])await put(page,'parent-'+role,'parent-'+role,input,label);
+  for(const role of [0,1])for(const i of [0,1])await put(page,'allele-'+cross.parents[role].genotype[i],'header-'+role+'-'+i,input,label);
+  for(let i=0;i<4;i++)for(const role of [0,1])await put(page,'allele-'+cross.parents[role].genotype[role===0?Math.floor(i/2):i%2],'cell-'+i+'-'+role,input,label);
 }
 
 async function inspectPair(page, row, cfg, label) {
@@ -682,16 +695,14 @@ async function play(browser, base, cfg) {
       const subsequent = Model.step(model);
       if (action === 1) await firstCross(page, subsequent.generations.at(-1), cfg, seed, label);
       if ([2,4,6].includes(action)) {
-        const cross=subsequent.generations.at(-1).pairs[0];
-        if(cross){
-          check(await page.locator('#rg-produce').isDisabled(),label+' each new generation requires a different square');
-          await use(page.locator('#rg-pairs [data-rg-pair="'+cross.id+'"]'),cfg);
-          const input=cfg.touch?'tap':'keyboard';
-          for(const role of [0,1])await put(page,'parent-'+role,'parent-'+role,input,label);
-          for(const role of [0,1])for(const i of [0,1])await put(page,'allele-'+cross.parents[role].genotype[i],'header-'+role+'-'+i,input,label);
-          for(let i=0;i<4;i++)for(const role of [0,1])await put(page,'allele-'+cross.parents[role].genotype[role===0?Math.floor(i/2):i%2],'cell-'+i+'-'+role,input,label);
-          check(await page.locator('#rg-produce').isEnabled() && await page.locator('#rg-next').isHidden(),label+' a finished square unlocks the only Produce action');
+        const assigned=subsequent.generations.at(-1).pairs;
+        const produce=page.locator('#rg-produce');
+        for(const cross of assigned){
+          check(await produce.isDisabled(),label+' any unfinished assigned pair keeps Produce locked');
+          await finishSquare(page,cross,cfg,label);
         }
+        check(await produce.isEnabled() && await page.locator('#rg-next').isHidden(),
+          label+' finishing all squares unlocks the only Produce action');
       }
       const next = page.locator(preview.action==='breed'?'#rg-produce':'#rg-next');
       await use(next, cfg);
@@ -818,6 +829,24 @@ async function play(browser, base, cfg) {
   }
 }
 
+async function verifyLegacyGeneration(browser,base) {
+  const context=await makeContext(browser,base,VIEWPORTS[2]);
+  try {
+    await context.addInitScript(({key,file})=>{
+      if(location.pathname==='/'+file&&!localStorage.getItem(key))
+        localStorage.setItem(key,JSON.stringify({v:1,seed:5,step:'model',action:2,prediction:'increase',answers:{},crosses:{}}));
+    },{key:SAVE,file:FILE});
+    const page=await context.newPage();
+    await page.goto(base+FILE);
+    await page.locator('#rg-model:visible').waitFor();
+    check((await save(page)).action===2&&/Apply modeled selection to Generation 3/.test(await page.locator('#rg-next').textContent()) &&
+      await page.locator('#rg-next').isEnabled(),'an existing Generation 3 save continues from its recorded event without retroactive cross requirements');
+    await page.locator('#rg-next').click();
+    await waitAction(page,3);
+    check(await page.locator('#rg-produce').isDisabled(),'the next upcoming generation applies the new cross requirement');
+  } finally { await context.close(); }
+}
+
 (async () => {
   const server = await serve();
   let browser;
@@ -826,6 +855,7 @@ async function play(browser, base, cfg) {
     browser = await chromium.launch(executablePath ? { executablePath } : {});
     await fs.mkdir(OUT, { recursive:true });
     for (const viewport of VIEWPORTS) await play(browser, server.url, viewport);
+    await verifyLegacyGeneration(browser,server.url);
     await verifySaveConflict(browser, server.url, {
       protectIdentity:true, file:FILE, key:SAVE, warning:'#rg-save-warning', backup:'#rg-download-tab', check,
       async edit(page,n) {

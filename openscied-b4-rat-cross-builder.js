@@ -25,6 +25,10 @@
   }
   const complete=p=>!!p&&p.parents?.length===2&&p.parents.every(Boolean)&&p.headers?.length===4&&p.headers.every(Boolean)&&
     p.cells?.length===4&&p.cells.every(pair=>pair?.length===2&&pair.every(Boolean));
+  function assignedProgress(pairs, crosses) {
+    const pending = pairs.filter(pair => !complete(crosses?.[pair.id]));
+    return {total:pairs.length, done:pairs.length-pending.length, pending};
+  }
   const phaseOf=p=>!p.parents.every(Boolean)?'parents':!p.headers.every(Boolean)?'headers':complete(p)?'done':'offspring';
   const availableAlleles=pair=>['R','B'].filter(letter=>pair.parents.some(rat=>rat.genotype.includes(letter)));
   function placements(pair,raw,source,destination) {
@@ -53,7 +57,7 @@
     p.cells[idx][side]=true;
     return {progress:p,activity:p.cells[idx].every(Boolean)?'Offspring box complete: '+pair.cells[idx]+'.':'Allele placed.'};
   }
-  function mount(host,{pair,progress,required,onChange,announce,tokenUrl}) {
+  function mount(host,{pair,progress,onChange,announce,tokenUrl}) {
     const doc=host.ownerDocument, create=(tag,cls='',text='')=>{
       const item=doc.createElement(tag);item.className=cls;item.textContent=text;return item;
     };
@@ -97,7 +101,7 @@
       shell.dataset.rgReady=String(phase==='done');
       shell.dataset.rgPhase=phase==='parents'?'parents':phase==='done'?'done':'alleles';
       instruction.textContent=phase==='parents'
-        ? (required?'Build one complete cross before continuing. ':'Optional: build this cross or continue. ')+'Drag each numbered rat to its parent slot, or select the rat and then the slot.'
+        ? 'Drag each numbered rat to its parent slot, or select the rat and then the slot.'
         : phase==='headers'?'Match Parent 1’s two letters on the left and Parent 2’s along the top. Reuse the same chip wherever its letter matches.'
         : phase==='offspring'?'Fill each offspring box with the letter from its row and the letter from its column. The chips can be reused.'
         : 'Cross complete. Each box represents one expected offspring in this model.';
@@ -235,5 +239,5 @@
     render();
     return shell;
   }
-  return Object.freeze({blank,clean,cleanMap,complete,availableAlleles,placements,mount});
+  return Object.freeze({blank,clean,cleanMap,complete,assignedProgress,availableAlleles,placements,mount});
 });
