@@ -46,15 +46,15 @@ const {ROOT,serve}=require('./_h');
     for(const [key,caption] of stations){
      await p.locator('#sf-stations [data-station="'+key+'"]').click();
      assert.match(await by('art-caption').innerText(),caption);
-     assert.equal(await by('art').getAttribute('src'),'assets/serengeti-field-station-'+key+'.svg');
+     assert.equal(await by('art').getAttribute('src'),'assets/serengeti-field-station-'+key+'.webp');
      await by('art').evaluate(async img=>{await img.decode();});
-     assert.equal(await by('art').evaluate(img=>img.naturalWidth),560);
+     assert.equal(await by('art').evaluate(img=>img.naturalWidth),1120);
      if(key==='biodiversity'){
       // A decoded image alone is not enough: the iOS bug made the torsos transparent.
       const rgb=await by('art').evaluate(img=>{
        const canvas=document.createElement('canvas');canvas.width=560;canvas.height=200;
-       const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0);
-       return [[72,118],[85,123],[234,131],[202,130]].map(([x,y])=>Array.from(ctx.getImageData(x,y,1,1).data));
+       const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,560,200);
+       return [[72,118],[117,118],[234,131],[202,130]].map(([x,y])=>Array.from(ctx.getImageData(x,y,1,1).data));
       });
       const difference=(a,b)=>a.slice(0,3).reduce((d,c,i)=>d+Math.abs(c-b[i]),0);
       assert.ok(difference(rgb[0],rgb[1])>65,'giraffe torso is filled against the backdrop');

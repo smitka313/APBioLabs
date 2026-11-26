@@ -4,6 +4,7 @@ on:
     paths:
       - 'openscied-b1-field-notebook*'
       - 'assets/serengeti-field-*.svg'
+      - 'assets/serengeti-field-station-*.webp'
       - 'assets/openscied-atlas-b1-field-notebook.svg'
       - 'tests/openscied-b1-field-notebook*'
       - '.github/workflows/openscied-field-notebook.yml'

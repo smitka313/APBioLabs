@@ -14,7 +14,11 @@ test('five unique stations with lesson source references, and no automatic evide
 
 test('every station has a matching illustrated plate and a distinct plain-text caption',()=>{
   for(const {id} of M.stations){
-    const asset=fs.readFileSync(path.join(__dirname,'../assets/serengeti-field-station-'+id+'.svg'),'utf8');
+    const base=path.join(__dirname,'../assets/serengeti-field-station-'+id);
+    const webp=fs.readFileSync(base+'.webp');
+    assert.equal(webp.toString('ascii',0,4),'RIFF');
+    assert.equal(webp.toString('ascii',8,12),'WEBP');
+    const asset=fs.readFileSync(base+'.svg','utf8');
     assert.match(asset,/<svg[^>]+viewBox="0 0 560 200"/);
     const ids=new Set([...asset.matchAll(/\bid="([\w-]+)"/g)].map(m=>m[1]));
     for(const match of asset.matchAll(/(?:href="#|url\(#)([\w-]+)/g)){
@@ -129,7 +133,7 @@ test('the real activity script initializes and drives exhibits and map controls 
   }
   M.stations.forEach((st,i)=>{
     element('stations').children[i].onclick();
-    assert.equal(element('art').attrs.src,'assets/serengeti-field-station-'+st.id+'.svg');
+    assert.equal(element('art').attrs.src,'assets/serengeti-field-station-'+st.id+'.webp');
     assert.equal(element('art-caption').textContent,st.artCaption);
   });
   element('stations').children[2].onclick();
