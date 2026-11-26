@@ -251,6 +251,21 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   T.ok(await c3.isEnabled(), 'ticking the box (keyboard: Space) enables it');
   await p.keyboard.press('Space'); T.ok(await c3.isDisabled(), 'unticking disables it again');
   await p.keyboard.press('Space');
+  // Hold the build on demand; the real Word builder still produces the download.
+  await p.evaluate(() => {
+    const original = Lab.report.docx;
+    const hold = new Promise(resolve => { window.releaseWordForTest = resolve; });
+    Lab.report.docx = async (...args) => { await hold; return original.apply(Lab.report, args); };
+  });
+  await d3.getByRole('button', { name: 'Download report (.docx)', exact: true }).click();
+  T.ok(await c3.isDisabled(), 'Start over stays disabled during a pending Word report');
+  T.ok(/Erase is paused/.test(await d3.locator('.tool-status').textContent()), 'the Word status explains the erase lock');
+  T.ok((await dump(p))['aplab:lab05:field:zz-test'] === snap3['aplab:lab05:field:zz-test'], 'the saved answer remains while the Word build is pending');
+  const wordDownload = p.waitForEvent('download');
+  await p.evaluate(() => window.releaseWordForTest());
+  const wordFile = await wordDownload;
+  T.ok(wordFile.suggestedFilename() === 'Lab05_Lee_Jordan.docx' && (await require('fs').promises.stat(await wordFile.path())).size > 0 &&
+    await c3.isEnabled(), 'a real Word file downloads and then the erase control unlocks');
   const nav4 = p.waitForNavigation({ waitUntil: 'load' }).catch(() => {});
   await c3.click(); await nav4; await p.waitForTimeout(1000);
   const a3 = await dump(p);

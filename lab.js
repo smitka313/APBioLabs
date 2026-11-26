@@ -1373,7 +1373,10 @@
     }
     if (backup) {
       backup.onChange = failed => {
-        if (failed) gateEl.value = ''; // A failed backup requires a fresh decision to erase.
+        if (failed) { // A failed download requires a fresh decision to erase.
+          if (o.gate.kind === 'check') gateEl.checked = false;
+          else gateEl.value = '';
+        }
         syncConfirmation();
       };
     }
@@ -1416,13 +1419,36 @@
     const say = (t, bad) => { status.textContent = t; status.classList.toggle('is-bad', !!bad); };
     const kids = [];
     const backupState = { pending: false, cancelled: false, onChange: null };
+    const asyncDownloads = [];
+    function setDownloadPending(pending, failed) {
+      backupState.pending = pending;
+      asyncDownloads.forEach(button => { button.disabled = pending; });
+      backupState.onChange?.(failed);
+    }
     if (IS_LAB && opts.current !== false) {
       const docx = h('button', { class: 'btn btn--sm', type: 'button', onclick: async () => {
-        docx.disabled = true; say('Building your Word file…');
-        try { const blob = await Lab.report.docx(); const name = reportFileBase() + '.docx'; downloadBlob(blob, name); say(`Downloaded ${name}.`); reportSaved(); }
-        catch (e) { say(e && e.message === 'docx-load' ? 'Could not load the Word file tool. Check your internet connection, or save a progress file instead.' : 'Could not build the Word file here. Save a progress file instead.', true); }
-        finally { docx.disabled = false; }
+        if (backupState.pending || backupState.cancelled) return;
+        let failed = false;
+        setDownloadPending(true);
+        say('Building your Word file. Erase is paused until the download starts.');
+        try {
+          if (staleEditor()) throw new Error(staleEditorMessage);
+          const name = reportFileBase() + '.docx';
+          const blob = await Lab.report.docx();
+          if (backupState.cancelled) return;
+          if (staleEditor()) throw new Error(staleEditorMessage);
+          downloadBlob(blob, name);
+          say('Word download requested. Check your browser’s downloads before erasing.');
+          reportSaved();
+        } catch (e) {
+          failed = true;
+          if (!backupState.cancelled) say(e?.message === staleEditorMessage ? staleEditorMessage :
+            'Could not download the Word report. Nothing was erased. Try again or download a progress file before erasing.', true);
+        } finally {
+          setDownloadPending(false, failed);
+        }
       } }, 'Download report (.docx)');
+      asyncDownloads.push(docx);
       const pf = h('button', { class: 'btn btn--sm', type: 'button', onclick: () => { const name = saveProgressFile(); if (name) say(`Downloaded ${name}.`); else say(staleEditorMessage, true); } }, 'Download progress file');
       if (Lab.timelapse && Lab.timelapse.withRun && Lab.timelapse.withRun().length) kids.push(h('p', { class: 'small muted' }, 'Timelapse recordings are stored separately from progress files and transfer codes. Download a GIF or include it in your report before moving to another computer.'));
       kids.push(h('p', { class: 'dm-sub' }, `This lab (Lab ${labNo(LAB_ID)})`), h('div', { class: 'row' }, docx, pf), transferBlock());
@@ -1437,37 +1463,34 @@
     if (opts.openSciEd) {
       try { openSciEdFound = Object.keys(openSciEdWork()).length > 0; } catch (_) { openSciEdUnreadable = true; }
       {
+        const archive = h('button', { class:'btn btn--sm dm-openscied-backup', type:'button', onclick:async () => {
+          if (backupState.pending || backupState.cancelled) return;
+          let failed = false;
+          setDownloadPending(true);
+          say('Preparing OpenSciEd backup. Erase is paused until the download starts.');
+          try {
+            if (staleEditor()) throw new Error(staleEditorMessage);
+            if (opts.downloadOpenSciEd) {
+              if (opts.downloadOpenSciEd() !== true) throw new Error('Could not download OpenSciEd work.');
+            } else {
+              const backup = await openSciEdBackup();
+              if (backupState.cancelled) return;
+              if (!Object.keys(backup.work).length) { failed = true; say('No OpenSciEd work remains to download. Check this browser before erasing.', true); return; }
+              downloadBlob(new Blob([JSON.stringify(backup,null,2)], {type:'application/json'}), 'openscied-saved-work.json');
+            }
+            say('OpenSciEd backup requested. Check your browser’s downloads before clearing this device.');
+          } catch (e) {
+            failed = true;
+            if (!backupState.cancelled) say(e?.message === staleEditorMessage ? staleEditorMessage :
+              'Could not download OpenSciEd work. Nothing was erased. Try the backup again before clearing.', true);
+          } finally {
+            setDownloadPending(false, failed);
+          }
+        } }, 'Download OpenSciEd backup');
+        asyncDownloads.push(archive);
         kids.push(h('div', {class:'dm-openscied-work', hidden:!openSciEdFound}, h('p', { class:'dm-sub' }, 'Saved OpenSciEd activity work'),
           h('p', { class:'small muted' }, 'The backup includes the saved records, including anything the site could not read. It is not a classroom submission.'),
-          h('button', { class:'btn btn--sm dm-openscied-backup', type:'button', onclick:async event => {
-            const button = event.currentTarget;
-            if (backupState.pending || backupState.cancelled) return;
-            let failed = false;
-            button.disabled = true;
-            backupState.pending = true;
-            backupState.onChange?.();
-            say('Preparing OpenSciEd backup. Erase is paused until the download starts.');
-            try {
-              if (staleEditor()) throw new Error(staleEditorMessage);
-              if (opts.downloadOpenSciEd) {
-                if (opts.downloadOpenSciEd() !== true) throw new Error('Could not download OpenSciEd work.');
-              } else {
-                const backup = await openSciEdBackup();
-                if (backupState.cancelled) return;
-                if (!Object.keys(backup.work).length) { failed = true; say('No OpenSciEd work remains to download. Check this browser before erasing.', true); return; }
-                downloadBlob(new Blob([JSON.stringify(backup,null,2)], {type:'application/json'}), 'openscied-saved-work.json');
-              }
-              say('OpenSciEd backup requested. Check your browser’s downloads before clearing this device.');
-            } catch (e) {
-              failed = true;
-              if (!backupState.cancelled) say(e?.message === staleEditorMessage ? staleEditorMessage :
-                'Could not download OpenSciEd work. Nothing was erased. Try the backup again before clearing.', true);
-            } finally {
-              backupState.pending = false;
-              button.disabled = false;
-              backupState.onChange?.(failed);
-            }
-          } }, 'Download OpenSciEd backup')));
+          archive));
       }
       if (openSciEdUnreadable) kids.push(h('p', {class:'small muted'}, 'OpenSciEd work could not be checked. Check browser storage before clearing this device.'));
     }
@@ -1475,7 +1498,7 @@
     if (!IS_LAB && others.length) kids.push(h('p', { class: 'small muted' }, 'To keep a lab report (.docx) too, open that lab first and use Submit.'));
     kids.push(status);
     const save = h('div', { class: 'dm-save', role: 'group', 'aria-label': 'Save your work first' }, h('p', { class: 'dm-save-title' }, 'Save your work first:'), ...kids);
-    if (opts.openSciEd) activeBackup.set(save, backupState);
+    activeBackup.set(save, backupState);
     return save;
   }
 
@@ -1536,10 +1559,11 @@
   }
   function startOverLabDialog(opener) {
     const no = labNo(LAB_ID), p = gstore.get('progress:' + LAB_ID);
+    const save = saveBlock({ others: false });
     return dataDialog({
       id: 'startlab', opener, eyebrow: 'Start over', title: `Start Lab ${no} over?`,
       warn: `This erases every answer, data table and saved result on Lab ${no}${p && p.total ? ` (${p.done} of ${p.total} parts done)` : ''} from this computer. Your name, your class and your other labs are not touched. It can't be undone.`,
-      body: [saveBlock({ others: false })],
+      body: [save], save,
       gate: { kind: 'check', label: `I've saved anything I need from Lab ${no}.` },
       confirmText: `Erase Lab ${no} work`, onConfirm: doStartOverLab,
     });
@@ -1978,7 +2002,20 @@
     collect: collectReport,
     filename: () => reportFileBase(),
     open: openReport, close: closeReport,
-    async docx(o = {}) { const rep = await renderCharts(collectReport()); rep.stamp = reportStamp(rep); if (o.timelapse != null ? o.timelapse : tlInclude()) rep.timelapse = await reportTimelapse(); try { rep.embed = await makeResumeCode(progressPayload(true)); } catch (e) { rep.embed = ''; } return withNativeRandom(() => buildDocx(rep)); },
+    async docx(o = {}) {
+      flushSaves();
+      const rep = collectReport();
+      // Both copies of the work must be captured before chart/GIF rendering yields.
+      // makeResumeCode serializes the payload before its first await.
+      let embed = Promise.resolve('');
+      try { embed = makeResumeCode(progressPayload(true)).catch(() => ''); } catch (e) { /* optional metadata */ }
+      const includeTimelapse = o.timelapse != null ? o.timelapse : tlInclude();
+      await renderCharts(rep);
+      rep.stamp = reportStamp(rep);
+      if (includeTimelapse) rep.timelapse = await reportTimelapse();
+      rep.embed = await embed;
+      return withNativeRandom(() => buildDocx(rep));
+    },
     docxUrls: DOCX_URLS,
   };
 
@@ -2299,19 +2336,21 @@
     const status = h('p', { class: 'tool-status', 'aria-live': 'polite' });
     const note = previewNote();
     const say = (t, bad) => { status.textContent = t; status.classList.toggle('is-bad', !!bad); };
-    const nameWarn = () => reportIdentity().name ? '' : ' Add your name at the top of the page so it appears on your report.';
     const docxBtn = h('button', { class: 'btn btn--primary', type: 'button', onclick: async () => {
       docxBtn.disabled = true; say('Building your Word file…');
       try {
-        const blob = await Lab.report.docx();
         const name = reportFileBase() + '.docx';
+        const nameWarn = reportIdentity().name ? '' : ' Add your name at the top of the page so it appears on your report.';
+        const blob = await Lab.report.docx();
+        if (staleEditor()) throw new Error(staleEditorMessage);
         downloadBlob(blob, name);
-        say(`Downloaded ${name} to this device. It has not been submitted; upload or hand in the file where your teacher directs.` + nameWarn());
+        say(`Downloaded ${name} to this device. It has not been submitted; upload or hand in the file where your teacher directs.` + nameWarn);
         reportSaved();
         Lab.toast(`Downloaded ${name}`, { type: 'ok', announce: false });
         if (LIKELY_PREVIEW) note.hidden = false;
       } catch (e) {
-        if (e && e.message === 'docx-load') { say('Could not load the Word file tool. Check your internet connection, or use Save as PDF.', true); note.hidden = false; }
+        if (e?.message === staleEditorMessage) say(staleEditorMessage, true);
+        else if (e?.message === 'docx-load') { say('Could not load the Word file tool. Check your internet connection, or use Save as PDF.', true); note.hidden = false; }
         else { console.error(e); say('Something went wrong building the Word file. Use Save as PDF instead.', true); }
       } finally { docxBtn.disabled = false; }
     } }, 'Download .docx');
@@ -3518,8 +3557,8 @@
   Lab.nudge = { after: NUDGE_MS, shown: () => !!sessionGet(NUDGE_KEY) };
   async function nudgeDocx(btn) {
     btn.disabled = true;
-    try { const blob = await Lab.report.docx(), name = reportFileBase() + '.docx'; downloadBlob(blob, name); Lab.toast(`Downloaded ${name}`, { type: 'ok', announce: false }); removeBar(); reportSaved(); }
-    catch (e) { Lab.toast(e && e.message === 'docx-load' ? 'Could not load the Word file tool. Check your internet connection, or get a transfer code.' : 'Could not build the Word file here. Get a transfer code instead.', { type: 'warn' }); btn.disabled = false; }
+    try { const name = reportFileBase() + '.docx', blob = await Lab.report.docx(); if (staleEditor()) throw new Error(staleEditorMessage); downloadBlob(blob, name); Lab.toast(`Downloaded ${name}`, { type: 'ok', announce: false }); removeBar(); reportSaved(); }
+    catch (e) { Lab.toast(e?.message === staleEditorMessage ? staleEditorMessage : e?.message === 'docx-load' ? 'Could not load the Word file tool. Check your internet connection, or get a transfer code.' : 'Could not build the Word file here. Get a transfer code instead.', { type: 'warn' }); btn.disabled = false; }
   }
   function nudgeCode(btn) {
     removeBar();
