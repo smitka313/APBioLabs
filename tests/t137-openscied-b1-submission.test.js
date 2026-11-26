@@ -10,13 +10,15 @@ const files = {
   serengeti:['function evidenceFile()', 'sg-submission', 'sg-download']
 };
 const source=(name,ext)=>readFileSync(root+'/openscied-b1-'+name+'.'+ext,'utf8');
-function collect(name,context){
+function collect(name,context,format='submissionData'){
   const js=source(name,'js');
-  const helper=name==='migration'?js.indexOf('  function unsavedMonthDrafts('):-1;
-  const start=helper>=0?helper:js.indexOf('  function submissionData('), end=js.indexOf('\n  '+files[name][0],start);
+  const helper=name==='migration'?js.indexOf('  function unsavedMonthDrafts('):
+    name==='serengeti'?js.indexOf('  const MODEL_QUESTION = '):-1;
+  const start=helper>=0?helper:js.indexOf('  function submissionData(');
+  const end=js.indexOf('\n  '+(format==='evidenceFile'?'function preservedFile()':files[name][0]),start);
   assert.ok(start>=0&&end>start,'activity provides its classroom adapter');
   const key=workKeys[name][0];
-  return vm.runInNewContext(js.slice(start,end)+'\nsubmissionData()',{
+  return vm.runInNewContext(js.slice(start,end)+'\n'+format+'()',{
     KEY:key,S:key,keys:workKeys[name],saveSession:{check:()=>({ok:true})},...context
   });
 }
@@ -185,13 +187,20 @@ test('Serengeti needs the four-season run, valid selected evidence and both expl
     preserveRaw:false,conceptProgress:{},window:{},roleSetup:{mode:'shared'},reportIdentity:recovery=>recovery?null:{name:'Device student',period:'3'},
     seasonName:()=> 'Winter',signed:value=>String(value),recordName:r=>r.title,describeRow:r=>r.description};
   assert.equal(collect('serengeti',ctx).status,'draft');
+  assert.match(collect('serengeti',ctx,'evidenceFile').text,/Report status: In progress\nSeasons completed: 1 of 4/);
   ctx.state.step='complete';
   let r=collect('serengeti',ctx);
   assert.equal(r.status,'final');assert.equal(r.student,null);assert.equal(r.datasetId,undefined);
   assert.equal(r.allowIdentityEdit,false);
   assert.match(r.sections[0].items[0].text,/group record/);
   assert.deepEqual(plain(r.recorder),{name:'Device student',period:'3'});
-  assert.equal(r.sections[3].items[0].value,'Selected evidence Lion hunt');
+  const builtIn='Model investigation question: How do event cards and hunts change the wildebeest population across the four seasons?';
+  assert.equal(r.sections[3].items[0].text,builtIn);
+  assert.equal(r.sections[3].items[1].value,'Selected evidence Lion hunt');
+  const completeCopy=collect('serengeti',ctx,'evidenceFile').text;
+  assert.match(completeCopy,/Report status: Activity complete\nSeasons completed: 4 of 4/);
+  assert.ok(completeCopy.includes(builtIn));
+  assert.doesNotMatch(completeCopy,/Still to do/);
   assert.equal(r.sections[2].items[0].rows[0][4],'Simulated capture');
   ctx.roleSetup.mode='solo';
   r=collect('serengeti',ctx);assert.equal(r.student.name,'Device student');assert.equal(r.recorder,null);
@@ -201,6 +210,7 @@ test('Serengeti needs the four-season run, valid selected evidence and both expl
   r=collect('serengeti',ctx);assert.equal(r.status,'draft');assert.match(r.missing[0],/Choose an event or hunt/);
   r=collect('serengeti',{...ctx,preserveRaw:true});
   assert.equal(r.status,'recovery');assert.equal(r.student,null);
+  assert.match(collect('serengeti',{...ctx,preserveRaw:true},'evidenceFile').text,/Report status: Recovered work/);
 });
 
 

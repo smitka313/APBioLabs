@@ -390,6 +390,11 @@
       { title: 'Written responses', items: textAnswers().filter(r => r.answer).map(r => answer(r.prompt, r.answer)) }
     ].filter(section => section.items.length);
   }
+  // Use the same explanation the student can open below the tilt simulation.
+  function tiltMethod() {
+    const notes = document.getElementById('tilt-model-method');
+    return notes ? Array.from(notes.querySelectorAll('li'), item => item.textContent.replace(/\s+/g, ' ').trim()) : [];
+  }
   function classroomReport() {
     const ev = L.sceneEvidence(state), foam = L.foamRows(state.decomp), stats = answerStats();
     const missing = [];
@@ -413,9 +418,10 @@
         rows: foam.map(r => [r.t, ...r.h]) }] });
     }
     if (ev.tubesRead) sections.push({ title: 'Light angle investigation · simulated', items: [{ type: 'table',
-      columns: ['Tube', 'Light setting', 'Relative light', 'Final BTB reading', 'CO₂ change (relative)', ...(ev.starchTested ? ['Starch index'] : [])],
-      rows: L.tiltResults(state.tilt.seed, state.tilt.settings).map(r => [r.tube, L.LIGHTS[r.light].label, r.intensity,
-        r.btbLabel + ' (' + r.btb + ')', r.net, ...(ev.starchTested ? [r.starch] : [])]) }] });
+      columns: ['Tube', 'Light setting', 'Relative light (0–1)', 'Plant size factor', 'Final BTB reading', 'CO₂ change (relative)', ...(ev.starchTested ? ['Starch index'] : [])],
+      rows: L.tiltResults(state.tilt.seed, state.tilt.settings).map(r => [r.tube, L.LIGHTS[r.light].label, r.intensity, r.plantSize,
+        r.btbLabel + ' (' + r.btb.toFixed(1) + ')', r.net, ...(ev.starchTested ? [r.starch] : [])]) },
+      ...tiltMethod().map(text => ({ type: 'text', text }))] });
     return {
       title: 'Fires: Peat, Decomposition and Earth’s Tilt', unit: 'Unit 2',
       source: 'OpenSciEd Unit B.2 Lessons 3 and 5; yeast, plant and bromothymol blue (BTB) results are simulated, not measured.',
@@ -435,7 +441,8 @@
     const simulated = {
       foam: d ? L.foamRows(d).map(function (r) { return { minutes: r.t, foamHeightMm: r.h, carbonDioxideRelative: r.h.map(L.co2Made) }; }) : [],
       foamTemperaturesC: d ? L.normalizeTemps(d.temps) : null,
-      tubes: t && typeof t.seed === 'number' && Array.isArray(t.settings) && t.recorded ? L.tiltResults(t.seed, t.settings).map(function (r) { return { tube: r.tube, light: r.light, lightReachingPlant: r.intensity, btbReading: r.btb, btbColor: r.btbLabel, carbonDioxideChangeRelative: r.net, starchIndex: t.starchDone ? r.starch : null }; }) : [] };
+      tubes: t && typeof t.seed === 'number' && Array.isArray(t.settings) && t.recorded ? L.tiltResults(t.seed, t.settings).map(function (r) { return { tube: r.tube, light: r.light, lightReachingPlant: r.intensity, plantSizeFactor: r.plantSize, btbReading: r.btb, btbColor: r.btbLabel, carbonDioxideChangeRelative: r.net, starchIndex: t.starchDone ? r.starch : null }; }) : [] };
+    if (simulated.tubes.length) simulated.tiltMethod = tiltMethod();
     const payload = { format: 'openscied-b2-fires-progress-v1', exportedAt: new Date().toISOString(), student: reportIdentity(preservedSave),
       dataNote: 'Yeast foam, plant and BTB results in this file are SIMULATED by a model from the student’s Dataset ID. They are not measurements from a real lab. This file can include the student name and class period. Share it only as your teacher directs.',
       answersSaved: answerStats(), modelEvidence: L.sceneEvidence(state), responseIds: RESPONSE_IDS, scenes, simulatedData: simulated, choices: picks(), dropdowns: dropdowns(), chips: chips(), written: textAnswers(), answers: state.fields };

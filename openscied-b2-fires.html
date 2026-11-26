@@ -303,7 +303,7 @@
         <label class="choice"><input type="radio" name="tilt-pattern" value="b" data-why="Try again. In the class example, the foil tube got no light and was the yellowest."> gets yellower.</label>
         <label class="choice"><input type="radio" name="tilt-pattern" value="c" data-why="Try again. The class example’s tubes did not all end up the same color."> does not change.</label>
       </fieldset>
-      <details class="disclose"><summary>What this simulation models</summary><div class="inner"><ul>
+      <details class="disclose"><summary>What this simulation models</summary><div class="inner"><ul id="tilt-model-method">
         <li>Light on the plant is the cosine of the lamp’s angle: full light at 0°, about 0.71 at 45°, about 0.34 at 70°, none under foil.</li>
         <li>For each tube, <strong>CO₂ change = plant size × (respiration per size − photosynthesis per size)</strong>, in relative model units. Respiration per size is 0.30; photosynthesis per size is <strong>1.10 × light ÷ (0.35 + light)</strong>. Light is a fraction from 0 to 1 (for example, 71% is about 0.71). Negative means the plant removed more CO₂ than it released.</li>
         <li>BTB starts at 2.0. For a CO₂ decrease, the model adds the signed change divided by 0.60 to 2.0. For a CO₂ increase, it adds 13 times the change. The model caps BTB at 1.0–6.0 and rounds to one decimal. Different CO₂ changes can give the same color name or even the same rounded BTB number.</li>

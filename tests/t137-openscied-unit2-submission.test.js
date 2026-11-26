@@ -119,7 +119,10 @@ test('Burns: unreadable save is never embedded in the classroom file', () => {
 test('Fires: configuration and baseline are not full evidence; recorded model results and student placements count without a correctness gate', () => {
   const state = { decomp: { seed: 8, temps: [18,27,43], recorded: [0] },
     tilt: { seed: 6, settings: ['direct','tilt45','foil'], recorded: false }, cards: { placed: {} } };
-  const f = fixture('fires', { L: Fires, state, ...choiceData, labelFor: x => x });
+  const methods=read(prefix+'fires.html').match(/<ul id="tilt-model-method">([\s\S]*?)<\/ul>/)?.[1] || '';
+  const methodItems=Array.from(methods.matchAll(/<li>([\s\S]*?)<\/li>/g), m=>({textContent:m[1].replace(/<[^>]*>/g,'')}));
+  const f = fixture('fires', { L: Fires, state, ...choiceData, labelFor: x => x,
+    document: { getElementById: id => id==='tilt-model-method' ? {querySelectorAll: () => methodItems} : null } });
   let report = f.report();
   assert.equal(report.status, 'draft');
   assert.match(report.missing.join(' '), /after 0 minutes.*three BTB/);
@@ -130,7 +133,13 @@ test('Fires: configuration and baseline are not full evidence; recorded model re
   report = f.report();
   assert.equal(report.status, 'final');
   assert.equal(item(report, 'Recorded foam height (mm)').rows.length, 2);
-  assert.ok(named(report, 'Light angle'));
+  const tilt = report.sections.find(s=>s.title==='Light angle investigation · simulated');
+  const [results,...notes]=tilt.items;
+  assert.deepEqual(notes.map(x=>x.text),methodItems.map(x=>x.textContent));
+  assert.match(notes.map(x=>x.text).join(' '),/0\.30.*1\.10 × light ÷ \(0\.35 \+ light\).*0\.60.*13 times/);
+  const factor=results.columns.indexOf('Plant size factor');
+  assert.ok(factor>=0);
+  assert.deepEqual(results.rows.map(r=>r[factor]),Fires.tiltResults(6,state.tilt.settings).map(r=>r.plantSize));
   assert.doesNotMatch(JSON.stringify(report), /incorrect|correct so far|Starch index/);
   state.decomp.temps = [43,43,43];
   state.tilt.settings = ['direct','direct','direct'];
