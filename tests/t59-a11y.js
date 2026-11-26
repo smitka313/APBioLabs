@@ -146,6 +146,37 @@ async function keyboard(b) {
         return { ok: document.activeElement === controls[index - 1], index, total: controls.length };
       }, k.btn);
       T.ok(start.ok, `${lab}: preceding control is keyboard focusable (${JSON.stringify(start)})`);
+    } else if (lab === 'lab06' || lab === 'lab07') {
+      // Start at the simulation part’s heading, not an arbitrary retained focus
+      // point from the previous part. Traverse the full local path by Tab.
+      const pred = lab === 'lab06' ? 'predict-microresp' : 'predict-roottips';
+      const ready = await p.waitForFunction(({ part, selector, pred, text }) => {
+        const button = document.querySelector(selector);
+        const section = document.querySelector('section.step.is-current');
+        const field = document.getElementById('p-' + pred);
+        return section?.id === part && !!button && section.contains(button) && !button.disabled &&
+          field?.value === text && Lab.store.get('field:' + pred) === text;
+      }, { part:k.part, selector:k.btn, pred, text:PRED }, { timeout:30000 }).then(() => true, () => false);
+      if (!ready) {
+        const state = await p.evaluate(({ selector, pred }) => ({
+          part:document.querySelector('section.step.is-current')?.id,
+          restored:!!document.getElementById('p-' + pred)?.value,
+          saved:!!Lab.store.get('field:' + pred),
+          disabled:document.querySelector(selector)?.disabled,
+          reason:document.querySelector(selector + '-why')?.textContent,
+          focus:document.activeElement?.id,
+        }), { selector:k.btn, pred });
+        T.ok(false, `${lab}: prediction and run control did not restore after reload ${JSON.stringify(state)}`);
+        await ctx.close();
+        continue;
+      }
+      await p.locator('a.skip-link').focus();
+      await p.keyboard.press('Enter');
+      T.ok(await p.evaluate(id => document.getElementById(id)?.contains(document.activeElement), k.part),
+        `${lab}: Skip to content lands in the restored simulation part`);
+      await p.keyboard.press('Tab');
+      T.ok(await p.evaluate(id => document.getElementById(id)?.contains(document.activeElement), k.part),
+        `${lab}: the first Tab from the restored heading enters the simulation part`);
     } else {
       await p.evaluate(() => { document.activeElement?.blur(); window.scrollTo(0, 0); });
       await p.keyboard.press('Tab');

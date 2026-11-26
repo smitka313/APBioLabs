@@ -799,7 +799,10 @@ test('one activity reset does not invalidate a different editor or erase work in
 
 test('Lab sign-out and full reset set both non-personal guards before wiping work', () => {
   const src=fs.readFileSync(path.join(__dirname,'../lab.js'),'utf8');
-  const code=src.slice(src.indexOf('  function invalidateOpenSciEdEditors()'),src.indexOf('  function doStartOverLab()'));
+  const start=src.indexOf('  function wipe(keep)');
+  const end=src.indexOf('  /* The dialog. o:',start);
+  assert.ok(start>=0 && end>start,'the production data-management helpers are available');
+  const code=src.slice(start,end);
   const records={}, order=[];
   const localStorage=Object.defineProperties(records,{
     getItem:{value:k=>records[k]??null},

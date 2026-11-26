@@ -12,7 +12,7 @@ const EPOCH='aplab:pref:workspace-handoff:v1', RESUME='aplab:pref:openscied-resu
 function storage(seed={}) {
   const s={...seed}, blocked={};
   Object.defineProperties(s,{
-    blocked:{value:blocked}, getItem:{value:k=>Object.hasOwn(s,k)?s[k]:null},
+    blocked:{value:blocked}, length:{get:()=>Object.keys(s).length}, key:{value:i=>Object.keys(s)[i]??null}, getItem:{value:k=>Object.hasOwn(s,k)?s[k]:null},
     setItem:{value:(k,v)=>{if(blocked.set===k)throw Error('denied');s[k]=String(v);}},
     removeItem:{value:k=>{if(blocked.remove===k)throw Error('denied');delete s[k];}}
   });
@@ -42,7 +42,7 @@ function page(localStorage,pathname='/index.html', beforeScriptLoad=()=>{}){
       return this.children.flatMap(n=>[...(match(n)?[n]:[]),...n.querySelectorAll(q)]);
     }
   }
-  doc={title:'Fixture',readyState:'loading',addEventListener:noop, removeEventListener:noop, body:new Element('body'),
+  doc={documentElement:{style:{removeProperty:noop}},title:'Fixture',readyState:'loading',addEventListener:noop, removeEventListener:noop, body:new Element('body'),
     createElement:tag=>new Element(tag),createTextNode:txt=>new Element('#text',txt), querySelector(sel){return this.body.querySelector(sel);}, querySelectorAll(sel){return this.body.querySelectorAll(sel);}};
   const location={pathname,reload:()=>nav.push('reload'),assign:file=>nav.push(file)};
   const env={console,navigator:{},document:doc,location,localStorage,sessionStorage:storage(),
@@ -163,7 +163,12 @@ test('new OpenSciEd work discovered after confirmation opens is offered for back
   assert.deepEqual(p.nav,[]);
   assert.equal(dialog.querySelector('.dm-openscied-work').hidden,false);
   assert.match(dialog.querySelector('.tool-status').textContent,/Download a backup/);
-  dialog.querySelector('.dm-confirm').click();assert.deepEqual(p.nav,['reload']);
+  // The old confirmation must not erase. Reopening reviews the new work.
+  dialog.querySelector('.dm-confirm').click();assert.deepEqual(p.nav,[]);
+  assert.equal(s.getItem(MIG),'arrived since opened');
+  dialog.querySelector('.dm-cancel').click();
+  confirm(p.Lab.data.signOut());
+  assert.deepEqual(p.nav,['reload']);
 });
 
 const OSE_PATH='/openscied-b1-migration.html';
@@ -486,4 +491,102 @@ test('the Word report captures visible answers and its teacher data before chart
   assert.equal(rep.name,'First Student');
   assert.equal(embedded.data.answer,rep.answer);
   assert.equal(embedded.student.name,rep.name);
+});
+
+test('single-lab Start over must not let an already-open copy put erased work back',()=>{
+  const s=withStudent({[AP]:'"old reading 7.1"'});
+  const old=page(s,'/lab02.html'), reset=page(s,'/lab02.html'), sibling=page(s,'/lab05.html');
+  const dialog=reset.Lab.data.startOverLab();
+  unlockWordDialog(dialog.querySelector('#dm-startlab-gate'),null);
+  dialog.querySelector('.dm-confirm').click();
+  assert.equal(s.getItem(AP),null);
+  assert.deepEqual(reset.nav,['reload']);
+  sibling.Lab.store.set('answer','unrelated work');
+  assert.equal(s.getItem('aplab:lab05:answer'),'"unrelated work"');
+  old.Lab.store.set('answer','old reading from tab left open');
+  assert.equal(s.getItem(AP),null);
+});
+
+test('single-lab Start over must not reload and signal success if storage refused the deletion',()=>{
+  const extra='aplab:lab02:another-answer';
+  const s=withStudent({[extra]:'"first answer"',[AP]:'"still saved"'}), p=page(s,'/lab02.html');
+  s.blocked.remove=AP;
+  const dialog=p.Lab.data.startOverLab();
+  unlockWordDialog(dialog.querySelector('#dm-startlab-gate'),null);
+  dialog.querySelector('.dm-confirm').click();
+  assert.deepEqual(p.nav,[]);
+  assert.equal(s.getItem(AP),'"still saved"');
+  assert.equal(s.getItem(extra),'"first answer"');
+  assert.match(dialog.querySelector('.tool-status').textContent,/Could not clear this lab/);
+  delete s.blocked.remove;
+  dialog.querySelector('.dm-confirm').click();
+  assert.deepEqual(p.nav,['reload']);
+  assert.equal(s.getItem(extra),null);
+});
+
+test('AP sign-out must recheck current-lab work after the downloaded copy',async()=>{
+  const s=withStudent({[AP]:'"initial reading"'}), p=page(s,'/lab02.html'), other=page(s,'/lab02.html');
+  const dialog=p.Lab.data.signOut();
+  await dialog.querySelectorAll('button').find(b=>b.textContent==='Download progress file').click();
+  // Stub the browser storage iteration APIs for the actual payload, as in browser localStorage.
+  const olderFile=await parse(p.downloads[0]);
+  assert.equal(olderFile.data.answer,'initial reading');
+  other.Lab.store.set('answer','new reading added to the lab in another tab');
+  confirm(dialog);
+  confirm(dialog);
+  assert.equal(s.getItem(AP),'"new reading added to the lab in another tab"');
+  assert.equal(dialog.querySelector('.dm-confirm').disabled,true);
+  dialog.querySelector('.dm-cancel').click();
+  const refreshed=p.Lab.data.signOut();
+  await refreshed.querySelectorAll('button').find(b=>b.textContent==='Download progress file').click();
+  assert.equal((await parse(p.downloads[1])).data.answer,'new reading added to the lab in another tab');
+  confirm(refreshed);
+  assert.equal(s.getItem(AP),null);
+});
+
+test('AP sign-out must not erase a new OpenSciEd response after the backup starts',async()=>{
+  const s=withStudent({[MIG]:migWork('initial observation')}), p=page(s,'/ap-biology.html');
+  const dialog=p.Lab.data.signOut();
+  await dialog.querySelector('.dm-openscied-backup').click();
+  assert.equal((await parse(p.downloads[0])).work[MIG],migWork('initial observation'));
+  const activity=guard.open(s,'b1-migration',[MIG]);
+  assert.equal(activity.write(MIG,migWork('new observation')).ok,true);
+  confirm(dialog);
+  assert.equal(s.getItem(MIG),migWork('new observation'));
+});
+
+test('a lab reset refuses to delete anything if it cannot invalidate the other tabs',()=>{
+  const s=withStudent({[AP]:'"keep this answer"'}), p=page(s,'/lab02.html');
+  s.blocked.set='aplab:pref:ap-lab-reset:v1:lab02';
+  const dialog=p.Lab.data.startOverLab();
+  unlockWordDialog(dialog.querySelector('#dm-startlab-gate'),null);
+  dialog.querySelector('.dm-confirm').click();
+  assert.equal(s.getItem(AP),'"keep this answer"');
+  assert.match(dialog.querySelector('.tool-status').textContent,/Could not clear this lab/);
+  assert.deepEqual(p.nav,[]);
+});
+
+test('a scoped restart allows fresh work and cannot be overwritten by a tab open before the restart',()=>{
+  const s=withStudent({[AP]:'"old answer"'}), p=page(s,'/lab02.html');
+  const stale=page(s,'/lab02.html'), d=p.Lab.data.startOverLab();
+  unlockWordDialog(d.querySelector('#dm-startlab-gate'),null);
+  d.querySelector('.dm-confirm').click();
+  const fresh=page(s,'/lab02.html');
+  fresh.Lab.store.set('answer','new answer after reset');
+  stale.Lab.store.set('answer','old answer from earlier tab');
+  assert.throws(()=>stale.Lab.progressFile.payload(),/cleared in another tab/);
+  assert.equal(s.getItem(AP),'"new answer after reset"');
+});
+
+test('an untouched field cannot overwrite a newer answer while a backup flushes pending edits',()=>{
+  const s=withStudent({'aplab:lab02:field:measurement':'"old reading"'}), p=page(s,'/lab02.html');
+  const field=p.el('textarea');
+  field.dataset={save:'measurement'};
+  field.closest=()=>null;
+  p.Lab.bindAutosave({querySelectorAll:()=>[field]});
+  assert.equal(field.value,'old reading');
+  s.setItem('aplab:lab02:field:measurement','"newer reading from another tab"');
+  assert.equal(p.Lab.progressFile.payload().data['field:measurement'],'newer reading from another tab');
+  field.value='typed in this tab but timer has not run'; field.trigger('input');
+  assert.equal(p.Lab.progressFile.payload().data['field:measurement'],'typed in this tab but timer has not run');
 });
