@@ -99,23 +99,25 @@
     ]
   };
   const study='https://research-groups.usask.ca/human-wildlife-interaction/documents/clark-et-al.-2018-novel-range-overlap-of-three-ursids-in-the-canadian-subarctic.pdf#page=5';
-  let state={v:1,id:signature(),step:'sightings',season:'winter',region:'seasonal',figure:0,fields:{},check:'',scaleCheck:null,scaleCheckVersion:2,scaleDraft:null,finished:false,lastVisitedAt:0}, session, recovery=false, picked=-1;
+  let state={v:1,id:signature(),step:'sightings',season:'winter',region:'seasonal',figure:0,fields:{},check:'',scaleCheck:null,scaleCheckVersion:2,scaleDraft:null,finished:false,lastVisitedAt:0}, session, legacy=false, recovery=false, picked=-1;
   try{
     session=window.OpenSciEdSaveSession?.open(localStorage,'b5-wapusk',[KEY]);
     const raw=session?.read(KEY);
     if(raw!=null){
       const x=JSON.parse(raw);
       if(x.v!==1||!/^[A-F0-9]{8}$/.test(x.id))throw Error('Unrecognized saved work');
-      state={...state,id:x.id,step:stages.includes(x.step)?x.step:'sightings',season:x.season==='summer'?'summer':'winter',
+      state={...state,id:x.id,lastSavedAt:window.OpenSciEdB5Workspace.timestamp(x.lastSavedAt),step:stages.includes(x.step)?x.step:'sightings',season:x.season==='summer'?'summer':'winter',
         region:Object.hasOwn(regions,x.region)?x.region:'seasonal',fields:Object.fromEntries(Object.keys(labels).map(k=>[k,clean(x.fields?.[k])])),
         check:['place','meeting'].includes(x.check)?x.check:'',figure:Number.isInteger(x.figure)&&figures[x.figure]?x.figure:0,
         scaleCheck:cleanScale(x.scaleCheck),scaleCheckVersion:x.scaleCheckVersion===2?2:1,scaleDraft:cleanScale(x.scaleDraft),finished:x.finished===true,lastVisitedAt:Number(x.lastVisitedAt)||0};
+      legacy=Object.values(state.fields).some(v=>v.trim())||Boolean(state.check)||state.scaleCheck!==null||state.scaleDraft!==null||state.finished;
     }
   }catch(_){recovery=true;}
   const identity=window.OpenSciEdSaveSession?.reportIdentity?.(session,[KEY],()=>window.Lab?.identity?.get?.()??null)??(()=>null);
   const canSave=()=>!recovery&&session?.check(KEY).ok;
   function resetState(){ $('reset').disabled=!canSave()||!(Object.values(state.fields).some(v=>v.trim())||state.check||state.scaleCheck!==null||state.scaleDraft!==null||state.finished); }
-  function save(){state.lastVisitedAt=Date.now();if(!canSave()||!session.write(KEY,JSON.stringify(state)).ok){tell('This tab could not save on this device. Preview a report to keep a copy.');resetState();return false;}resetState();return true;}
+  const receipt=window.OpenSciEdB5Workspace.mount({output:$('save'),key:KEY,session,canSave,restored:()=>legacy,getRecord:()=>state});
+  function save(workChanged=true){state.lastVisitedAt=Date.now();const ok=receipt.write(workChanged);resetState();return ok;}
   const uiKey=id=>'aplab:ui:wapusk:disclosure:'+id;
   let resetDisclosures=false;
   function storeDisclosure(d){
@@ -138,7 +140,7 @@
     if(step==='scale')$('scale-recap').textContent=state.fields.observe?.trim()?'Your Wapusk observation: '+state.fields.observe.trim():'';
     if(focus){
       if(step!=='scale'&&location.hash==='#wb-sea-ice')history.replaceState(null,'',location.pathname+location.search);
-      $(step+'-title').focus();save();
+      $(step+'-title').focus();save(false);
     }
   }
   function showMark(index){
@@ -249,7 +251,6 @@
     location.reload();
   };
   drawSeason();drawRegion();feedback();section(directIce?'scale':state.step,false);resetState();
-  if(!canSave())tell('This browser could not open the saved notebook. You can still work and preview a report.');
   const popColumns=['Subpopulation','Population size (map)','Body condition','Reproduction'];
   const evidenceSource='Wapusk sightings and regional snapshot: OpenSciEd B.5 Lesson 1. Arctic extent: NSIDC Sea Ice Index v4, 1987–2023 (five-day yearly minima). Interactive map is schematic.';
   function owlRecord(){return {answer:owlLabels[state.check]||null,verdict:state.check==='place'?'Supported':state.check==='meeting'?'Not supported':'Not checked',feedback:owlFeedback[state.check]||null};}

@@ -1,4 +1,5 @@
 'use strict';
+const receipt = require('./openscied-b5-save-receipt');
 const assert=require('node:assert/strict'),fs=require('node:fs'),http=require('node:http'),path=require('node:path');
 const {chromium}=require('playwright'),D=require('../openscied-b5-speciation-data.js');
 const root=path.join(__dirname,'..'),type={'.html':'text/html','.css':'text/css','.js':'application/javascript','.svg':'image/svg+xml'};
@@ -24,6 +25,7 @@ const server=http.createServer((req,res)=>{
     await p.route(/https:\/\/.*\/docx@[^/]+\/.*\.js$/,r=>r.fulfill({contentType:'application/javascript',body:fixture}));
    }
    await p.goto(base+'openscied-b5-speciation.html#argument');
+   await receipt.ready(p.locator('#ice-save'));await receipt.readableDisabled(p.locator('#ice-reset'));
    const at=k=>p.locator('#ice-'+k),stage=k=>p.locator('#'+k),go=k=>p.locator('[data-go="'+k+'"]'),nav=k=>p.locator('[data-step="'+k+'"]');
    const save=()=>p.evaluate(()=>JSON.parse(localStorage.getItem('aplab:openscied:b5-speciation:v1')));
    async function layout(name){
@@ -58,6 +60,7 @@ const server=http.createServer((req,res)=>{
    await at('g-cold').fill('1322');await at('g-warm').fill('5727');await at('math').click();
    assert.match(await at('math-feedback').innerText(),/Both estimates match/);
    await at('first').fill('During G6, two populations could have been separated as land ice retreated.');
+   await receipt.saved(at('save'));
    await at('needed').fill('I need preserved bones to learn where bears lived.');
    await at('lock').click();
    assert(await stage('fossils').isVisible());

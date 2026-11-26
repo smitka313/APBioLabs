@@ -28,7 +28,7 @@ function table(headers,rows,title,scroll=false){
 }
 const newId=()=>Array.from(crypto.getRandomValues(new Uint8Array(4)),x=>x.toString(16).padStart(2,'0')).join('').toUpperCase();
 const fresh=()=>({v:1,id:null,step:'ice',lastVisitedAt:0,year:null,islands:[],traces:[],rolls:0,answers:{},verdict:null,finished:false});
-let s=fresh(),session,failed=false,started=false,year=2022,encounter='brown',familyChoice='',picked=null;
+let s=fresh(),session,failed=false,started=false,legacy=false,year=2022,encounter='brown',familyChoice='',picked=null;
 const shown=new Set(D.graph.map(g=>g.key));
 try{
  session=window.OpenSciEdSaveSession?.open(localStorage,'b5-hybrid',[KEY],undefined,{routeMetadata:['step','lastVisitedAt']});
@@ -36,13 +36,14 @@ try{
  if(raw){
   const v=JSON.parse(raw);
   if(v?.v!==1||!/^[A-F0-9]{8}$/.test(v.id))throw Error('Invalid saved record');
-  s.id=v.id;s.step=routes.includes(v.step)?v.step:'ice';s.lastVisitedAt=Number(v.lastVisitedAt)||0;
+  s.id=v.id;s.lastSavedAt=window.OpenSciEdB5Workspace.timestamp(v.lastSavedAt);s.step=routes.includes(v.step)?v.step:'ice';s.lastVisitedAt=Number(v.lastVisitedAt)||0;
   s.year=validYear(v.year)?v.year:null;
   s.islands=cleanArray(v.islands,['banks','victoria']);s.traces=cleanArray(v.traces,D.family.filter(k=>k.parents).map(k=>k.id));
   s.rolls=Number.isInteger(v.rolls)?Math.min(40,Math.max(0,v.rolls)):0;s.verdict=Object.hasOwn(checks,v.verdict)?v.verdict:null;
   for(const k of Object.keys(assignments))s.answers[k]=clean(v.answers?.[k],k);
   s.finished=v.finished===true&&readyClaim();
   started=!!(s.lastVisitedAt||s.year||s.islands.length||s.traces.length||s.rolls||Object.values(s.answers).some(Boolean)||s.verdict);
+  legacy=Boolean(s.year||s.islands.length||s.traces.length||s.rolls||Object.values(s.answers).some(x=>x.trim())||s.verdict);
   year=s.year??2022;
  }else if(session){
   // Reserve the dataset before showing it. A seed without work is not a started lab.
@@ -63,6 +64,7 @@ function readyFamily(){return s.islands.length===2&&[1,2].every(g=>D.family.some
 function readyClaim(){return readyIce()&&readyFamily()&&s.rolls===40&&written('claim')&&written('limit')&&s.verdict==='clue';}
 function gate(step){const idx=routes.indexOf(step);return idx===0||(idx>0&&readyIce()&&(idx===1||(readyFamily()&&(idx===2||s.rolls===40))));}
 function done(){return Number(readyIce())+Number(readyIce()&&readyFamily())+Number(readyIce()&&readyFamily()&&s.rolls===40)+Number(s.finished);}
+const receipt=window.OpenSciEdB5Workspace.mount({output:$('save'),key:KEY,session,canSave,restored:()=>legacy,getRecord:()=>s});
 let writeFailed=false;
 function saveStatus(){
  const savable=canSave()&&!writeFailed;
@@ -70,11 +72,11 @@ function saveStatus(){
  notice.hidden=!!savable;
  if(focused&&savable)$('reset').focus();
  $('reset').disabled=!canSave()||!started;
- $('save').textContent=savable?'Your work is saved in this browser. Preview the report to keep a copy.':'This tab cannot save. Download a recovery copy before reloading.';
+ receipt.refresh();
 }
-function save(){
+function save(workChanged=true){
  started=true;s.lastVisitedAt=Date.now();
- writeFailed=!canSave()||!session.write(KEY,JSON.stringify(s)).ok;
+ writeFailed=!receipt.write(workChanged);
  saveStatus();
 }
 function changed(){s.finished=false;save();controls();}
@@ -95,7 +97,7 @@ function go(k,focus=true){
  if(!gate(k))return;
  s.step=k;routes.forEach(r=>document.getElementById(r).hidden=r!==k);
  if(location.hash!=='#'+k)history.replaceState(null,'','#'+k);
- if(focus&&started)save();if(k==='claim')recap();controls();
+ if(focus&&started)save(false);if(k==='claim')recap();controls();
  if(focus){say('');document.getElementById(k+'-title').focus();}
 }
 all('[data-step],[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go||b.dataset.step));
@@ -177,8 +179,9 @@ function showModel(){
  $('round').textContent='Mating '+(r+1)+' of 10 · '+f.length+' of 4 variants revealed';
  $('flip').disabled=s.rolls>=40;
  $('flip').textContent=s.rolls===40?'All 40 flips recorded':s.rolls%4===0&&s.rolls>0?'Next mating · Flip for LYST':'Flip for '+D.traits[s.rolls%4].key;
- $('remaining').hidden=s.rolls===0||s.rolls===40;
- $('remaining').textContent=s.rolls%4?'Flip remaining coins for this mating':'Flip all four coins for the next mating';
+ const left=4-s.rolls%4,nextMating=Math.floor(s.rolls/4)+1;
+ $('remaining').hidden=$('shortcut-note').hidden=s.rolls===40;
+ $('shortcut-note').textContent='Finish this mating flips the '+left+' '+(left===1?'coin still needed':'coins still needed')+' for mating '+nextMating+'.';
  $('coin').textContent=s.rolls?(bits().at(-1)===0?'H':'T'):'?';
  $('cub').dataset.born=String(f.length===4);$('cub').dataset.coat=f[0]===1?'light':'mixed';
  $('inheritance').replaceChildren(table(['Gene','Polar contribution','Brown contribution','Model result'],D.traits.map((t,i)=>[t.key,t.polar,f[i]===undefined?'Not flipped':face(f[i])+': '+t.brown[f[i]],f[i]===undefined?'Waiting':D.phenotype(i,f[i])]),'Mating '+(r+1)+' model traits'));
@@ -201,7 +204,7 @@ function runFlips(count){
  if(Math.floor(before/4)!==Math.floor(s.rolls/4))picked=Math.floor(s.rolls/4)-1;
  changed();showModel();
  const last=s.rolls-1,bit=bits().at(-1),t=D.traits[last%4];
- const message=(count===1?'Coin: '+face(bit)+'. Brown parent passed '+t.brown[bit].toLowerCase()+' for '+t.key+'. ':'Remaining flips recorded. ')+(s.rolls%4===0?'Offspring '+(s.rolls/4)+' is in your notebook.':'Read the inherited copies and continue.');
+ const message=(count===1?'Coin: '+face(bit)+'. Brown parent passed '+t.brown[bit].toLowerCase()+' for '+t.key+'. ':'Mating flips recorded. ')+(s.rolls%4===0?'Offspring '+(s.rolls/4)+' is in your notebook.':'Read the inherited copies and continue.');
  $('model-feedback').textContent=message;say(message);
  const coin=$('coin'),bench=$('bench');
  coin.classList.remove('flipping');bench.classList.remove('reveal');void coin.offsetWidth;

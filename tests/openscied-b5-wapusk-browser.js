@@ -1,4 +1,5 @@
 'use strict';
+const receipt = require('./openscied-b5-save-receipt');
 const assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=require('node:path');
 const {chromium}=require('playwright'),{ROOT,serve}=require('./_h');
 (async()=>{
@@ -19,6 +20,7 @@ const {chromium}=require('playwright'),{ROOT,serve}=require('./_h');
        await page.goto(server.url+'openscied-b5-wapusk.html');
        assert.ok(await by('sightings').isVisible());
        assert(await by('reset').isDisabled());
+       await receipt.ready(by('save'));await receipt.readableDisabled(by('reset'));
        await page.getByRole('button',{name:'Enter your name and class period'}).click();
        await page.getByRole('textbox',{name:'Enter your name as your teacher knows it'}).fill('Avery Wapusk');
        await page.getByLabel('Class period',{exact:true}).selectOption('2');
@@ -57,10 +59,12 @@ const {chromium}=require('playwright'),{ROOT,serve}=require('./_h');
        await page.getByRole('button',{name:'Check the claim'}).click();assert.match(await by('feedback').textContent(),/matches the evidence/);
        const owlResult=await by('feedback').textContent();
        await by('observe').fill('The summer sightings include woodland.');
+       const savedAt=await receipt.saved(by('save'));
        const overflow=await page.evaluate(()=>[...document.body.querySelectorAll('*')].filter(e=>e.getClientRects().length&&e.getBoundingClientRect().right>innerWidth+1).map(e=>[e.tagName,String(e.className),e.id]).slice(0,12));
        assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),JSON.stringify(overflow));
        await page.screenshot({path:path.join(out,width+'-sightings.png'),fullPage:true});
        await tab('scale').click();
+       assert.equal(await receipt.saved(by('save')),savedAt,'changing steps does not count as editing work');
        const localScale='Wapusk National Park covers 11,475 km²';
        assert.ok((await by('park-scale').innerText()).includes(localScale));
        assert.equal(await page.locator('iframe').count(),0);
@@ -125,6 +129,17 @@ const {chromium}=require('playwright'),{ROOT,serve}=require('./_h');
          assert.ok(selected.every(label=>xml.includes(label)),'Word includes exact checked choices');
        }
        await page.getByRole('button',{name:'Close report',exact:true}).click();
+       const theme=page.getByRole('group',{name:'Color theme'});
+       const originalId=report.match(/WB-[A-F0-9]{8}/)[0];
+       const beforeTheme=await page.evaluate(()=>localStorage.getItem('aplab:openscied:b5-wapusk:v1'));
+       for(const mode of ['Dark','Light']){
+         await theme.getByRole('button',{name:mode,exact:true}).click();
+         await page.getByRole('button',{name:'Preview report'}).first().click();
+         const reopened=await page.getByRole('dialog').filter({hasText:'Three Bears in Wapusk'}).innerText();
+         assert.equal(reopened.match(/WB-[A-F0-9]{8}/)[0],originalId,'same-tab theme change keeps the report dataset');
+         await page.getByRole('button',{name:'Close report',exact:true}).click();
+       }
+       assert.equal(await page.evaluate(()=>localStorage.getItem('aplab:openscied:b5-wapusk:v1')),beforeTheme,'changing theme and reopening Preview does not write work');
        await page.getByText('Other report formats: HTML or JSON',{exact:true}).click();
        let [file]=await Promise.all([page.waitForEvent('download'),by('save-html').click()]);
        const html=await fs.readFile(await file.path(),'utf8');assert.match(file.suggestedFilename(),/WB-[A-F0-9]{8}\.html$/);
@@ -135,6 +150,7 @@ const {chromium}=require('playwright'),{ROOT,serve}=require('./_h');
        const json=JSON.parse(await fs.readFile(await file.path(),'utf8'));
        assert.deepEqual(json.student,{name:'Avery Wapusk',period:'2'});assert.match(json.datasetId,/^WB-[A-F0-9]{8}$/);
        assert.equal(json.status,'final');assert.equal(json.conceptChecks.owlRiver.verdict,'Supported');
+       assert.equal(json.datasetId,originalId,'Preview in both themes and JSON must name the same dataset');
        assert.equal(json.conceptChecks.evidenceScale.verdict,'Correct');
        assert.deepEqual(json.conceptChecks.evidenceScale.choices,selected);
        assert.equal(json.conceptChecks.owlRiver.verdict+' · '+json.conceptChecks.owlRiver.answer+' '+json.conceptChecks.owlRiver.feedback,owlResult);

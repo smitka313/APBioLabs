@@ -1,4 +1,5 @@
 'use strict';
+const receipt = require('./openscied-b5-save-receipt');
 const assert=require('node:assert/strict'), fs=require('node:fs'), http=require('node:http'), path=require('node:path');
 const {chromium}=require('playwright');
 const root=path.join(__dirname,'..');
@@ -26,6 +27,7 @@ async function run(){
     await p.route(/https:\/\/.*\/docx@[^/]+\/.*\.js$/,route=>route.fulfill({contentType:'application/javascript',body:fixture}));
    }
    await p.goto(base+pathname+'#explain');
+   await receipt.ready(p.locator('#ba-save'));await receipt.readableDisabled(p.locator('#ba-reset'));
    const visible=id=>p.locator('#'+id).isVisible();
    const at=q=>p.locator('#ba-'+q);
    const next=step=>p.locator('[data-go="'+step+'"]').click();
@@ -46,6 +48,7 @@ async function run(){
    assert(await p.locator('.ba-specimen[data-zoom="true"]').isVisible());
    await p.getByRole('button',{name:'Return to side-by-side: Polar bear'}).click();
    await at('note').fill('Polar bear skull looks longer.');
+   await receipt.saved(at('save'));
    await p.locator('[data-station="teeth"]').click();
    assert.equal(await at('note').inputValue(),'');
    await p.locator('[data-station="claw"]').click();

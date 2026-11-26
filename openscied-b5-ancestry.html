@@ -30,11 +30,11 @@
 <script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(_){}</script>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="openscied-submission-report.css">
-<link rel="stylesheet" href="openscied-b5-ancestry.css">
+<link rel="stylesheet" href="openscied-b5-ancestry.css"><link rel="stylesheet" href="openscied-b5-workspace.css">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to the investigation</a>
-<main id="main" class="ba-shell">
+<main data-b5-workspace id="main" class="ba-shell">
 <nav class="ba-links" aria-label="Lesson links"><a href="openscied-dashboard.html#unit5">← Unit 5 activities</a><a href="openscied-b5-thermoregulation.html">Lesson 2: Thermoregulation</a></nav>
 <header class="ba-hero"><div class="ba-hero-copy"><p class="ba-eyebrow">Arctic field station · Unit 5 · Lesson 3</p><h1>Bear Ancestry Lab</h1><p>Three bears share a park. Which two share the most recent common ancestor?</p></div></header>
 <nav class="ba-steps" aria-label="Investigation steps">
@@ -44,6 +44,7 @@
 <button type="button" class="btn" data-step="explain">4. Explain</button>
 </nav>
 <section class="ba-workspace" aria-label="Student workspace"><div id="ba-identity"></div><button type="button" class="btn" id="ba-reset" aria-haspopup="dialog" disabled>Start over…</button></section>
+<p class="b5-save-receipt" id="ba-save">No work saved yet.</p>
 <p class="ba-caption" id="ba-progress"></p>
 <div id="ba-status" class="ba-status" role="status"></div>
 <section class="ba-panel" id="traits" aria-labelledby="traits-title">
@@ -131,7 +132,6 @@
 </form></dialog>
 <div id="ba-report"></div>
 <details class="ba-card"><summary>Other report formats: HTML or JSON</summary><p>These files contain this activity only, including the name, period, and Dataset ID in your report. The HTML file opens offline.</p><div class="ba-controls"><button type="button" class="btn" id="ba-save-html">Download report HTML</button><button type="button" class="btn" id="ba-save-json">Download this activity’s JSON</button></div></details>
-<p class="ba-caption" id="ba-save">Your work stays in this browser. Use the report to keep a copy.</p>
 <details class="ba-sources"><summary>Sources and model limits</summary>
 <p>Adapted from <a href="https://openscied.org/instructional-materials/b-5-common-ancestry-speciation/">OpenSciEd B.5 Lesson 3</a>. Original eight-species DNA sequences are included. The digital bench uses original specimen illustrations, a short guided window, and a simplified three-tip tree rather than an external analysis service. Claw measurements are of illustrated examples, not field measurements or species averages.</p>
 <p>Illustration references: <a href="https://www.nps.gov/articles/bear-identification.htm">National Park Service bear identification</a>, <a href="https://www.fws.gov/story/drilling-down-bear-dentition">U.S. Fish &amp; Wildlife Service bear dentition</a>, <a href="https://www.adfg.alaska.gov/static/home/library/pdfs/wildlife/research_pdfs/identifying_bear_cubs_staff_guide_5_1_24.pdf">Alaska Fish and Game skull and molar guide</a>, and <a href="https://publications.gc.ca/collections/collection_2019/eccc/CW69-14-351-2019-eng.pdf">Canada’s polar bear status report</a>.</p>
@@ -139,7 +139,7 @@
 <footer>Created by Robert Smitka. <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">Site license: CC BY-NC-SA 4.0</a>. Adapted from <a href="https://www.openscied.org/">OpenSciEd</a> materials (<a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>); not affiliated with or endorsed by OpenSciEd. Student work and identity stay in this browser unless the student chooses to print or download.</footer>
 </main>
 <script src="lab.js"></script>
-<script src="openscied-save-session.js"></script>
+<script src="openscied-save-session.js"></script><script src="openscied-b5-workspace.js"></script>
 <script src="openscied-submission-report.js"></script>
 <script src="openscied-b5-report-files.js"></script>
 <script src="openscied-b5-ancestry-data.js"></script>
