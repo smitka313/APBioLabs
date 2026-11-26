@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parent.parent
 ORIGIN = 'https://biologylabbench.com'
-PUBLIC = ['index.html', 'ap-biology.html', 'teachers.html', 'getting-started.html', 'student-directions.html',
+PUBLIC = ['index.html', 'ap-biology.html', 'openscied-dashboard.html', 'teachers.html', 'getting-started.html', 'student-directions.html',
           'openscied-teacher-guide.html', 'openscied-b4-hawksbeard.html', 'openscied-b4-rat-generations.html', 'openscied-b4-junco.html', 'openscied-b4-wildlife-corridor.html', 'openscied-b1-ripple.html', 'openscied-b3-screening.html', 'openscied-b5-wapusk.html', 'openscied-b5-thermoregulation.html', 'openscied-b5-ancestry.html', 'openscied-b5-speciation.html', 'openscied-b5-hybrid.html']
 PUBLIC += ['openscied-b3-cancer-rates.html', 'openscied-b3-cell-cycle.html', 'openscied-b3-dna-workshop.html', 'openscied-b3-dna-p53.html', 'openscied-b3-inheritance-environment.html', 'openscied-b2-fires.html', 'openscied-b2-peat-bog-lab.html', 'openscied-b2-burn-lab.html', 'openscied-b2-carbon-journey.html']
 PUBLIC += [f'{prefix}lab{i:02}.html' for prefix in ['', 'directions-'] for i in range(1, 14)]
@@ -150,6 +150,17 @@ class SearchContracts(unittest.TestCase):
         self.assertEqual(len(set(titles)), len(PUBLIC))
         self.assertEqual(len(set(descriptions)), len(PUBLIC))
         self.assertEqual(len(set(urls)), len(PUBLIC))
+
+    def test_homepage_and_openscied_collection_share_the_same_canonical(self):
+        dashboard = Page('openscied-dashboard.html')
+        clean = ORIGIN + '/openscied-dashboard'
+        self.assertEqual(dashboard.canonicals, [clean])
+        home = Page('index.html').graphs[0]['@graph']
+        collections = next(n for n in home if n['@id'] == ORIGIN + '/#webpage')['hasPart']
+        openscied = next(n for n in collections if n['name'] == 'OpenSciEd Biology Companion Activities')
+        self.assertEqual(openscied['url'], clean)
+        page = next(n for n in dashboard.graphs[0]['@graph'] if n['@id'] == clean + '#webpage')
+        self.assertEqual(page['@type'], 'CollectionPage')
 
     def test_sitemap_contains_exactly_public_canonical_pages(self):
         doc = ET.parse(ROOT / 'sitemap.xml')
