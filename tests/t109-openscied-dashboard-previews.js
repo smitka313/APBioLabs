@@ -5,7 +5,7 @@ const T = require('./_h');
 const fs = require('fs'), path = require('path');
 const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: /gc\.zgo\.at/.test(r.request().url()) ? 'application/javascript' : 'text/css', body: '' }));
 const UNIT1 = ['openscied-b1-field-notebook.html', 'openscied-b1-migration.html', 'openscied-b1-carrying-capacity.html', 'openscied-b1-serengeti.html', 'openscied-b1-ripple.html'];
-const FIELD_PREVIEW = 'assets/openscied-atlas-b1-field-notebook.svg';
+const FIELD_PREVIEW = 'assets/openscied-atlas-b1-field-notebook-preview.svg';
 const MIGRATION_PREVIEW = 'assets/openscied-atlas-b1-migration.svg';
 const CARRYING_PREVIEW = 'assets/openscied-atlas-b1-carrying-capacity.svg';
 const SERENGETI_PREVIEW = 'assets/openscied-atlas-b1-serengeti.svg';
@@ -21,7 +21,7 @@ const CORRIDOR_PREVIEW='assets/openscied-atlas-b4-wildlife-corridor.svg';
   const originalActivities=UNIT1.concat(UNIT2,UNIT3,UNIT4,['openscied-b5-wapusk.html','openscied-b5-thermoregulation.html','openscied-b5-ancestry.html','openscied-b5-speciation.html','openscied-b5-hybrid.html']);
   T.ok(JSON.stringify(files.slice(0,originalActivities.length)) === JSON.stringify(originalActivities), 'openscied-dashboard.js preserves the published activity order through Unit 5');
   for (const activity of UNIT1.concat(UNIT2,UNIT3,UNIT4)) {
-    const file = '../assets/openscied-atlas-'+activity.replace(/^openscied-|\.html$/g,'')+'.svg';
+    const file = activity===UNIT1[0] ? '../'+FIELD_PREVIEW : '../assets/openscied-atlas-'+activity.replace(/^openscied-|\.html$/g,'')+'.svg';
     const art = fs.readFileSync(path.join(__dirname,file),'utf8');
     T.ok((art.match(/<(?:path|circle|ellipse|rect|polygon)\b/g)||[]).length>40 &&
       !/<(?:[\w.-]+:)?(?:image|feImage)\b|data:image\//i.test(art), activity+' preview is detailed, self-contained vector art');
@@ -40,7 +40,7 @@ const CORRIDOR_PREVIEW='assets/openscied-atlas-b4-wildlife-corridor.svg';
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit2"]')) === JSON.stringify(UNIT2), width + ' px: Unit 2 cards are Burning Fuels, Fires, Peat Bog Carbon Lab, Carbon Atom Journey');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit3"]')) === JSON.stringify(UNIT3), width + ' px: Unit 3 starts with the data dive, and DNA Workshop immediately precedes DNA Copying and p53');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit4"]')) === JSON.stringify(UNIT4), width + ' px: Unit 4 links to Hawksbeard, Rat Generations, Junco, and Wildlife Corridor in lesson order');
-      const fieldImage=p.locator('img[src="'+FIELD_PREVIEW+'"]');
+      const fieldImage=p.locator('.dashboard-preview[href="'+UNIT1[0]+'"] img');
       await fieldImage.scrollIntoViewIfNeeded();
       await fieldImage.evaluate(img=>img.decode());
       const serengetiImage = p.locator('img[src="'+SERENGETI_PREVIEW+'"]');
