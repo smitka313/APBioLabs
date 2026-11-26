@@ -420,7 +420,7 @@
   }
   function wire() {
     const saveAPI = window.OpenSciEdSaveSession;
-    try { saveSession = saveAPI?.open(localStorage, SAVE_SCOPE, [KEY]); } catch (_) { /* Export remains available if browser storage is blocked. */ }
+    try { saveSession = saveAPI?.open(localStorage, SAVE_SCOPE, [KEY], undefined, { routeMetadata: ['lastSection', 'lastVisitedAt'] }); } catch (_) { /* Export remains available if browser storage is blocked. */ }
     reportIdentity = saveAPI?.reportIdentity?.(saveSession, [KEY], studentIdentity) ?? (() => null);
     readStore();
     RESPONSE_IDS = Array.from(new Set($$('main input[type=radio]').map(function (r) { return r.name; }).concat(

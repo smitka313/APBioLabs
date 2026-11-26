@@ -86,6 +86,28 @@ const answerAll = (p, skip) => p.evaluate(skipIds => {
       T.ok((await data()).records.map(row=>row.fuel).join(',')==='grass,wood','old already-weighed pending burn migrates once without disturbing saved samples');
       T.ok(await q.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'pending and recorded controls do not overflow the phone');
     } finally { await phone.close(); }
+    // A browsing-only tab shares the existing burn data but updates the route.
+    // That is not newer student work, and must not block a completed weighing.
+    const browseCtx = await T.ctxFor(browser, {width:390,height:844,dark:true,reduced:true});
+    try {
+      const active=await browseCtx.newPage(), reader=await browseCtx.newPage();
+      for (const p of [active,reader]) await stub(p);
+      await active.goto(server.url+PAGE+'#burn');
+      await active.locator('[data-bn="weigh"]').click();
+      await active.locator('[data-bn="burn"]').click();
+      await reader.goto(server.url+PAGE+'#burn');
+      await reader.locator('[data-bn="after"]').waitFor();
+      await go(reader,'wrapup');
+      await active.waitForFunction(key => JSON.parse(localStorage.getItem(key))?.lastSection==='wrapup',KEY);
+      await active.locator('[data-bn="after"]').click();
+      await active.reload();
+      await active.waitForFunction(() => Boolean(window.B2Burn?.getState().burn));
+      T.ok(await active.evaluate(() => B2Burn.getState().burn.records.length)===1 &&
+        await active.locator('[data-bn="saved"]').isVisible() &&
+        !await active.locator('#burn-save-warning').isVisible(),
+        'second weighing survives reload after another tab browses without changing any evidence');
+    } finally { await browseCtx.close(); }
+
     // Two pages share a real browser origin, but their editor state is independent.
     const shared = await T.ctxFor(browser, {width:390,height:844,dark:true,reduced:true});
     try {

@@ -933,3 +933,14 @@ test('Ice Age Bear Speciation derives completion from saved evidence and gates r
   assert.match(retry.el('#bear-speciation-open').href,/#traits$/);
   assert.match(finished.el('#bear-speciation-open').href,/openscied-b5-speciation\.html#argument$/);
 });
+
+test('Screening resumes saved cost-sheet practice without counting a district milestone',()=>{
+  const key='aplab:openscied:b3-screening:v1', base={v:1,seed:419,started:false};
+  assert.equal(setup(false,{[key]:JSON.stringify(base)}).el('#screening-progress').textContent,'Not started');
+  const s=setup(false,{'aplab:openscied:b3-cell-cycle:v1':null,
+    [key]:JSON.stringify({...base,practice:{'12:mobile:mobile:mobile:none':1},lastVisitedAt:Date.now()-10})});
+  assert.equal(s.el('#screening-progress').textContent,'Practice booking saved');
+  assert.equal(s.el('#openscied-resume-link').href,'openscied-b3-screening.html');
+  const meter=s.created.find(e=>e.tag==='progress'&&e.attrs['aria-label']?.includes('Cancer Screening'));
+  assert.equal(meter.value,0);
+});

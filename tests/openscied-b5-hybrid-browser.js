@@ -38,10 +38,16 @@ const server=http.createServer((req,res)=>{
     if(output)await p.screenshot({path:path.join(output,width+'-'+name+'.png'),fullPage:true,animations:'disabled'});
    }
    assert(await stage('ice').isVisible());assert(await go('family').isDisabled());assert(await at('reset').isDisabled());
+   const untouched=await save();
+   assert.match(untouched.id,/^[A-F0-9]{8}$/,'first visit reserves a dataset before the first response');
+   assert.deepEqual(untouched,{v:1,id:untouched.id});
+   await p.reload();
+   assert.deepEqual(await save(),untouched,'untouched district survives its first reload without becoming started');
+   assert(await at('reset').isDisabled());
    await at('legend').getByRole('button',{name:/SSP2/}).click();assert.equal(await at('chart').locator('polyline').count(),4);
    await at('year').focus();await at('year').press('End');assert.match(await at('chart-values').innerText(),/1\.7.*0\.2/s);
    await at('enlarge').click();assert(await at('graph-dialog').isVisible());await p.keyboard.press('Escape');assert(!(await at('graph-dialog').isVisible()));
-   await at('pin-year').click();const seed=(await save()).id;
+   await at('pin-year').click();const seed=(await save()).id;assert.equal(seed,untouched.id);
    if(width===1366){
     // Begin as a guest, then add identity without replacing the saved data.
     await p.getByRole('button',{name:'Enter your name and class period'}).click();
@@ -111,7 +117,7 @@ const server=http.createServer((req,res)=>{
     assert(await stage('ice').isVisible());assert(await at('recovery').isHidden());
     assert.equal(await dash.evaluate(()=>localStorage.getItem('aplab:openscied:b5-wapusk:v1')),'neighbor-record');await dash.close();
    } else {
-    await at('reset').click();await at('erase').fill('ERASE');await at('confirm').click();await stage('ice').waitFor();assert.equal(await save(),null);
+    await at('reset').click();await at('erase').fill('ERASE');await at('confirm').click();await stage('ice').waitFor();const reset=await save();assert.notEqual(reset.id,seed);assert.deepEqual(reset,{v:1,id:reset.id});assert(await at('reset').isDisabled());
    }
    assert.deepEqual(errors,[]);await c.close();
   }

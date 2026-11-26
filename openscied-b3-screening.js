@@ -14,7 +14,7 @@
   let s=fresh(), session, recovery=false, selected='', view='base', patient=1, animation=0;
   const same=(a,b)=>M.pieces.every(k=>a[k]===b[k]);
   try{
-    session=api.open(localStorage,'b3-screening',[KEY]);const raw=session.read(KEY);
+    session=api.open(localStorage,'b3-screening',[KEY],undefined,{routeMetadata:['step','lastVisitedAt','caseId']});const raw=session.read(KEY);
     if(raw!==null){
       const x=JSON.parse(raw);
       if(x?.v!==1||!Number.isInteger(x.seed)||x.seed<0||x.seed>4294967295)throw Error('Invalid save');
@@ -278,15 +278,24 @@
       if(!tx.ok)break;
       wallet.next++;wallet.credits=tx.remaining;
     }
-    $('pay-result').textContent=note+(wallet.next?' '+wallet.next+' booking(s) saved for this plan.':'');
+    $('pay-result').textContent=note+(wallet.next?' '+wallet.next+(savable()?' booking(s) saved for this plan.':' booking(s) in this tab. Check the save notice before reloading.'):'');
     drawWallet();
   }
   const costToggles=[];
-  function openQuote(p){
-    const close=quoteCase===p&&!$('quote-board').hidden;
+  // The selected sheet is tab-local UI state; bookings themselves remain in the
+  // guarded activity record. A different district can never inherit this view.
+  const practiceViewKey=KEY+':practice-view';
+  function keepPracticeView(){
+    try{
+      if(quoteCase)sessionStorage.setItem(practiceViewKey,JSON.stringify({datasetId,id:quoteCase.id,plan:$('pay-plan').value}));
+      else sessionStorage.removeItem(practiceViewKey);
+    }catch(_){ /* Booking saves do not depend on session storage. */ }
+  }
+  function openQuote(p,{restoring=false,plan='base'}={}){
+    const close=!restoring&&quoteCase===p&&!$('quote-board').hidden;
     for(const [i,b] of costToggles.entries())b.setAttribute('aria-expanded',String(!close&&p===cases[i]));
     $('quote-board').hidden=close;
-    if(close){quoteCase=null;return;}
+    if(close){quoteCase=null;keepPracticeView();return;}
     quoteCase=p;$('quote-title').textContent='Patient '+p.id+' · '+p.place+' cost sheet';
     const grid=el('div');grid.className='sd-visit-grid';
     for(const kind of ['screen','scan'])for(const zone of M.zones){
@@ -294,11 +303,25 @@
     }
     $('price-sheet').replaceChildren(el('p','Price estimates for both sites, before vouchers. A service can be booked only at the site shown under “Next” for the selected plan.'),
       el('p','This patient: '+p.value+' cr per hour away; '+(p.routeExtra?'detour adds 1 hour and 3 credits to each visit.':'no detour charge.')),grid);
-    $('pay-plan').value='base';$('pay-plan').options[1].textContent=s.trial?'Your recorded redesign':'Mobile ultrasound · hospital screening';
-    loadWallet();$('quote-title').focus();
+    $('pay-plan').value=Object.hasOwn(plansForPractice(),plan)?plan:'base';
+    loadWallet();
+    if(!restoring){keepPracticeView();$('quote-title').focus();}
   }
-  $('pay-plan').onchange=()=>loadWallet('Switched practice plans. Each plan keeps its own bookings.');
-  $('pay-reset').onclick=()=>{delete s.practice[walletKey()];save();loadWallet('Practice bookings cleared for this patient and plan only.');};
+  function restorePracticeView(){
+    if(s.step!=='map')return;
+    try{
+      const saved=JSON.parse(sessionStorage.getItem(practiceViewKey));
+      const p=saved?.datasetId===datasetId&&cases.find(c=>c.id===saved.id);
+      if(p)openQuote(p,{restoring:true,plan:saved.plan});
+    }catch(_){ /* No usable tab-local view. The activity record is still intact. */ }
+  }
+  $('pay-plan').onchange=()=>{keepPracticeView();loadWallet('Switched practice plans. Each plan keeps its own bookings.');};
+  $('pay-reset').onclick=()=>{
+    const key=walletKey(),before=s.practice[key];
+    delete s.practice[key];
+    if(save())loadWallet('Practice bookings cleared for this patient and plan only.');
+    else if(before!==undefined)s.practice[key]=before;
+  };
   $('book').onclick=()=>{
     if(!quoteCase)return;
     const p=quoteCase, kinds=needKinds(p), kind=kinds[wallet.next];
@@ -319,9 +342,11 @@
       return;
     }
     wallet={next:wallet.next+1,credits:tx.remaining,previous:wallet.credits};
-    s.practice[walletKey()]=wallet.next;save();
+    s.practice[walletKey()]=wallet.next;
+    const persisted=save();
     drawWallet(true);
-    $('pay-result').textContent=visits[kind]+' booked: '+cost(q.total)+' used. '+(wallet.next===kinds.length?'Care pathway complete.':'Try booking the follow-up next.');
+    $('pay-result').textContent=visits[kind]+' booked: '+cost(q.total)+' used. '+(wallet.next===kinds.length?'Care pathway complete.':'Try booking the follow-up next.')+
+      (persisted?'':' This booking is only in this tab. Use Preview report to keep a recovery copy before reloading.');
     if(wallet.next===kinds.length){
       const a=get(M.baseline).patients[p.id-1],isAlt=$('pay-plan').value!=='base';
       const improved=isAlt&&!milestone(a);
@@ -608,7 +633,7 @@
   $('reset').onclick=()=>$('dialog').showModal();
   $('clear').onclick=()=>{const r=session?.reset(KEY,JSON.stringify({v:1,seed:newSeed(),caseMode:'equity'}));if(r?.ok)location.reload();else{$('dialog').close();say('Could not reset this activity from this tab.');}};
   window.addEventListener('storage',notice);window.addEventListener('pageshow',notice);
-  render();notice();
+  render();notice();restorePracticeView();
   function collectReport(){
     const missing=[!s.started&&'Run the hospital plan.',!s.trial&&'Run a redesign.',!ready()&&'Check all three patient comparisons.',!complete()&&'Write both recommendations and finish.'].filter(Boolean);
     const comparison=s.started?[{type:'table',title:'Fictional district results',columns:cols,rows:comparisons()}]:[];
@@ -631,8 +656,14 @@
       const q=visitQuote(p,kind,plan);return ['Case '+(i+1)+' / '+planName,visits[kind]+' · '+label(q.place),
         q.miles+' mi one way · '+cost(q.travel),cost(q.fee),q.time+' h · '+cost(q.timeCost),cost(q.total)];
     })))}]:[];
+    const practiceRows=Object.entries(s.practice).flatMap(([key,count])=>{
+      const [id,...sites]=key.split(':'),p=cases.find(c=>String(c.id)===id);
+      if(!p||sites.length!==M.pieces.length||sites.some(z=>z!=='none'&&!M.zones.includes(z))||!Number.isInteger(count)||count<1||count>needKinds(p).length)return [];
+      return [['Patient '+p.id+' · '+p.place,M.pieces.map((k,i)=>M.names[k]+': '+label(sites[i])).join('; '),needKinds(p).slice(0,count).map(kind=>visits[kind]).join(' + ')]];
+    });
+    const practiceItems=practiceRows.length?[{type:'table',title:'Practice cost-sheet bookings (not district results)',columns:['Patient','Practice plan setup','Visits booked'],rows:practiceRows}]:[];
     return {title:'Cancer Screening Design Lab',unit:'OpenSciEd Biology B.3 · Engineering extension',source:'Fictional classroom simulation. Costs in made-up credits. No real patient records or cancer diagnosis.',status:!savable()?'recovery':complete()?'final':'draft',student:student(),datasetId,missing,
-      sections:[{title:'Evidence',items:[...caseItems,...choices,...losses,...missionItems,...comparison,...plan,...priceItems]},
+      sections:[{title:'Evidence',items:[...caseItems,...choices,...losses,...missionItems,...comparison,...plan,...priceItems,...practiceItems]},
       {title:'My recommendation',items:[{type:'answer',prompt:'Which plan would you fund?',value:s.claim},{type:'answer',prompt:'Who might still get left out?',value:s.limit}]}]};
   }
   window.OpenSciEdSubmission?.mount({target:'#sd-report',filename:'cancer-screening-design',collect:collectReport});
