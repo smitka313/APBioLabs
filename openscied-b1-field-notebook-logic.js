@@ -75,6 +75,11 @@
     ['Nov',467,310,'Southward movement along the eastern side'],
     ['Dec',447,492,'Return toward the southern plains']
   ];
+  const boundaryPlaces={
+    north:{x:392,y:299,label:'North, near the Kenya border',feedback:'The later park reaches farther north here; the original hatch does not cover this stretch.',changed:true},
+    southeast:{x:540,y:563,label:'Southeast, near Ngorongoro',feedback:'The original park outline covers more land here than the later national park line. That does not mean this land lost all protection.',changed:true},
+    west:{x:154,y:370,label:'West, near Grumeti',feedback:'The outlines overlap here. Try the north or southeast and look for one outline without the other.',changed:false}
+  };
   const fields = {
     question1:'First investigation question', question2:'Second investigation question',
     habitats:'Habitats notes', biodiversity:'Biodiversity notes', movement:'Animal movement notes',
@@ -111,7 +116,7 @@
     ]));
     const pins=stations.map(x=>x.id).filter(id=>Object.hasOwn(pinnedCards,id)?pinnedCards[id].length:
       Array.isArray(raw?.pins)&&raw.pins.includes(id));
-    return { v:1, pinnedCards, fields:Object.fromEntries(Object.keys(fields).filter(k=>typeof f[k]==='string').map(k=>[k,f[k].slice(0,limit)])),
+    return { v:1, pinnedCards, boundaryPick:Object.hasOwn(boundaryPlaces,raw?.boundaryPick)?raw.boundaryPick:'', fields:Object.fromEntries(Object.keys(fields).filter(k=>typeof f[k]==='string').map(k=>[k,f[k].slice(0,limit)])),
       pins,
       finished:raw?.finished===true, step:['orient','explore','explain'].includes(raw?.step)?raw.step:'orient',
       station:stations.some(x=>x.id===raw?.station)?raw.station:'habitats',
@@ -128,5 +133,5 @@
       started: s.pins.length>0 || Object.keys(fields).some(k=>writeable(f,k)),
       done: Number(questions)+Number(evidence)+Number(complete) };
   }
-  return { stations, fields, references, exhibits, checks, months, pinList, togglePin, limit, clean, progress };
+  return { stations, fields, references, exhibits, checks, months, boundaryPlaces, pinList, togglePin, limit, clean, progress };
 });

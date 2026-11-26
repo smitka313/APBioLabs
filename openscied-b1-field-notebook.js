@@ -36,6 +36,18 @@
     return !!result?.ok;
   }
   const station=()=>M.stations.find(st=>st.id===state.station);
+  const comparing=()=>station().id==='conservation'&&exhibit===0;
+  const marked=()=>Object.hasOwn(M.boundaryPlaces,state.boundaryPick)?M.boundaryPlaces[state.boundaryPick]:null;
+  function showBoundaryTask(){
+    const active=map==='protection'&&comparing(), place=marked();
+    $('boundary-task').hidden=!active;
+    $('map-observation').textContent=active&&place?place.feedback:'';
+    all('[data-boundary-pick]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.boundaryPick===state.boundaryPick)));
+    for(const id of ['boundary-marker','boundary-marker-edge']){
+      const dot=$(id);dot.toggleAttribute('hidden',!active||!place);
+      if(place){dot.setAttribute('cx',place.x);dot.setAttribute('cy',place.y);}
+    }
+  }
   function setMap(next){
     map=next;
     const current=M.months[month], boundary=$('boundary').value;
@@ -54,18 +66,21 @@
     const detail=map==='route'?' '+current[0]+': '+current[3]+'.':
       map==='protection'?' Showing '+(boundary==='both'?'both outlines':boundary==='later'?'the later park and neighbors':'the original outline')+'.':'';
     $('map-caption').textContent=mapDescriptions[map]+detail+' Approximate lesson map; not for navigation.';
+    showBoundaryTask();
     const mapGraphic=document.querySelector('.sf-map .sf-map-visual');
     mapGraphic.setAttribute('aria-label','Serengeti field map. '+$('map-caption').textContent);
   }
   function showExhibit(){
     const st=station(), current=M.exhibits[st.id][exhibit];
     $('exhibit-title').textContent=current[0];
-    $('exhibit-text').textContent=current[1];
+    $('exhibit-text').textContent=comparing()&&!marked()?.changed?
+      'Compare the two outlines on the map. Mark one place that was covered by one version of the park but not by the other.':
+      current[1];
     $('exhibit-source').textContent=current[2];
     $('locate').textContent=st.id==='movement'?'Show the herd in '+(exhibit===2?'September':'October'):
       st.id==='conservation'?'Compare park outlines':'Locate this station';
     all('[data-exhibit]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.exhibit)===exhibit)));
-    renderProgress();
+    showBoundaryTask();renderProgress();
   }
   function showCheck(){
     const st=station(), [prompt,choices,right,why]=M.checks[st.id];
@@ -122,9 +137,10 @@
       const i=Number(b.dataset.exhibit);
       b.textContent=String(i+1)+'. '+M.exhibits[state.station][i][0]+(M.pinList(state,state.station).includes(i)?' · Pinned':'');
     });
+    $('pin').disabled=comparing()&&!pinned&&!marked()?.changed;
     $('pin').textContent=pinned?'Remove exhibit pin':'Pin this exhibit';
     $('pin').setAttribute('aria-pressed',String(pinned));
-    $('collected').textContent=p.used+' of '+M.stations.length+' stations with evidence · collect from at least 2 to continue.';
+    $('collected').textContent=Math.min(p.used,2)+' of 2 stations collected'+(p.used>2?' · '+p.used+' total':p.evidence?' · Ready to explain':'');
     $('finish').disabled=!p.ready||p.complete;
     $('finish-note').textContent=p.complete?'Notebook complete. Use Preview report to share your work.':
       'Write your explanation and one new question to finish.';
@@ -141,6 +157,7 @@
       if(state.fields[st.id]?.trim()) row.append(element('p','My note: '+state.fields[st.id]));
       return row;
     });
+    $('question-recap').replaceChildren(...['question1','question2'].map(id=>element('li',state.fields[id]||'')));
     $('evidence-recap').replaceChildren(...rows);
   }
   function page(next, moveFocus=false){
@@ -178,6 +195,7 @@
   });
   $('note').addEventListener('input',()=>change(state.station,$('note').value));
   $('pin').onclick=()=>{
+    if($('pin').disabled)return;
     const pinned=M.togglePin(state,state.station,exhibit);
     if(!M.progress(state).ready) state.finished=false;
     if(save()) say(pinned?'Exhibit pinned to your notebook.':'Exhibit pin removed.');
@@ -186,13 +204,41 @@
   M.months.forEach((m,i)=>{const option=element('option',m[0]);option.value=String(i);$('month').append(option);});
   $('month').onchange=()=>{month=Number($('month').value);setMap(map);say(M.months[month][0]+': '+M.months[month][3]+'.');};
   $('boundary').onchange=()=>{setMap(map);say($('map-caption').textContent);};
+  $('jump-exhibit').onclick=()=>$('exhibit-title').focus();
+  const dialog=$('map-dialog');
   $('enlarge').onclick=()=>{
-    const graphic=document.querySelector('.sf-map .sf-map-visual').cloneNode(true), legend=$('map-key').cloneNode(true);
-    legend.removeAttribute('id');
-    $('large-map').replaceChildren(graphic,legend);
-    $('enlarged-caption').textContent=$('map-caption').textContent;
-    $('map-dialog').showModal();
+    dialog.showModal();
+    $('large-map').append($('map-panel'));
+    $('map-zoom').hidden=false;
   };
+  $('map-zoom').onclick=()=>{
+    const viewport=$('map-scroll'), zoom=$('map-zoom').getAttribute('aria-pressed')!=='true';
+    viewport.classList.toggle('sf-map-zoomed',zoom);
+    $('map-zoom').setAttribute('aria-pressed',String(zoom));
+    $('map-zoom').textContent=zoom?'Fit map':'Zoom labels';
+    if(zoom){
+      viewport.scrollLeft=(viewport.scrollWidth-viewport.clientWidth)/2;
+      viewport.scrollTop=(viewport.scrollHeight-viewport.clientHeight)/2;
+    } else { viewport.scrollLeft=0;viewport.scrollTop=0; }
+  };
+  dialog.addEventListener('close',()=>{
+    $('map-home').append($('map-panel'));
+    const viewport=$('map-scroll');
+    viewport.classList.remove('sf-map-zoomed');
+    viewport.scrollLeft=0;viewport.scrollTop=0;
+    $('map-zoom').hidden=true;
+    $('map-zoom').setAttribute('aria-pressed','false');
+    $('map-zoom').textContent='Zoom labels';
+    $('enlarge').focus();
+  });
+  all('[data-boundary-pick]').forEach(b=>{b.onclick=()=>{
+    state.boundaryPick=b.dataset.boundaryPick;
+    $('boundary').value='both';
+    setMap('protection');
+    showExhibit();
+    if(save())say(marked().feedback);
+    if(dialog.open)$('map-observation').focus();
+  };});
   $('locate').onclick=()=>{
     const st=station();
     if(st.id==='movement'){month=exhibit===2?8:9;$('month').value=String(month);}
@@ -233,6 +279,7 @@
           return selected.length?selected.map((i,row)=>{const [title,evidence,source]=M.exhibits[st.id][i];return [st.name,source,title+' — '+evidence,row===0?note:''];}):
             note.trim()?[[st.name,M.references[st.id],'',note]]:[];
         })}]},
+        ...(marked()?[{title:'Park boundary comparison',items:[{type:'answer',prompt:'Area I marked',value:marked().label}]}]:[]),
         section('Graphic organizer',['system','components','interactions','decisions']),section('Explain and share',['claim','wonder'])]
     };
   };

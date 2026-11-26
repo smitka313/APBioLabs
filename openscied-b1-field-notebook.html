@@ -83,14 +83,19 @@
  <p id="sf-questions" class="sf-inset sf-questions-list" hidden></p>
  <div class="sf-stations" id="sf-stations" role="group" aria-label="Field stations"></div>
  <div class="sf-map-layout">
-  <div class="sf-map-wrap">
+  <div id="sf-map-home" class="sf-map-home"><div class="sf-map-wrap" id="sf-map-panel">
    <div class="sf-layers" role="group" aria-label="Map layers"><button class="btn" data-map="region" aria-pressed="true">Land and water</button><button class="btn" data-map="route" aria-pressed="false">Herd movement</button><button class="btn" data-map="protection" aria-pressed="false">Protected areas</button></div>
    <div class="sf-map-options">
     <label for="sf-month" class="sf-layer-control" id="sf-month-control" hidden>Migration month <select id="sf-month"></select></label>
     <label for="sf-boundary" class="sf-layer-control" id="sf-boundary-control" hidden>Park outlines <select id="sf-boundary"><option value="both">Compare both outlines</option><option value="original">Original park</option><option value="later">Later park and neighboring areas</option></select></label>
     <button class="btn" id="sf-enlarge" type="button">Enlarge map</button>
    </div>
-   <div class="sf-map" id="sf-field-map" tabindex="-1">
+   <div class="sf-map-tools">
+    <p id="sf-collected" class="sf-caption"></p>
+    <button type="button" class="btn" id="sf-jump-exhibit" aria-controls="sf-exhibit-card">Read this exhibit ↓</button>
+    <button type="button" class="btn" id="sf-map-zoom" aria-controls="sf-field-map" aria-pressed="false" hidden>Zoom labels</button>
+   </div>
+   <div id="sf-map-scroll" class="sf-map-scroll"><div class="sf-map" id="sf-field-map" tabindex="-1">
     <svg viewBox="40 100 610 650" width="610" height="650" class="sf-map-visual" role="img" aria-label="Serengeti region map: Lake Victoria, the Mara and Grumeti rivers, Kenya, Tanzania, and the Rift Valley.">
      <use href="assets/serengeti-field-map.svg#base" x="40" y="100" width="610" height="650"></use>
      <g data-layer="region"><use href="assets/serengeti-field-map.svg#landmarks" x="40" y="100" width="610" height="650"></use></g>
@@ -103,13 +108,33 @@
      <g data-layer="protection" hidden>
       <use data-boundary-later href="assets/serengeti-field-map.svg#protection" x="40" y="100" width="610" height="650"></use>
       <use data-boundary-old href="assets/serengeti-field-map.svg#original" x="40" y="100" width="610" height="650"></use>
+      <circle id="sf-boundary-marker" cx="395" cy="319" r="29" fill="none" stroke="#ffe9b2" stroke-width="10" hidden></circle>
+      <circle id="sf-boundary-marker-edge" cx="395" cy="319" r="29" fill="none" stroke="#3b2634" stroke-width="4" stroke-dasharray="6 4" hidden></circle>
      </g>
     </svg>
     <div id="sf-map-pins" role="group" aria-label="Explore stations on the schematic map"></div>
    </div>
+   </div>
    <ul id="sf-map-key" class="sf-map-key" aria-label="Map key"></ul>
    <p id="sf-map-caption" class="sf-caption"></p>
-  </div>
+   <fieldset class="sf-boundary-task" id="sf-boundary-task" hidden>
+    <legend>Mark an area where the park boundary changed</legend>
+    <p class="sf-caption">Compare the hatch pattern and solid line. Look for a place covered by one park outline but not the other.</p>
+    <div class="sf-map-options">
+     <button type="button" class="btn" data-boundary-pick="north" aria-pressed="false">North, near the Kenya border</button>
+     <button type="button" class="btn" data-boundary-pick="southeast" aria-pressed="false">Southeast, near Ngorongoro</button>
+     <button type="button" class="btn" data-boundary-pick="west" aria-pressed="false">West, near Grumeti</button>
+    </div>
+    <details class="sf-disclosure"><summary>Read the map as a table</summary>
+     <table class="sf-outline-table"><caption>What each park outline covers at the marked locations</caption>
+      <thead><tr><th scope="col">Location</th><th scope="col">Original hatch</th><th scope="col">Later solid line</th></tr></thead>
+      <tbody><tr><th scope="row">North, near Kenya</th><td>Outside</td><td>Inside</td></tr>
+      <tr><th scope="row">Southeast, near Ngorongoro</th><td>Inside</td><td>Outside</td></tr>
+      <tr><th scope="row">West, near Grumeti</th><td>Inside</td><td>Inside</td></tr></tbody>
+     </table></details>
+    <p id="sf-map-observation" class="sf-caption" tabindex="-1"></p>
+   </fieldset>
+  </div></div>
   <article class="sf-evidence" aria-labelledby="sf-evidence-title">
    <svg class="sf-station-art" viewBox="0 0 560 160" width="560" height="160" aria-hidden="true"><use id="sf-art" href="assets/serengeti-field-stations.svg#habitats" width="560" height="160"></use></svg>
    <p class="sf-kicker" id="sf-evidence-type"></p>
@@ -118,8 +143,8 @@
    <p id="sf-evidence-text"></p>
    <h4 class="sf-exhibit-heading">Exhibits</h4>
    <div id="sf-exhibits" class="sf-exhibits" role="group" aria-label="Evidence exhibits"></div>
-   <div class="sf-exhibit-card" aria-labelledby="sf-exhibit-title">
-    <h4 id="sf-exhibit-title"></h4><p id="sf-exhibit-text"></p>
+   <div id="sf-exhibit-card" class="sf-exhibit-card" aria-labelledby="sf-exhibit-title">
+    <h4 id="sf-exhibit-title" tabindex="-1"></h4><p id="sf-exhibit-text"></p>
     <p id="sf-exhibit-source" class="sf-caption"></p>
     <div class="sf-exhibit-actions"><button class="btn btn--primary" id="sf-pin" aria-pressed="false">Pin this exhibit</button>
     <button class="btn" id="sf-locate" type="button">Find it on the map</button></div>
@@ -135,13 +160,17 @@
   <details class="ose-video sf-disclosure"><summary>Watch: Field clip 2 from the animal movement station</summary><div class="ose-video-body"><template><iframe title="Serengeti animal movement field clip 2" src="https://www.youtube-nocookie.com/embed/7JOk6ivcuco?cc_load_policy=1" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></template><p class="ose-video-fallback"><a href="https://youtu.be/7JOk6ivcuco" target="_blank" rel="noopener noreferrer">Open on YouTube (new tab)</a></p></div></details>
  </div>
  <div id="sf-people-video" hidden><details class="ose-video sf-disclosure"><summary>Watch: Field clip from the people station</summary><div class="ose-video-body"><template><iframe title="People of the Serengeti field clip" src="https://www.youtube-nocookie.com/embed/cVj4883yzeO?cc_load_policy=1" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></template><p class="ose-video-fallback"><a href="https://youtu.be/cVj4883yzeO" target="_blank" rel="noopener noreferrer">Open on YouTube (new tab)</a></p></div></details></div>
- <p id="sf-collected" class="sf-caption"></p>
  <button class="btn btn--primary" data-go="explain" disabled>Open your evidence notebook →</button>
 </section>
 <section data-page="explain" class="sf-panel" aria-labelledby="sf-explain-title" hidden>
  <h2 id="sf-explain-title" tabindex="-1">Explain and share your evidence</h2>
  <div class="sf-analysis">
-  <aside class="sf-inset"><h3>Evidence you collected</h3><div id="sf-evidence-recap"></div></aside>
+  <aside class="sf-inset">
+   <h3>Your investigation questions</h3><ol id="sf-question-recap"></ol>
+   <h3>Evidence you collected</h3>
+   <p class="sf-caption">For each clue you cite, ask: <strong>What does it show? How does it help answer my question?</strong></p>
+   <div id="sf-evidence-recap"></div>
+  </aside>
   <div>
    <details class="sf-disclosure"><summary>Organize noticings and wonderings for group discussion</summary><div id="sf-organizer"></div></details>
    <label for="sf-claim">Why did people protect the Serengeti, and what helps explain why the boundaries changed? Use evidence from two stations.</label>
@@ -160,7 +189,7 @@
 <details class="sf-panel sf-disclosure"><summary>Evidence sources and map limits</summary><p>OpenSciEd B.1 Lesson 2: <em>A Brief History of the Serengeti</em>, the lesson slides and map, and the <em>Scavenger Hunt Images</em> station deck. The lesson sources include A. R. E. Sinclair (2021), <em>A Place Like No Other</em>, and J. B. Shetler (2007), <em>Imagining Serengeti</em>. This activity paraphrases the classroom cards. The original SVG maps were redrawn from Lesson 2’s map, slide G’s two park outlines, and the deck’s monthly movement thumbnails. Lines and herd locations are approximate. They are not legal boundaries, surveyed positions, or animal tracks.</p></details>
 <dialog id="sf-map-dialog" aria-labelledby="sf-map-dialog-title">
  <header class="sf-top"><h2 id="sf-map-dialog-title">Enlarged Serengeti map</h2><form method="dialog"><button class="btn">Close map</button></form></header>
- <p id="sf-enlarged-caption"></p><div id="sf-large-map"></div>
+ <div id="sf-large-map"></div>
 </dialog>
 <dialog id="sf-reset-dialog" aria-labelledby="sf-reset-title">
  <h2 id="sf-reset-title">Start this notebook over?</h2>
