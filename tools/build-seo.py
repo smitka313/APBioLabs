@@ -34,6 +34,9 @@ def page_specs():
         'ap-biology.html': ('Free AP Biology Virtual Labs | AP Bio Digital Lab Bench',
                        'Explore all 13 AP Biology virtual labs for free. Interactive simulations, data analysis, printable student directions, and teacher resources. No installation.',
                        'Free AP Biology virtual labs'),
+        'openscied-dashboard.html': ('Biology Companion Activities (for OpenSciEd units) | Biology Lab Bench',
+                                     'Explore free, independent interactive companion activities for all five OpenSciEd high school biology units.',
+                                     'OpenSciEd Biology Companion Activities'),
         'teachers.html': ('Free AP Biology Virtual Labs for Teachers | Lab Bench',
                           'Teach all 13 AP Biology investigations with free virtual labs, printable student directions, protected teacher notes, and downloadable student reports.',
                           'For teachers'),
@@ -166,7 +169,9 @@ def structured_data(filename, title, description, label):
         page['breadcrumb'] = {'@id': breadcrumb['@id']}
         graph.append(breadcrumb)
         match = re.fullmatch(r'(directions-)?lab(\d\d)\.html', filename)
-        if match:
+        if filename == 'openscied-dashboard.html':
+            page['@type'] = 'CollectionPage'
+        elif match:
             guide = bool(match[1])
             lab = next(lab for lab in LABS if lab['id'] == int(match[2]))
             page.update({'@type': ['WebPage', 'LearningResource'],

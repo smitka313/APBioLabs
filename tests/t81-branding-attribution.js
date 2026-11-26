@@ -44,7 +44,8 @@ async function footerChecks(p, where) {
     const dt = await d.title(), h1 = await d.locator('h1').textContent();
     T.ok(!/^OpenSciEd/.test(dt) && /Companion Activities/.test(dt), `dashboard title does not lead with OpenSciEd ("${dt}")`);
     T.ok(!/^OpenSciEd/.test(h1.trim()), `dashboard heading does not lead with OpenSciEd ("${h1}")`);
-    T.ok(await d.locator('link[rel=canonical]').getAttribute('href') === 'https://biologylabbench.com/openscied-dashboard.html', 'dashboard URL is unchanged');
+    T.ok(await d.locator('link[rel=canonical]').getAttribute('href') === 'https://biologylabbench.com/openscied-dashboard', 'dashboard canonical uses the clean public URL');
+    T.ok(new URL(d.url()).pathname.endsWith('/openscied-dashboard.html'), 'dashboard still opens through its existing .html link');
     await footerChecks(d, 'dashboard');
     T.ok(p.errors.length === 0 && d.errors.length === 0, 'no page errors: ' + p.errors.concat(d.errors).join('; '));
   } catch (e) { T.ok(false, 'unexpected error: ' + e.message.split('\n')[0]); }
