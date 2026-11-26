@@ -87,9 +87,9 @@
   .card h3 { font-size: 1.22rem; }
   .card .dq { color: var(--muted); font-style: italic; font-size: .96rem; overflow-wrap: anywhere; }
   /* Cool the paper-like illustration backgrounds without flattening the diagrams. */
-  :root[data-theme="dark"] .card .thumb { filter: brightness(.75) contrast(.94) saturate(.98); }
+  :root[data-theme="dark"] .card .thumb { filter: brightness(.64) contrast(.90) saturate(1.02); }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .card .thumb { filter: brightness(.75) contrast(.94) saturate(.98); }
+    :root:not([data-theme="light"]) .card .thumb { filter: brightness(.64) contrast(.90) saturate(1.02); }
   }
   @media print { :root .card .thumb { filter: none !important; } }
   .card .meta { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 6px; }

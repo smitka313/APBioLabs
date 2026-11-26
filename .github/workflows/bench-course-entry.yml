@@ -7,6 +7,9 @@ on:
       - 'bench-*.css'
       - 'bench-welcome.js'
       - 'bench-footer.js'
+      - 'style.css'
+      - 'tests/bench-audit-appearance-browser.js'
+      - 'tests/bench-audit-appearance.test.js'
       - 'domain-redirect.js'
       - '404.html'
       - 'openscied-dashboard.html'
@@ -34,6 +37,8 @@ jobs:
       - run: python3 tools/build-seo.py --check && python3 tests/seo.test.py
       - run: BENCH_SCREENSHOTS=/tmp/bench-courses node tests/bench-course-entry-browser.js
       - run: node tests/t112-openscied-dashboard-ap-link.js && node tests/t113-home-openscied-link.js
+      - run: node --test tests/bench-audit-appearance.test.js
+      - run: BENCH_AUDIT_SCREENSHOTS=/tmp/bench-courses/audit node tests/bench-audit-appearance-browser.js
       - uses: actions/upload-artifact@v4
         if: always()
         with:
