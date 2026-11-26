@@ -790,6 +790,23 @@
         $('#clear-openscied-results').disabled = true;
       }
     }
+    // Only index identifiers with an established activity-report format.
+    // Never infer who owns a raw browser record from the current sign-in.
+    const datasetModels = {
+      ripple:['SR-','seed'], screening:['SD-','seed'], hawksbeard:['HB-','seed'],
+      'rat-generations':['RG-','seed'], junco:['JU-','notebookSeed'],
+      'wildlife-corridor':['WC-AA-','seed'], wapusk:['WB-','id'],
+      thermoregulation:['TH-','id'], 'bear-ancestry':['BA-','id'],
+      'bear-speciation':['ICE-','id'], 'bear-hybrid':['HY-','id']
+    };
+    function backupDataset(activity, saved) {
+      if (!Object.hasOwn(datasetModels,activity.id) || saved?.v!==1) return null;
+      const [prefix, field] = datasetModels[activity.id];
+      const value = saved[field];
+      if (field==='id') return typeof value==='string' && /^[0-9A-F]{8}$/.test(value) ? prefix+value : null;
+      return Number.isInteger(value) && value>=0 && value<=0xffffffff
+        ? prefix+value.toString(16).toUpperCase().padStart(8,'0') : null;
+    }
     function downloadWork(onlyKeys, feedback = status) {
       const blocked = workspaceError();
       if (blocked) {
@@ -803,11 +820,13 @@
           if (raw === null) return false;
           work[key] = raw;
           return true;
-        }), responses = {};
+        }), responses = {}, datasetIds = {};
         // A readable copy of every written response (Making Sense and analysis) next to the raw saved work.
         ACTIVITIES.filter(activity => keys.includes(activity.key)).forEach(activity => {
           let saved = null;
           try { saved = JSON.parse(work[activity.key]); } catch (e) { return; }
+          const datasetId = backupDataset(activity,saved);
+          if (datasetId) datasetIds[activity.id] = datasetId;
           const fields = saved && (['cancer-rates', 'junco', 'wildlife-corridor', 'ripple', 'screening'].includes(activity.id) ? saved : activity.answers ? saved.answers : saved.fields) || {};
           responses[activity.id] = {};
           activity.ids(saved).forEach(id => { responses[activity.id][id] = typeof fields[id] === 'string' ? fields[id] : ''; });
@@ -853,7 +872,7 @@
           } catch (_) { /* Keep unreadable budget data in the raw backup. */ }
         }
         // Only per-activity reports can attribute a student. Browser backups may contain mixed or older work.
-        const payload = { format: 'openscied-saved-work-v1', exportedAt: new Date().toISOString(), student: null, work, responses };
+        const payload = { format: 'openscied-saved-work-v2', exportedAt: new Date().toISOString(), scope: onlyKeys ? 'activity' : 'browser', student: null, datasetIds, work, responses };
         const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
         const link = document.createElement('a');
         link.href = url; link.download = 'openscied-saved-work.json';
