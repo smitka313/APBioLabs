@@ -636,6 +636,87 @@
     hawksbeard:[5,'Plant pairs released'],'rat-generations':[4,'Investigation parts completed'],junco:[3,'Investigation steps completed'],
     'wildlife-corridor':[4,'Investigation steps completed'],wapusk:[6,'Notebook responses saved'],thermoregulation:[5,'Notebook responses saved'],'bear-ancestry':[4,'Investigation steps completed'],'bear-speciation':[4,'Investigation steps completed'],'bear-hybrid':[4,'Investigation steps completed']
   };
+  // Only index identifiers with an established activity-report format.
+  // Never infer who owns a raw browser record from the current sign-in.
+  const datasetModels = {
+    ripple:['SR-','seed'], screening:['SD-','seed'], hawksbeard:['HB-','seed'],
+    'rat-generations':['RG-','seed'], junco:['JU-','notebookSeed'],
+    'wildlife-corridor':['WC-AA-','seed'], wapusk:['WB-','id'],
+    thermoregulation:['TH-','id'], 'bear-ancestry':['BA-','id'],
+    'bear-speciation':['ICE-','id'], 'bear-hybrid':['HY-','id']
+  };
+  function backupDataset(activity, saved) {
+    if (!Object.hasOwn(datasetModels,activity.id) || saved?.v!==1) return null;
+    const [prefix, field] = datasetModels[activity.id];
+    const value = saved[field];
+    if (field==='id') return typeof value==='string' && /^[0-9A-F]{8}$/.test(value) ? prefix+value : null;
+    return Number.isInteger(value) && value>=0 && value<=0xffffffff
+      ? prefix+value.toString(16).toUpperCase().padStart(8,'0') : null;
+  }
+  function buildArchive(storage, onlyKeys) {
+    const work = {};
+    const keys = (onlyKeys || Object.keys(storage).filter(isOpenSciEdKey)).filter(key => {
+      const raw = storage.getItem(key);
+      if (raw === null) return false;
+      work[key] = raw;
+      return true;
+    }), responses = {}, datasetIds = {};
+    // A readable copy of every written response (Making Sense and analysis) next to the raw saved work.
+    ACTIVITIES.filter(activity => keys.includes(activity.key)).forEach(activity => {
+      let saved = null;
+      try { saved = JSON.parse(work[activity.key]); } catch (e) { return; }
+      const datasetId = backupDataset(activity,saved);
+      if (datasetId) datasetIds[activity.id] = datasetId;
+      const fields = saved && (['cancer-rates', 'junco', 'wildlife-corridor', 'ripple', 'screening'].includes(activity.id) ? saved : activity.answers ? saved.answers : saved.fields) || {};
+      responses[activity.id] = {};
+      activity.ids(saved).forEach(id => { responses[activity.id][id] = typeof fields[id] === 'string' ? fields[id] : ''; });
+      // The DNA activity was shortened: answers saved by the longer version are no longer in its id list, so keep them in the copy.
+      if (['hawksbeard','rat-generations'].includes(activity.id) && typeof saved?.prediction === 'string') responses[activity.id].prediction = saved.prediction;
+      if (activity.id === 'bear-ancestry' && saved) {
+        if ([0,1,2].includes(saved.prediction)) responses[activity.id].firstGuess=['Polar + Brown','Polar + Black','Brown + Black'][saved.prediction];
+        for (const k of ['profile','skull','teeth','claw']) {
+          if (written(saved.notes||{},k)) responses[activity.id][k+'Observation']=saved.notes[k];
+        }
+      }
+      if (activity.id === 'junco' && saved) {
+        if (written(saved, 'observation')) responses[activity.id].observation = saved.observation;
+        if (written(saved, 'reason')) responses[activity.id].predictionReason = saved.reason;
+      }
+      if (activity.id === 'wildlife-corridor') {
+        responses[activity.id].prediction = typeof saved?.prediction?.choice === 'string' ? saved.prediction.choice : '';
+        responses[activity.id].predictionReason = typeof saved?.prediction?.reason === 'string' ? saved.prediction.reason : '';
+      }
+      if (activity.id === 'cancer-rates') {
+        responses[activity.id].prediction = typeof saved?.prediction?.choice === 'string' ? saved.prediction.choice : '';
+        responses[activity.id].predictionReason = typeof saved?.prediction?.reason === 'string' ? saved.prediction.reason : '';
+        const question = cancerInvestigationQuestion(saved);
+        if (question) responses[activity.id].investigationQuestion = question;
+        if (typeof saved?.casework?.questionDraft==='string' && saved.casework.questionDraft.trim()!==question.trim()) {
+          responses[activity.id].investigationQuestionDraft = saved.casework.questionDraft;
+        }
+        const savedNotes = saved?.casework?.notes ?? {};
+        const observations = Object.fromEntries(Object.entries({ A:'diagnoses', B:'deaths', C:'map' })
+          .filter(([,key]) => written(savedNotes,key))
+          .map(([exhibit,key]) => [exhibit,savedNotes[key]]));
+        if (Object.keys(observations).length) responses[activity.id].exhibitObservations = observations;
+      }
+      if (activity.id === 'dna-p53') Object.keys(fields).forEach(id => { if (!(id in responses[activity.id]) && typeof fields[id] === 'string') responses[activity.id][id] = fields[id]; });
+    });
+    if (keys.includes(CARBON_BUDGET_KEY)) {
+      try {
+        const saved = JSON.parse(work[CARBON_BUDGET_KEY]);
+        if (saved?.v === 1) {
+          responses['carbon-journey'] ||= {};
+          for (const id of ['prediction','explanation']) if (typeof saved[id] === 'string') responses['carbon-journey']['budget-'+id] = saved[id];
+        }
+      } catch (_) { /* Keep unreadable budget data in the raw backup. */ }
+    }
+    // Only per-activity reports can attribute a student. Browser backups may contain mixed or older work.
+    return { format: 'openscied-saved-work-v1', archiveRevision: 2, exportedAt: new Date().toISOString(), scope: onlyKeys ? 'activity' : 'browser', student: null, datasetIds, work, responses };
+  }
+  // AP sign-out loads this script on demand; only the OpenSciEd dashboard mounts the UI.
+  if (typeof window === 'object') window.OpenSciEdArchive = { build: buildArchive };
+
   function init() {
     $('[data-ph="dashboard-identity"]')?.remove();
     Lab.identity.mount('#openscied-student-identity', { sharedDevice: true, downloadOpenSciEd: () => downloadWork(undefined, null) });
@@ -792,23 +873,6 @@
         $('#clear-openscied-results').disabled = true;
       }
     }
-    // Only index identifiers with an established activity-report format.
-    // Never infer who owns a raw browser record from the current sign-in.
-    const datasetModels = {
-      ripple:['SR-','seed'], screening:['SD-','seed'], hawksbeard:['HB-','seed'],
-      'rat-generations':['RG-','seed'], junco:['JU-','notebookSeed'],
-      'wildlife-corridor':['WC-AA-','seed'], wapusk:['WB-','id'],
-      thermoregulation:['TH-','id'], 'bear-ancestry':['BA-','id'],
-      'bear-speciation':['ICE-','id'], 'bear-hybrid':['HY-','id']
-    };
-    function backupDataset(activity, saved) {
-      if (!Object.hasOwn(datasetModels,activity.id) || saved?.v!==1) return null;
-      const [prefix, field] = datasetModels[activity.id];
-      const value = saved[field];
-      if (field==='id') return typeof value==='string' && /^[0-9A-F]{8}$/.test(value) ? prefix+value : null;
-      return Number.isInteger(value) && value>=0 && value<=0xffffffff
-        ? prefix+value.toString(16).toUpperCase().padStart(8,'0') : null;
-    }
     function downloadWork(onlyKeys, feedback = status) {
       const blocked = workspaceError();
       if (blocked) {
@@ -816,65 +880,7 @@
         return false;
       }
       try {
-        const work = {};
-        const keys = (onlyKeys || savedKeys()).filter(key => {
-          const raw = localStorage.getItem(key);
-          if (raw === null) return false;
-          work[key] = raw;
-          return true;
-        }), responses = {}, datasetIds = {};
-        // A readable copy of every written response (Making Sense and analysis) next to the raw saved work.
-        ACTIVITIES.filter(activity => keys.includes(activity.key)).forEach(activity => {
-          let saved = null;
-          try { saved = JSON.parse(work[activity.key]); } catch (e) { return; }
-          const datasetId = backupDataset(activity,saved);
-          if (datasetId) datasetIds[activity.id] = datasetId;
-          const fields = saved && (['cancer-rates', 'junco', 'wildlife-corridor', 'ripple', 'screening'].includes(activity.id) ? saved : activity.answers ? saved.answers : saved.fields) || {};
-          responses[activity.id] = {};
-          activity.ids(saved).forEach(id => { responses[activity.id][id] = typeof fields[id] === 'string' ? fields[id] : ''; });
-          // The DNA activity was shortened: answers saved by the longer version are no longer in its id list, so keep them in the copy.
-          if (['hawksbeard','rat-generations'].includes(activity.id) && typeof saved?.prediction === 'string') responses[activity.id].prediction = saved.prediction;
-          if (activity.id === 'bear-ancestry' && saved) {
-            if ([0,1,2].includes(saved.prediction)) responses[activity.id].firstGuess=['Polar + Brown','Polar + Black','Brown + Black'][saved.prediction];
-            for (const k of ['profile','skull','teeth','claw']) {
-              if (written(saved.notes||{},k)) responses[activity.id][k+'Observation']=saved.notes[k];
-            }
-          }
-          if (activity.id === 'junco' && saved) {
-            if (written(saved, 'observation')) responses[activity.id].observation = saved.observation;
-            if (written(saved, 'reason')) responses[activity.id].predictionReason = saved.reason;
-          }
-          if (activity.id === 'wildlife-corridor') {
-            responses[activity.id].prediction = typeof saved?.prediction?.choice === 'string' ? saved.prediction.choice : '';
-            responses[activity.id].predictionReason = typeof saved?.prediction?.reason === 'string' ? saved.prediction.reason : '';
-          }
-          if (activity.id === 'cancer-rates') {
-            responses[activity.id].prediction = typeof saved?.prediction?.choice === 'string' ? saved.prediction.choice : '';
-            responses[activity.id].predictionReason = typeof saved?.prediction?.reason === 'string' ? saved.prediction.reason : '';
-            const question = cancerInvestigationQuestion(saved);
-            if (question) responses[activity.id].investigationQuestion = question;
-            if (typeof saved?.casework?.questionDraft==='string' && saved.casework.questionDraft.trim()!==question.trim()) {
-              responses[activity.id].investigationQuestionDraft = saved.casework.questionDraft;
-            }
-            const savedNotes = saved?.casework?.notes ?? {};
-            const observations = Object.fromEntries(Object.entries({ A:'diagnoses', B:'deaths', C:'map' })
-              .filter(([,key]) => written(savedNotes,key))
-              .map(([exhibit,key]) => [exhibit,savedNotes[key]]));
-            if (Object.keys(observations).length) responses[activity.id].exhibitObservations = observations;
-          }
-          if (activity.id === 'dna-p53') Object.keys(fields).forEach(id => { if (!(id in responses[activity.id]) && typeof fields[id] === 'string') responses[activity.id][id] = fields[id]; });
-        });
-        if (keys.includes(CARBON_BUDGET_KEY)) {
-          try {
-            const saved = JSON.parse(work[CARBON_BUDGET_KEY]);
-            if (saved?.v === 1) {
-              responses['carbon-journey'] ||= {};
-              for (const id of ['prediction','explanation']) if (typeof saved[id] === 'string') responses['carbon-journey']['budget-'+id] = saved[id];
-            }
-          } catch (_) { /* Keep unreadable budget data in the raw backup. */ }
-        }
-        // Only per-activity reports can attribute a student. Browser backups may contain mixed or older work.
-        const payload = { format: 'openscied-saved-work-v1', archiveRevision: 2, exportedAt: new Date().toISOString(), scope: onlyKeys ? 'activity' : 'browser', student: null, datasetIds, work, responses };
+        const payload = buildArchive(localStorage, onlyKeys);
         const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
         const link = document.createElement('a');
         link.href = url; link.download = 'openscied-saved-work.json';
@@ -947,5 +953,6 @@
     window.addEventListener('pageshow', () => refresh());
     refresh();
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  const mount = () => { if ($('#openscied-student-identity')) init(); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount); else mount();
 })();
