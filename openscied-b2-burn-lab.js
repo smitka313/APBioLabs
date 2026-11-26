@@ -132,6 +132,7 @@
     const rows = L.tableRows(state.burn); if (!rows.length) return [];
     return [table('Simulated burn results', ['Fuel (sample)', 'Caught fire after (s)', 'Burned for (s)', 'BTB before → after', 'Fuel temperature before → after (°C)', 'Mass before → after (g)', 'What I saw'],
       rows.map(function (r) { return [r.label + ' (' + r.n + ')', String(r.igniteS), String(r.burnS), L.btbText(r.btbBefore) + ' → ' + L.btbText(r.btbAfter), r.tempBefore + ' → ' + r.tempAfter, r.massBefore.toFixed(1) + ' → ' + r.massAfter.toFixed(1), obsText(r.obs)]; })),
+      ...L.matchingReadouts(L.byFuel(rows)).map(note => el('p', 'small', note)),
       el('p', 'small muted', 'SIMULATED burns. Not measurements from a real demonstration. A rise of only a degree or two can be thermometer noise, so compare fuels with big differences.')];
   }
 
@@ -142,6 +143,7 @@
     const round = v => Math.round(v * 10) / 10;
     const result = [table('From your simulated burns', ['Fuel', 'Mass lost (g)', 'Temperature change (°C)', 'Final BTB color and number'],
       grouped.map(g => [g.label, round(g.massLost).toFixed(1), round(g.tempRise).toFixed(1), L.btbText(round(g.btbAfter))]))];
+    L.matchingReadouts(grouped).forEach(note => result.push(el('p', 'small', note)));
     if (grouped.length < 2) result.push(el('p', 'small muted', 'Record another type of fuel to compare.'));
     return result;
   }
