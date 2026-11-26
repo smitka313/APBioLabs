@@ -385,3 +385,105 @@ test('both OpenSciEd archive paths include the Peat Bog graph explanation in rea
     assert.equal(payload.student,null);
   }
 });
+
+const wordButton=dialog=>dialog.querySelectorAll('button').find(b=>b.textContent==='Download report (.docx)');
+const wordDialogs=[
+  ['Sign out', p=>p.Lab.data.signOut(), 'signout','First'],
+  ['Start over all', p=>p.Lab.data.startOverAll(), 'startover','ERASE'],
+  ['Start over this lab', p=>p.Lab.data.startOverLab(), 'startlab',null],
+];
+const unlockWordDialog=(gate,word)=>{
+  if(word){gate.value=word;gate.trigger('input');}
+  else{gate.checked=true;gate.trigger('change');}
+};
+for (const [label,open,id,word] of wordDialogs) {
+  test(label+' cannot erase while the Word file is being built',async()=>{
+    const original='"student measured 7.1"';
+    const s=withStudent({[AP]:original,[MIG]:migWork('preserve companion work')});
+    const p=page(s,'/lab02.html'), dialog=open(p);
+    const gate=dialog.querySelector('#dm-'+id+'-gate'), erase=dialog.querySelector('.dm-confirm');
+    let finish;
+    p.Lab.report.docx=()=>new Promise(resolve=>{finish=resolve;});
+    unlockWordDialog(gate,word);
+    assert.equal(erase.disabled,false);
+    const pending=wordButton(dialog).click();
+    unlockWordDialog(gate,word);
+    gate.trigger('keydown',{key:'Enter'}); erase.click();
+    assert.equal(s.getItem(AP),original,'the only saved answer must survive an early erase attempt');
+    assert.deepEqual(p.nav,[]);
+    assert.equal(erase.disabled,true);
+    assert.match(dialog.querySelector('.tool-status').textContent,/Erase is paused/);
+    if(word)assert.equal(dialog.querySelector('.dm-openscied-backup').disabled,true);
+    assert.equal(p.downloads.length,0);
+    finish(new Blob(['synthetic Word report'])); await pending;
+    assert.equal(await p.downloads[0].text(),'synthetic Word report');
+    assert.equal(erase.disabled,false);
+    erase.click();
+    assert.equal(s.getItem(AP),null);
+    assert.deepEqual(p.nav,[id==='signout'?'ap-biology.html':'reload']);
+  });
+}
+
+test('a failed Word download re-locks the per-lab checkbox without erasing the answer',async()=>{
+  const s=withStudent({[AP]:'"do not erase"'}), p=page(s,'/lab02.html'), dialog=p.Lab.data.startOverLab();
+  const gate=dialog.querySelector('#dm-startlab-gate'), erase=dialog.querySelector('.dm-confirm');
+  unlockWordDialog(gate,null);
+  p.Lab.report.docx=async()=>{throw Error('docx-load');};
+  await wordButton(dialog).click();
+  assert.equal(gate.checked,false);
+  assert.equal(erase.disabled,true);
+  assert.match(dialog.querySelector('.tool-status').textContent,/Nothing was erased/);
+  erase.click();
+  assert.equal(s.getItem(AP),'"do not erase"');
+  assert.deepEqual(p.nav,[]);
+});
+
+test('cancelling a pending Word download suppresses the file and retains work',async()=>{
+  const s=withStudent({[AP]:'"do not erase"'}), p=page(s,'/lab02.html'), dialog=p.Lab.data.signOut();
+  let finish;
+  p.Lab.report.docx=()=>new Promise(resolve=>{finish=resolve;});
+  const pending=wordButton(dialog).click();
+  dialog.querySelector('.dm-cancel').click();
+  finish(new Blob(['old report'])); await pending;
+  assert.equal(p.downloads.length,0);
+  assert.equal(s.getItem(AP),'"do not erase"');
+  assert.deepEqual(p.nav,[]);
+});
+
+test('a Word build from a cleared workspace cannot download after the device is handed off',async()=>{
+  const s=withStudent({[AP]:'"first student answer"'}), p=page(s,'/lab02.html'), dialog=p.Lab.data.signOut();
+  let finish;
+  p.Lab.report.docx=()=>new Promise(resolve=>{finish=resolve;});
+  const pending=wordButton(dialog).click();
+  const other=page(s); confirm(other.Lab.data.signOut());
+  const next=page(s); assert.equal(next.Lab.identity.set(NEW),true);
+  s.setItem(AP,'"next student answer"');
+  finish(new Blob(['old report'])); await pending;
+  assert.equal(p.downloads.length,0);
+  assert.equal(s.getItem(AP),'"next student answer"');
+  assert.match(dialog.querySelector('.tool-status').textContent,/cleared in another tab/);
+});
+
+test('the Word report captures visible answers and its teacher data before chart rendering yields',async()=>{
+  // Execute the shipped Word method with controllable I/O to isolate the race.
+  const method=source.match(/    async docx\(o = \{\}\) \{[\s\S]*?\},\r?\n    docxUrls:/)?.[0].split('    docxUrls:')[0];
+  assert.ok(method);
+  let answer='First measurement: 7.1', name='First Student', release, isRendering=false;
+  const hold=new Promise(resolve=>{release=resolve;});
+  const output=vm.runInNewContext('({'+method+'})',{
+    flushSaves:()=>{},
+    collectReport:()=>({answer,name}),
+    progressPayload:()=>({data:{answer},student:{name}}),
+    makeResumeCode:async payload=>JSON.stringify(payload),
+    renderCharts:async rep=>{isRendering=true;await hold;return rep;},
+    reportStamp:()=>null, tlInclude:()=>false, withNativeRandom:fn=>fn(), buildDocx:rep=>rep,
+  }).docx();
+  assert.equal(isRendering,true);
+  answer='Corrected measurement: 7.2'; name='Corrected Student';
+  release();
+  const rep=await output, embedded=JSON.parse(rep.embed);
+  assert.equal(rep.answer,'First measurement: 7.1');
+  assert.equal(rep.name,'First Student');
+  assert.equal(embedded.data.answer,rep.answer);
+  assert.equal(embedded.student.name,rep.name);
+});
