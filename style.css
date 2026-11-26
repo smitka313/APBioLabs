@@ -1229,7 +1229,7 @@ html[data-openscied] nav:is(
     [aria-label="Investigation steps"], [aria-label="Investigation sections"], [aria-label="Workshop steps"]) button):is(:disabled, [aria-disabled="true"]) {
     opacity: 1;
     filter: none;
-    color: color-mix(in srgb, var(--muted) 76%, var(--ink));
+    color: var(--muted);
     background: var(--surface-2);
     border: 1px solid color-mix(in srgb, var(--muted) 72%, var(--line));
     box-shadow: none;
