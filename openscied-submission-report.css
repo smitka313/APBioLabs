@@ -12,12 +12,14 @@
 .osr-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; }
 .osr-live { flex: 1 1 100%; margin: 0; font-size: .92rem; }
 .osr-live:empty { display: none; }
-.osr-dialog {
+:is(.osr-dialog, .osr-print-sheet) {
   --osr-ink: #1c2d36;
   --osr-blue: #173d54;
   --osr-muted: #465965;
   --osr-line: #c5d3da;
   --osr-soft: #e9f0f3;
+}
+.osr-dialog {
   background: #f1f4f6;
   color: var(--osr-ink);
   border: 1px solid var(--osr-line);
@@ -33,19 +35,26 @@
   overscroll-behavior: contain;
 }
 .osr-dialog::backdrop { background: rgba(5, 19, 29, .7); }
+/* The separate document has no activity stylesheet or canvas. */
+.osr-print-sheet { max-width: 58rem; margin: 1rem auto; font: 1rem/1.45 system-ui, sans-serif; }
+.osr-print-sheet .osr-tools { position: static; }
+.osr-print-sheet .btn {
+  padding: .38rem .75rem; border-radius: .35rem; cursor: pointer; font: inherit;
+}
+.osr-print-sheet .btn:disabled { cursor: default; }
 .osr-tools {
   position: sticky; top: 0; z-index: 2;
   padding: .7rem clamp(.75rem, 3vw, 1.5rem);
   border-bottom: 1px solid var(--osr-line);
   background: #f1f4f6;
 }
-.osr-dialog .btn {
+:is(.osr-dialog, .osr-print-sheet) .btn {
   background: #fff; color: var(--osr-blue); border: 1px solid #7893a2;
   min-height: 38px;
 }
-.osr-dialog .btn--primary { background: var(--osr-blue); color: #fff; border-color: var(--osr-blue); }
-.osr-dialog .btn:disabled { background: #e0e5e9; color: var(--osr-muted); }
-.osr-dialog :focus-visible { outline: 3px solid #185b84; outline-offset: 2px; }
+:is(.osr-dialog, .osr-print-sheet) .btn--primary { background: var(--osr-blue); color: #fff; border-color: var(--osr-blue); }
+:is(.osr-dialog, .osr-print-sheet) .btn:disabled { background: #e0e5e9; color: var(--osr-muted); }
+:is(.osr-dialog, .osr-print-sheet) :focus-visible { outline: 3px solid #185b84; outline-offset: 2px; }
 .osr-dialog .osr-title:focus-visible { outline: none; }
 .osr-screen-help { color: var(--osr-muted); font-size: .88rem; margin: .44rem 0 0; }
 .osr-formats { margin: .25rem 0 0; font-size: .9rem; }
@@ -135,7 +144,10 @@
     border: 0 !important; box-shadow: none !important; page: openscied-submission;
   }
   .osr-dialog::backdrop, .osr-tools, .osr-identity-editor { display: none !important; }
-  .osr-dialog .osr-paper { margin: 0 !important; padding: 0 !important; border: 0 !important; font-size: 11pt; }
+  .osr-print-sheet { max-width: none; margin: 0; page: openscied-submission; }
+  :is(.osr-dialog, .osr-print-sheet) .osr-paper {
+    margin: 0 !important; padding: 0 !important; border: 0 !important; font-size: 11pt;
+  }
   .osr-paper .osr-stamp { width: 1in; height: 1in; }
   .osr-header, .osr-paper .osr-stamp { break-inside: avoid; print-color-adjust: exact; }
   .osr-paper :is(h2,h3,h4,caption) { break-after: avoid; }

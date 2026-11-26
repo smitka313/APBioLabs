@@ -983,18 +983,30 @@
           trials.map(t => [t.trial, t.outputs.N, t.outputs.perm, t.outputs.zc]))
       ] });
     }
-    if (state.warmingUsed) {
-      const c = data.climate, rows = L.climate(c.fossil, c.forest);
-      const columns = ['Year', 'Fossil fuel input (Gt C/year)', 'Forests and peatlands (% of today)', 'Atmospheric CO₂ (ppm)', 'Modeled warming (°C)'];
-      const tableRow = (x, row) => [row.y, x.fossil, x.forest, +row.C.toFixed(1), +row.T.toFixed(2)];
-      const compare = rows.filter(row => [2050, 2100, c.year].includes(row.y)).map(row => tableRow(c, row));
+    const c = data.climate, defaults = L.sanitizeClimate({});
+    const exploredClimate = state.warmingUsed || data.climateTests?.length ||
+      Object.keys(defaults).some(k => defaults[k] !== c[k]);
+    // The projection is useful report context even when a student read the model without moving a slider.
+    // Keep it out of a blank draft, and do not use it to award completion.
+    if (exploredClimate || trials.length || answer || state.lastSection === 'warming') {
+      const scenario = L.climate(c.fossil, c.forest);
+      const projectionRow = row => [row.y, Math.round(row.C), row.T.toFixed(1)];
+      const projections = scenario.filter(row => (row.y - L.Y0) % 5 === 0 || row.y === c.year).map(projectionRow);
       const tested = (data.climateTests || []).map(x => {
-        const row = L.climate(x.fossil, x.forest).find(r => r.y === x.year);
-        return row ? tableRow(x, row) : null;
-      }).filter(Boolean);
-      sections.push({ title: 'Current climate scenario · simulated', items: [{
-        type: 'table', title: 'Current settings: benchmark years and selected year', columns, rows: compare
-      }, ...(tested.length ? [{ type: 'table', title: 'Scenarios sent to the bog', columns, rows: tested }] : [])] });
+        const run = L.climate(x.fossil, x.forest), projection = run[x.year - L.Y0];
+        const bogInputs = L.bogForYear(run, x.year);
+        return [x.year, x.fossil, x.forest, Math.round(projection.C), projection.T.toFixed(1), bogInputs.co2, bogInputs.temp];
+      });
+      sections.push({ title: 'Climate projection · simulated', items: [
+        { type: 'text', text: (exploredClimate ? 'Current model settings' : 'Default model settings, shown for reference') +
+          ': ' + c.fossil + ' Gt C/year from fossil fuels; forests and peatlands at ' + c.forest +
+          '% of today. Selected year: ' + c.year + '. This teaching model is not a forecast.' },
+        { type: 'table', title: 'CO₂ and warming every five years, plus the selected year', rows: projections,
+          columns: ['Year', 'Atmospheric CO₂ (ppm)', 'Warming since the 1800s (°C)'] },
+        ...(tested.length ? [{ type: 'table', title: 'Scenarios sent to the bog', rows: tested,
+          columns: ['Year', 'Fossil fuel input (Gt C/year)', 'Forests and peatlands (% of today)', 'Atmospheric CO₂ (ppm)',
+            'Warming (°C)', 'Bog CO₂ (ppm)', 'Bog summer temperature (°C)'] }] : [])
+      ] });
     }
     const last = trials.at(-1);
     return {

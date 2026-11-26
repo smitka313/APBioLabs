@@ -173,6 +173,24 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
     T.ok(await p.locator('#cer-level').getAttribute('data-level') === 'linked', 'claim, evidence and reasoning gives Linked');
     await p.check('#cer-caveat');
     T.ok(await p.locator('#cer-level').getAttribute('data-level') === 'organized', 'adding a limit gives Organized');
+    // Keep the true UV evidence, but make the counted SPF comparison go the other way.
+    const correctDishes = await p.evaluate(() => B3Inh.getState().yeast.dishes);
+    await p.evaluate(dishes => B3Inh.saveState('yeast', { dishes: dishes.map(d =>
+      d.spf ? { ...d, colonies: 210 - d.spf * 2 } : d) }), correctDishes);
+    await p.check('#cer-ev-3');
+    T.ok(/^✓/.test(await p.locator('#cer-ev-1-note').innerText()) &&
+      /^✕/.test(await p.locator('#cer-ev-3-note').innerText()) &&
+      await p.locator('#cer-level').getAttribute('data-level') === 'review' &&
+      /does not match/.test(await p.locator('#cer-level').innerText()),
+      'one valid pick cannot mask a selected statement that contradicts the student’s dishes');
+    await p.evaluate(dishes => B3Inh.saveState('yeast', { dishes: dishes.filter(d => d.spf !== 30) }), correctDishes);
+    T.ok(await p.locator('#cer-level').getAttribute('data-level') === 'review' &&
+      /count the dishes/.test(await p.locator('#cer-level').innerText()),
+      'a statement that has not been verified also removes the Organized check');
+    await p.uncheck('#cer-ev-3');
+    T.ok(await p.locator('#cer-level').getAttribute('data-level') === 'organized',
+      'fixing the evidence immediately restores the Organized check');
+    await p.evaluate(dishes => B3Inh.saveState('yeast', { dishes }), correctDishes);
     await p.uncheck('#cer-ev-1');
     T.ok(await p.locator('#cer-level').getAttribute('data-level') !== 'organized', 'removing evidence removes the Organized mark');
     await go(p, 'uvdna');
