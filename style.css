@@ -1220,7 +1220,9 @@ html[data-openscied] nav:is(
     justify-content: center;
     text-align: center;
   }
-  html[data-openscied] nav.step-nav[aria-label="Activity steps"] li > a[href^="#"] {
+  /* A tall, wrapping sticky bar can mask controls below it. Keep long
+     lesson rails compact; their existing targets already meet 24px. */
+  html[data-openscied] nav.step-nav[aria-label="Activity steps"]:not(:has(li:nth-child(10))) li > a[href^="#"] {
     min-block-size: 42px;
     font-weight: 700;
   }

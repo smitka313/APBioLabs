@@ -9,6 +9,7 @@ const samples=[
   ['openscied-b2-burn-lab.html','.step-nav li > a'],
   ['openscied-b2-carbon-journey.html','.journey-tabs button'],
   ['openscied-b3-dna-workshop.html','.dw-stage-nav button'],
+  ['openscied-b3-inheritance-environment.html','.step-nav li > a'],
   ['openscied-b4-rat-generations.html','.rg-steps button'],
   ['openscied-b4-wildlife-corridor.html','.wc-nav button'],
   ['openscied-b5-thermoregulation.html','.th-tabs button'],
@@ -39,7 +40,12 @@ async function verifyNav(page, base, width, mode){
         disabled:el.disabled,color:style.color,background:style.backgroundColor,border:style.borderTopStyle,opacity:style.opacity,width:r.width,scroll:el.scrollWidth,client:el.clientWidth};
     }));
     assert.equal(stats.filter(s=>s.active).length,1,file+' has exactly one active step');
-    assert.ok(stats.every(s=>s.radius==='6px'&&s.height>=41.5&&s.weight==='700'),file+' uses common navigation targets');
+    const longRail=selector.includes(' > a')&&stats.length>=10;
+    assert.ok(stats.every(s=>s.radius==='6px'&&(longRail?s.height>=24:s.height>=41.5&&s.weight==='700')),
+      file+' uses accessible navigation targets');
+    if(longRail&&width>=1000){
+      assert.ok(Math.max(...stats.map(s=>s.height))<41.5,file+' keeps a long sticky rail compact on desktop');
+    }
     const activeRing=stats.find(s=>s.active).ring;
     assert.ok(activeRing.includes('inset')&&activeRing.includes('-3px'),file+' marks the current step with an inset underline: '+activeRing);
     assert.ok(stats.every(s=>s.scroll<=s.client+1),file+' step labels do not overflow');
