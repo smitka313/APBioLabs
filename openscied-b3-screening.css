@@ -112,6 +112,9 @@
 .sd-home{background:#173b40;border:1px solid #cad3aa;color:#fffae3;box-shadow:0 2px 5px #1a343869}
 .sd-site{box-shadow:0 3px 0 #1733399c;border-color:#f3dea0}
 .sd-site.sd-mobile{background:#195553}.sd-site.sd-hub{background:#24424f}
+/* Anchor the parked van to its label, not to the map image. Zooming or wrapping
+   the label must not move its border through the van's wheels. */
+.sd-clinic-van{position:absolute;inset-inline-start:50%;inset-block-end:calc(100% + .55rem);transform:translateX(-50%);display:block;width:clamp(2.75rem,9vw,5.25rem);height:auto;pointer-events:none}
 .sd-traveler{width:44px;height:37px;border-radius:11px;box-shadow:0 3px 0 #213c3c9e,0 0 0 1px #f4db94;background:#173b4a;border-color:#f1d389}
 .sd-traveler svg{width:36px;height:27px;display:block}
 .sd-traveler span{position:absolute;top:-7px;right:-8px;font-size:.66rem;line-height:1;padding:.18rem .28rem;border-radius:.43rem;background:#ffdf8d;color:#203840}

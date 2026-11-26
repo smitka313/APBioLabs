@@ -44,12 +44,5 @@
  <path d="M12 63h21v15H12zm86 0h21v15H98z" fill="#466a79"/><path d="M57 97V68h26v29" fill="#496e78"/><path d="M70 69v27m-12-25 13 5" stroke="#cbe0d3" stroke-width="2"/>
  <path d="M49 99h42m-48 5h54" stroke="#e5d3ac" stroke-width="4"/>
 </g>
-<g transform="translate(418 258)">
- <ellipse cx="60" cy="69" rx="70" ry="11" fill="#304a45" opacity=".4"/>
- <path d="M0 22 19 11h79v48L77 68H0Z" fill="#dceee0"/><path d="M77 22 98 11v48l-21 9z" fill="#78a39d"/><path d="M0 22 19 11h79L77 22Z" fill="#fffae4"/>
- <path d="M77 39h24l20 17v13H77z" fill="#dbe8d5"/><path d="M91 42h9l12 13H91z" fill="#456d78"/><path d="M1 60h119v7H1z" fill="#4f817d"/>
- <path d="M29 31h9v7h8v9h-8v7h-9v-7h-8v-9h8z" fill="#a43c46"/>
- <circle cx="22" cy="67" r="10" fill="#233842"/><circle cx="104" cy="67" r="10" fill="#233842"/><path d="M17 67h10m72 0h10" stroke="#a9bdbc" stroke-width="3"/>
-</g>
 <g transform="translate(947 51)" fill="#f8f1da" stroke="#365e4e" stroke-width="2"><circle r="22"/><path d="M0-15 6 6 0 3-6 6Z" fill="#365e4e"/><path d="M0 9v6m-15-15h3m24 0h3"/></g>
 </svg>

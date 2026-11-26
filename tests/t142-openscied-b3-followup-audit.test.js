@@ -31,7 +31,9 @@ test('A Cancer question revision remains independent of the committed question',
 function lesson9(prior) {
   const file=content('openscied-b3-inheritance-environment.js');
   const code=file.slice(file.indexOf('  function submissionReport() {'),file.indexOf('  window.OpenSciEdSubmission?.mount'));
-  const raw=vm.runInNewContext(code+'\nsubmissionReport()',{
+  const trackerCode=file.slice(file.indexOf('  function progressTracker()'),file.indexOf('  function textAnswers()'));
+  const tracker={fields:[{parentElement:{textContent:'How melanin protects.'},checked:true}]};
+  const raw=vm.runInNewContext(trackerCode+code+'\nsubmissionReport()',{
     state:{skin:{viewed:{white:true}},planner:{ready:true},yeast:{dishes:[{colonies:12}]},
       question:{ok:true,text:'What changes the number of colonies?'}},
     picks:()=>[{id:'family-question',question:'Unanswered family prompt',value:''},...prior,
@@ -40,7 +42,8 @@ function lesson9(prior) {
     chips:()=>[{id:'cer-evidence',question:'Evidence',chosen:['Fewer colonies under UV']}],
     textAnswers:()=>[{id:'wrap-sentence',prompt:'Wrap-up',answer:'UV matters.'}],
     orderSeq:()=>[], L:{checkOrder:()=>({status:'unanswered'})}, STEP_LABELS:{},
-    SECTIONS:['overview','ideas','envideas'], $$:(selector,section)=>section?
+    SECTIONS:['overview','ideas','envideas'], $:selector=>selector==='fieldset.tracker[data-id="tracker"]'?tracker:null,
+    $$:(selector,section)=>section===tracker?tracker.fields:section?
       [{dataset:{id:'family-question'}},{dataset:{id:'family-earlier'}}]:
       [{id:'overview'},{id:'ideas'},{id:'envideas'}],
     BOXES:Array.from({length:6},(_,i)=>['model'+i,()=>[]]),
@@ -54,6 +57,7 @@ test('Lesson 9 report excludes unassigned, untouched family prompts and model ro
   assert.match(r.title,/Lesson 9/);
   assert.doesNotMatch(JSON.stringify(r),/Unanswered family prompt|Lakita|Two-gene|Earlier Lesson 8/);
   assert.equal(r.keyResults[1].value,'2 of 2');
+  assert.deepEqual(r.sections.find(s=>s.title==='My progress tracker')?.items[0]?.rows,[['How melanin protects.','Checked']]);
 });
 test('Lesson 9 report retains prior family work under a separate title',()=>{
   const r=lesson9([{id:'family-earlier',question:'Earlier response prompt',value:'a',answer:'My earlier response'}]);

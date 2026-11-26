@@ -100,12 +100,17 @@ const configuration = [
     const state={pedigree:{},planner:{},yeast:{},question:null},answers=[{id:'wrap-sentence',prompt:'Genes and chance',answer}],
       choices=[{id:'exit-q1',question:'Untouched family prompt?',answer:'',value:''},
         {id:'early-thought',question:'Earlier thought',answer:'Student’s recorded Lesson 8 work',value:'a'}],sequence=[];
-    const selectedChips = [];
+    const selectedChips = [], tracker={
+      querySelectorAll:()=>['How a pedigree shows inherited risk.','How crossing over makes new combinations.',
+        'How UV damages DNA.','How melanin protects.','Why a graph pattern is not proof of cause.']
+        .map((textContent,i)=>({parentElement:{textContent},checked:i>=3}))
+    };
     const sections=['overview','ideas','envideas','wrapup'];
     return {state,ctx:{picks:()=>choices,chips:()=>[{id:'cer-evidence',question:'Evidence chips',chosen:selectedChips}],
       textAnswers:()=>answers,orderSeq:()=>sequence,BOXES:Array.from({length:6},()=>['fixture',()=>[]]),
       L:{checkOrder:r=>({status:r.length?'correct':'empty'})},STEP_LABELS:{copy:'DNA copied'},
-      SECTIONS:sections,$$:(query,section)=>section ? [{dataset:{id:'exit-q1'}},{dataset:{id:'early-thought'}}] : sections.map(id=>({id}))
+      SECTIONS:sections,$:selector=>selector==='fieldset.tracker[data-id="tracker"]'?tracker:null,
+      $$:(query,section)=>section===tracker?tracker.querySelectorAll():section ? [{dataset:{id:'exit-q1'}},{dataset:{id:'early-thought'}}] : sections.map(id=>({id}))
     },finish(){
       Object.assign(state,{skin:{viewed:{black:true}},planner:{ready:true},yeast:{dishes:[{colonies:0}]},question:{text:'My testable question',ok:true}});
     },beforeMore:s=>s.status===draft && s.missing.some(x=>x.includes('claim, evidence and reasoning')),
@@ -113,6 +118,8 @@ const configuration = [
       choices.push({id:'cer-claim',value:'a',question:'Claim',answer:'I noticed a difference.'},{id:'cer-reason',value:'a',question:'Reason',answer:'My dish evidence.'});
       selectedChips.push('My observation');
     },specific:s=>s.title==='Environment & UV Evidence · Lesson 9' && JSON.stringify(s.sections).includes('My observation') &&
+      s.sections.find(section=>section.title==='My progress tracker')?.items[0]?.rows
+        .map(row=>row[1]).join('|')==='Not checked|Not checked|Not checked|Checked|Checked' &&
       JSON.stringify(s.sections).includes('Eide and Weinstock') && !JSON.stringify(s.sections).includes('Untouched family prompt?') &&
       s.sections.find(section=>section.title.startsWith('Earlier Lesson 8'))?.items.some(item=>item.value==='Student’s recorded Lesson 8 work')};
   }]
@@ -151,6 +158,12 @@ for (const [activity,legacy,fixture] of configuration) {
     const start=source.indexOf('  const TURN_LIMIT_LABEL=');
     const end=source.indexOf('  // Why the round ended',start);
     check(start>=0 && end>start,'loads the production turn-count helpers into the report fixture');
+    vm.runInContext(source.slice(start,end),sandbox);
+  }
+  if (activity==='inheritance-environment') {
+    const start=source.indexOf('  function progressTracker()');
+    const end=source.indexOf('  function textAnswers()',start);
+    check(start>=0 && end>start,'loads the production progress tracker into the report fixture');
     vm.runInContext(source.slice(start,end),sandbox);
   }
   vm.runInContext(source.slice(ctor,mount),sandbox);
