@@ -713,7 +713,7 @@
     return { format: 'openscied-saved-work-v1', archiveRevision: 2, exportedAt: new Date().toISOString(), scope: onlyKeys ? 'activity' : 'browser', student: null, datasetIds, work, responses };
   }
   // AP sign-out loads this script on demand; only the OpenSciEd dashboard mounts the UI.
-  window.OpenSciEdArchive = { build: buildArchive };
+  if (typeof window === 'object') window.OpenSciEdArchive = { build: buildArchive };
 
   function init() {
     $('[data-ph="dashboard-identity"]')?.remove();
