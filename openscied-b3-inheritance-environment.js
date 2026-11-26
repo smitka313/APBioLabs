@@ -379,6 +379,16 @@
       return chip;
     });
   }
+  function progressTracker() {
+    const fields = $$('input[type=checkbox]', $('fieldset.tracker[data-id="tracker"]'));
+    const rows = fields.map(input => [
+      input.parentElement.textContent.replace(/\s+/g, ' ').trim(),
+      input.checked ? 'Checked' : 'Not checked'
+    ]);
+    const count = rows.filter(([, status]) => status === 'Checked').length;
+    return { title: 'Progress tracker · ' + count + ' of ' + rows.length + ' checked',
+      columns: ['I can explain…', 'My self-check'], rows };
+  }
   function textAnswers() { return $$('main textarea, main input[type=text]').filter(function (t) { return !t.readOnly && t.id; }).map(function (t) { return { id: t.id, prompt: labelFor(t.id), answer: t.value.trim() }; }); }
   function renderReport() {
     const report = $('#investigation-report'); if (!report) return;
@@ -394,6 +404,8 @@
       SCENE_IDS.filter(function (id) { return state[id]; }).length + ' of 6 interactive models used',
       state.question ? 'My question: ' + state.question.text : 'My question: not built yet'].forEach(function (t) { ul.appendChild(el('li', '', t)); });
     report.appendChild(ul);
+    const tracker = progressTracker();
+    report.appendChild(table(tracker.title, tracker.columns, tracker.rows));
     BOXES.forEach(function (b) { b[1]().forEach(function (n) { report.appendChild(n); }); });
     textAnswers().forEach(function (t) { if (t.answer) { report.appendChild(el('h4', '', t.prompt)); report.appendChild(el('p', 'report-answer', t.answer)); } });
     report.appendChild(el('p', 'small muted', 'Simplified teaching models. Yeast and gamete results are simulated, skin-cancer values are approximate, and nothing here predicts anyone’s health or is a diagnosis.'));
@@ -550,6 +562,8 @@
       {type:'text',text:'Lesson 9: Environment and UV evidence ' + (bMissing.length?'in progress.':'recorded.')},
       ...(lesson9Only ? [{type:'text',text:'This report marks only the Lesson 9 pathway complete. Family activities are not required for this pathway.'}] :
         [{type:'text',text:'Lesson 8: Family and inheritance models ' + (aMissing.length?'not marked complete.':'recorded.')}])
+    ]},{title:'My progress tracker',items:[
+      {type:'table',...progressTracker()}
     ]},{title:'My evidence',items:[
       {type:'table',title:'Models and evidence used',columns:['Activity','Status'],rows:(lesson9Only?environment:seen).map(([label,used])=>[label,used?'Recorded':'Not recorded'])},
       ...formatModels(lesson9Only?BOXES.slice(3):BOXES)
@@ -557,7 +571,7 @@
       title:'My question and responses',items:[
         answer('My investigation question',state.question?.text),
         ...scopedChoices.map(x=>answer(x.question,x.answer)),
-        ...allChips.filter(x=>!lesson9Only||!partA.has(x.id)).map(x=>answer(x.question,x.evidence?.join('\n') ?? x.chosen.join('; '))),
+        ...allChips.filter(x=>x.id!=='tracker'&&(!lesson9Only||!partA.has(x.id))).map(x=>answer(x.question,x.evidence?.join('\n') ?? x.chosen.join('; '))),
         ...(!lesson9Only?[orderAnswer]:[]),
         ...response.filter(x=>x.answer&&(!lesson9Only||!partA.has(x.id))).map(x=>answer(x.prompt,x.answer))
       ]
