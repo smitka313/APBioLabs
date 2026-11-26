@@ -55,27 +55,27 @@ Register with `(window.B2Scenes = window.B2Scenes || []).push({ id, mount(host, 
 
 ```
 { v:1, burn, fields:{ id|radioName: value }, responseIds:[...], lastSection, lastVisitedAt }
-burn = { seed, fuel, current: null | { fuel, n:1..3, startedAt:ms, skipped:bool, after:bool }, weighed: null | { fuel, n }, records:[{ fuel, n, obs:[chip ids] }], updatedAt }
+burn = { seed, modelVersion?, fuel, current: null | { fuel, n:1..3, startedAt:ms, skipped:bool, after:bool }, weighed: null | { fuel, n }, records:[{ fuel, n, obs:[chip ids] }], updatedAt }
 ```
 
 A burn stores a start timestamp, never a timer. Times, masses, temperatures and BTB readings are **not stored**: they are recomputed from `seed + fuel + n`
-(`burnResult`), so a table or a "correct" mark can never go stale. Up to three samples of each fuel; a second sample differs a little. With reduced motion
+and the burn's saved model version (`burnResult`), so a table or a "correct" mark can never go stale. Up to three samples of each fuel; a second sample differs a little. With reduced motion
 the burn is shown finished at once. The dashboard counts `records.length` and the answered `responseIds`.
 
 ## The model, in one place
 
 Matches the Teacher Edition's sample evidence: peat's mass reduced the most, its temperature change and BTB color change were the greatest, it burned longest, and
 droplets formed on the glass (especially with peat). The TE also notes the fuels are not uniform and the demonstration did not stress equal masses, so the handfuls are
-**not equal**. Per fuel (nominal): mass before 4, 4, 10, 10, 30 g (grass, leaves, wood, charcoal, peat); mass lost 93, 90, 97, 88, 78 percent, so about 3.7, 3.6, 9.7, 8.8 and
+**not equal**. Per fuel (nominal): mass before 4, 7, 10, 10, 30 g (grass, leaves, wood, charcoal, peat); mass lost 93, 90, 97, 88, 78 percent, so about 3.7, 6.3, 9.7, 8.8 and
 23.4 g; ignite after 4, 6, 14, 28, 45 s; burn for 20, 30, 90, 150, 260 s; heat 15, 16, 18, 29, 20 kJ per g burned; carbon factor 0.44, 0.45, 0.50, 0.90, 0.50; water factor
 0.55, 0.55, 0.60, 0.12, 0.80. Seeded variation: heat and mass lost about 8 percent, ignition 15 percent, burn time 10 percent. Balance reads 0.1 g (+/- 0.1), laser thermometer
 shows whole degrees C (true temperature +/- 0.5, rounded), start 22 C. Ignition time varies about 15 percent and is shown to the nearest second.
 
 - Carbon dioxide made (relative) = grams lost x carbon factor. It collects under the dome and a fixed 0.6 of it dissolves into the BTB in the dish (the rest escapes or stays in the air): BTB = 2 + 4 (1 - exp(-dissolved / 3.5)) +/- 0.2 (noise fades to zero when no
   gas was made), 2 to 6. So BTB change is monotonic in carbon dioxide made, which is grams lost x carbon factor; no mass lost means no BTB change. Means: peat about 5.4, charcoal 5.0,
-  wood 4.3, grass and leaves 3.0. (Noise is +/- 0.2, not 0.3, so peat's BTB is above every other fuel for every student, tested over 400 seeds x 3 samples.)
+  wood 4.3, leaves 3.5, grass 3.0. (Noise is +/- 0.2, not 0.3, so peat's BTB is above every other fuel for every student, tested over 400 seeds x 3 samples.)
 - Temperature rise = the difference between the two laser-thermometer readings of the fuel (its ash, after), taken at the two weighings (after minus before) = grams burned x kJ per g x 0.35 / 8,
-  kept 2 to 22 C (the 0.35 and 8 stand for how much of the heat stays with the fuel, its ash, the tray and the air around them): peat about 20, charcoal 11, wood 7.7, grass and leaves 2.5.
+  kept 2 to 22 C (the 0.35 and 8 stand for how much of the heat stays with the fuel, its ash, the tray and the air around them): peat about 20, charcoal 11, wood 7.7, leaves 4.4, grass 2.5. A legacy save without a version still uses 4 g of leaves.
   The reading is never lower after.
 - Water made = grams lost x water factor; droplets on the inside of the dome grow with it (level = sqrt(water / 12), capped at 1), most for peat, least for charcoal. Observation chip "Droplets
   on the glass" is true for every fuel except charcoal (`obsTruth`).

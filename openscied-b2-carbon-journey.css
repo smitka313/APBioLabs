@@ -28,6 +28,7 @@
 @media print{.journey-station-tour{display:none!important}}
 #coverage-panel h3{font-size:1rem;margin:0 0 .35rem}
 #coverage-panel p{font-size:.86rem;margin:.35rem 0}
+#coverage-contrast{border-inline-start:3px solid var(--accent);background:var(--accent-soft);color:var(--ink);border-radius:8px;padding:8px 12px;margin-top:.65rem}
 #coverage-route{font-weight:700}
 #coverage-card{margin:.45rem 0;padding:.5rem .7rem;border-inline-start:3px solid var(--accent);background:var(--bg);font-size:.86rem}
 

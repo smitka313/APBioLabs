@@ -11,13 +11,31 @@ const record = (seed, list) => ({ seed, fuel: 'grass', current: null, records: l
 
 test('the five fuels carry the nominal values from the plan', () => {
   assert.deepEqual(L.FUEL_IDS, ['grass', 'leaves', 'wood', 'charcoal', 'peat']);
-  assert.deepEqual(L.FUELS.map(f => f.mass), [4, 4, 10, 10, 30], 'the handfuls are not equal');
-  assert.deepEqual(L.FUELS.map(f => L.massOf(f.id)), [4, 4, 10, 10, 30]);
+  assert.deepEqual(L.FUELS.map(f => f.mass), [4, 7, 10, 10, 30], 'the handfuls are not equal');
+  assert.deepEqual(L.FUELS.map(f => L.massOf(f.id)), [4, 7, 10, 10, 30]);
   assert.deepEqual(L.FUELS.map(f => f.ignite), [4, 6, 14, 28, 45]);
   assert.deepEqual(L.FUELS.map(f => f.burn), [20, 30, 90, 150, 260]);
   assert.deepEqual(L.FUELS.map(f => f.loss), [0.93, 0.90, 0.97, 0.88, 0.78]);
   assert.deepEqual(L.FUELS.map(f => f.kj), [15, 16, 18, 29, 20]);
   assert.deepEqual(L.FUELS.map(f => f.co2), [0.44, 0.45, 0.50, 0.90, 0.50]);
+});
+
+test('new grass and leaf handfuls are distinct at the shown precision; earlier saved readings stay the same', () => {
+  const saved=record(44,[['grass',1],['leaves',1]]), latest={...saved,modelVersion:2};
+  const readouts=st=>L.tableRows(st).map(r=>[r.massBefore,r.tempRise,r.btbAfter]);
+  // Independent reference: seed 44 reproduced the exact audit tie on the old model.
+  assert.deepEqual(readouts(saved),[[4.1,3,2.9],[4,3,2.9]]);
+  assert.deepEqual(readouts(latest),[[4.1,3,2.9],[7,5,3.4]]);
+  assert.deepEqual(readouts(JSON.parse(JSON.stringify(L.cleanState(latest)))),readouts(latest));
+  // For the new nominal leaf sample: 7 × .90 × 16 × .35 / 8 = 4.41°C.
+  // BTB: 2 + 4(1 - exp(-7 × .90 × .45 × .60 / 3.5)) ≈ 3.54.
+  const leaves=SEEDS.flatMap(seed=>[1,2,3].map(n=>L.burnResult(seed,'leaves',n)));
+  near(leaves.reduce((sum,row)=>sum+row.dT,0)/leaves.length,4.41,0.12);
+  near(leaves.reduce((sum,row)=>sum+row.btbAfter,0)/leaves.length,3.54,0.08);
+  for(const seed of SEEDS)for(const n of [1,2,3]){
+    const g=L.burnResult(seed,'grass',n), l=L.burnResult(seed,'leaves',n);
+    assert.ok(l.btbAfter>g.btbAfter&&l.massBefore>g.massBefore&&l.tempRise>=g.tempRise);
+  }
 });
 
 test('BTB: hand-computed readings, labels and colors', () => {

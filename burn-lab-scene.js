@@ -15,7 +15,7 @@
    droplets under the dome, the BTB color in the dish, the laser thermometer reading and the balance all come from the model state at that moment, so the picture always matches the numbers. Labels use computed
    geometry: each leader line ends in a dot on the structure it names.
    Saved: api.saveState('burn', { seed, fuel, current:{fuel,n,startedAt,skipped}|null, records:[{fuel,n,obs:[chip ids]}] }). Every number is recomputed
-   from seed + fuel + sample number (B2BurnLogic.burnResult), so nothing in a table can go stale. */
+   from seed + fuel + sample number + the saved model version (B2BurnLogic.burnResult), so nothing in a table can go stale. */
 (function () {
   'use strict';
   const L = window.B2BurnLogic;
@@ -53,24 +53,24 @@
     function view() {
       const cur = st && st.current;
       if (!cur && st?.review) {
-        const res = L.burnResult(st.seed, st.review.fuel, st.review.n);
+        const res = L.burnResult(st.seed, st.review.fuel, st.review.n, L.versionFor(st));
         return { phase: 'finished', res, sim: L.stateAt(res, res.runS), t: res.runS, read: true, saved: true };
       }
       if (cur) {
-        const res = L.burnResult(st.seed, cur.fuel, cur.n), t = L.simSeconds(cur.startedAt, Date.now(), cur.skipped, res.runS), phase = t >= res.runS ? 'finished' : 'running';
+        const res = L.burnResult(st.seed, cur.fuel, cur.n, L.versionFor(st)), t = L.simSeconds(cur.startedAt, Date.now(), cur.skipped, res.runS), phase = t >= res.runS ? 'finished' : 'running';
         return { phase, res, sim: L.stateAt(res, t), t, read: phase === 'finished' && !!cur.after };
       }
-      const n = sampleNo(pending) || L.MAX_SAMPLES, res = L.burnResult(seedNow(), pending, n), w = st && st.weighed;
+      const n = sampleNo(pending) || L.MAX_SAMPLES, res = L.burnResult(seedNow(), pending, n, L.versionFor(st)), w = st && st.weighed;
       return { phase: 'ready', res, sim: L.stateAt(res, 0), t: 0, read: !!(w && w.fuel === pending && w.n === sampleNo(pending)) };
     }
-    function persist() { return api.saveState('burn', { seed: st.seed, fuel: st.fuel, current: st.current, records: st.records, weighed: st.weighed || null, review: st.review || null, updatedAt: Date.now() }); }
+    function persist() { return api.saveState('burn', { seed: st.seed, modelVersion: L.versionFor(st), fuel: st.fuel, current: st.current, records: st.records, weighed: st.weighed || null, review: st.review || null, updatedAt: Date.now() }); }
     const stageText = v => v.phase === 'ready' ? (v.read ? 'Weighed and read, ready to burn' : 'Ready: not weighed yet') : v.sim.stage === 'heating' ? 'Being lit with a lighter' : v.sim.stage === 'burning' ? 'Burning' : v.sim.stage === 'dying' ? 'Dying out' : v.read ? 'Weighed again' : 'Out and cooled';
     const secs = s => Math.round(s) + ' s';
 
     // ----- actions -----
     function weighBefore() {
       const n = sampleNo(pending); if (!n || (st && st.current)) return;
-      if (!st) st = { seed: api.seed('burn'), fuel: pending, current: null, records: [], weighed: null };
+      if (!st) st = { seed: api.seed('burn'), modelVersion: L.MODEL_VERSION, fuel: pending, current: null, records: [], weighed: null };
       st.fuel = pending; st.weighed = { fuel: pending, n }; persist(); render('[data-bn="burn"]');
       const r = view().res;
       api.announce('Weighed: ' + r.massBefore.toFixed(1) + ' grams. The laser thermometer aimed at the fuel reads ' + r.tempBefore + ' degrees Celsius. Now burn it.');
@@ -140,7 +140,7 @@
       const wb = h('button', { type: 'button', class: 'btn' + (v.read ? '' : ' btn--primary'), 'data-bn': 'weigh', text: !left ? 'All 3 samples burned' : v.read ? '✓ Weighed and read (before)' : 'Weigh and read temperature (before)' }); wb.disabled = !left || v.read; wb.addEventListener('click', weighBefore);
       const go = h('button', { type: 'button', class: 'btn' + (v.read ? ' btn--primary' : ''), 'data-bn': 'burn', text: 'Burn it (virtual)' }); go.disabled = !left || !v.read; go.addEventListener('click', burn);
       box.appendChild(h('div', { class: 'bn-setup' }, h('div', { class: 'bn-field' }, h('label', { for: 'bn-fuel', text: 'Fuel to burn' }), sel), h('div', { class: 'bn-actions' }, wb, go, resetControl())));
-      box.appendChild(readoutRow([['Sample', left ? (used ? 'Sample ' + left + ' of ' + L.fuelLabel(pending).toLowerCase() : L.massOf(pending) + ' g of ' + L.fuelLabel(pending).toLowerCase()) : 'none left'], ['Mass on the balance (before)', left && v.read ? v.res.massBefore.toFixed(1) + ' g' : '—'], ['Fuel temperature, laser (before)', left && v.read ? v.res.tempBefore + ' °C' : '—'], ['BTB color', L.btbText(L.START_BTB)]]));
+      box.appendChild(readoutRow([['Sample', left ? (used ? 'Sample ' + left + ' of ' + L.fuelLabel(pending).toLowerCase() : L.massOf(pending, L.versionFor(st)) + ' g of ' + L.fuelLabel(pending).toLowerCase()) : 'none left'], ['Mass on the balance (before)', left && v.read ? v.res.massBefore.toFixed(1) + ' g' : '—'], ['Fuel temperature, laser (before)', left && v.read ? v.res.tempBefore + ' °C' : '—'], ['BTB color', L.btbText(L.START_BTB)]]));
       box.appendChild(h('p', { class: 'bn-note', text: 'Step 1: weigh the handful and read the temperature. Step 2: burn it. Step 3: weigh and read the temperature again. ' + (st && st.records.length ? 'A second sample of the same fuel gives slightly different numbers.' : 'Simulated: a real burn takes minutes; here 6 seconds pass every second.') }));
       top.appendChild(box);
     }

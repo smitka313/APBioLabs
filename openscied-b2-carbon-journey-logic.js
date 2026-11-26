@@ -97,12 +97,28 @@ function routeRepeating(s) {
  const heard=new Set(s.rows.slice(0,-3).map(row=>row.card));
  return s.rows.slice(-3).every(row=>!!row.card&&heard.has(row.card));
 }
+// Selected because this separately seeded ten-roll example reaches both
+// consumer stations. No faces are rerolled or changed, and the learner's
+// seed, state and counts never enter this simulation.
+function exampleRows() {
+ const seed=25;
+ let sample=initial(seed);
+ for(let i=0;i<10;i++)sample=record({...sample,pending:die(seed,i)});
+ return sample.rows;
+}
+function consumerExample() {
+ const rows=exampleRows(), first=rows.findIndex(r=>r.card==='pHerb');
+ return rows.slice(first).filter(r=>r.from!==r.to);
+}
+function soilStayStreak(s) {
+ const tail=s.rows.slice(-3);
+ return tail.length===3&&tail.every(row=>row.from==='soil'&&row.to==='soil');
+}
 // A Soil loop should surface a missing consumer example early. This is a
 // separate evidence queue; no reference card can move an atom or add a roll.
 function coverageQueue(s) {
  const missing=missingCoverage(s);
- const tail=s.rows.slice(-3);
- if(s.coverageCheckpoint!=='repeat'||tail.length!==3||!tail.every(row=>row.from==='soil'&&row.to==='soil'))return missing;
+ if(s.coverageCheckpoint!=='repeat'||!soilStayStreak(s))return missing;
  const consumer=missing.find(card=>card.from==='herbivores'||card.from==='omnivores');
  return consumer?[consumer,...missing.filter(card=>card!==consumer)]:missing;
 }
@@ -175,4 +191,4 @@ function readSaved(raw){
  } catch {return null;}
 }
 function restore(raw,seed){return readSaved(raw) ?? initial(seed);}
-return {stations,matter,energy,die,initial,current,outcome,record,totals,tour,missingCoverage,coverageQueue,routeRepeating,energyLabel,energyMeaning,cardText,readSaved,restore};});
+return {stations,matter,energy,die,initial,current,outcome,record,totals,tour,missingCoverage,coverageQueue,routeRepeating,exampleRows,consumerExample,soilStayStreak,energyLabel,energyMeaning,cardText,readSaved,restore};});

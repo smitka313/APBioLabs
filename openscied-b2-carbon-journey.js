@@ -161,11 +161,8 @@
       const example = document.createElement('details'), title = document.createElement('summary'), description = document.createElement('p'), route = document.createElement('p');
       example.className = 'journey-question-evidence';
       title.textContent = 'Example journey for solo work';
-      description.textContent = 'Ten example rolls using the same rules. Repeated stations mean the atom stayed. This example does not change your journal or totals.';
-      const seed = 70;
-      let sample = L.initial(seed);
-      for (let i = 0; i < 10; i++) sample = L.record({ ...sample, pending:L.die(seed, i) });
-      route.textContent = ['Atmosphere', ...sample.rows.map(r => name(r.to))].join(' → ');
+      description.textContent = 'Ten separate example rolls, selected to show how carbon can move through both animal stations. The example follows the same rules. Repeated stations mean the atom stayed; none of these rolls count toward your totals.';
+      route.textContent = ['Atmosphere', ...L.exampleRows().map(r => name(r.to))].join(' → ');
       example.append(title, description, route); article.append(example);
     }
     article.append(input); $('#questions').append(article);
@@ -269,10 +266,17 @@
     const missing = L.coverageQueue(state);
     const review = state.coverageCheckpoint ? missing[0] : null;
     $('#coverage-panel').hidden = $('#coverage-continue').hidden = !review;
+    const showContrast = !!review && state.coverageCheckpoint === 'repeat' && L.soilStayStreak(state);
+    $('#coverage-contrast').hidden = !showContrast;
+    $('#coverage-continue').setAttribute('aria-describedby', 'coverage-reason coverage-route coverage-card' + (showContrast ? ' coverage-contrast' : ''));
+    if (showContrast) {
+      const steps = L.consumerExample();
+      $('#coverage-contrast-route').textContent = [steps[0].from, ...steps.map(r => r.to)].map(name).join(' → ');
+    }
     if (review) {
       $('#coverage-reason').textContent = state.coverageCheckpoint === 'repeat' ?
         (L.current(state) === 'soil' && ['herbivores','omnivores'].includes(review.from)
-          ? 'Your atom stayed in Soil and rock. Look at how carbon moves through animals on this reference card. Your dice, location and journal stay the same.'
+          ? 'Your atom stayed in Soil and rock. Compare the separate route below to see how carbon could move through animals. Your dice, location and journal stay the same.'
           : 'Your atom has stayed in one place or repeated a route. Read a card from another part of the cycle before your next roll. This does not change your dice or journal.') :
         (missing.length === 1 ? 'One reference card left. Reading it completes the Journey and unlocks the optional Budget.' :
           missing.length + ' reference cards left before you can finish the Journey and unlock the optional Budget. No extra rolls are needed.');
