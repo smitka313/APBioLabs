@@ -117,10 +117,20 @@ const T=require('./_h'),assert=require('node:assert/strict'),fs=require('node:fs
     }),'disabled dashboard controls use a legible solid surface');
     const atlas=p.locator('.dashboard-hero-art');
     assert.equal(await atlas.getAttribute('src'),'assets/bench-field-atlas.svg');
-    assert(await atlas.evaluate(async img=>{
+    const banner = await atlas.evaluate(async img=>{
       await img.decode();
-      return img.width/img.height>=5 && img.height<220;
-    }),'OpenSciEd uses the compact field-guide plate instead of the full-height panorama');
+      const {width,height}=img.getBoundingClientRect();
+      return {width,height,src:new URL(img.currentSrc).pathname};
+    });
+    if(width<=580){
+      assert.equal(banner.src,'/assets/bench-field-atlas-mobile.svg');
+      assert.ok(banner.height>=140 && banner.height<250 && Math.abs(banner.height-banner.width*272/600)<=1,
+        'the phone atlas is tall enough to read without taking over the screen');
+    }else{
+      assert.equal(banner.src,'/assets/bench-field-atlas.svg');
+      assert.ok(banner.width/banner.height>=5 && banner.height<220,
+        'tablet and desktop retain the compact panoramic atlas');
+    }
     await verifyFooter(!dark);await layout('openscied');assert.equal(await p.evaluate(()=>document.documentElement.dataset.theme),theme.toLowerCase());
     await p.getByRole('link',{name:'Biology Lab Bench home'}).click();await p.waitForURL('**/index.html');
     const ose=p.getByRole('link',{name:/Explore OpenSciEd activities/});await ose.click();await p.waitForURL('**/openscied-dashboard.html');
