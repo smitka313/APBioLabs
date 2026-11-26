@@ -1183,3 +1183,70 @@ html[data-openscied] nav:is(
   border-color: var(--accent);
   box-shadow: inset 0 -3px 0 var(--accent);
 }
+
+/* OpenSciEd screen-only finish: consistent targets, without changing the
+   anchors, button state, local unlock hints, or printing. */
+@media screen {
+  html[data-openscied] nav:is(.mx-pages, .cc-nav, .rp-steps, .journey-tabs, .cr-steps,
+    .sd-steps, .hb-steps, .rg-steps, .ju-nav, .wc-nav, .wb-tabs, .th-tabs, .ba-steps, .ice-nav, .hy-nav) {
+    display: grid;
+    --ose-nav-columns: 3;
+    grid-template-columns: repeat(var(--ose-nav-columns), minmax(0, 1fr));
+    align-items: stretch;
+    gap: .35rem;
+  }
+  html[data-openscied] nav:is(.rp-steps, .journey-tabs, .cr-steps, .sd-steps, .hb-steps,
+    .rg-steps, .ju-nav, .wc-nav, .wb-tabs, .th-tabs, .ba-steps, .ice-nav, .hy-nav) {
+    grid-auto-rows: 1fr;
+  }
+  html[data-openscied] nav:is(.mx-pages, .cc-nav, .rp-steps, .journey-tabs, .cr-steps,
+    .sd-steps, .hb-steps, .rg-steps, .ju-nav, .wc-nav, .wb-tabs, .th-tabs, .ba-steps, .ice-nav, .hy-nav):has(> button:nth-of-type(4)) {
+    --ose-nav-columns: 4;
+  }
+  html[data-openscied] nav.sd-steps { --ose-nav-columns: 2; }
+  html[data-openscied] nav:is(.mx-pages, .cc-nav) > :is(#save-state, #cc-save-status) {
+    grid-column: 1 / -1;
+    justify-self: end;
+    margin: 0;
+  }
+  html[data-openscied] nav:is(.mx-pages, .cc-nav, .rp-steps, .journey-tabs, .cr-steps,
+    .sd-steps, .hb-steps, .rg-steps, .ju-nav, .wc-nav, .wb-tabs, .th-tabs, .ba-steps, .ice-nav, .hy-nav, .dw-stage-nav) > button {
+    box-sizing: border-box;
+    min-inline-size: 0;
+    padding-inline: .35rem;
+    white-space: normal;
+    overflow-wrap: normal;
+    text-wrap: balance;
+    justify-content: center;
+    text-align: center;
+  }
+  /* A tall, wrapping sticky bar can mask controls below it. Keep long
+     lesson rails compact; their existing targets already meet 24px. */
+  html[data-openscied] nav.step-nav[aria-label="Activity steps"]:not(:has(li:nth-child(10))) li > a[href^="#"] {
+    min-block-size: 42px;
+    font-weight: 700;
+  }
+  html[data-openscied] nav.step-nav[aria-label="Activity steps"] .n { flex-shrink: 0; }
+  html[data-openscied] :is(button.btn, nav:is([aria-label="Activity steps"], [aria-label="Activity sections"],
+    [aria-label="Investigation steps"], [aria-label="Investigation sections"], [aria-label="Workshop steps"]) button):is(:disabled, [aria-disabled="true"]) {
+    opacity: 1;
+    filter: none;
+    color: var(--muted);
+    background: var(--surface-2);
+    border: 1px solid color-mix(in srgb, var(--muted) 72%, var(--line));
+    box-shadow: none;
+  }
+  .ose-model-limit {
+    margin: .55rem 0 .8rem;
+    padding: .45rem .65rem;
+    border-inline-start: 3px solid var(--accent);
+    background: var(--surface-2);
+    color: var(--ink);
+    font-size: .9rem;
+    line-height: 1.45;
+  }
+  @media (max-width: 560px) {
+    html[data-openscied] nav:is(.cc-nav, .journey-tabs, .hb-steps, .rg-steps, .wb-tabs,
+      .th-tabs, .ba-steps, .ice-nav, .hy-nav):has(> button:nth-of-type(4)) { --ose-nav-columns: 2; }
+  }
+}

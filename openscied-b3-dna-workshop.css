@@ -898,10 +898,13 @@
   main textarea:not([readonly]) { field-sizing:content; height:auto; max-height:none; }
 }
 
-/* Keep two even rows until all six full step names have room side by side.
-   Wrapping between words keeps the process names readable. */
+/* Separate process names from their actions; keep every target the same height. */
 .dw-stage-nav { grid-auto-rows: 1fr; }
 .dw-stage-nav button { overflow-wrap: normal; text-wrap: balance; }
-@media (max-width: 800px) {
+.dw-stage-nav button small { display: block; font-size: .83em; margin-block-start: .2em; }
+@media (max-width: 1000px) {
   .dw-stage-nav { grid-template-columns: repeat(3,minmax(0,1fr)); }
+}
+@media (max-width: 480px) {
+  .dw-stage-nav { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
