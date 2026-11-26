@@ -179,9 +179,9 @@ function showModel(){
  $('round').textContent='Mating '+(r+1)+' of 10 · '+f.length+' of 4 variants revealed';
  $('flip').disabled=s.rolls>=40;
  $('flip').textContent=s.rolls===40?'All 40 flips recorded':s.rolls%4===0&&s.rolls>0?'Next mating · Flip for LYST':'Flip for '+D.traits[s.rolls%4].key;
- const left=4-s.rolls%4;
+ const left=4-s.rolls%4,nextMating=Math.floor(s.rolls/4)+1;
  $('remaining').hidden=$('shortcut-note').hidden=s.rolls===40;
- $('shortcut-note').textContent='Finish this mating flips the '+left+' '+(left===1?'coin still needed':'coins still needed')+' for mating '+(r+1)+'.';
+ $('shortcut-note').textContent='Finish this mating flips the '+left+' '+(left===1?'coin still needed':'coins still needed')+' for mating '+nextMating+'.';
  $('coin').textContent=s.rolls?(bits().at(-1)===0?'H':'T'):'?';
  $('cub').dataset.born=String(f.length===4);$('cub').dataset.coat=f[0]===1?'light':'mixed';
  $('inheritance').replaceChildren(table(['Gene','Polar contribution','Brown contribution','Model result'],D.traits.map((t,i)=>[t.key,t.polar,f[i]===undefined?'Not flipped':face(f[i])+': '+t.brown[f[i]],f[i]===undefined?'Waiting':D.phenotype(i,f[i])]),'Mating '+(r+1)+' model traits'));
