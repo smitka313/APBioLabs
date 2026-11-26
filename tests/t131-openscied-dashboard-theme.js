@@ -164,7 +164,16 @@ async function checkMixedVersionWorkspace(browser,site) {
           const before=(a,b)=>Boolean(document.querySelector(a).compareDocumentPosition(document.querySelector(b))&Node.DOCUMENT_POSITION_FOLLOWING);
           return before('.dashboard-masthead .bench-logo','.dashboard-student')&&before('.dashboard-student','.dashboard-activity');
         }),true,'return link and student workspace still come before activity cards');
-        assert.equal(await p.locator('.dashboard-hero-art').evaluate(img=>img.complete&&img.naturalWidth>0),true);
+        const panorama = await p.locator('.dashboard-hero-art').evaluate(async img => {
+          await img.decode();
+          const { width, height } = img.getBoundingClientRect();
+          return { file: new URL(img.currentSrc).pathname.split('/').pop(), width, height };
+        });
+        const isPhone = width <= 580;
+        assert.equal(panorama.file, isPhone ? 'bench-field-atlas-mobile.svg' : 'bench-field-atlas.svg',
+          'phones show the two-row atlas without changing the tablet or desktop artwork');
+        const ratio = isPhone ? 272 / 600 : 226 / 1200;
+        assert.ok(Math.abs(panorama.height - panorama.width * ratio) <= 1, 'banner is not stretched or cropped');
         const unit1=p.locator('[aria-labelledby="unit1"]');
         const geometry=await unit1.locator('article').evaluateAll(cards=>cards.map(c=>{
           const a=c.getBoundingClientRect(), b=c.querySelector('.dashboard-preview').getBoundingClientRect();
