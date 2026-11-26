@@ -129,7 +129,7 @@ const out=path.join(ROOT,'artifacts','screening');
     await p.reload();assert.match(await id('mobile-items').textContent(),/Ultrasound · Sonographer/);
     assert.equal(await id('story').locator('h4').textContent(),starter);
     await id('run').click();assert.equal(await id('stage').textContent(),'Step 3 of 3');
-    assert.match(await id('status').textContent(),/Choose a case and compare the two plans/);
+    assert.match(await id('status').textContent(),/Redesign recorded\. 0 of 3 comparisons checked\. Check the remaining cases/);
     assert.match(await id('decision-score').textContent(),/Answer its comparison correctly to fill that row/);
     assert.equal(await id('story').locator('h4').textContent(),starter);
     assert.match(await id('story').textContent(),/Hospital plan:.*Redesign:/s);

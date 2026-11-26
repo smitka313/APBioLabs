@@ -112,11 +112,6 @@
  <div id="sd-map-event" class="sd-map-event" hidden></div>
 </div>
 <p class="sd-hint">District map is not to scale. Patient cards show one-way distances.</p>
-<section class="sd-note sd-trip" id="sd-trip-itinerary" aria-labelledby="sd-trip-heading" hidden>
- <h4 id="sd-trip-heading"></h4>
- <ol id="sd-trip-stops"></ol>
- <p id="sd-trip-result"></p>
-</section>
 <div id="sd-quick" class="sd-supply" hidden>
  <p><strong>Move the ultrasound team.</strong> The machine and its trained operator go together. Screening stays at the hospital.</p>
  <div class="sd-team-actions"><button type="button" class="sd-piece sd-team" id="sd-tool-team" aria-pressed="false"><span aria-hidden="true">✚</span><strong>Ultrasound team</strong><small></small></button><button type="button" class="btn" id="sd-move-team">Move team to mobile clinic</button></div>
@@ -126,6 +121,11 @@
  <p>Try moving screening or adding ride vouchers if the first redesign can’t reach everyone. Your last results stay visible until you run an updated plan. The machine and sonographer must be together.</p>
  <div id="sd-tools"></div><button type="button" class="btn" data-zone="rack">Return selected piece to rack</button>
 </details>
+<section class="sd-note sd-trip" id="sd-trip-itinerary" aria-labelledby="sd-trip-heading" hidden>
+ <h4 id="sd-trip-heading"></h4>
+ <ol id="sd-trip-stops"></ol>
+ <p id="sd-trip-result"></p>
+</section>
 </div>
 <aside class="sd-side">
  <section class="sd-ledger sd-command"><p class="sd-stage" id="sd-stage">Step 1 of 3</p><h3 id="sd-action-title" tabindex="-1">Watch the hospital plan</h3><p id="sd-action-help">Follow one patient on the map.</p><span id="sd-run-dock"><button type="button" class="btn btn--primary" id="sd-run">Run hospital plan</button></span><p id="sd-setup-note" class="sd-note" hidden></p><button type="button" class="btn" id="sd-summary-link" hidden>See what changed ↓</button></section>
