@@ -67,8 +67,13 @@
     catch (_) { return 'unavailable'; }
   }
   const staleEditorMessage = 'This device was cleared in another tab. Reload this page before saving or signing in.';
+  const reportConflictMessage = 'This lab’s saved work changed in another tab. Open the tab with your latest work, or reload this tab before downloading a Word report.';
+  let peerLabChange = false;
   window.addEventListener('storage', e => {
-    if (IS_LAB && (e.key === HANDOFF_KEY || e.key === LAB_RESET_KEY) && staleEditor()) Lab.toast(staleEditorMessage, {type:'error', key:'handoff'});
+    if (!IS_LAB || (e.storageArea && e.storageArea !== localStorage)) return;
+    if ((e.key === HANDOFF_KEY || e.key === LAB_RESET_KEY) && staleEditor()) Lab.toast(staleEditorMessage, {type:'error', key:'handoff'});
+    if (e.key === null || (e.key?.startsWith(`aplab:${LAB_ID}:`) && e.key !== `aplab:${LAB_ID}:saved-at` &&
+        !(e.oldValue === null && /^(?:""|false)$/.test(e.newValue)))) peerLabChange = true;
   });
   function storageFailed() { if (storageBad) return; storageBad = true; setTimeout(function () { if (Lab._storageWarn) Lab._storageWarn(); }, 0); }
 
@@ -1219,7 +1224,6 @@
   const KEEP_PREFS = ['aplab:ui:', 'aplab:pref:']; // not personal: view mode, theme
   const lsKeys = () => { try { return Object.keys(localStorage); } catch (e) { return []; } };
   const lsRemove = k => { try { localStorage.removeItem(k); } catch (e) { /* blocked */ } };
-  const lsWrite = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* blocked */ } };
   // Match activity-key membership even on AP pages without the OpenSciEd toolkit.
   const openSciEdKey = k => k.startsWith('aplab:openscied:') ||
     k === 'aplab:openscied-b1-carrying-capacity:run-v1' || k === 'aplab:openscied-b1-serengeti:preview-v1';
@@ -1303,32 +1307,54 @@
     if (localStorage.getItem(HANDOFF_KEY) !== marker) throw new Error('Could not protect the device clear.');
     handoffEpoch = marker;
   }
-  function wipeSiteWork(keep, signOut, status) {
+  function wipeSiteWork(keep, signOut, status, next = {}) {
+    const discard = k => k.startsWith('aplab:') && !keep(k) && k !== 'aplab:student' && k !== HANDOFF_KEY;
+    const collect = () => Object.keys(localStorage).filter(discard);
+    const journal = [];
+    const change = (key, prior, value) => {
+      if (staleEditor() || localStorage.getItem(key) !== prior) throw new Error('A saved record changed.');
+      if (prior === value && key !== 'aplab:student') return;
+      journal.push({key, prior, value});
+      if (value === null) localStorage.removeItem(key);
+      else localStorage.setItem(key, value);
+      if (localStorage.getItem(key) !== value) throw new Error('Could not verify a saved record.');
+    };
     try {
-      // Validate/enumerate before changing anything, then block mounted writers.
-      const discard = k => k.startsWith('aplab:') && !keep(k) &&
-        k !== 'aplab:student' && k !== HANDOFF_KEY;
-      const collect = () => Object.keys(localStorage).filter(discard);
-      const drop = collect();
+      // Snapshot before invalidating other tabs. The guards are deliberately
+      // left in place even if the clear fails, so those tabs cannot write back.
+      const drop = collect().map(key => [key, localStorage.getItem(key)]);
+      const updates = Object.entries(next).map(([key, value]) => [key, localStorage.getItem(key), JSON.stringify(value)]);
+      const student = signOut ? localStorage.getItem('aplab:student') : null;
       invalidateOpenSciEdEditors();
-      noFlush = true; wiped = true;
-      for (const key of drop) localStorage.removeItem(key);
+      for (const [key, prior] of drop) change(key, prior, null);
+      for (const [key, prior, value] of updates) change(key, prior, value);
       if (staleEditor() || collect().length) throw new Error('Some saved work could not be cleared.');
       // Erase the identity last: never invite a new sign-in over earlier work.
-      if (signOut) {
-        localStorage.removeItem('aplab:student');
-        if (localStorage.getItem('aplab:student') !== null) throw new Error('The sign-in could not be cleared.');
-      }
-      if (Lab._allowLeave) Lab._allowLeave();
-      try { Lab.timelapse.eraseAll(); } catch (_) { /* Recorded runs use IndexedDB. */ }
-      try { Object.keys(sessionStorage).filter(k => k.startsWith('aplab:')).forEach(k => sessionStorage.removeItem(k)); } catch (_) {}
-      return true;
+      if (signOut) change('aplab:student', student, null);
     } catch (e) {
+      let restored = true;
+      for (const {key, prior, value} of journal.reverse()) {
+        try {
+          if (staleEditor()) { restored = false; break; }
+          const now = localStorage.getItem(key);
+          if (now === prior) continue;
+          if (now !== value) { restored = false; continue; }
+          if (prior === null) localStorage.removeItem(key);
+          else localStorage.setItem(key, prior);
+          if (localStorage.getItem(key) !== prior) restored = false;
+        } catch (_) { restored = false; }
+      }
       const text = e?.message === staleEditorMessage ? staleEditorMessage :
-        'Could not finish clearing saved work. Do not hand off this device yet. Check browser storage, then try again.';
+        restored ? 'Could not finish clearing saved work. Your saved work was kept. Do not hand off this device yet. Check browser storage, then try again.' :
+          'Could not finish clearing saved work. Some records could not be put back. Do not hand off this device yet. Check your backup before trying again.';
       if (status) status(text, true); else Lab.toast(text, {type:'error'});
       return false;
     }
+    noFlush = true; wiped = true;
+    if (Lab._allowLeave) Lab._allowLeave();
+    try { Lab.timelapse.eraseAll(); } catch (_) { /* Recorded runs use IndexedDB. */ }
+    try { Object.keys(sessionStorage).filter(k => k.startsWith('aplab:')).forEach(k => sessionStorage.removeItem(k)); } catch (_) {}
+    return true;
   }
   const keepSitePrefs = k => k !== OPENSCIED_RESUME_KEY && !k.startsWith(OPENSCIED_RESUME_KEY + ':') && KEEP_PREFS.some(p => k.startsWith(p));
   function doSignOut(status) {
@@ -1342,8 +1368,7 @@
     const idn = storedIdentity();
     const next = {};
     if (idn) LAB_IDS.forEach(id => { next[`aplab:dataset:${id}:${studentKey(idn)}`] = (+gstore.get(`dataset:${id}:${studentKey(idn)}`) || 1) + 1; });
-    if (!wipeSiteWork(k => keepSitePrefs(k) || k === 'aplab:tour' || k === 'aplab:anon' || k.startsWith('aplab:dataset:'), false, status)) return;
-    Object.entries(next).forEach(([k, v]) => lsWrite(k, v));
+    if (!wipeSiteWork(k => keepSitePrefs(k) || k === 'aplab:tour' || k === 'aplab:anon' || k.startsWith('aplab:dataset:'), false, status, next)) return;
     memBackup = null;
     sessionSet(FLASH_KEY, 'reset');
     location.reload();
@@ -1497,7 +1522,7 @@
           reportSaved();
         } catch (e) {
           failed = true;
-          if (!backupState.cancelled) say(e?.message === staleEditorMessage ? staleEditorMessage :
+          if (!backupState.cancelled) say([staleEditorMessage, reportConflictMessage].includes(e?.message) ? e.message :
             'Could not download the Word report. Nothing was erased. Try again or download a progress file before erasing.', true);
         } finally {
           setDownloadPending(false, failed);
@@ -1838,7 +1863,7 @@
     return { kind: 'table', head, rows, foot };
   }
   const chartHasData = o => (o.series || []).some(s => (s.points || []).some(p => p && isFinite(p.y)));
-  function collectReport() {
+  function collectReport(savedFields) {
     if (IS_LAB && staleEditor()) throw new Error(staleEditorMessage);
     const who = reportIdentity();
     const hd = $('.lab-header');
@@ -1858,6 +1883,7 @@
         }
         if (n.matches('table.data')) { const t = tableItem(n); if (t) items.push(t); return; }
         if (n.id === 'student-name' || !(n.tagName === 'TEXTAREA' || n.dataset.label)) return;
+        if (savedFields && n._bound) savedFields.push(['field:' + n.dataset.save, n.type === 'checkbox' ? n.checked : n.value]);
         items.push({ kind: 'answer', q: fieldLabel(n), a: fieldValue(n) });
       });
       if (PAGE.id === 'lab05' && sec.id === 'design' && typeof Lab.lab05ReportNotes === 'function') {
@@ -2080,11 +2106,14 @@
     open: openReport, close: closeReport,
     async docx(o = {}) {
       flushSaves();
-      const rep = collectReport();
-      // Both copies of the work must be captured before chart/GIF rendering yields.
+      const fields = [], rep = collectReport(fields);
+      // Before rendering, validate that already-saved peer edits did not make
+      // this tab’s displayed work and the embedded record disagree.
+      const payload = progressPayload(true);
+      if (peerLabChange || fields.some(([key, value]) =>
+        Object.hasOwn(payload.data, key) && payload.data[key] !== value)) throw new Error(reportConflictMessage);
       // makeResumeCode serializes the payload before its first await.
-      let embed = Promise.resolve('');
-      try { embed = makeResumeCode(progressPayload(true)).catch(() => ''); } catch (e) { /* optional metadata */ }
+      const embed = makeResumeCode(payload).catch(() => '');
       const includeTimelapse = o.timelapse != null ? o.timelapse : tlInclude();
       await renderCharts(rep);
       rep.stamp = reportStamp(rep);
@@ -2474,7 +2503,7 @@
         Lab.toast(`Downloaded ${name}`, { type: 'ok', announce: false });
         if (LIKELY_PREVIEW) note.hidden = false;
       } catch (e) {
-        if (e?.message === staleEditorMessage) say(staleEditorMessage, true);
+        if ([staleEditorMessage, reportConflictMessage].includes(e?.message)) say(e.message, true);
         else if (e?.message === 'docx-load') { say('Could not load the Word file tool. Check your internet connection, or use Save as PDF.', true); note.hidden = false; }
         else { console.error(e); say('Something went wrong building the Word file. Use Save as PDF instead.', true); }
       } finally { docxBtn.disabled = false; }
@@ -3683,7 +3712,7 @@
   async function nudgeDocx(btn) {
     btn.disabled = true;
     try { const name = reportFileBase() + '.docx', blob = await Lab.report.docx(); if (staleEditor()) throw new Error(staleEditorMessage); downloadBlob(blob, name); Lab.toast(`Downloaded ${name}`, { type: 'ok', announce: false }); removeBar(); reportSaved(); }
-    catch (e) { Lab.toast(e?.message === staleEditorMessage ? staleEditorMessage : e?.message === 'docx-load' ? 'Could not load the Word file tool. Check your internet connection, or get a transfer code.' : 'Could not build the Word file here. Get a transfer code instead.', { type: 'warn' }); btn.disabled = false; }
+    catch (e) { Lab.toast([staleEditorMessage, reportConflictMessage].includes(e?.message) ? e.message : e?.message === 'docx-load' ? 'Could not load the Word file tool. Check your internet connection, or get a transfer code.' : 'Could not build the Word file here. Get a transfer code instead.', { type: 'warn' }); btn.disabled = false; }
   }
   function nudgeCode(btn) {
     removeBar();

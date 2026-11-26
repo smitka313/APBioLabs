@@ -928,11 +928,16 @@
         const { keys, scope, version } = captureClear(clearTarget);
         if (version !== confirmedWork.version) { stopClear(changedWorkMessage); return; }
         const result = window.OpenSciEdSaveSession?.erase(localStorage, scope, keys);
-        if (!result?.ok) throw Error('Could not protect the reset');
+        if (!result?.ok) {
+          stopClear(result?.partial ?
+            'Could not clear all saved results, and some records could not be put back. Check your backup before trying again.' :
+            'Could not clear saved results. Your saved work was kept. Check browser storage and reopen this dialog.');
+          return;
+        }
         dialog.close();
         refresh(clearTarget ? clearTarget.name + ' results cleared. Other activities and your student sign-in are still saved.' : 'OpenSciEd results cleared. Your name, class period, and AP Biology work are still saved.');
       } catch (e) {
-        $('#openscied-clear-error').textContent = 'Could not clear all saved results. Check your browser storage settings and try again.';
+        stopClear('Could not check or clear saved results. Check browser storage and reopen this dialog.');
       }
     });
     // Snapshot before leaving the dashboard too, so even a fast first trip or a
