@@ -935,8 +935,8 @@
     const desc = describeRow(r,Number(answers.evidence));
     return 'Cumulative change: ' + signed(before) + ' → ' + signed(r.population) + ' (event change ' + signed(r.change) + ').' + (desc ? ' ' + desc : '');
   }
-  function submissionData() {
-    const rows=state?.log||[], summary=rawSummary(), seasons=summary.seasons||[], evidence=selectionText(rows);
+  const MODEL_QUESTION = 'How do event cards and hunts change the wildebeest population across the four seasons?';
+  function reportReadiness(seasons, evidence) {
     const complete=state?.step==='complete';
     const finishedSeasons=complete?4:seasons.filter(s=>Number.isFinite(s.end)).length;
     const missing=[];
@@ -947,6 +947,11 @@
     if(!evidence)missing.push('Choose an event or hunt record to use as evidence.');
     if(!answers.claim.trim())missing.push('Write your explanation.');
     if(!answers.limits.trim())missing.push('Describe what you would test again.');
+    return {status:recovering?'recovery':missing.length?'draft':'final',missing,finishedSeasons};
+  }
+  function submissionData() {
+    const rows=state?.log||[], summary=rawSummary(), seasons=summary.seasons||[], evidence=selectionText(rows);
+    const {status,missing,finishedSeasons}=reportReadiness(seasons,evidence);
     const checkRows=Object.entries(conceptProgress).flatMap(([id,response])=>{
       const check=window.SerengetiChecks?.get(id), choice=check?.choices.find(c=>c.id===response.choiceId);
       return choice?[[check.title,choice.label,response.correct?'Correct':'Try again',response.attempts]]:[];
@@ -958,6 +963,7 @@
       {title:'Event and hunt history',items:rows.length?[{type:'table',columns:['Season','Event or hunt','Event change','Cumulative change','What happened'],
         rows:rows.map((r,i)=>[seasonName(r.season),recordName(r),signed(r.change),signed(r.population),describeRow(r,i)])}]:[{type:'text',text:'No events recorded yet.'}]},
       {title:'My analysis',items:[
+        {type:'text',text:'Model investigation question: '+MODEL_QUESTION},
         ...(answers.question.trim()?[{type:'answer',prompt:'Our investigation question (optional)',value:answers.question}]:[]),
         {type:'answer',prompt:'Record chosen for the explanation',value:evidence},
         {type:'answer',prompt:'How did the event affect the wildebeest? Explain using the numbers.',value:answers.claim},
@@ -972,26 +978,31 @@
       'This is a group record. The recorder is the signed-in student, not a list of the players.'}]});
     return {title:'Serengeti Board Game',unit:'Unit B.1 · Lesson 7',
       source:'Adapted from OpenSciEd B.1 Lesson 7. The board game simulates change from the starting wildebeest population, not field counts. Dice model chance; births, available food and water, and predator population responses are not modeled.',
-      status:recovering?'recovery':missing.length?'draft':'final',missing,student:shared?null:recorder,recorder:shared?(recorder||{}):null,allowIdentityEdit:!shared,
+      status,missing,student:shared?null:recorder,recorder:shared?(recorder||{}):null,allowIdentityEdit:!shared,
       keyResults:[{label:'Seasons completed',value:finishedSeasons+' / 4'},
         ...(state?[{label:'Net modeled change',value:signed(summary.change),note:'Relative to the starting population; not a field count'}]:[]),
         {label:'Events and hunts recorded',value:rows.length}],sections};
   }
   function evidenceFile() {
     const rows = state ? state.log : [];
-    const summary = rawSummary();
+    const summary = rawSummary(), evidence=selectionText(rows), seasons=summary.seasons||[];
+    const {status,missing,finishedSeasons}=reportReadiness(seasons,evidence);
+    const statusLabels={draft:'In progress',final:'Activity complete',recovery:'Recovered work'};
     const who=preserveRaw?null:reportIdentity(), shared=roleSetup.mode!=='solo';
     const lines = ['Serengeti Board Game · Lesson 7','SIMULATED; evidence shows cumulative change from the starting population, not field counts.',
       (shared?'Group record · Recorded by: ':'Name: ')+(who?.name||'Not entered'),
-      'Class period: '+(who?.period||'Not entered'),'','Season totals'];
+      'Class period: '+(who?.period||'Not entered'),
+      'Report status: '+statusLabels[status], 'Seasons completed: '+finishedSeasons+' of 4',
+      ...(missing.length?['','Still to do or note:',...missing.map(item=>'• '+item)]:[]),
+      '','Season totals'];
     if (!summary.seasons?.length) lines.push('No season started yet.');
     (summary.seasons || []).forEach(s => lines.push(seasonName(s.season)+': '+signed(s.start)+' → '+signed(s.end == null ? summary.change : s.end)+' · Cards '+signed(s.cardChange)+' · Hunts '+signed(s.huntChange)));
     lines.push('','Event and hunt history');
     if (!rows.length) lines.push('No events recorded yet.');
     rows.forEach((r,i) => lines.push(seasonName(r.season)+' · '+recordName(r)+' · '+signed(r.change)+' · '+signed(r.population)+' cumulative · '+describeRow(r,i)));
-    lines.push('','Model investigation question: How do event cards and hunts change the wildebeest population across the four seasons?');
+    lines.push('','Model investigation question: '+MODEL_QUESTION);
     if(answers.question.trim())lines.push('Our investigation question: '+answers.question.trim());
-    lines.push('Evidence: '+selectionText(rows),'Explanation: '+answers.claim,'Further test: '+answers.limits);
+    lines.push('Evidence: '+evidence,'Explanation: '+answers.claim,'Further test: '+answers.limits);
     return {name:'Serengeti-game-evidence.txt',text:lines.join('\n')};
   }
   function preservedFile() {
@@ -1105,4 +1116,3 @@
   else if (state) qs('#sg-save').textContent = 'Progress saved on this device.';
   paint(false);
 })();
-

@@ -7,8 +7,9 @@ const { verifySaveConflict } = require('./openscied-b4-save-conflict-check');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 const { chromium } = require('playwright');
-const { serve, ROOT } = require('./_h');
+const { serve, ROOT, routeLibs } = require('./_h');
 
 const FILE = 'openscied-b4-hawksbeard.html';
 const SAVE = 'aplab:openscied:b4-hawksbeard:v1';
@@ -114,6 +115,7 @@ async function makeContext(browser, base, cfg) {
   // Avoid analytics and externally hosted font traffic in automated QA.
   await context.route('**/*', route => new URL(route.request().url()).origin === origin
     ? route.continue() : route.abort());
+  await routeLibs(context);
   // Exercise a direct activity link with no existing dashboard sign-in at 1366.
   if (cfg.width !== 1366) await context.addInitScript(() => {
     try {
@@ -405,6 +407,35 @@ async function confirmReport(page, state) {
     'copy fallback contains exactly the same report as the download');
   await page.keyboard.press('Escape');
   await dialog.waitFor({ state: 'hidden' });
+
+  const expectedPairs=await page.locator('[data-hb-answer]').evaluateAll(inputs=>inputs.map(i=>[
+    i.labels[0].textContent.replace(/\s+/g,' ').trim(),i.value
+  ]));
+  expectedPairs.push([
+    exact(await page.locator('#hb-denominator-check legend').textContent()),
+    exact(await page.locator('input[name="hb-denominator"]:checked').locator('xpath=ancestor::label[1]').textContent())
+  ]);
+  for(const [prompt,response] of expectedPairs) {
+    check(!!response&&report.includes(prompt+'\n'+response+'\n'),
+      'text download keeps the response with its exact prompt: '+prompt);
+  }
+  await page.getByRole('button',{name:'Preview report',exact:true}).click();
+  const wordPreview=page.locator('dialog.osr-dialog');
+  await wordPreview.getByText('More formats',{exact:true}).click();
+  const pending=page.waitForEvent('download',{timeout:15000});
+  await wordPreview.getByRole('button',{name:'Download Word (.docx)',exact:true}).click();
+  const word=await pending;
+  const xml=execFileSync('unzip',['-p',await word.path(),'word/document.xml'],{encoding:'utf8'});
+  const entities={amp:'&',lt:'<',gt:'>',quot:'"',apos:"'"};
+  const paragraphs=[...xml.matchAll(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)].map(([p])=>
+    [...p.matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)].map(([,t])=>t.replace(/&(amp|lt|gt|quot|apos);/g,(_,key)=>entities[key])).join(''));
+  for(const [prompt,response] of expectedPairs) {
+    const at=paragraphs.indexOf(prompt);
+    check(at>=0&&paragraphs[at+1]===response,
+      'Word download keeps the response with its exact prompt: '+prompt);
+  }
+  await wordPreview.getByRole('button',{name:'Close report',exact:true}).click();
+  await wordPreview.waitFor({state:'hidden'});
 }
 
 async function play(browser, base, cfg) {

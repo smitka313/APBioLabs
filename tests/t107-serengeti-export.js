@@ -53,6 +53,8 @@ async function download(page, button, filename) {
         await page.locator('#sg-other-downloads > summary').click();
         const report=await download(page,page.locator('#sg-download'),filename);
         assert.match(report,/SIMULATED/);
+        assert.match(report,/Report status: In progress\nSeasons completed: 0 of 4/);
+        assert.match(report,/Finish playing all four seasons/);
         assert.match(report,/Season totals\nWinter/);
         assert.match(report,/Event and hunt history\nWinter · Winter setup[^\n]*\nWinter · A hyena cub survives/);
         assert.match(report,/Model investigation question: How do event cards and hunts/);
@@ -63,6 +65,12 @@ async function download(page, button, filename) {
         assert.match(report,/Further test: A fictional next test\./);
         assert.match(await page.locator('#sg-download-status').textContent(),/Download requested/);
         assert.equal(await page.evaluate(k=>localStorage.getItem(k),KEY),raw);
+        await page.getByRole('button',{name:'Preview report',exact:true}).click();
+        const preview=page.locator('dialog.osr-dialog');
+        assert.match(await preview.innerText(),/Model investigation question: How do event cards and hunts/);
+        assert.match(await preview.innerText(),/A fictional question/);
+        await preview.getByRole('button',{name:'Close report',exact:true}).click();
+        await preview.waitFor({state:'hidden'});
         await page.locator('#sg-restart').click();
         const confirm=page.locator('#sg-confirm');
         await confirm.waitFor();
@@ -94,4 +102,3 @@ async function download(page, button, filename) {
     }
   } finally {await browser.close();site.close();}
 })().catch(err=>{console.error(err);process.exitCode=1;});
-
