@@ -97,18 +97,18 @@ function routeRepeating(s) {
  const heard=new Set(s.rows.slice(0,-3).map(row=>row.card));
  return s.rows.slice(-3).every(row=>!!row.card&&heard.has(row.card));
 }
-// Selected because this separately seeded ten-roll example reaches both
-// consumer stations. No faces are rerolled or changed, and the learner's
+// Selected because this separately seeded ten-roll example reaches all
+// seven stations, including both consumers. No faces are rerolled or changed, and the learner's
 // seed, state and counts never enter this simulation.
 function exampleRows() {
- const seed=25;
+ const seed=3423;
  let sample=initial(seed);
  for(let i=0;i<10;i++)sample=record({...sample,pending:die(seed,i)});
  return sample.rows;
 }
 function consumerExample() {
  const rows=exampleRows(), first=rows.findIndex(r=>r.card==='pHerb');
- return rows.slice(first).filter(r=>r.from!==r.to);
+ return rows.slice(first,first+3);
 }
 function soilStayStreak(s) {
  const tail=s.rows.slice(-3);

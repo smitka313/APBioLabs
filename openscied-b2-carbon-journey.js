@@ -161,7 +161,7 @@
       const example = document.createElement('details'), title = document.createElement('summary'), description = document.createElement('p'), route = document.createElement('p');
       example.className = 'journey-question-evidence';
       title.textContent = 'Example journey for solo work';
-      description.textContent = 'Ten separate example rolls, selected to show how carbon can move through both animal stations. The example follows the same rules. Repeated stations mean the atom stayed; none of these rolls count toward your totals.';
+      description.textContent = 'Ten separate example rolls, selected to show how carbon can move through both animal stations. The example follows the same rules. Repeated stations mean the atom stayed. This example does not change your journal or totals.';
       route.textContent = ['Atmosphere', ...L.exampleRows().map(r => name(r.to))].join(' → ');
       example.append(title, description, route); article.append(example);
     }
