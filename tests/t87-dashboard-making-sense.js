@@ -4,6 +4,7 @@
    Resume and the download include the Making Sense answers. */
 const T = require('./_h');
 const fs = require('node:fs');
+const {isDeepStrictEqual} = require('node:util');
 const KEY = 'aplab:openscied:b3-cell-cycle:v1';
 (async () => {
   const browser = await T.launch(), server = await T.serve();
@@ -28,14 +29,17 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
     T.ok(/3 of 31 responses written/.test(progress), 'dashboard counts the Making Sense answers: ' + progress);
     T.ok(/3 of 31 responses/.test(await d.locator('#openscied-resume-description').textContent()), 'Resume summary carries the same count');
     T.ok((await d.locator('#openscied-resume-link').getAttribute('href')) === 'openscied-b3-cell-cycle.html#cell-game', 'Resume opens the Cell-cycle game section (where Making Sense is)');
-    // 3. Download includes a readable copy of the Making Sense answers next to the raw saved work.
+    // 3. Download includes a readable copy of the Making Sense answers alongside the complete structured save.
     const dl = d.waitForEvent('download');
     await d.locator('#download-openscied-results').click();
     const payload = JSON.parse(fs.readFileSync(await (await dl).path(), 'utf8'));
     const r = payload.responses && payload.responses['cell-cycle'] || {};
     T.ok(Object.keys(r).length === 31 && r['ms-r2-q4'] === 'Broken p53 lets damaged cells divide' && r['ms-r1-g1-happened'] === 'We rolled for nutrients' && r['analysis-design'] === '',
       'download lists all 31 responses with the Making Sense answers');
-    T.ok(typeof payload.work[KEY] === 'string' && JSON.parse(payload.work[KEY]).fields['ms-limits-progress'] === 'Look at real data', 'raw saved work is still exported unchanged');
+    const savedRecord = await d.evaluate(key => JSON.parse(localStorage.getItem(key)), KEY);
+    T.ok(payload.format === 'openscied-saved-work-v2' &&
+      isDeepStrictEqual(payload.work[KEY], savedRecord) && payload.work[KEY].fields['ms-limits-progress'] === 'Look at real data',
+      'the v2 archive carries the complete saved record as structured JSON');
     // 4. An old save (no responseIds) still reads, against the full 31-field list.
     await d.evaluate(key => localStorage.setItem(key, JSON.stringify({ v: 1, trials: [{}], fields: { 'analysis-design': 'Fair', 'ms-r2-q1': 'More chance cards', 'ms-r2-q2': '  ' }, lastVisitedAt: 1 })), KEY);
     await d.reload();

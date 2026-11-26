@@ -3,6 +3,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const {isDeepStrictEqual} = require('node:util');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { chromium } = require('playwright');
@@ -607,9 +608,10 @@ async function dashboardRelease(browser, base) {
     await p.locator('#backup-before-openscied-clear').click();
     const copy = await copyPromise;
     const json = JSON.parse(await fs.readFile(await copy.path(), 'utf8'));
-    check(json.format === 'openscied-saved-work-v1' && sameList(Object.keys(json.work).sort(), [...keys].sort()) &&
-      keys.every(key => json.work[key] === saved[key]) && json.responses?.carrying?.claim === TEXT.claim,
-      'scoped backup includes all four exact carrying records and readable writing, but not neighboring activities');
+    check(json.format === 'openscied-saved-work-v2' && json.scope === 'activity' &&
+      sameList(Object.keys(json.work).sort(), [...keys].sort()) &&
+      keys.every(key => isDeepStrictEqual(json.work[key], JSON.parse(saved[key]))) && json.responses?.carrying?.claim === TEXT.claim,
+      'scoped v2 backup includes all four complete carrying records and readable writing, but not neighboring activities');
     await p.locator('#cancel-openscied-clear').click();
     check(await p.evaluate(snapshot => Object.entries(snapshot).every(([k, v]) => localStorage.getItem(k) === v), saved),
       'cancel leaves every carrying saved-work record untouched');
