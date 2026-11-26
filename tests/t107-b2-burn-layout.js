@@ -1,10 +1,10 @@
 /* Burning Fuels: layout at 390 px dark, 768, 1366 light and 1920, in several scene states (ready, mid-burn for peat and grass, finished and
-   unrecorded, all five recorded). Checks no sideways scroll, the canvas fits its container and is drawn, labels stay inside the canvas, nothing
+   unrecorded, all five recorded), plus the compact Overview. Checks no sideways scroll, the canvas fits its container and is drawn, labels stay inside the canvas, nothing
    important is under the sticky step bar, and no CLS on load. Screenshots go to SHOTS (default test-artifacts/).
    Run: NODE_PATH=$(npm root -g) node tests/t107-b2-burn-layout.js */
 const T = require('./_h');
 const fs = require('fs'), path = require('path');
-const OUT = process.env.SHOTS || path.join(T.ROOT, 'test-artifacts'); fs.mkdirSync(OUT, { recursive: true });
+const OUT = process.env.SHOTS || process.env.POLISH_SCREENSHOTS || path.join(T.ROOT, 'test-artifacts'); fs.mkdirSync(OUT, { recursive: true });
 const PAGE = 'openscied-b2-burn-lab.html', KEY = 'aplab:openscied:b2-burn-lab:v1';
 const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: /gc\.zgo\.at/.test(r.request().url()) ? 'application/javascript' : 'text/css', body: '' }));
 const go = async (p, id) => { await p.evaluate(h => { location.hash = h; }, id); await p.waitForFunction(h => document.querySelector('#' + h + '.is-current'), id); await p.waitForTimeout(250); };
@@ -44,6 +44,31 @@ const setBurn = async (p, fuel, frac, records, opts) => {
       await p.goto(server.url + PAGE); await p.waitForFunction(() => window.B2Burn && document.querySelector('.step.is-current')); await p.waitForTimeout(500);
       T.ok(await p.evaluate(() => window.__cls) <= 0.1, tag + ': CLS on load at most 0.1 (' + (await p.evaluate(() => window.__cls)).toFixed(3) + ')');
       const shot = async n => p.screenshot({ path: path.join(OUT, 'b2burn-' + tag + '-' + n + '.png'), fullPage: true });
+      await go(p, 'overview'); await check(p, tag + ' overview');
+      const layout = await p.locator('#overview').evaluate(overview => {
+        const cards = [...overview.querySelectorAll('.burn-overview-roadmap > li')].map(li => li.getBoundingClientRect());
+        const notes = [...overview.querySelectorAll('.burn-overview-notes > .callout')].map(el=>el.getBoundingClientRect());
+        const pager = overview.querySelector('.pager');
+        return {
+          cards: cards.map(rect=>({ top:rect.top, bottom:rect.bottom, left:rect.left, right:rect.right })),
+          notes: notes.map(rect=>({ top:rect.top, bottom:rect.bottom, left:rect.left, right:rect.right })),
+          minHeight: getComputedStyle(overview).minHeight,
+          tail: Math.round(overview.getBoundingClientRect().bottom - pager.getBoundingClientRect().bottom)
+        };
+      });
+      const inOrder = rects => rects.every((rect,index) => !index || (w >= 700
+        ? Math.abs(rect.top - rects[index-1].top) < 1 && rects[index-1].right < rect.left
+        : rects[index-1].bottom < rect.top));
+      T.ok(layout.cards.length === 3 && layout.notes.length === 2 && inOrder(layout.cards) && inOrder(layout.notes),
+        tag + ': three roadmap cards and both safety and dye notes are legible in reading order');
+      T.ok(layout.minHeight === '0px' && layout.tail >= 0 && layout.tail <= 42,
+        tag + ': Overview ends just after its pager instead of reserving a screen of clear space (' + JSON.stringify({ minHeight:layout.minHeight, tail:layout.tail }) + ')');
+      T.ok(await p.locator('#overview .pager-next').getAttribute('href') === '#ideas', tag + ': First ideas is the next Overview action');
+      await shot('overview');
+      await p.locator('#overview .pager-next').press('Enter');
+      await p.waitForSelector('#ideas.is-current', { state:'visible' });
+      T.ok(await p.locator('#ideas').evaluate(el => getComputedStyle(el).minHeight !== '0px'),
+        tag + ': walking to First ideas leaves other parts on the existing layout');
       await go(p, 'burn'); await check(p, tag + ' ready, not weighed'); await shot('ready-unweighed');
       await setBurn(p, 'peat', null, [], { weighed: true }); await check(p, tag + ' ready, weighed with the laser on the fuel'); await shot('ready');
       await laserCheck(p, tag + ' before', 'fuel');

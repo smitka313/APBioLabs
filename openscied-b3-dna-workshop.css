@@ -897,3 +897,11 @@
 @supports (field-sizing: content) {
   main textarea:not([readonly]) { field-sizing:content; height:auto; max-height:none; }
 }
+
+/* Keep two even rows until all six full step names have room side by side.
+   Wrapping between words keeps the process names readable. */
+.dw-stage-nav { grid-auto-rows: 1fr; }
+.dw-stage-nav button { overflow-wrap: normal; text-wrap: balance; }
+@media (max-width: 800px) {
+  .dw-stage-nav { grid-template-columns: repeat(3,minmax(0,1fr)); }
+}

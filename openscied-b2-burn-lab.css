@@ -16,6 +16,20 @@
 .resume-bar[hidden] { display: none; }
 .sim-tag { display: block; max-width: none; margin: 0; padding: 8px 12px; border-left: 4px solid var(--warn); background: var(--warn-soft); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
 
+/* Overview has its own compact roadmap. Simulation sections keep the shared
+   viewport-height pager treatment; a short welcome does not need it. */
+body.paged #overview.step.is-current { min-height: 0; }
+.burn-overview-notes, .burn-overview-roadmap { display: grid; gap: 10px; }
+.burn-overview-notes > *, .burn-overview-roadmap > li { min-width: 0; }
+.burn-overview-notes .callout { align-content: start; }
+.burn-overview-notes .callout p { margin: 0; }
+.burn-overview-roadmap { margin: 0; padding: 0; }
+.burn-overview-roadmap > li { list-style: none; }
+@media (min-width: 700px) {
+  .burn-overview-notes { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+  .burn-overview-roadmap { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 /* Scenes: reserve the space so nothing jumps while the model loads. */
 .scene-host { display: grid; gap: 8px; margin-top: 10px; }
 .scene-host canvas { display: block; width: 100%; height: auto; aspect-ratio: 960 / 340; min-height: 150px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface-2); }
