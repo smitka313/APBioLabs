@@ -431,6 +431,75 @@
     };
   }
 
+  // Open a local, report-only document on a direct user gesture. A native
+  // print prompt must not hold up the activity tab or run its print listeners.
+  // The snapshot has already passed the activity's export check.
+  function openPrintView(report, preview) {
+    let tab;
+    try {
+      tab = root.open?.('', '_blank');
+      if (!tab) return false;
+      tab.opener = null;
+      const view = tab.document;
+      view.documentElement.lang = doc.documentElement.lang || 'en';
+      view.title = report.title + ' — Printable report';
+      const viewport = view.createElement('meta');
+      viewport.name = 'viewport';
+      viewport.content = 'width=device-width,initial-scale=1';
+      const cssURL = new URL('openscied-submission-report.css', doc.baseURI);
+      let cssText = '';
+      // Reuse the same-origin rules already loaded in the activity. Some browsers
+      // won't finish a new stylesheet request in an isolated about:blank tab.
+      for (const sheet of Array.from(doc.styleSheets || [])) {
+        if (!sheet.href || new URL(sheet.href).pathname !== cssURL.pathname) continue;
+        try { cssText = Array.from(sheet.cssRules, rule => rule.cssText).join('\n'); }
+        catch (_) { /* Fall back to the normal stylesheet link. */ }
+        if (cssText) break;
+      }
+      const stylesheet = view.createElement(cssText ? 'style' : 'link');
+      if (cssText) stylesheet.textContent = cssText;
+      else {
+        stylesheet.rel = 'stylesheet';
+        stylesheet.href = cssURL.href;
+      }
+
+      const paper = view.importNode(preview, true);
+      const oldHeading = paper.querySelector('.osr-title');
+      const heading = view.createElement('h1');
+      heading.id = oldHeading.id;
+      heading.className = oldHeading.className;
+      heading.textContent = oldHeading.textContent;
+      oldHeading.replaceWith(heading);
+
+      const shell = node('main', 'osr-print-sheet');
+      shell.setAttribute('aria-labelledby', heading.id);
+      const tools = node('div', 'osr-tools');
+      const print = action('Print or save as PDF', true);
+      const help = node('p', 'osr-screen-help', 'Choose “Save as PDF” in the print window. Close this tab to return to your activity.');
+      const status = node('p', 'osr-live', cssText ? '' : 'Preparing the print layout…');
+      status.setAttribute('role', 'status');
+      print.disabled = !cssText;
+      if (!cssText) {
+        stylesheet.addEventListener('load', () => { print.disabled = false; status.textContent = ''; }, { once: true });
+        stylesheet.addEventListener('error', () => {
+          status.textContent = 'Could not load the print layout. Try opening this tab again, or download the Word report instead.';
+        }, { once: true });
+      }
+      print.addEventListener('click', () => {
+        try { tab.print(); }
+        catch (_) { status.textContent = 'Could not open the print window. Try using your browser’s Print command or downloading the Word report.'; }
+      });
+      tools.append(print, help, status);
+      shell.append(tools, paper);
+      view.head.append(viewport, printRunningStyle(report), stylesheet);
+      view.body.replaceChildren(shell);
+      return true;
+    } catch (_) {
+      tab?.close();
+      return false;
+    }
+  }
+
   let serial = 0;
 
   function mount(config) {
@@ -487,7 +556,10 @@
       const formats = node('details', 'osr-formats');
       formats.append(node('summary', '', 'More formats'), save);
       controls.append(print, close);
-      tools.append(controls, node('p', 'osr-screen-help', 'In the print window, choose “Save as PDF” to download a PDF file.'), formats, status);
+      const printHelp = config.printInNewTab
+        ? 'Opens a separate print tab so your activity stays open. Choose Print or save as PDF there.'
+        : 'In the print window, choose “Save as PDF” to download a PDF file.';
+      tools.append(controls, node('p', 'osr-screen-help', printHelp), formats, status);
       let preview = article(report, titleId), identityEditor;
       // Keep the captured work and timestamps immutable. Corrections affect only this preview
       // and its exports; they do not change the browser identity or the underlying record.
@@ -570,6 +642,12 @@
       checkPrint = validateNativePrint;
       print.addEventListener('click', () => {
         if (!canExport(true)) return;
+        if (config.printInNewTab) {
+          if (!openPrintView(report, preview)) {
+            message(status, 'Could not open the print tab. Allow pop-ups for this site or download the Word report instead.', true);
+          }
+          return;
+        }
         if (!root.print) { message(status, 'Printing is not available. Try downloading the Word file.', true); return; }
         try { root.print(); }
         catch (_) { message(status, 'Could not open the print window. Try downloading the Word file.', true); }

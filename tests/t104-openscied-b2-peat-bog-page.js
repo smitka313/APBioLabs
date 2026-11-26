@@ -3,6 +3,7 @@
    Run: NODE_PATH=$(npm root -g) node tests/t104-openscied-b2-peat-bog-page.js */
 const T = require('./_h');
 const fs = require('fs');
+const { execFileSync } = require('node:child_process');
 const PAGE = 'openscied-b2-peat-bog-lab.html', KEY = 'aplab:openscied:b2-peat-bog:v1';
 const SECTIONS = ['overview', 'bog', 'graph', 'zombie', 'warming', 'trials', 'model'];
 const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: /gc\.zgo\.at/.test(r.request().url()) ? 'application/javascript' : 'text/css', body: '' }));
@@ -170,6 +171,24 @@ const setRange = async (p, id, v) => { await p.evaluate(([i, x]) => { const r = 
       !await p.locator('#download-work').isVisible() && !await p.locator('#download-csv').isVisible() &&
       !await p.locator('#copy').isVisible() && !await p.locator('#print-work').isVisible(),
       'My trials has one classroom preview; old backups and table tools start collapsed');
+    await preview.click();
+    const dialog = p.locator('dialog.osr-dialog');
+    await dialog.getByText('More formats', { exact: true }).click();
+    const wordDownload = p.waitForEvent('download');
+    await dialog.getByRole('button', { name: 'Download Word (.docx)', exact: true }).click();
+    const word = await wordDownload;
+    const xml = execFileSync('unzip', ['-p', await word.path(), 'word/document.xml'], { encoding: 'utf8' });
+    const tables = xml.match(/<w:tbl>[\s\S]*?<\/w:tbl>/g) || [];
+    const climate = tables.find(x => x.includes('Warming since the 1800s'));
+    const seriesRows = climate?.match(/<w:tr>[\s\S]*?<\/w:tr>/g) || [];
+    T.ok(/Climate projection · simulated/.test(xml) && seriesRows.length === 17 &&
+      seriesRows[1].includes('>2025<') &&
+      ['2100', '521', '1.8'].every(value => seriesRows.at(-1).includes('>' + value + '<')),
+      'Word has all sixteen climate projection rows and their on-screen 2100 values');
+    T.ok(/Scenarios sent to the bog/.test(xml) && tables.some(x => x.includes('Bog summer temperature') && x.includes('>520<') && x.includes('>11<')),
+      'Word distinguishes the rounded bog inputs from the atmospheric projection');
+    await dialog.getByRole('button', { name: 'Close report', exact: true }).click();
+    await dialog.waitFor({ state: 'hidden' });
     await p.locator('#legacy-report-tools > summary').click();
     const dl = p.waitForEvent('download'); await p.click('#download-work'); const d = await dl;
     const j = JSON.parse(fs.readFileSync(await d.path(), 'utf8'));

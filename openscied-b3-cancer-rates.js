@@ -840,5 +840,5 @@
       ],sections};
   }
 
-  window.OpenSciEdSubmission?.mount({target:'#ose-submission-report',collect:submissionReport});
+  window.OpenSciEdSubmission?.mount({target:'#ose-submission-report',collect:submissionReport,printInNewTab:true});
 })();

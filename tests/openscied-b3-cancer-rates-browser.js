@@ -5,6 +5,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 const { chromium } = require('playwright');
 const { ROOT, serve } = require('./_h');
 
@@ -633,19 +634,46 @@ async function report(page, size, pair, michigan) {
   const wordSource=await dialog.locator('article').innerText();
   check(['Exhibit D','Exhibit E','It generally goes down.','Less common in neighborhoods with persistent poverty.','29.3%','12.6%','46.6%','58.2%'].every(x=>wordSource.includes(x)),
     'the same exhibits and exact selected answers appear in the Word report preview');
-  // Exercise the application print lifecycle without opening the operating-system dialog.
+  // Printing must not run on the live activity. This is a real PDF render of
+  // the isolated document; the system Save as PDF dialog is a separate manual check.
+  const identity = dialog.locator('.osr-identity-editor');
+  await invoke(identity.locator('summary'),size);
+  const pdfStudent = 'Cancer PDF Audit';
+  await identity.getByRole('textbox',{name:'Name',exact:true}).fill(pdfStudent);
+  await identity.getByRole('textbox',{name:'Class period',exact:true}).fill('3');
+  await invoke(identity.getByRole('button',{name:'Apply to this report',exact:true}),size);
   const beforePrint = await page.evaluate(key => localStorage.getItem(key), SAVE);
   await page.evaluate(() => {
     window.__auditPrintCount=0;
-    window.print=()=>{
-      window.__auditPrintCount++;
-      window.dispatchEvent(new Event('beforeprint'));
-      window.dispatchEvent(new Event('afterprint'));
-    };
+    window.print=()=>{ window.__auditPrintCount++; };
   });
+  const printTabReady = page.context().waitForEvent('page',{timeout:8000});
   await invoke(dialog.getByRole('button',{name:'Print or save as PDF',exact:true}),size);
-  check(await page.evaluate(()=>window.__auditPrintCount)===1,'completed Cancer Rates report invokes the print lifecycle');
-  check(await page.evaluate(key=>localStorage.getItem(key),SAVE)===beforePrint,'print lifecycle does not alter the completed activity record');
+  const printTab = await printTabReady;
+  try {
+    await printTab.waitForFunction(() => {
+      const print = document.querySelector('.osr-print-sheet button');
+      return print && !print.disabled;
+    });
+    check(await printTab.evaluate(() => window.opener === null && document.scripts.length === 0),
+      'print tab has no opener, activity scripts or analytics');
+    const printBody = clean(await printTab.locator('.osr-print-sheet article').innerText());
+    const required = [pdfStudent, 'It generally goes down.', 'Less common in neighborhoods with persistent poverty.',
+      '29.3%', '12.6%', '46.6%', '58.2%', LIMIT];
+    check(required.every(token=>printBody.includes(token)), 'local print document preserves identity, selections, evidence and limits');
+    const pdfPath=path.join(OUT,String(size.width)+'-report.pdf');
+    const pdf=await printTab.pdf({path:pdfPath,format:'Letter',printBackground:true,preferCSSPageSize:true});
+    check(pdf.subarray(0,5).toString()==='%PDF-' && pdf.length>1000,'Chromium generates a real printable PDF');
+    let pdfText;
+    try { pdfText=clean(execFileSync('pdftotext',[pdfPath,'-'],{encoding:'utf8'})); }
+    catch(error) { if(error.code!=='ENOENT') throw error; }
+    if(pdfText!==undefined){
+      check(required.every(token=>pdfText.includes(token)) && !pdfText.includes('Print or save as PDF'),
+        'actual PDF includes the evidence and excludes browser controls');
+    }
+    check(await page.evaluate(()=>window.__auditPrintCount)===0,'the live activity never invokes window.print()');
+    check(await page.evaluate(key=>localStorage.getItem(key),SAVE)===beforePrint,'opening and rendering the print report leave saved activity work intact');
+  } finally { await printTab.close(); }
   await invoke(dialog.getByRole('button',{name:'Close report',exact:true}),size);
   await page.reload();
   await visible(page,'explain');

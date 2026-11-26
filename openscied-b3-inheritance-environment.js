@@ -307,26 +307,31 @@
   }
 
   /* ---------- claim self-check and C-to-T ---------- */
-  const CLAIM_TEXT = { none: 'Pick a claim to begin. This is your own check, not a grade.', foundational: 'Foundational: add evidence and reasoning next.', linked: 'Linked: your claim has evidence. Add the reasoning and what the evidence cannot show.', organized: 'Organized: claim, evidence from your dishes and from the study or reading, reasoning, and a limit. (This checks how your response is organized, not whether each evidence choice is correct.)' };
+  const CLAIM_TEXT = { none: 'Pick a claim to begin. This is your own check, not a grade.', foundational: 'Foundational: add evidence and reasoning next.', linked: 'Linked: your claim has evidence. Add the reasoning and what the evidence cannot show.', organized: 'Organized: claim, evidence from your dishes and from the study or reading, reasoning, and a limit. Your selected statements about the dishes match your counted results. This is a self-check, not a grade.' };
   // Evidence chips about "my dishes" are checked against the student's own yeast table, so a statement the data do not show earns no credit.
   const EV_KEY = { 'cer-ev-1': 'more', 'cer-ev-2': 'dark', 'cer-ev-3': 'spf' };
-  function whose(id) { const b = EV_KEY[id] === 'dark' ? null : L.evidenceBasis(state.yeast && state.yeast.dishes)[EV_KEY[id]]; return b === 'sensitive' ? 'Your UV-sensitive dishes' : b === 'wild' ? 'Your wild-type dishes' : 'Your dishes'; }
+  function whose(id, basis) { const b = basis[EV_KEY[id]]; return b === 'sensitive' ? 'Your UV-sensitive dishes' : b === 'wild' ? 'Your wild-type dishes' : 'Your dishes'; }
   function renderClaim(speak) {
     const ck = id => $('#' + id).checked, claimEl = $('input[name="cer-claim"]:checked'), reason = $('input[name="cer-reason"]:checked');
     const dishes = state.yeast && Array.isArray(state.yeast.dishes) ? state.yeast.dishes : [], checks = L.evidenceChecks(dishes);
     const counted = dishes.filter(function (x) { return x && num(x.colonies); }).length;
     const basis = L.evidenceBasis(dishes), ok = {};
+    let unsupported = false, unverified = false;
     Object.keys(EV_KEY).forEach(function (id) {
       const v = checks[EV_KEY[id]], note = $('#' + id + '-note'), on = ck(id);
       ok[id] = on && v === true;
-      if (note) note.textContent = !on ? '' : v === true ? '✓ ' + whose(id) + ' show this.' : v === false ? '✕ ' + whose(id) + ' do not show this. Check your table.' : (counted ? 'Count more dishes to check this.' : 'Count your dishes first to check this.');
+      if (on && v === false) unsupported = true;
+      if (on && v == null) unverified = true;
+      if (note) note.textContent = !on ? '' : v === true ? '✓ ' + whose(id, basis) + ' show this.' : v === false ? '✕ ' + whose(id, basis) + ' do not show this. Check your table.' : (counted ? 'Count more dishes to check this.' : 'Count your dishes first to check this.');
     });
     const claimOk = !!claimEl && claimEl.value !== 'c', reasonOk = !!reason && reason.value === 'a';
     const flags = [claimOk, ok['cer-ev-1'] || ok['cer-ev-2'] || ok['cer-ev-3'], ck('cer-ev-4') || reasonOk, reasonOk, ck('cer-caveat')];
-    const level = L.claimLevel(flags), out = $('#cer-level');
+    const review = unsupported ? 'Review your evidence: at least one selected statement does not match your dishes. Compare it with your table and revise your choices.' :
+      unverified ? 'Check your evidence: count the dishes you need before using the selected statement.' : '';
+    const level = review ? 'review' : L.claimLevel(flags), out = $('#cer-level');
     const bad = claimEl && claimEl.value === 'c' ? 'Your dishes did change with UV, so “UV has no effect” does not fit. Try another claim. ' : reason && !reasonOk ? 'Yeast do not choose the dark. Think about what UV does to DNA. ' : '';
-    out.textContent = bad + CLAIM_TEXT[level]; out.dataset.level = level;
-    if (speak) announce(CLAIM_TEXT[level].split(':')[0]);
+    out.textContent = bad + (review || CLAIM_TEXT[level]); out.dataset.level = level;
+    if (speak) announce(bad + (review || CLAIM_TEXT[level].split(':')[0]));
   }
   function renderCto() {
     const out = $('#cto-result'), t = $('#cto-codon').value, pos = parseInt($('#cto-pos').value, 10), r = L.cToT(t, pos);
@@ -360,7 +365,7 @@
     const p = picks(), answered = p.filter(function (x) { return x.value; }), good = p.filter(function (x) { return x.result === 'correct'; });
     const graded = $$('main fieldset.mcq[data-correct], main fieldset.mcq[data-exit]').length;
     const ul = el('ul', 'report-checks');
-    [answered.length + ' of ' + p.length + ' choice questions answered (the dashboard also counts writing and ordering)', good.length + ' of ' + graded + ' checkable questions correct so far',
+    [answered.length + ' of ' + p.length + ' choice questions answered', good.length + ' of ' + graded + ' checkable questions correct so far',
       SCENE_IDS.filter(function (id) { return state[id]; }).length + ' of 6 interactive models used',
       state.question ? 'My question: ' + state.question.text : 'My question: not built yet'].forEach(function (t) { ul.appendChild(el('li', '', t)); });
     report.appendChild(ul);
@@ -460,9 +465,9 @@
     new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     if (window.matchMedia) { const m = matchMedia('(prefers-color-scheme: dark)'); if (m.addEventListener) m.addEventListener('change', redraw); }
     $$('main input, main textarea, main select').forEach(function (e) { e.addEventListener('change', save); e.addEventListener('input', save); });
-    $$('main fieldset.mcq[data-id]').forEach(function (fs) { fs.addEventListener('change', function () { renderChoice(fs, true); if (fs.dataset.id === 'qt-new') renderQuestion(false); if (/^cer-/.test(fs.dataset.id)) renderClaim(true); }); });
+    $$('main fieldset.mcq[data-id]').forEach(function (fs) { fs.addEventListener('change', function () { renderChoice(fs, true); if (fs.dataset.id === 'qt-new') renderQuestion(false); }); });
     $$('main fieldset.chipset').forEach(function (fs) { fs.addEventListener('change', function () { renderChips(fs, true); }); });
-    $('#cer').addEventListener('change', function () { renderClaim(false); });
+    $('#cer').addEventListener('change', function () { renderClaim(true); });
     ['qt-frame', 'qt-iv', 'qt-dv', 'qt-own'].forEach(function (id) { $('#' + id).addEventListener('input', function () { renderQuestion(true); save(); }); $('#' + id).addEventListener('change', function () { renderQuestion(true); save(); }); });
     ['cto-codon', 'cto-pos'].forEach(function (id) { $('#' + id).addEventListener('change', renderCto); });
     $('[data-order-reset]').addEventListener('click', function () { $('#order-meiosis-seq').value = ''; renderOrder(false); save(); announce('Order cleared.'); });

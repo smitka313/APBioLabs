@@ -154,7 +154,7 @@ test('Peat: sliders alone or duplicate trials cannot report full comparison; act
   const f = fixture('peat-bog-lab', { L: Peat, state, payload: () => ({
     student: f.box.reportIdentity(f.box.preservedSave), trials,
     graphAnswer: state.graphAnswer, climateTests: state.climateTests,
-    climate: { fossil: 10, forest: 100, year: 2070 }
+    climate: { fossil: 10, forest: 100, year: state.year || 2100 }
   }) });
   let report = f.report();
   assert.equal(report.status, 'draft');
@@ -165,8 +165,13 @@ test('Peat: sliders alone or duplicate trials cannot report full comparison; act
   };
   trials.push(testTrial(1, 75), testTrial(2, 75));
   assert.equal(f.report().status, 'draft');
+  const ref = f.report().sections.find(s => s.title === 'Climate projection · simulated');
+  assert.match(ref.items[0].text, /Default model settings, shown for reference/);
+  assert.deepEqual(ref.items[1].rows.at(-1), [2100, 521, '1.8']);
+  assert.equal(ref.items[1].rows.length, 16, 'view-only default uses the same 16 rows as the on-screen table');
   trials[1] = testTrial(2, 15);
   state.warmingUsed = true;
+  state.year = 2071;
   assert.equal(f.report().status, 'draft');
   assert.match(f.report().missing.join(' '), /Answer the question in Test one variable/);
   state.graphAnswer = 'At the lower water level I saw faster decomposition.';
@@ -174,11 +179,21 @@ test('Peat: sliders alone or duplicate trials cannot report full comparison; act
   report = f.report();
   assert.equal(report.status, 'final');
   assert.match(JSON.stringify(report), /At the lower water level/);
-  assert.deepEqual(item(report, 'Current settings: benchmark years and selected year').rows.map(r => r[0]), [2050, 2070, 2100]);
-  assert.deepEqual(item(report, 'Scenarios sent to the bog').rows.map(r => r.slice(0,3)), [[2100,12,90], [2050,10,100]]);
+  const projection = item(report, 'CO₂ and warming every five years, plus the selected year');
+  assert.deepEqual(projection.rows.map(r => r[0]), [2025,2030,2035,2040,2045,2050,2055,2060,2065,2070,2071,2075,2080,2085,2090,2095,2100]);
+  for (const [year, co2, warming] of projection.rows) {
+    const row = Peat.climate(10, 100)[year - Peat.Y0];
+    assert.equal(co2, Math.round(row.C)); assert.equal(warming, row.T.toFixed(1));
+  }
+  const sent = item(report, 'Scenarios sent to the bog').rows;
+  assert.deepEqual(sent.map(r => r.slice(0,3)), [[2100,12,90], [2050,10,100]]);
+  for (const [year, fossil, forest, , , co2, temp] of sent) {
+    const bog = Peat.bogForYear(Peat.climate(fossil, forest), year);
+    assert.deepEqual([co2, temp], [bog.co2, bog.temp]);
+  }
   assert.equal(item(report, 'Trial setup continued').rows[1][2], 15);
   assert.equal(item(report, 'Modeled outcomes').rows[1][1], trials[1].outputs.N);
-  assert.ok(named(report, 'Current climate scenario'));
+  assert.ok(named(report, 'Climate projection'));
   assert.equal(report.datasetId, undefined);
   f.handOff();
   assert.deepEqual(f.report().student, opening);

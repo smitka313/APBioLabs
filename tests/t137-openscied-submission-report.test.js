@@ -73,7 +73,7 @@ test('Word contract creates editable typed runs, tables and repeated headers wit
   assert.ok(findRow(document));
 });
 
-function mountedReport() {
+function mountedReport(options = {}) {
   const fs = require('node:fs');
   const vm = require('node:vm');
   const Guard = require('../openscied-save-session.js');
@@ -97,8 +97,19 @@ function mountedReport() {
     getClientRects() { return [1]; }
     getContext() { return null; }
   }
-  const doc = { body: new Node('body'), head: new Node('head'), createElement: tag => new Node(tag), querySelectorAll: () => [] };
-  const events = {}, downloads = [], printed = [], work = new Map();
+  function copyNode(n) {
+    const copy = Object.assign(new Node(n.tag), { className:n.className, id:n.id, textContent:n.textContent });
+    copy.append(...n.children.map(copyNode));
+    return copy;
+  }
+  const createDocument = () => ({ body: new Node('body'), head: new Node('head'), createElement: tag => new Node(tag),
+    documentElement: { lang:'en' }, importNode: copyNode, baseURI:'https://example.test/activity', querySelectorAll: () => [] });
+  const doc = createDocument();
+  if (options.localPrintCSS) doc.styleSheets = [{href:'https://example.test/openscied-submission-report.css?v=2',
+    cssRules:[{cssText:'.osr-paper { color: black; }'}]}];
+  const events = {}, downloads = [], printed = [], tabPrinted = [], work = new Map();
+  const printTab = { document:createDocument(), opener: {}, print: () => tabPrinted.push('print'), close() {} };
+  let popupAttempts = 0;
   let owner = { name: 'Original Student', period: '4' };
   const storage = { getItem: k => work.get(k) ?? null, setItem: (k, v) => work.set(k, v), removeItem: k => work.delete(k) };
   const key = 'aplab:openscied:b1-carrying:fixture';
@@ -114,16 +125,18 @@ function mountedReport() {
   class WordNode { constructor(options) { this.options = options; } }
   const window = {
     document: doc, print: () => printed.push(doc.body.querySelector('.osr-label').textContent),
+    open() { popupAttempts++; return options.popupBlocked ? null : printTab; },
     addEventListener: (key, fn) => { events[key] = fn; }, removeEventListener: key => delete events[key],
     URL: { createObjectURL: () => 'blob:test', revokeObjectURL() {} }, setTimeout() {},
     docx: new Proxy({ Packer: { toBlob: () => { startPack(); return pack; } } },
       { get: (obj, key) => key === 'then' ? undefined : obj[key] || WordNode }),
   };
-  vm.runInNewContext(fs.readFileSync(require.resolve('../openscied-submission-report.js'), 'utf8'), { window });
+  vm.runInNewContext(fs.readFileSync(require.resolve('../openscied-submission-report.js'), 'utf8'), { window, URL });
   const target = new Node('target'); doc.body.append(target);
-  window.OpenSciEdSubmission.mount({ target, collect }).open();
+  window.OpenSciEdSubmission.mount({ target, collect, printInNewTab:options.printInNewTab }).open();
   return {
-    doc, events, downloads, printed, packStarted, release,
+    doc, events, downloads, printed, packStarted, release, printTab, tabPrinted,
+    get popupAttempts() { return popupAttempts; },
     retire() {
       assert.ok(Guard.invalidate(storage).ok);
       storage.removeItem(key); owner = { name: 'Other Student', period: '2' };
@@ -164,4 +177,48 @@ test('Word packing revalidates the open snapshot before download', async () => {
   wordButton.click();
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(f.downloads, ['ecosystem-report-recovery.docx']);
+});
+
+test('opted-in Print opens a report-only tab and never prints the live activity', () => {
+  const f = mountedReport({ printInNewTab:true });
+  f.button('Print or save as PDF').click();
+  assert.equal(f.popupAttempts, 1);
+  assert.equal(f.printTab.opener, null);
+  assert.deepEqual(f.printed, []);
+  const sheet = f.printTab.document.body.querySelector('.osr-print-sheet');
+  assert.equal(sheet.querySelector('.osr-title').tag, 'h1');
+  assert.equal(sheet.querySelector('.osr-label').textContent, 'Activity complete');
+  assert.ok(sheet.all().some(n => n.textContent === 'Original Student'));
+  const print = sheet.all().find(n => n.tag === 'button');
+  const css = f.printTab.document.head.children.find(n => n.tag === 'link');
+  assert.equal(css.href, 'https://example.test/openscied-submission-report.css');
+  assert.equal(print.disabled, true);
+  css.handlers.load();
+  assert.equal(print.disabled, false);
+  print.click();
+  assert.deepEqual(f.tabPrinted, ['print']);
+  assert.deepEqual(f.printed, []);
+});
+
+test('a blocked print tab keeps the report preview and offers the Word fallback', () => {
+  const f = mountedReport({ printInNewTab:true, popupBlocked:true });
+  f.button('Print or save as PDF').click();
+  assert.equal(f.popupAttempts, 1);
+  assert.deepEqual(f.printed, []);
+  assert.ok(f.doc.body.all().some(n => /Allow pop-ups.*Word report/.test(n.textContent || '')));
+  assert.equal(f.doc.body.querySelector('.osr-label').textContent, 'Activity complete');
+});
+
+
+test('an isolated printable report works immediately when the activity already loaded its stylesheet', () => {
+  const f = mountedReport({ printInNewTab:true, localPrintCSS:true });
+  f.button('Print or save as PDF').click();
+  const sheet=f.printTab.document.body.querySelector('.osr-print-sheet');
+  const button=sheet.all().find(n=>n.tag==='button');
+  const head=f.printTab.document.head.children;
+  assert.equal(button.disabled,false);
+  assert.ok(head.some(n=>n.tag==='style' && n.textContent.includes('.osr-paper { color: black; }')));
+  assert.ok(!head.some(n=>n.tag==='link'),'no stylesheet request is needed in the opened tab');
+  button.click();
+  assert.deepEqual(f.tabPrinted,['print']);
 });
