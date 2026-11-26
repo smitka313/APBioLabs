@@ -17,7 +17,7 @@
     { id: 'ripple', name: 'Serengeti Ripple Effects', file: 'openscied-b1-ripple.html', key: PREFIX + 'b1-ripple:v1', clears: 'connections, prediction, run results, and written responses', progress: rippleProgress, ids: rippleResponseIds },
     { id: 'b2-burn', name: 'Burning Fuels: What Burns and Why', file: 'openscied-b2-burn-lab.html', key: PREFIX + 'b2-burn-lab:v1', clears: 'burn results and answers', progress: b2BurnProgress, ids: inhEnvResponseIds },
     { id: 'b2-fires', name: 'Fires: Peat, Decomposition & Earth\u2019s Tilt', file: 'openscied-b2-fires.html', key: PREFIX + 'b2-fires:v1', clears: 'model results and answers', progress: b2FiresProgress, ids: inhEnvResponseIds },
-    { id: 'peat-bog', name: 'Peat Bog Carbon Lab', file: 'openscied-b2-peat-bog-lab.html', key: PREFIX + 'b2-peat-bog:v1', clears: 'bog settings, recorded trials, the graph explanation, and global warming settings', progress: peatBogProgress, ids: noResponseIds },
+    { id: 'peat-bog', name: 'Peat Bog Carbon Lab', file: 'openscied-b2-peat-bog-lab.html', key: PREFIX + 'b2-peat-bog:v1', clears: 'bog settings, recorded trials, the graph explanation, and global warming settings', progress: peatBogProgress, ids: peatBogResponseIds },
     { id: 'carbon-journey', name: 'Carbon Atom Journey', file: 'openscied-b2-carbon-journey.html', key: PREFIX + 'b2-carbon-journey:v1', extraKeys: [CARBON_BUDGET_KEY], clears: 'carbon journey, budget trials, predictions and answers', progress: carbonJourneyProgress, ids: carbonResponseIds, answers: true },
     { id: 'cancer-rates', name: 'Cancer Rates Data Dive', file: 'openscied-b3-cancer-rates.html', key: PREFIX + 'b3-cancer-rates:v1', clears: 'prediction, case-file work, pinned comparisons, and written responses', progress: cancerRatesProgress, ids: cancerRatesResponseIds },
     { id: 'screening', name: 'Cancer Screening Design Lab', file: 'openscied-b3-screening.html', key: PREFIX + 'b3-screening:v1', clears: 'clinic plans and written recommendations', progress: screeningProgress, ids: screeningIds },
@@ -432,7 +432,7 @@
   // Peat Bog Carbon Lab (Unit B.2): an explanation is saved work, but only recorded trials count toward the comparison meter.
   const PEAT_SECTIONS = ['overview', 'bog', 'graph', 'zombie', 'warming', 'trials', 'model'];
   const PEAT_DEFAULTS = { tilt: 23.44, temp: 10, co2: 420, o2: 21, wet: 75, burn: 0 }, PEAT_CLIMATE = { fossil: 10, forest: 100, year: 2100 };
-  function noResponseIds() { return []; }
+  function peatBogResponseIds() { return ['graph-answer']; }
   function peatBogProgress(raw) {
     if (!raw) return { summary: 'Not started', started: false, section: 'overview', visited: 0 };
     let saved;

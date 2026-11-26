@@ -62,7 +62,25 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   T.ok(await p.evaluate(() => document.querySelector('main').hasAttribute('inert')), 'page behind is inert');
   const confirm = dlg.getByRole('button', { name: 'Sign out and erase' });
   T.ok(await confirm.isDisabled(), 'Sign out and erase starts disabled');
-  const [oseFile] = await Promise.all([p.waitForEvent('download'), dlg.getByRole('button', {name:'Download OpenSciEd backup'}).click()]);
+  const gate = dlg.locator('.dm-text');
+  await gate.fill('Jordan');
+  T.ok(await confirm.isEnabled(), 'a matching name enables erase before a backup starts');
+  let releaseArchive;
+  const archiveGate = new Promise(resolve => { releaseArchive = resolve; });
+  const archiveRoute = async route => { await archiveGate; await route.continue(); };
+  await p.route('**/openscied-dashboard.js', archiveRoute);
+  const downloadResult = p.waitForEvent('download');
+  try {
+    await dlg.getByRole('button', { name:'Download OpenSciEd backup' }).click();
+    T.ok(await confirm.isDisabled(), 'erase stays disabled while waiting for the backup script');
+    T.ok(/Erase is paused/.test(await dlg.locator('.tool-status').textContent()), 'the dialog explains why erase is disabled');
+    await gate.press('Enter');
+    T.ok((await dump(p))[OPENSCIED] === snap[OPENSCIED], 'Enter cannot erase saved work during backup');
+  } finally { releaseArchive(); }
+  const oseFile = await downloadResult;
+  await p.unroute('**/openscied-dashboard.js', archiveRoute);
+  T.ok(await confirm.isEnabled(), 'the same confirmation works once the backup download starts');
+  await gate.fill('');
   const ose = JSON.parse(require('fs').readFileSync(await oseFile.path(), 'utf8'));
   T.ok(ose.format === 'openscied-saved-work-v1' && ose.archiveRevision === 2 && ose.scope === 'browser' &&
     ose.student === null && JSON.parse(ose.work[OPENSCIED]).answers.claim === 'my migration evidence',
