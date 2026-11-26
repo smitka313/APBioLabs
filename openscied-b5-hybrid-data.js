@@ -48,6 +48,10 @@
   for(let i=0;i+3<results.length;i+=4)rows.push(results.slice(i,i+4));
   return rows;
  };
- const api={graph,interactions,family,traits,flip,flips,phenotype,cohort,generationYears:11.35};
+ const coinFlipDetails=(seed,count)=>flips(seed,count).map((bit,index)=>{
+  const gene=index%traits.length,trait=traits[gene];
+  return {mating:Math.floor(index/traits.length)+1,gene:trait.key,side:bit===0?'Heads':'Tails',simulatedTrait:phenotype(gene,bit)};
+ });
+ const api={graph,interactions,family,traits,flip,flips,phenotype,cohort,coinFlipDetails,generationYears:11.35};
  if(typeof module==='object')module.exports=api;else root.ArcticBearData=api;
 })(typeof globalThis==='object'?globalThis:this);

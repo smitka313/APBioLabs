@@ -1,6 +1,7 @@
 /* Data management: Sign out, Start over (all labs), Start over (one lab).
    Run: NODE_PATH=$(npm root -g) node tests/t24-signout.js  (set OUT=dir to keep screenshots) */
 const T = require('./_h');
+const {isDeepStrictEqual} = require('node:util');
 const OUT = process.env.OUT || require('os').tmpdir();
 const ME = { name: 'Jordan Lee', period: '3' };
 const OPENSCIED = 'aplab:openscied:b1-migration:v1';
@@ -82,9 +83,10 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   T.ok(await confirm.isEnabled(), 'the same confirmation works once the backup download starts');
   await gate.fill('');
   const ose = JSON.parse(require('fs').readFileSync(await oseFile.path(), 'utf8'));
-  T.ok(ose.format === 'openscied-saved-work-v1' && ose.archiveRevision === 2 && ose.scope === 'browser' &&
-    ose.student === null && JSON.parse(ose.work[OPENSCIED]).answers.claim === 'my migration evidence',
-    'AP sign-out saves an ownership-neutral OpenSciEd archive and preserves the raw work');
+  T.ok(ose.format === 'openscied-saved-work-v2' && ose.scope === 'browser' &&
+    ose.recordOwnership === 'not-verified' && !Object.hasOwn(ose, 'student') && isDeepStrictEqual(ose.exportedBy, ME) &&
+    isDeepStrictEqual(ose.work[OPENSCIED], JSON.parse(snap[OPENSCIED])),
+    'AP sign-out preserves every saved field and labels the downloader without assigning record ownership');
   T.ok(ose.datasetIds?.hawksbeard === 'HB-0000002A' &&
     ose.responses?.hawksbeard?.prediction === 'Fewer seeds land on soil in the city.',
     'AP sign-out includes the prefixed Dataset ID and readable response summary');
@@ -96,7 +98,7 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   const { exportedAt: apTime, ...apArchive } = ose;
   const { exportedAt: oseTime, ...dashboardArchive } = JSON.parse(require('fs').readFileSync(await dashboardFile.path(), 'utf8'));
   T.ok(oseFile.suggestedFilename() === dashboardFile.suggestedFilename() &&
-    require('node:util').isDeepStrictEqual(apArchive, dashboardArchive),
+    isDeepStrictEqual(apArchive, dashboardArchive),
     'AP sign-out and OpenSciEd dashboard export the same archive for the same browser work');
   await dashboard.close();
   await dlg.locator('.dm-title').focus();

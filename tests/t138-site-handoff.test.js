@@ -7,7 +7,8 @@ const dashboardSource=fs.readFileSync(root+'/openscied-dashboard.js','utf8');
 const guard=require(root+'/openscied-save-session.js');
 const OLD={name:'First Student',period:'3'}, NEW={name:'Next Student',period:'4'};
 const MIG='aplab:openscied:b1-migration:v1', GAME='aplab:openscied-b1-serengeti:preview-v1';
-const CAP='aplab:openscied-b1-carrying-capacity:run-v1', AP='aplab:lab02:answer';
+const CAP='aplab:openscied-b1-carrying-capacity:run-v1', AP='aplab:lab02:answer', FUTURES='aplab:openscied:b5-hybrid:v1';
+const futuresSource=fs.readFileSync(root+'/openscied-b5-hybrid-data.js','utf8');
 const EPOCH='aplab:pref:workspace-handoff:v1', RESUME='aplab:pref:openscied-resume:v1';
 function storage(seed={}) {
   const s={...seed}, blocked={};
@@ -50,10 +51,10 @@ function page(localStorage,pathname='/index.html', beforeScriptLoad=()=>{}, prog
     Blob,TextEncoder,TextDecoder,btoa,atob,URL:{createObjectURL:blob=>(downloads.push(blob),'blob:test'),revokeObjectURL:noop}};
   doc.head=new Element('head');
   doc.head.append=script=>{
-    assert.equal(script.src,'openscied-dashboard.js');
+    assert.ok(['openscied-dashboard.js','openscied-b5-hybrid-data.js'].includes(script.src));
     queueMicrotask(()=>{
-      if (beforeScriptLoad()===false) { script.onerror(); return; }
-      vm.runInNewContext(dashboardSource,env);
+      if (beforeScriptLoad(script.src)===false) { script.onerror(); return; }
+      vm.runInNewContext(script.src==='openscied-dashboard.js'?dashboardSource:futuresSource,env);
       script.onload();
     });
   };
@@ -67,17 +68,18 @@ function confirm(box,id='signout',typed='First'){
 const withStudent=(records={})=>storage({'aplab:student':JSON.stringify(OLD),...records});
 const parse=async blob=>JSON.parse(await blob.text());
 
-test('common sign-out sees OpenSciEd-only work and downloads exact raw values without claiming ownership',async()=>{
+test('common sign-out sees OpenSciEd-only work and downloads structured records and exact unreadable values without claiming ownership',async()=>{
   const raw=' {\n"unreadable": []';
   const s=withStudent({[MIG]:'{"v":1}',[GAME]:raw,[CAP]:'null','aplab:pref:theme':'light'});
   const p=page(s), dialog=p.Lab.data.signOut();
   assert.doesNotMatch(dialog.textContent,/No saved lab work/);
   const download=dialog.querySelector('.dm-openscied-backup'); assert.ok(download); await download.click();
   const payload=await parse(p.downloads[0]);
-  assert.deepEqual(payload.work,{[MIG]:'{"v":1}',[GAME]:raw,[CAP]:'null'});
-  assert.equal(payload.format,'openscied-saved-work-v1');
-  assert.equal(payload.archiveRevision,2);assert.equal(payload.scope,'browser');
-  assert.equal(payload.student,null);assert.deepEqual(payload.datasetIds,{});
+  assert.deepEqual(payload.work,{[MIG]:{v:1},[GAME]:{unreadable:true,raw},[CAP]:null});
+  assert.equal(payload.format,'openscied-saved-work-v2');
+  assert.equal(payload.scope,'browser');
+  assert.deepEqual(payload.exportedBy,OLD);
+  assert.equal(Object.hasOwn(payload,'student'),false);assert.equal(payload.recordOwnership,'not-verified');assert.deepEqual(payload.datasetIds,{});
   const d=dashboard(s); d.el('download-openscied-results').click();
   const dashboardPayload=await parse(d.downloads[0]);
   assert.deepEqual({...payload,exportedAt:null},{...dashboardPayload,exportedAt:null});
@@ -96,6 +98,30 @@ test('backup waiting for its script cannot download the next student’s work',a
   assert.equal(p.downloads.length,0);
   assert.match(dialog.querySelector('.tool-status').textContent,/cleared in another tab/);
   assert.equal(s.getItem(MIG),migWork('next student work'));
+});
+
+test('AP backup uses the shared Futures model and rechecks the workspace after loading it', async()=>{
+  const saved={v:1,id:'FE8D9975',rolls:5};
+  const records={[FUTURES]:JSON.stringify(saved)};
+  const original=withStudent(records), p=page(original,'/lab02.html');
+  const dialog=p.Lab.data.signOut();
+  await dialog.querySelector('.dm-openscied-backup').click();
+  const payload=await parse(p.downloads[0]);
+  assert.deepEqual(payload.work[FUTURES],saved);
+  assert.equal(payload.models['bear-hybrid'].coinFlips.length,5);
+  assert.equal(payload.models['bear-hybrid'].coinFlips[4].mating,2);
+  const replaced=withStudent(records);
+  const stale=page(replaced,'/lab02.html',src=>{
+    if(src!=='openscied-b5-hybrid-data.js')return;
+    confirm(page(replaced).Lab.data.signOut());
+    assert.equal(page(replaced).Lab.identity.set(NEW),true);
+    replaced.setItem(FUTURES,JSON.stringify({...saved,id:'FE8D9976'}));
+  });
+  const interrupted=stale.Lab.data.signOut();
+  await interrupted.querySelector('.dm-openscied-backup').click();
+  assert.equal(stale.downloads.length,0,'late model response cannot export the next workspace');
+  assert.match(interrupted.querySelector('.tool-status').textContent,/cleared in another tab/i);
+  assert.equal(JSON.parse(replaced.getItem(FUTURES)).id,'FE8D9976');
 });
 
 test('site sign-out invalidates old AP and OpenSciEd writers and removes the prior label before fresh sign-in',()=>{
@@ -345,7 +371,7 @@ for (const [name,open,id,word] of [
     assert.equal(s.getItem(MIG),original);
     assert.deepEqual(p.nav,[]);
     await pending;
-    assert.equal((await parse(p.downloads[0])).work[MIG],original);
+    assert.deepEqual((await parse(p.downloads[0])).work[MIG],JSON.parse(original));
     assert.equal(erase.disabled,false);
     assert.match(dialog.querySelector('.tool-status').textContent,/Check your browser’s downloads/);
     erase.click();
@@ -364,7 +390,7 @@ test('a failed backup preserves work and requires fresh confirmation; retry can 
   assert.match(dialog.querySelector('.tool-status').textContent,/Nothing was erased/);
   assert.equal(gate.value,''); assert.equal(erase.disabled,true);
   erase.click(); assert.equal(s.getItem(MIG),original);assert.equal(p.downloads.length,0);
-  await download.click();assert.equal((await parse(p.downloads[0])).work[MIG],original);
+  await download.click();assert.deepEqual((await parse(p.downloads[0])).work[MIG],JSON.parse(original));
   assert.equal(erase.disabled,true);
 });
 
@@ -385,9 +411,9 @@ test('both OpenSciEd archive paths include the Peat Bog graph explanation in rea
   await a.Lab.data.signOut().querySelector('.dm-openscied-backup').click();
   for(const file of [d.downloads[0],a.downloads[0]]){
     const payload=await parse(file);
-    assert.equal(payload.work[key],raw);
+    assert.deepEqual(payload.work[key],JSON.parse(raw));
     assert.equal(payload.responses['peat-bog']['graph-answer'],answer);
-    assert.equal(payload.student,null);
+    assert.equal(Object.hasOwn(payload,'student'),false);assert.equal(payload.recordOwnership,'not-verified');
   }
 });
 
@@ -548,7 +574,7 @@ test('AP sign-out must not erase a new OpenSciEd response after the backup start
   const s=withStudent({[MIG]:migWork('initial observation')}), p=page(s,'/ap-biology.html');
   const dialog=p.Lab.data.signOut();
   await dialog.querySelector('.dm-openscied-backup').click();
-  assert.equal((await parse(p.downloads[0])).work[MIG],migWork('initial observation'));
+  assert.deepEqual((await parse(p.downloads[0])).work[MIG],JSON.parse(migWork('initial observation')));
   const activity=guard.open(s,'b1-migration',[MIG]);
   assert.equal(activity.write(MIG,migWork('new observation')).ok,true);
   confirm(dialog);

@@ -3,6 +3,12 @@ on:
   pull_request:
     paths:
       - 'openscied-dashboard.html'
+      - 'openscied-dashboard.js'
+      - 'openscied-resume.js'
+      - 'openscied-save-session.js'
+      - 'tests/t147-openscied-resume-ledger.test.js'
+      - 'tests/t148-openscied-resume-tabs.js'
+      - 'tests/t77-openscied-dashboard.js'
       - 'openscied-dashboard.css'
       - 'tests/t131-openscied-dashboard-theme.js'
       - '.github/workflows/openscied-dashboard-theme.yml'
@@ -19,9 +25,11 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - run: node --test tests/openscied-dashboard.test.js
+      - run: node --test tests/openscied-dashboard.test.js tests/t138-site-handoff.test.js tests/t147-openscied-resume-ledger.test.js
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      - run: node tests/t148-openscied-resume-tabs.js
+      - run: node tests/t77-openscied-dashboard.js
       - run: node tests/t131-openscied-dashboard-theme.js
         env:
           OPENSCIED_DASHBOARD_SCREENSHOTS: artifacts/openscied-dashboard-theme
