@@ -590,3 +590,82 @@ test('an untouched field cannot overwrite a newer answer while a backup flushes 
   field.value='typed in this tab but timer has not run'; field.trigger('input');
   assert.equal(p.Lab.progressFile.payload().data['field:measurement'],'typed in this tab but timer has not run');
 });
+
+test('a tab open before a scoped reset must not restore over fresh answers',()=>{
+  const key='aplab:lab02:field:model',s=withStudent({[key]:'"before reset"'}),old=page(s,'/lab02.html'),p=page(s,'/lab02.html');
+  const file=backupFor(old,OLD);
+  const reset=p.Lab.data.startOverLab();
+  unlockWordDialog(reset.querySelector('#dm-startlab-gate'),null);
+  reset.querySelector('.dm-confirm').click();
+  const fresh=page(s,'/lab02.html');
+  fresh.Lab.store.set('field:model','fresh work after restart');
+  let denied=false;
+  try { old.Lab.progressFile.apply(file); } catch(e) { denied=/cleared in another tab/.test(e.message); }
+  assert.equal(s.getItem(key),'"fresh work after restart"');
+  assert.equal(denied,true);
+  assert.deepEqual(old.nav,[]);
+});
+
+test('an older AP lab tab cannot overwrite a successfully restored answer',()=>{
+  const key='aplab:lab02:field:model',s=withStudent({[key]:'"old tab value"'}),old=page(s,'/lab02.html'),p=page(s,'/lab02.html');
+  p.Lab.progressFile.apply(backupFor(p,OLD));
+  assert.equal(s.getItem(key),'"restored AP work"');
+  old.Lab.store.set('field:model','old tab autosave after restore');
+  assert.equal(s.getItem(key),'"restored AP work"');
+});
+
+test('a failed storage removal must not report an AP restore as cleanly replaced',()=>{
+  const extra='aplab:lab02:field:unrelated-old', model='aplab:lab02:field:model';
+  const s=withStudent({[extra]:'"old-only answer"',[model]:'"previous work"'}),p=page(s,'/lab02.html');
+  s.blocked.remove=extra;
+  let failed=false;
+  try { p.Lab.progressFile.apply(backupFor(p,OLD)); } catch(e) { failed=true; }
+  assert.equal(s.getItem(extra),'"old-only answer"');
+  assert.equal(s.getItem(model),'"previous work"');
+  assert.deepEqual(p.nav,[]);
+  assert.equal(failed,true);
+});
+
+test('an older AP handoff dialog cannot download another student’s work for a different lab',async()=>{
+  const lab05='aplab:lab05:field:answer',s=withStudent({[lab05]:'"first student previous work"'}),p=page(s,'/ap-biology.html');
+  const dialog=p.Lab.data.signOut();
+  const btn=dialog.querySelectorAll('button').find(el=>el.attributes['aria-label']==='Download progress file for Lab 5');
+  assert.ok(btn);
+  confirm(page(s).Lab.data.signOut());
+  const fresh=page(s); assert.equal(fresh.Lab.identity.set(NEW),true);
+  page(s,'/lab05.html').Lab.store.set('field:answer','next student Lab 5 work');
+  btn.click();
+  if(p.downloads.length) {
+    const file=await parse(p.downloads[0]);
+    assert.equal(file.student.name,OLD.name);
+    assert.equal(file.data['field:answer'],'first student previous work','the old download contains a newer student’s answer');
+  }
+  assert.equal(p.downloads.length,0);
+});
+
+test('a restore confirmation must be renewed if peer work changes while it is open',()=>{
+  const key='aplab:lab02:field:model',s=withStudent({[key]:'"current work"'}),p=page(s,'/lab02.html'),peer=page(s,'/lab02.html');
+  const file=backupFor(p,OLD), pending=p.Lab.progressFile.question(file);
+  peer.Lab.store.set('field:model','newer peer answer');
+  let denied=false;
+  try { p.Lab.progressFile.apply(file,pending.version); } catch(e) { denied=/Saved work changed/.test(e.message); }
+  assert.equal(s.getItem(key),'"newer peer answer"');
+  assert.equal(denied,true);
+  assert.deepEqual(p.nav,[]);
+  const reviewed=p.Lab.progressFile.question(file);
+  p.Lab.progressFile.apply(file,reviewed.version);
+  assert.equal(s.getItem(key),'"restored AP work"');
+  assert.deepEqual(p.nav,['reload']);
+});
+
+test('a rejected restore write rolls back both overwritten and removed answers',()=>{
+  const extra='aplab:lab02:field:extra', model='aplab:lab02:field:model', rejected='aplab:lab02:field:write-blocked';
+  const s=withStudent({[extra]:'"before restore, only"',[model]:'"before restore"'}),p=page(s,'/lab02.html');
+  s.blocked.set=rejected;
+  const file=backupFor(p,OLD); file.data['field:write-blocked']='new answer';
+  assert.throws(()=>p.Lab.progressFile.apply(file),/Nothing on this computer was changed/);
+  assert.equal(s.getItem(extra),'"before restore, only"');
+  assert.equal(s.getItem(model),'"before restore"');
+  assert.equal(s.getItem(rejected),null);
+  assert.deepEqual(p.nav,[]);
+});

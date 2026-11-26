@@ -55,13 +55,15 @@
     handoffEpoch = localStorage.getItem(HANDOFF_KEY);
     if (LAB_RESET_KEY) labResetEpoch = localStorage.getItem(LAB_RESET_KEY);
   } catch (_) { /* Storage may be disabled. */ }
+  function editorEpochChanged() {
+    return localStorage.getItem(HANDOFF_KEY) !== handoffEpoch ||
+      (LAB_RESET_KEY !== null && localStorage.getItem(LAB_RESET_KEY) !== labResetEpoch);
+  }
   function staleEditor() {
-    try { return localStorage.getItem(HANDOFF_KEY) !== handoffEpoch ||
-      (LAB_RESET_KEY !== null && localStorage.getItem(LAB_RESET_KEY) !== labResetEpoch); }
-    catch (_) { return false; }
+    try { return editorEpochChanged(); } catch (_) { return false; }
   }
   function workspaceStatus() {
-    try { return wiped || localStorage.getItem(HANDOFF_KEY) !== handoffEpoch ? 'changed' : 'current'; }
+    try { return wiped || editorEpochChanged() ? 'changed' : 'current'; }
     catch (_) { return 'unavailable'; }
   }
   const staleEditorMessage = 'This device was cleared in another tab. Reload this page before saving or signing in.';
@@ -1276,8 +1278,12 @@
     return p;
   }
   function downloadStoredProgress(id) {
-    downloadBlob(new Blob([JSON.stringify(storedPayload(id))], { type: 'application/json' }), reportFileBase('Lab' + id.slice(3)) + '_progress.json');
+    if (workspaceStatus() !== 'current') return false;
+    const payload = storedPayload(id), name = reportFileBase('Lab' + id.slice(3)) + '_progress.json';
+    if (workspaceStatus() !== 'current') return false;
+    downloadBlob(new Blob([JSON.stringify(payload)], { type: 'application/json' }), name);
     gstore.set('backup:' + id, { t: Date.now(), adopt: true });
+    return true;
   }
   /* Erase. keep(k) → true for keys that stay. Sets the guards first so nothing writes back before the reload. */
   function wipe(keep) {
@@ -1342,6 +1348,13 @@
     sessionSet(FLASH_KEY, 'reset');
     location.reload();
   }
+  function invalidateLabEditors() {
+    if (!LAB_RESET_KEY || workspaceStatus() !== 'current') throw new Error(staleEditorMessage);
+    const mark = clearMarker();
+    localStorage.setItem(LAB_RESET_KEY, mark);
+    if (localStorage.getItem(LAB_RESET_KEY) !== mark) throw new Error('Could not protect the lab replacement.');
+    labResetEpoch = mark;
+  }
   function doStartOverLab(status) {
     const id = LAB_ID;
     const drop = new Set([`aplab:progress:${id}`, `aplab:hint:${id}`, `aplab:backup:${id}`]);
@@ -1353,10 +1366,7 @@
       if (!LAB_RESET_KEY || staleEditor()) throw new Error(staleEditorMessage);
       const rows = collect().map(key => [key, localStorage.getItem(key)]);
       // Invalidate other open copies of this lab before removing any answers.
-      const mark = clearMarker();
-      localStorage.setItem(LAB_RESET_KEY, mark);
-      if (localStorage.getItem(LAB_RESET_KEY) !== mark) throw new Error('Could not protect the lab reset.');
-      labResetEpoch = mark;
+      invalidateLabEditors();
       for (const row of rows) {
         localStorage.removeItem(row[0]);
         if (localStorage.getItem(row[0]) !== null) throw new Error('Could not clear a saved record.');
@@ -1502,7 +1512,10 @@
     if (opts.others !== false && others.length) {
       kids.push(h('p', { class: 'dm-sub' }, IS_LAB ? 'Other labs with saved work' : 'Progress file for each lab with saved work'),
         h('ul', { class: 'dm-labs' }, others.map(l => h('li', null, h('span', null, h('strong', null, `Lab ${l.no}`), ` · ${l.text}`),
-          h('button', { class: 'btn btn--sm', type: 'button', 'aria-label': `Download progress file for Lab ${l.no}`, onclick: () => { downloadStoredProgress(l.id); say(`Downloaded the progress file for Lab ${l.no}.`); } }, 'Download progress file')))));
+          h('button', { class: 'btn btn--sm', type: 'button', 'aria-label': `Download progress file for Lab ${l.no}`, onclick: () => {
+            if (downloadStoredProgress(l.id)) say(`Downloaded the progress file for Lab ${l.no}.`);
+            else say(staleEditorMessage, true);
+          } }, 'Download progress file')))));
     }
     let openSciEdFound = false, openSciEdUnreadable = false;
     if (opts.openSciEd) {
@@ -2166,37 +2179,86 @@
     } catch (_) { return 'This browser could not verify the saved workspace. Check browser storage before restoring named work.' + NOCHANGE; }
   }
   function restoreQuestion(o, viaLink) {
-    const blocked = workspaceStatus() !== 'current' ? staleEditorMessage + NOCHANGE : restoreIdentityBlock(o);
+    const blocked = restoreWorkspaceBlock() || restoreIdentityBlock(o);
     if (blocked) return { text: '', newer: '', blocked };
+    let version;
+    try { version = restoreWorkVersion(); }
+    catch (_) { return { text:'', newer:'', blocked: restoreStorageBlocked }; }
     const m = /^lab(\d\d)$/.exec(o.lab || ''), lab = m ? 'Lab ' + +m[1] : 'this lab';
     const who = o.student ? o.student.name + (o.student.period ? ' (' + periodText(o.student.period) + ')' : '') : 'a student with no name entered';
     const fileT = o.savedAt ? Date.parse(o.savedAt) : 0, when = fileT ? fmtWhen(fileT) : 'an unknown date';
     const w = workSnapshot(), local = w.answers + w.rows > 0 ? localSavedAt() : 0;   // no work here: nothing to lose
     const newer = local && (!fileT || local > fileT) ? `The work on this computer is newer than this file (saved ${fmtWhen(local)}). Replace it anyway?` : '';
     const text = `${viaLink ? 'This link' : 'This file'} holds ${who}’s ${lab} work, saved ${when}. Loading it replaces your ${lab} answers and data on this computer.`;
-    return { text, newer };
+    return { text, newer, version };
   }
-  function applyProgress(o) {
-    if (workspaceStatus() !== 'current') throw new Error(staleEditorMessage + NOCHANGE);
-    const blocked = restoreIdentityBlock(o);
+  const restoreStorageBlocked = 'Could not check saved work before restoring. Check browser storage.' + NOCHANGE;
+  function restoreWorkspaceBlock() {
+    const state = workspaceStatus();
+    return state === 'current' ? '' : state === 'changed' ? staleEditorMessage + NOCHANGE : restoreStorageBlocked;
+  }
+  function restoreWorkVersion() {
+    flushSaves(); // Include pending edits, not just answers already written by the timer.
+    return JSON.stringify([localStorage.getItem('aplab:student'), clearWorkVersion(LAB_ID)]);
+  }
+  function applyProgress(o, expectedVersion) {
+    const blocked = restoreWorkspaceBlock() || restoreIdentityBlock(o);
     if (blocked) throw new Error(blocked);
-    /* All or nothing: keep a copy of this lab's saved work, and put it back if any write fails part way. */
-    const pre = `aplab:${LAB_ID}:`, before = {};
-    const signed = storedIdentity(), oldMemory = memIdentity, oldStored = lastStoredIdentity, oldEffective = lastEffectiveIdentity;
-    lsKeys().forEach(k => { if (k.startsWith(pre)) { try { before[k] = localStorage.getItem(k); } catch (e) { /* skip */ } } });
+    let currentVersion;
+    try { currentVersion = restoreWorkVersion(); } catch (_) { throw new Error(restoreStorageBlocked); }
+    if (expectedVersion !== undefined && expectedVersion !== currentVersion) {
+      throw new Error('Saved work changed while you were reviewing this file. Load the file or link again to review what it would replace.' + NOCHANGE);
+    }
+    // Save a rollback journal. Don't claim success unless every removal and
+    // write can be read back. A peer tab must stop writing before replacement.
+    const pre = `aplab:${LAB_ID}:`, journal = [];
+    const signed = storedIdentity();
+    const replace = (key, next) => {
+      if (workspaceStatus() !== 'current') throw new Error(staleEditorMessage);
+      const prior = localStorage.getItem(key);
+      if (prior === next) return;
+      journal.push({key, prior, next});
+      if (next === null) localStorage.removeItem(key);
+      else localStorage.setItem(key, next);
+      if (localStorage.getItem(key) !== next) throw new Error('Could not verify a saved record.');
+    };
     try {
-      store.clearLab();
-      Object.entries(o.data).forEach(([k, v]) => localStorage.setItem(pre + k, JSON.stringify(v)));
-      // Same-student imports keep the current label, including a class period
-      // that was absent from an older backup. A clean device may adopt a name.
-      if (o.student && !signed && !setIdentity(o.student)) throw new Error('Could not save the restored student name');
+      const incoming = new Map(Object.entries(o.data).map(([key, value]) => [pre + key, JSON.stringify(value)]));
+      const oldKeys = Object.keys(localStorage).filter(key => key.startsWith(pre));
+      invalidateLabEditors();
+      for (const key of oldKeys) if (!incoming.has(key)) replace(key, null);
+      for (const [key, raw] of incoming) {
+        if (raw === undefined) throw new Error('Invalid record in backup.');
+        replace(key, raw);
+      }
+      // Same-student restores keep the current sign-in. An empty workspace may
+      // adopt the name from the file. Journal identity and dataset metadata too.
+      if (o.student && !signed) {
+        replace('aplab:student', JSON.stringify({name:normName(o.student.name), period:String(o.student.period || '')}));
+      }
+      if (o.student && o.dataset > 1) {
+        replace(`aplab:dataset:${PAGE.id}:${studentKey(signed || o.student)}`, JSON.stringify(Math.floor(o.dataset)));
+      }
+      if (workspaceStatus() !== 'current') throw new Error(staleEditorMessage);
     } catch (e) {
-      try { lsKeys().forEach(k => { if (k.startsWith(pre)) localStorage.removeItem(k); }); Object.entries(before).forEach(([k, v]) => localStorage.setItem(k, v)); } catch (x) { /* best effort */ }
-      memIdentity = oldMemory; lastStoredIdentity = oldStored; lastEffectiveIdentity = oldEffective;
+      let restored = true;
+      for (const {key, prior, next} of journal.reverse()) {
+        try {
+          if (workspaceStatus() !== 'current') { restored = false; break; }
+          const now = localStorage.getItem(key);
+          if (now === prior) continue;
+          if (now !== next) { restored = false; continue; }
+          if (prior === null) localStorage.removeItem(key);
+          else localStorage.setItem(key, prior);
+          if (localStorage.getItem(key) !== prior) restored = false;
+        } catch (_) { restored = false; }
+      }
+      if (!restored) throw new Error('The progress could not be loaded, and this browser could not put back every record. Do not clear this lab. Check your backup before trying again.');
+      if (e?.message === staleEditorMessage) throw new Error(staleEditorMessage + NOCHANGE);
       throw new Error('This browser is not letting the site save data, so the progress could not be loaded here.' + NOCHANGE);
     }
-    if (o.student && o.dataset > 1) gstore.set(`dataset:${PAGE.id}:${studentKey(signed || o.student)}`, Math.floor(o.dataset));
-    gstore.set('backup:' + LAB_ID, { t: Date.now(), adopt: true }); // loaded from a backup: nothing is unsaved until the student changes it
+    gstore.set('backup:' + LAB_ID, { t: Date.now(), adopt: true });
+    wiped = true;
     reloadClean();
   }
   const b64u = {
@@ -2332,7 +2394,7 @@
     }
     box.classList.toggle('is-newer', !!q.newer);
     say([h('span', null, q.text + ' ', q.newer ? h('strong', { class: 'restore-newer' }, q.newer) : 'Replace your work on this lab with it?'),
-      h('button', { class: 'btn btn--sm btn--primary', type: 'button', id: 'resume-apply', onclick: () => { try { applyProgress(o); say([h('span', null, 'Loaded. Reloading…')]); } catch (e) { say([h('span', null, e.message), h('button', { class: 'btn btn--sm', type: 'button', onclick: close }, 'Close')], true); } } }, q.newer ? 'Replace anyway' : 'Replace my work'),
+      h('button', { class: 'btn btn--sm btn--primary', type: 'button', id: 'resume-apply', onclick: () => { try { applyProgress(o, q.version); say([h('span', null, 'Loaded. Reloading…')]); } catch (e) { say([h('span', null, e.message), h('button', { class: 'btn btn--sm', type: 'button', onclick: close }, 'Close')], true); } } }, q.newer ? 'Replace anyway' : 'Replace my work'),
       h('button', { class: 'btn btn--sm', type: 'button', id: 'resume-keep', onclick: () => { close(); Lab.toast('Nothing was changed', { type: 'info' }); } }, 'Keep my work')]);
     focusIn(box, q.newer ? '#resume-keep' : '#resume-apply');   // newer work here: the safe choice has focus
   }
@@ -2356,7 +2418,7 @@
       confirmRow.classList.toggle('is-newer', !!q.newer);
       confirmRow.append(
         h('span', null, q.text + ' ', q.newer ? h('strong', { class: 'restore-newer' }, q.newer) : 'Replace your work on this lab with it?'),
-        h('button', { class: 'btn btn--sm btn--primary restore-apply', type: 'button', onclick: () => { try { applyProgress(o); say('Loaded. Reloading…'); } catch (e) { confirmRow.hidden = true; say(e.message, true); } } }, q.newer ? 'Replace anyway' : 'Replace my work'),
+        h('button', { class: 'btn btn--sm btn--primary restore-apply', type: 'button', onclick: () => { try { applyProgress(o, q.version); say('Loaded. Reloading…'); } catch (e) { confirmRow.hidden = true; say(e.message, true); } } }, q.newer ? 'Replace anyway' : 'Replace my work'),
         h('button', { class: 'btn btn--sm restore-cancel', type: 'button', onclick: () => { confirmRow.hidden = true; say('Nothing was changed.'); } }, 'Cancel'));
       confirmRow.hidden = false; focusIn(confirmRow, q.newer ? '.restore-cancel' : '.restore-apply');
     }
