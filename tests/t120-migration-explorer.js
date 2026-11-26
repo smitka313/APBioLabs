@@ -97,6 +97,9 @@ async function auditNotesAndRain(browser,base){
     await screenshot(p,'390-dark-original-rainfall');
     await p.locator('[data-close="rain-dialog"]').tap();
     await p.locator('[data-page="evidence"]').tap();
+    const evidenceBadge=p.locator('#evidence .mx-evidence-badge');
+    ok(await evidenceBadge.evaluate(b=>getComputedStyle(b).whiteSpace==='nowrap'&&b.getBoundingClientRect().right<=innerWidth),
+      'phone field-data badge keeps SIMULATED together without overflowing');
     const limits=await p.locator('.mx-evidence-intro').textContent();
     ok(/group averages for sampled male wildebeest/.test(limits)&&/several studies/.test(limits)&&/outbreak year/.test(limits)&&/whole herd/.test(limits),
       'sex, time/sample limits, and outbreak context are visible beside the field cards');

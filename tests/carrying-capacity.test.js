@@ -75,3 +75,59 @@ test('research excerpt cites the primary table and computes rates using years el
   assert.equal(L.historicalRate(1977,1977),null);
   assert.equal(L.historicalRate(1961,2010),null);
 });
+
+test('confirmed comparison replacement is atomic and leaves baseline and written work intact',()=>{
+  const fs=require('node:fs'),vm=require('node:vm');
+  const source=fs.readFileSync(require.resolve('../openscied-b1-carrying-capacity.js'),'utf8');
+  const start=source.indexOf('  function comparisonReplacement(');
+  const end=source.indexOf("  $('#cc-stop-replay').addEventListener",start);
+  assert.ok(start>=0&&end>start);
+  const fixture={baseline:L.run(),comparison:L.run({grassPercent:50}),selected:'comparison',grass:50,
+    answers:{prediction:'Prediction',claim:'Explanation'},checks:{food:'grass'},evidenceTrial:'comparison',evidenceRound:8};
+  const replay=L.run({grassPercent:75}),make=()=>({value:'',textContent:'',hidden:false,open:false,focus(){},showModal(){this.open=true;},
+    close(){this.open=false;},addEventListener(type,fn){this[type]=fn;}});
+  const elements=new Map(),$=key=>{if(!elements.has(key))elements.set(key,make());return elements.get(key);};
+  let disk=JSON.stringify(fixture), allowWrite=false;
+  const context=vm.createContext({state:fixture,L,ROUNDS:12,comparisonReplay:replay,preservedSave:false,comparisonReplaceMode:'restart',KEY:'test',$,
+    saveSession:{write(key,raw){if(!allowWrite)return {ok:false};disk=raw;return {ok:true};}},
+    showSaveConflict(){},renderLab(){},speak(){}});
+  vm.runInContext(source.slice(start,end),context);
+  $('#cc-adopt-replay').click();
+  assert.equal($('#cc-replace-dialog').open,true);
+  assert.match($('#cc-replace-detail').textContent,/50% comparison.*12 rounds at 75%/);
+  const oldDisk=disk;
+  $('#cc-replace-dialog').close();
+  assert.equal(disk,oldDisk,'close/cancel does not save a change');
+  $('#cc-adopt-replay').click();$('#cc-replace-confirm').click();
+  assert.equal(disk,oldDisk,'failed write leaves old data on disk');
+  assert.equal(context.state,fixture,'failed write also leaves the original comparison in memory');
+  assert.equal(context.comparisonReplay,replay,'practice data remains available after failed write');
+  allowWrite=true;
+  $('#cc-adopt-replay').click();$('#cc-replace-confirm').click();
+  let saved=JSON.parse(disk);
+  assert.deepEqual(saved.comparison,replay);
+  assert.equal(saved.comparisonRevision,1,'legacy trial without a revision starts at generation 1');
+  assert.equal(saved.evidenceTrial,'baseline');
+  assert.equal(saved.evidenceRound,0);
+  assert.deepEqual(saved.baseline,fixture.baseline);
+  assert.deepEqual(saved.answers,fixture.answers);
+  assert.deepEqual(saved.checks,fixture.checks);
+  $('#cc-replace-comparison').click();
+  $('#cc-replace-grass').value='50';$('#cc-replace-confirm').click();
+  saved=JSON.parse(disk);
+  assert.equal(saved.comparisonRevision,2);
+  assert.deepEqual(saved.comparison,L.create({grassPercent:50}));
+  assert.deepEqual(saved.baseline,fixture.baseline);
+  assert.deepEqual(saved.answers,fixture.answers);
+});
+
+test('Round 1 feedback explains which directional expectations the observed increase supports',()=>{
+  const fs=require('node:fs'),vm=require('node:vm');
+  const text=fs.readFileSync(require.resolve('../openscied-b1-carrying-capacity.js'),'utf8');
+  const start=text.indexOf('  function renderRoundOnePrediction('),end=text.indexOf('  function renderLab(',start);
+  const note={},context=vm.createContext({state:{selected:'baseline',baseline:L.run({},1),answers:{prediction:'My free text'}},$:()=>note});
+  vm.runInContext(text.slice(start,end)+'\nrenderRoundOnePrediction()',context);
+  assert.match(note.textContent,/grew by 1.*If you expected growth, the first round supports that part/);
+  assert.match(note.textContent,/if you expected the herd to shrink or stay the same, the first result differs/i);
+  assert.match(note.textContent,/One round does not show what will happen over 12 rounds or with less grass/);
+});

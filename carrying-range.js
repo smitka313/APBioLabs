@@ -10,7 +10,7 @@
   const fresh=()=>({v:1,trial:'baseline',baseline:null,comparison:null,note:''});
   const validRound=n=>Number.isInteger(n)&&n>=7&&n<=12;
   const label=(kind,entry)=>NAMES[kind]+(entry?.percent==null?'':' · '+entry.percent+'% grass');
-  function dataset(raw) {
+  function dataset(raw, revision=0) {
     if(!Array.isArray(raw?.rows))return null;
     const rows=Array.from({length:6},(_,i)=>raw.rows.find(row=>row?.round===7+i));
     if(rows.some(r=>!r||!Number.isSafeInteger(r.ending)||r.ending<0))return null;
@@ -24,7 +24,10 @@
     // Use the same role-based population scale as the population-over-time chart.
     const maximum=Math.max(4,Math.ceil(Math.max(roles,peak)/4)*4);
     const percent=Number.isInteger(raw.grassPercent)&&raw.grassPercent>=0&&raw.grassPercent<=100?raw.grassPercent:null;
-    const fingerprint=JSON.stringify([percent,raw.roleSlots??null,raw.startingPopulation??null,points.map(p=>p.ending)]);
+    const basis=[percent,raw.roleSlots??null,raw.startingPopulation??null,points.map(p=>p.ending)];
+    // Omit the initial generation so pre-replacement saved marks retain their original signature.
+    if(Number.isSafeInteger(revision)&&revision>0)basis.push(revision);
+    const fingerprint=JSON.stringify(basis);
     return {points,series,maximum,startLine,percent,fingerprint};
   }
   function repeatedBand(points) {
@@ -247,8 +250,8 @@
         </div>`:''}`;
       updateFeedback();
     }
-    function update({baseline,comparison}={}){
-      trials={baseline:dataset(baseline),comparison:dataset(comparison)};
+    function update({baseline,comparison,comparisonRevision}={}){
+      trials={baseline:dataset(baseline),comparison:dataset(comparison,comparisonRevision)};
       if(!trials[state.trial]&&populated())state.trial=trials.baseline?'baseline':'comparison';
       draw();emitMarks();
     }

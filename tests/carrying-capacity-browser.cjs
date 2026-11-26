@@ -1223,6 +1223,43 @@ async function followWorkflow(browser, url) {
   });
 }
 
+async function followComparisonReplacement(browser,url){
+  await withPage(browser,{name:'comparison-replacement',width:390,height:844,dark:true},async p=>{
+    await readiness(p,url,'dark');
+    const key='aplab:openscied-b1-carrying-capacity:run-v1';
+    const read=()=>p.evaluate(k=>localStorage.getItem(k),key);
+    await p.locator('#cc-prediction').fill('I expect the herd to grow.');
+    await p.locator('#cc-finish').click();await rounds(p,12);
+    await p.locator('#cc-compare').click();
+    await p.locator('#cc-finish').click();await rounds(p,12);
+    await p.locator('#cc-range-trial').selectOption('comparison');
+    await dragRangeLine(p,8);await rangeLock(p).click();
+    const estimate=p.locator('[data-range-summary="comparison"]');
+    check(/8 wildebeest/.test(await estimate.textContent()),'comparison contains an old locked estimate');
+    const before=await read();
+    await p.locator('#cc-replace-comparison').click();
+    await p.locator('#cc-replace-grass').selectOption('75');
+    await p.getByRole('button',{name:'Keep saved comparison'}).click();
+    check(await read()===before,'cancel leaves the recorded run untouched');
+    await p.locator('#cc-replay-grass').selectOption('75');
+    await p.locator('#cc-replay').click();await p.locator('#cc-finish').click();await rounds(p,12);
+    check(await read()===before,'finishing practice still does not alter the recorded run');
+    await p.locator('#cc-adopt-replay').click();
+    await p.getByRole('button',{name:'Save practice as comparison'}).click();
+    await p.reload();
+    check(/Comparison.*75%/.test(await p.locator('#cc-scenario').textContent()),'explicit adoption persists the 75% trial on reload');
+    await p.locator('#cc-replace-comparison').click();
+    await p.locator('#cc-replace-grass').selectOption('50');
+    await p.getByRole('button',{name:'Restart comparison only'}).click();await rounds(p,0);
+    await p.locator('#cc-finish').click();await rounds(p,12);
+    await p.locator('#cc-range-trial').selectOption('comparison');
+    check(await rangeLock(p).isDisabled()&&!/8 wildebeest/.test(await estimate.textContent()),'rerunning 50% does not restore old plotted marks');
+    const saved=JSON.parse(await read()),old=JSON.parse(before);
+    check(saved.comparisonRevision===2&&JSON.stringify(saved.baseline)===JSON.stringify(old.baseline)&&
+      JSON.stringify(saved.answers)===JSON.stringify(old.answers),'replacement preserves the baseline and student writing');
+  });
+}
+
 (async () => {
   const server = await serve();
   let browser;
@@ -1232,6 +1269,7 @@ async function followWorkflow(browser, url) {
     await companionHeaders(browser, server.url);
     await visualSweep(browser, url);
     await followWorkflow(browser, url);
+    await followComparisonReplacement(browser, url);
     await followHabitatWorkflow(browser, url);
     await followAdequateHabitat(browser, url);
     await dashboardRelease(browser, server.url);

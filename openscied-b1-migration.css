@@ -140,3 +140,7 @@
 }
 
 .mx-note-shortcut{padding:0 16px 6px}.mx-note-shortcut button{font-size:.84rem}
+
+/* Let the evidence badge move to the next line instead of splitting its words. */
+#evidence > .mx-section-head { flex-wrap: wrap; }
+.mx .mx-evidence-badge { flex: 0 0 auto; white-space: nowrap; overflow-wrap: normal; word-break: normal; }
