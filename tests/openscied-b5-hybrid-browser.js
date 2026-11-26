@@ -1,4 +1,5 @@
 'use strict';
+const receipt = require('./openscied-b5-save-receipt');
 const assert=require('node:assert/strict'),fs=require('node:fs'),http=require('node:http'),path=require('node:path');
 const {chromium}=require('playwright'),D=require('../openscied-b5-hybrid-data.js');
 const root=path.join(__dirname,'..'),type={'.html':'text/html','.css':'text/css','.js':'application/javascript','.svg':'image/svg+xml'};
@@ -23,6 +24,7 @@ const server=http.createServer((req,res)=>{
     await p.route(/https:\/\/.*\/docx@[^/]+\/.*\.js$/,r=>r.fulfill({contentType:'application/javascript',body:fixture}));
    }
    await p.goto(base+'openscied-b5-hybrid.html#claim');
+   await receipt.ready(p.locator('#hy-save'));await receipt.readableDisabled(p.locator('#hy-reset'));
    if(width===390){
     const hero=await p.locator('.hy-hero').evaluate(e=>({
      behind:getComputedStyle(e).backgroundImage,inFlow:getComputedStyle(e,':after').display,
@@ -57,6 +59,7 @@ const server=http.createServer((req,res)=>{
     await p.reload();assert.equal((await save()).id,seed);assert.match(await at('identity').innerText(),/Avery Ice.*Period 3/s);
    }
    await at('prediction').fill('The projected scenario difference is 1.5 million square kilometers in 2100. There are few bear generations in the example window.');
+   await receipt.saved(at('save'));
    await layout('ice');await go('family').click();
    await p.locator('button[data-ice=less]').click();assert.equal(await at('map').getAttribute('data-ice'),'less');
    await p.locator('[data-island=banks]').click();await p.locator('[data-island=victoria]').click();
@@ -68,11 +71,13 @@ const server=http.createServer((req,res)=>{
    await layout('family');await go('model').click();
    for(let i=0;i<4;i++)await at('flip').click();
    assert.equal((await save()).rolls,4);assert.equal(await at('cohort').locator('button').count(),1);
-   assert.match(await at('remaining').textContent(),/Flip all four coins for the next mating/);
+   assert.equal(await at('remaining').textContent(),'Finish this mating');
+   assert.match(await at('shortcut-note').textContent(),/4 coins still needed for mating 2/);
    await at('flip').click();const beforeReload=await save();await p.reload();assert(await stage('model').isVisible());
    assert.deepEqual(await save(),beforeReload,'reloading must not rewrite saved evidence or its timestamp');
    assert.equal((await save()).rolls,5);assert.equal((await save()).id,seed);
-   assert.match(await at('remaining').textContent(),/Flip remaining coins for this mating/);
+   assert.equal(await at('remaining').textContent(),'Finish this mating');
+   assert.match(await at('shortcut-note').textContent(),/3 coins still needed for mating 2/);
    await at('remaining').click();assert.equal((await save()).rolls,8);
    for(let i=2;i<10;i++)await at('remaining').click();
    assert.equal((await save()).rolls,40);assert.equal(await at('cohort').locator('button').count(),10);
@@ -107,6 +112,7 @@ const server=http.createServer((req,res)=>{
      window.OpenSciEdSaveSession.erase(storage,'b5-hybrid',['aplab:openscied:b5-hybrid:v1']);
     });
     await at('recovery').waitFor({state:'visible'});assert(await at('reset').isDisabled());
+    assert.equal(await at('save').getAttribute('data-save-state'),'blocked');assert(!(await at('save').locator('time').isVisible()));
     assert.equal(await save(),null);
     const [recovered]=await Promise.all([p.waitForEvent('download'),at('save-recovery').click()]);
     const recovery=JSON.parse(fs.readFileSync(await recovered.path(),'utf8'));

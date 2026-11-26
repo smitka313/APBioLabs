@@ -11,14 +11,14 @@ const clean=(text,k)=>typeof text==='string'?text.slice(0,k==='revised'?5000:300
 const array=(v,len,max)=>[...new Set(Array.isArray(v)?v.filter(x=>Number.isInteger(x)&&x>=0&&x<max):[])].slice(0,len);
 const pos=v=>[0,1,2].map(i=>ids.includes(v?.[i])?v[i]:null);
 const fresh=()=>({v:1,rosterVersion:2,id:Array.from(crypto.getRandomValues(new Uint8Array(4)),n=>n.toString(16).padStart(2,'0')).join('').toUpperCase(),step:'cycles',lastVisitedAt:0,period:1,phase:'cold',moves:{cold:pos(),warm:pos()},mathDraft:['',''],mathChecked:false,locked:false,pins:[],genes:[],choices:{north:null,south:null},answers:{},limit:false,limitChoice:null,finished:false});
-let s=fresh(),session,failed=false,selected=-1,selectedTrait=-1,site=0,videoLoaded=false,replayTimer,writingStarted=false;
+let s=fresh(),session,legacy=false,failed=false,selected=-1,selectedTrait=-1,site=0,videoLoaded=false,replayTimer,writingStarted=false;
 try{
  session=window.OpenSciEdSaveSession?.open(localStorage,'b5-speciation',[KEY]);
  const raw=session?.read(KEY);
  if(raw){
    const v=JSON.parse(raw);
    if(v?.v!==1||!/^[A-F0-9]{8}$/.test(v.id))throw Error('Invalid saved notebook');
-   s.id=v.id;s.rosterVersion=v.rosterVersion===2?2:1;s.step=routes.includes(v.step)?v.step:'cycles';s.lastVisitedAt=Number(v.lastVisitedAt)||0;
+   s.id=v.id;s.lastSavedAt=window.OpenSciEdB5Workspace.timestamp(v.lastSavedAt);s.rosterVersion=v.rosterVersion===2?2:1;s.step=routes.includes(v.step)?v.step:'cycles';s.lastVisitedAt=Number(v.lastVisitedAt)||0;
    s.period=Number.isInteger(v.period)&&D.periods[v.period]?v.period:1;s.phase=phases.includes(v.phase)?v.phase:'cold';
    for(const phase of phases)s.moves[phase]=pos(v.moves?.[phase]);
    s.mathDraft=[0,1].map(i=>typeof v.mathDraft?.[i]==='string'&&/^\d{0,8}$/.test(v.mathDraft[i])?v.mathDraft[i]:'');
@@ -30,15 +30,17 @@ try{
    s.limit=v.limit===true;
    s.limitChoice=Object.hasOwn(D.conclusion.choices,v.limitChoice)?v.limitChoice:s.limit?'possible':null;
    s.finished=v.finished===true&&readyFinal();writingStarted=true;
+   legacy=phases.some(k=>s.moves[k].some(Boolean))||s.mathDraft.some(Boolean)||s.pins.length>0||s.genes.length>0||Object.values(s.answers).some(x=>x.trim())||s.limitChoice!==null;
  }
 }catch(_){failed=true;}
 const readIdentity=window.OpenSciEdSaveSession?.reportIdentity?.(session,[KEY],()=>window.Lab?.identity?.get?.()??null)??(()=>null);
 const canSave=()=>!failed&&session?.check(KEY).ok;
 const tell=t=>{$('status').textContent=t;};
-function save(){
+const receipt=window.OpenSciEdB5Workspace.mount({output:$('save'),key:KEY,session,canSave,restored:()=>legacy,getRecord:()=>s});
+function save(workChanged=true){
  writingStarted=true;s.lastVisitedAt=Date.now();
  s.matches={north:suitable('north'),south:suitable('south')};
- if(!canSave()||!session.write(KEY,JSON.stringify(s)).ok)$('save').textContent='This tab cannot save. Keep a copy of your report before closing.';
+ receipt.write(workChanged);
 }
 function workChanged(){s.finished=false;save();controls();}
 function p(){return D.periods[s.period];}
@@ -88,7 +90,7 @@ function go(k,focus=true){
  if(!gate(k))return;
  s.step=k;routes.forEach(r=>document.getElementById(r).hidden=r!==k);
  if(location.hash!=='#'+k)history.replaceState(null,'','#'+k);
- if(focus&&writingStarted)save();
+ if(focus&&writingStarted)save(false);
  if(k==='argument')recap();
  if(k==='fossils')$('fossil-first').textContent=s.answers.first||'';
  controls();
@@ -308,7 +310,6 @@ window.Lab?.identity?.mount?.('#ice-identity',{compact:true,sharedDevice:true});
 drawFossil();drawTraits();updateDates();
 const hash=location.hash.slice(1);
 go(gate(hash)?hash:gate(s.step)?s.step:routes.findLast(gate),false);
-if(!canSave())$('save').textContent='This browser could not open a saved notebook. Save a copy of your report before closing.';
 function collectReport(){
  const missing=[];if(!s.locked)missing.push('Save first argument.');if(!readyFossils())missing.push('Compare two kinds of fossils.');if(!readyTraits())missing.push('Compare inherited traits in two habitats.');if(!s.finished)missing.push('Finish the investigation.');
  const response=k=>({type:'answer',prompt:prompts[k],value:s.answers[k]});

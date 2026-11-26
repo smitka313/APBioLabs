@@ -30,14 +30,15 @@
 <script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(_){}</script>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="openscied-submission-report.css">
-<link rel="stylesheet" href="openscied-b5-hybrid.css">
+<link rel="stylesheet" href="openscied-b5-hybrid.css"><link rel="stylesheet" href="openscied-b5-workspace.css">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to the investigation</a>
-<main id="main" class="hy-shell">
+<main data-b5-workspace id="main" class="hy-shell">
 <nav class="hy-row hy-links" aria-label="Lesson links"><a href="openscied-dashboard.html#unit5">← Unit 5 activities</a><a href="openscied-b5-speciation.html">Lesson 4: Ice Age Speciation</a></nav>
 <header class="hy-hero"><p class="hy-kicker">Arctic field station / Unit 5 / Lesson 6</p><h1>Arctic Bear Futures<br>&amp; Hybridization</h1><p>As the Arctic warms, could bears with two kinds of ancestry thrive?</p></header>
 <div class="hy-row hy-workspace"><div id="hy-identity"></div><button type="button" class="btn" id="hy-reset" aria-haspopup="dialog" disabled>Start over…</button></div>
+<p class="b5-save-receipt" id="hy-save">No work saved yet.</p>
 <aside id="hy-recovery" class="hy-card hy-recovery" aria-labelledby="hy-recovery-title" hidden><h2 id="hy-recovery-title">This tab cannot save</h2><p>Your edits in this tab are not being saved. Download them first. Reloading opens the latest saved workspace, not this tab’s unsaved edits.</p><div class="hy-row"><button type="button" class="btn" id="hy-save-recovery">Download recovery JSON</button><button type="button" class="btn" id="hy-open-current">Reload saved workspace…</button></div></aside>
 <nav class="hy-nav" aria-label="Investigation steps">
 <button type="button" class="btn" data-step="ice">01 · Read the ice</button>
@@ -97,7 +98,8 @@
 <div class="hy-grid"><div class="hy-card">
 <h3 id="hy-round"></h3>
 <div class="hy-bench" id="hy-bench"><div><img src="assets/openscied-hybrid-polar.svg" width="400" height="240" alt=""><span>Polar parent</span></div><div id="hy-cub"><img src="assets/openscied-hybrid-hybrid.svg" width="400" height="240" alt=""><span>Model offspring</span></div><div><img src="assets/openscied-hybrid-brown.svg" width="400" height="240" alt=""><span>Brown parent</span></div></div>
-<div class="hy-row hy-flips"><button class="btn btn--primary" type="button" id="hy-flip"></button><button class="btn" type="button" id="hy-remaining" hidden>Flip remaining coins for this mating</button><span id="hy-coin" aria-hidden="true">?</span></div>
+<div class="hy-row hy-flips"><button class="btn btn--primary" type="button" id="hy-flip"></button><button class="btn" type="button" id="hy-remaining" hidden aria-describedby="hy-shortcut-note">Finish this mating</button><span id="hy-coin" aria-hidden="true">?</span></div>
+<p id="hy-shortcut-note" class="hy-small" hidden></p>
 <p id="hy-model-feedback" class="hy-hint"></p>
 <div id="hy-inheritance"></div>
 </div><aside class="hy-card"><h3>Offspring notebook</h3><p>Choose any recorded offspring to inspect its four inherited traits.</p><div id="hy-cohort" class="hy-cohort" role="group" aria-label="Recorded offspring"></div><p class="hy-hint" id="hy-offspring"></p>
@@ -122,12 +124,11 @@
 <dialog id="hy-graph-dialog" aria-labelledby="hy-graph-title"><h2 id="hy-graph-title">September sea-ice area</h2><div id="hy-large-graph" class="hy-graph" role="img" aria-label="Enlarged graph of the selected September sea-ice lines"></div><button type="button" class="btn" id="hy-close-graph">Close chart</button></dialog>
 <dialog id="hy-reset-dialog" aria-labelledby="hy-reset-title"><form id="hy-reset-form"><h2 id="hy-reset-title">Start this activity over?</h2><p>Only your Lesson 6 notebook and ten-mating model on this device will be cleared.</p><label for="hy-erase">Type ERASE to confirm</label><input id="hy-erase" autocomplete="off" spellcheck="false"><p id="hy-reset-error"></p><div class="hy-row"><button type="button" class="btn" id="hy-cancel">Keep working</button><button type="submit" class="btn btn--danger" id="hy-confirm" disabled>Erase this activity</button></div></form></dialog>
 <dialog id="hy-recovery-dialog" aria-labelledby="hy-recovery-dialog-title"><h2 id="hy-recovery-dialog-title">Reload saved workspace?</h2><p>Any edits not saved in this tab will be lost unless you downloaded a recovery copy. This does not erase any saved activity or switch students.</p><div class="hy-row"><button type="button" class="btn" id="hy-keep-recovery" autofocus>Keep this tab open</button><button type="button" class="btn" id="hy-confirm-reload">Reload saved workspace</button></div></dialog>
-<p id="hy-save" class="hy-small">Your work is saved in this browser. Preview the report to keep a copy.</p>
 <details><summary>Sources and model limits</summary><p>Adapted from OpenSciEd B.5 Lesson 6 <em>Future Predictions</em>, <em>Mating Between Bear Species</em>, <em>Making Sense of Matings</em>, and the <em>Hybridization Model</em>. The graph is an original redraw of selected values from the lesson’s figure and does not reproduce uncertainty ranges. Original illustrations are schematic. The family is real; the ten-mating classroom cohort is simulated. Brown bears in this Arctic example are grizzlies.</p><p><a href="https://journalhosting.ucalgary.ca/index.php/arctic/article/view/67681" target="_blank" rel="noopener noreferrer">Pongracz et al. (2017), hybridization and DNA evidence</a>. <a href="https://doi.org/10.1093/jmammal/gyv140" target="_blank" rel="noopener noreferrer">Miller, Wilder &amp; Wilson (2015), encounter data</a>. Inuvialuit observations: Joint Secretariat, <em>Inuvialuit and Nanuq</em> (2015), discussed in the Lesson 6 slides.</p></details>
 <footer>Created by Robert Smitka. <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">Site license: CC BY-NC-SA 4.0</a>. Adapted from <a href="https://www.openscied.org/instructional-materials/b-5-common-ancestry-speciation/">OpenSciEd</a> materials (<a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>); not affiliated with or endorsed by OpenSciEd. Student identity and work stay in this browser unless the student prints or downloads them.</footer>
 </main>
 <script src="lab.js"></script>
-<script src="openscied-save-session.js"></script>
+<script src="openscied-save-session.js"></script><script src="openscied-b5-workspace.js"></script>
 <script src="openscied-submission-report.js"></script>
 <script src="openscied-b5-report-files.js"></script>
 <script src="openscied-b5-hybrid-data.js"></script>

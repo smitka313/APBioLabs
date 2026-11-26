@@ -1,0 +1,10 @@
+.b5-save-receipt { margin: .2rem 0 .65rem; color: var(--ink); font-size: .9rem; overflow-wrap: anywhere; }
+.b5-save-receipt[data-save-state="blocked"] { border-inline-start: 3px solid var(--bad); padding-inline-start: .6rem; font-weight: 650; }
+main[data-b5-workspace]:is(.ba-shell, .th-shell, .wb-shell, .ice-shell, .hy-shell) .btn:is(:disabled, [aria-disabled="true"]) {
+  opacity: 1;
+  filter: none;
+  color: color-mix(in srgb, var(--ink) 76%, var(--surface-2));
+  background: color-mix(in srgb, var(--ink) 10%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--ink) 50%, var(--surface-2));
+  cursor: not-allowed;
+}

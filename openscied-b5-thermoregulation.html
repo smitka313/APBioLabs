@@ -30,13 +30,14 @@
 <script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(_){}</script>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="openscied-submission-report.css">
-<link rel="stylesheet" href="openscied-b5-thermoregulation.css">
+<link rel="stylesheet" href="openscied-b5-thermoregulation.css"><link rel="stylesheet" href="openscied-b5-workspace.css">
 </head>
 <body><a class="skip-link" href="#main">Skip to the investigation</a>
-<main id="main" class="th-shell">
+<main data-b5-workspace id="main" class="th-shell">
 <nav class="th-links" aria-label="Lesson links"><a href="openscied-dashboard.html#unit5">← Unit 5 activities</a><a href="openscied-b5-wapusk.html">Lesson 1: Three Bears in Wapusk</a><a href="openscied-teacher-guide.html#guide-b5-thermoregulation">Teacher guide</a></nav>
 <header class="th-hero"><p class="th-tag">Arctic field station · Unit 5 · Lesson 2</p><h1>Bear <span>Thermoregulation</span> Lab</h1><p>Could overheating help explain why a polar bear gives up food to a brown bear?</p></header>
 <section class="th-workspace" aria-label="Student workspace"><div id="th-identity"></div><div class="th-workspace-tools"><button type="button" class="btn" id="th-reset" aria-haspopup="dialog" disabled>Start over…</button><p class="th-identity-hint">Shared device? If the name is not yours, choose Switch student before you start.</p></div></section>
+<p class="b5-save-receipt" id="th-save">No work saved yet.</p>
 <nav class="th-tabs" aria-label="Investigation steps"><button type="button" class="btn" data-step="field">1. Field evidence</button><button type="button" class="btn" data-step="treadmill">2. Treadmill</button><button type="button" class="btn" data-step="human">3. Human comparison</button><button type="button" class="btn" data-step="model">4. Explain</button></nav>
 <section class="th-panel" id="field" aria-labelledby="field-title">
 <p class="th-tag">Field notebook</p><h2 id="field-title" tabindex="-1">Who gives up the food?</h2>
@@ -183,11 +184,10 @@
 <label for="th-reset-confirm">Type ERASE to confirm</label><input id="th-reset-confirm" autocomplete="off" spellcheck="false" autofocus>
 <p id="th-reset-error" role="status"></p><div class="th-actions"><button type="button" class="btn" id="th-keep">Keep working</button><button type="submit" class="btn btn--danger" id="th-clear" disabled>Erase this activity</button></div>
 </form></dialog>
-<p id="th-save" role="status">Work stays in this browser. Preview your report to keep a copy.</p>
 <footer>Independent companion adapted from <a href="https://openscied.org/instructional-materials/b-5-common-ancestry-speciation/">OpenSciEd B.5 Lesson 2</a> (CC BY-NC 4.0). The scientific studies and clips retain their own credits.</footer>
 </main>
 <script src="lab.js"></script>
-<script src="openscied-save-session.js"></script>
+<script src="openscied-save-session.js"></script><script src="openscied-b5-workspace.js"></script>
 <script src="openscied-submission-report.js"></script>
 <script src="openscied-b5-report-files.js"></script>
 <script src="openscied-b5-thermoregulation.js"></script>

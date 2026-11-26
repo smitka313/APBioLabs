@@ -34,10 +34,11 @@
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to the investigation</a>
-<main id="main" class="ice-shell">
+<main data-b5-workspace id="main" class="ice-shell">
 <nav class="ice-links" aria-label="Lesson links"><a href="openscied-dashboard.html#unit5">← Unit 5 activities</a><a href="openscied-b5-ancestry.html">Lesson 3: Bear Ancestry</a></nav>
 <header class="ice-hero"><p class="ice-kicker">Arctic field station / Unit 5 / Lesson 4</p><h1>Ice Age Bear<br class="ice-break"> Speciation Explorer</h1><p>Two bears share an ancestor. What could have separated their populations?</p></header>
 <div class="ice-workspace"><div id="ice-identity"></div><button type="button" class="btn" id="ice-reset" aria-haspopup="dialog" disabled>Start over…</button></div>
+<p class="b5-save-receipt" id="ice-save">No work saved yet.</p>
 <nav id="ice-nav" class="ice-nav" aria-label="Investigation steps">
 <button type="button" class="btn" data-step="cycles"><span>01</span> Move bears</button>
 <button type="button" class="btn" data-step="fossils"><span>02</span> Find fossils</button>
@@ -135,12 +136,11 @@
 <dialog id="ice-reset-dialog" aria-labelledby="ice-reset-title"><form id="ice-reset-form"><h2 id="ice-reset-title">Start this investigation over?</h2><p>This clears only your Ice Age bear maps, evidence pins, and responses on this device. Save a report first if you want a copy.</p><label for="ice-confirm">Type ERASE to confirm</label><input id="ice-confirm" type="text" autocomplete="off" autofocus><p id="ice-reset-feedback"></p><div class="ice-row"><button class="btn" type="button" id="ice-cancel">Keep working</button><button type="submit" class="btn btn--danger" id="ice-erase" disabled>Erase this activity</button></div></form></dialog>
 <div id="ice-report"></div>
 <details class="ice-backup"><summary>Keep a backup of this activity</summary><p>These report files include your Ice Age work and the same name, class period, and Dataset ID as your report. They are for reading or sharing, not for restoring browser work.</p><div class="ice-row"><button id="ice-save-html" class="btn" type="button">Download report HTML</button><button id="ice-backup" class="btn" type="button" disabled>Download this activity’s JSON</button></div></details>
-<p id="ice-save" class="ice-caption">Your work is saved in this browser. Use the report to keep a copy.</p>
 <details><summary>Sources and model limits</summary><p>Adapted from OpenSciEd B.5 Lesson 4: Glacial and Interglacial Periods, Bears and Glacial Cycles, Bear Fossils Map, Genetic Bear Data, and Developing an Argument. The bridge draws on the Lesson 5 Student Procedure. The digital maps and tokens are original, schematic illustrations. Token placements and trait combinations are simulated; the published fossil ages are approximate estimates reproduced from the lesson map. We use three variants from the genetic handout; the original chip exercise also draws on the NOS3 clue from Lesson 2.</p><p>Original genetics research: <a href="https://doi.org/10.1016/j.cell.2014.03.054" target="_blank" rel="noopener noreferrer">Liu et al. (2014)</a>; ancient gene flow: <a href="https://pubmed.ncbi.nlm.nih.gov/35711062/" target="_blank" rel="noopener noreferrer">Wang et al. (2022)</a>. Fossil map sources credited by OpenSciEd: Cahill et al. (2018), Harington et al. (2014), Marciszak et al. (2015), Segawa et al. (2021), Villalba de Alvarado et al. (2022), and Wang et al. (2022).</p></details>
 <footer>Created by Robert Smitka. <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">Site license: CC BY-NC-SA 4.0</a>. Adapted from <a href="https://www.openscied.org/instructional-materials/b-5-common-ancestry-speciation/">OpenSciEd</a> materials (<a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>); not affiliated with or endorsed by OpenSciEd. Student work and identity stay in this browser unless the student chooses to print or download.</footer>
 </main>
 <script src="lab.js"></script>
-<script src="openscied-save-session.js"></script>
+<script src="openscied-save-session.js"></script><script src="openscied-b5-workspace.js"></script>
 <script src="openscied-submission-report.js"></script>
 <script src="openscied-b5-report-files.js"></script>
 <script src="openscied-b5-speciation-data.js"></script>

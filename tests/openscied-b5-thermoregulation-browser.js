@@ -1,4 +1,5 @@
 'use strict';
+const receipt = require('./openscied-b5-save-receipt');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright'),{serve}=require('./_h');
 const {inflateRawSync}=require('node:zlib');
@@ -35,6 +36,7 @@ function unzipWord(zip){
        const by=id=>p.locator('#th-'+id), tab=name=>p.locator('.th-tabs [data-step="'+name+'"]');
        const fit=async stage=>assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),stage+' overflows at '+width);
        await p.goto(server.url+'openscied-b5-thermoregulation.html');
+       await receipt.ready(p.locator('#th-save'));await receipt.readableDisabled(p.locator('#th-reset'));
        const title=await p.locator('.th-hero h1 span').evaluate(n=>({rects:n.getClientRects().length,fit:n.getBoundingClientRect().right<=innerWidth}));
        assert.deepEqual(title,{rects:1,fit:true},'Thermoregulation must stay intact and fit');
        await p.getByRole('button',{name:'Enter your name and class period'}).click();
@@ -50,6 +52,7 @@ function unzipWord(zip){
        assert.deepEqual(await p.locator('.th-bear-profiles figcaption strong').allTextContents(),['Polar bear','Brown bear (grizzly)','American black bear']);
        assert.equal(await p.locator('iframe[data-lesson-video][src]').count(),0);
        await by('predict').fill('The polar bear could leave when a brown bear arrives.');
+       await receipt.saved(by('save'));
        await p.getByRole('button',{name:'Polar + black',exact:true}).click(); assert.match(await by('case').innerText(),/not provide direct interaction data/);
        await p.getByRole('button',{name:'Polar + brown',exact:true}).click(); assert.match(await by('case').innerText(),/137.*97.*32 involved aggression and 8/s);
        await by('field').fill('The field observation did not measure core temperature.');

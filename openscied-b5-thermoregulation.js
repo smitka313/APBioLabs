@@ -21,13 +21,13 @@
   const clean=s=>typeof s==='string'?s.slice(0,4000):'';
   const reading=s=>s!==''&&Number.isFinite(Number(s))&&Number(s)>=0&&Number(s)<=60?s:'';
   const fresh=()=>({v:1,id:Array.from(crypto.getRandomValues(new Uint8Array(4)),n=>n.toString(16).padStart(2,'0')).join('').toUpperCase(),fields:{},step:'field',pair:pairs[0],row:0,check:'',mode:'class',hum:Array(10).fill(''),ownHum:Array(10).fill(''),timer:timerZero(),sort:{},lastVisitedAt:0,lastSection:'field'});
-  let s=fresh(),session,blocked=false,selected='',anim,timerTick;
+  let s=fresh(),session,loaded=false,blocked=false,selected='',anim,timerTick;
   try{
     session=window.OpenSciEdSaveSession?.open(localStorage,'b5-thermoregulation',[KEY]);
     const raw=session?.read(KEY);
     if(raw){
       const v=JSON.parse(raw);if(v?.v!==1||!/^[0-9A-F]{8}$/.test(v.id))throw Error('invalid saved data');
-      s={...s,id:v.id,step:route.includes(v.step)?v.step:'field',pair:pairs.includes(v.pair)?v.pair:pairs[0],row:Number.isInteger(v.row)&&data[v.row]?v.row:0,check:checks.includes(v.check)?v.check:'',mode:v.mode==='practice'?'practice':'class',hum:s.hum.map((_,i)=>reading(clean(v.hum?.[i]))),lastVisitedAt:Number(v.lastVisitedAt)||0};
+      loaded=true;s={...s,id:v.id,lastSavedAt:window.OpenSciEdB5Workspace.timestamp(v.lastSavedAt),step:route.includes(v.step)?v.step:'field',pair:pairs.includes(v.pair)?v.pair:pairs[0],row:Number.isInteger(v.row)&&data[v.row]?v.row:0,check:checks.includes(v.check)?v.check:'',mode:v.mode==='practice'?'practice':'class',hum:s.hum.map((_,i)=>reading(clean(v.hum?.[i]))),lastVisitedAt:Number(v.lastVisitedAt)||0};
       s.ownHum=s.ownHum.map((_,i)=>reading(clean((Array.isArray(v.ownHum)?v.ownHum:v.mode==='practice'?[]:v.hum)?.[i])));
       s.hum=s.mode==='practice'?practice():s.ownHum;
       const t=v.timer;
@@ -44,10 +44,12 @@
   const canSave=()=>!blocked&&session?.check(KEY).ok;
   const identity=window.OpenSciEdSaveSession?.reportIdentity?.(session,[KEY],()=>window.Lab?.identity?.get?.()??null)??(()=>null);
   const hasWork=()=>Object.values(s.fields).some(v=>v.trim())||s.ownHum.some(Boolean)||s.mode==='practice'||Object.keys(s.sort).length||!!s.check||!!s.timer.start||!!s.timer.elapsed||!!s.timer.round;
+  const legacy=loaded&&Boolean(hasWork());
+  const receipt=window.OpenSciEdB5Workspace.mount({output:$('save'),key:KEY,session,canSave,restored:()=>legacy,getRecord:()=>s});
   function resetButton(){$('reset').disabled=!canSave()||!hasWork();}
-  function save(){
+  function save(workChanged=true){
     s.lastVisitedAt=Date.now();s.lastSection=s.step;
-    if(!canSave()||!session.write(KEY,JSON.stringify(s)).ok)$('save').textContent='This tab cannot save. Preview your report to keep a copy.';
+    receipt.write(workChanged);
     resetButton();
   }
   const evidence={
@@ -235,7 +237,7 @@
     }
     if(name!=='treadmill')walk(false);
     if(name==='model')recap();
-    if(persist){save();history.replaceState(null,'','#'+name);document.getElementById(name+'-title').focus();}
+    if(persist){save(false);history.replaceState(null,'','#'+name);document.getElementById(name+'-title').focus();}
   }
   all('[data-step],[data-go]').forEach(b=>b.onclick=()=>step(b.dataset.step||b.dataset.go));
   all('[data-pair]').forEach(b=>b.onclick=()=>{s.pair=b.dataset.pair;field();save();});
@@ -255,8 +257,7 @@
   };
   field();treadmill();renderCheck();drawHuman();sort();resetButton();drawCore($('core'));drawCore($('core-large'));
   const hash=location.hash.slice(1);step(route.includes(hash)?hash:s.step,false);
-  if(!canSave())$('save').textContent='This browser could not open the saved notebook. You can still preview a report.';
-  function placements(){return cards.map(([k,_,label])=>({card:label,placement:s.sort[k]?destinations[s.sort[k]]:null}));}
+    function placements(){return cards.map(([k,_,label])=>({card:label,placement:s.sort[k]?destinations[s.sort[k]]:null}));}
   const graphNote='Core graph readings are approximate, digitized from the printed line. They are not raw sensor values or additional rows in the treadmill break table.';
   const tableNote='Time on the treadmill is 360 minutes at 1.1 m/s and 375 minutes at the other speeds. The lesson handout does not explain the difference.';
   function humanRows(list){return times.map((minute,i)=>({minute,aC:list[i*2]===''?null:Number(list[i*2]),bC:list[i*2+1]===''?null:Number(list[i*2+1])}));}

@@ -15,13 +15,13 @@ const differences=pairs.map(([a,b])=>Array.from(letters(a),(x,i)=>x===letters(b)
 const fresh=()=>({v:1,id:Array.from(crypto.getRandomValues(new Uint8Array(4)),n=>n.toString(16).padStart(2,'0')).join('').toUpperCase(),step:'traits',lastSection:'traits',lastVisitedAt:0,notes:{},prediction:null,marks:[[],[],[]],checked:[],explored:[],tips:['','',''],treeGood:false,answers:{}});
 const clean=v=>typeof v==='string'?v.slice(0,4000):'';
 function validTree(t){return t[2]==='black'&&[t[0],t[1]].includes('polar')&&[t[0],t[1]].includes('brown');}
-let s=fresh(),session,failed=false,st='profile',p=0,dp=0,pending=null,editing=false,selected='',zoom='',calc={},treeMismatch=false,canSave;
+let s=fresh(),session,legacy=false,failed=false,st='profile',p=0,dp=0,pending=null,editing=false,selected='',zoom='',calc={},treeMismatch=false,canSave;
 try{
   session=window.OpenSciEdSaveSession?.open(localStorage,'b5-ancestry',[KEY]);
   const raw=session?.read(KEY);
   if(raw){
     const v=JSON.parse(raw);if(v?.v!==1||!/^[A-F0-9]{8}$/.test(v.id))throw Error('invalid notebook');
-    s.id=v.id;s.lastVisitedAt=Number(v.lastVisitedAt)||0;s.step=routes.includes(v.step)?v.step:'traits';
+    s.id=v.id;s.lastSavedAt=window.OpenSciEdB5Workspace.timestamp(v.lastSavedAt);s.lastVisitedAt=Number(v.lastVisitedAt)||0;s.step=routes.includes(v.step)?v.step:'traits';
     for(const k of station)if(clean(v.notes?.[k]).trim())s.notes[k]=clean(v.notes[k]);
     s.prediction=Number.isInteger(v.prediction)&&pairs[v.prediction]&&Object.keys(s.notes).length?v.prediction:null;
     s.marks=s.marks.map((_,i)=>Array.isArray(v.marks?.[i])?[...new Set(v.marks[i].filter(n=>Number.isInteger(n)&&n>=0&&n<72))].sort((a,b)=>a-b):[]);
@@ -30,15 +30,17 @@ try{
     s.tips=s.tips.map((_,i)=>ids.includes(v.tips?.[i])&&v.tips.indexOf(v.tips[i])===i?v.tips[i]:'');
     s.treeGood=v.treeGood===true&&validTree(s.tips)&&s.checked.length===3;
     for(const k of ['conclusion','revise'])s.answers[k]=clean(v.answers?.[k]);
+    legacy=Object.values(s.notes).some(x=>x.trim())||s.prediction!==null||s.checked.length>0||Object.values(s.answers).some(x=>x.trim());
   }
 }catch(_){failed=true;}
 pending=s.prediction;
 canSave=()=>!failed&&session?.check(KEY).ok;
 const identity=window.OpenSciEdSaveSession?.reportIdentity?.(session,[KEY],()=>window.Lab?.identity?.get?.()??null)??(()=>null);
 function announce(t){$('status').textContent=t;}
-function save(){
+const receipt=window.OpenSciEdB5Workspace.mount({output:$('save'),key:KEY,session,canSave,restored:()=>legacy,getRecord:()=>s});
+function save(workChanged=true){
   s.lastSection=s.step;s.lastVisitedAt=Date.now();
-  if(!canSave()||!session.write(KEY,JSON.stringify(s)).ok)$('save').textContent='This tab cannot save. Preview your report to keep a copy.';
+  receipt.write(workChanged);
   $('reset').disabled=!canSave()||!Object.keys(s.notes).length;
 }
 const stationNames={profile:'Bear profiles',skull:'Skulls',teeth:'Teeth',claw:'Claws'};
@@ -63,7 +65,7 @@ function step(k,persist=true){
   s.step=k;for(const id of routes)document.getElementById(id).hidden=id!==k;
   if(k==='tree')log($('tree-table'));if(k==='explain')recap();
   nav();
-  if(persist){announce('');save();history.replaceState(null,'','#'+k);document.getElementById(k+'-title').focus();}
+  if(persist){announce('');save(false);history.replaceState(null,'','#'+k);document.getElementById(k+'-title').focus();}
 }
 function buildPairButtons(where,fn){
  pairs.forEach((_,i)=>{const b=btn(pairLabel(i));b.dataset.pair=i;b.onclick=()=>fn(i);where.append(b);});
@@ -267,7 +269,6 @@ $('reset-form').onsubmit=e=>{
 };
 specimens();noteUI();predictUI();dna();tree();
 const hash=location.hash.slice(1), start=routes.includes(hash)&&gate(hash)?hash:gate(s.step)?s.step:routes.findLast(gate);step(start,false);
-if(!canSave())$('save').textContent='This browser could not open the saved notebook. You can still preview a report.';
 function collectReport(){
  const q1='Which bears share a more recent common ancestor? Explain one branch point and cite a DNA comparison.',q2='Did you keep or revise your first guess? Explain what the trait evidence can and cannot tell you.';
  const ordered=key=>key.split('|').sort().join('|');
