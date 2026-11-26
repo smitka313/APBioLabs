@@ -26,11 +26,12 @@ function table(headers,rows,title,scroll=false){
  if(!scroll)return t;
  const d=n('div',undefined,'hy-scroll');d.tabIndex=0;d.setAttribute('role','region');d.setAttribute('aria-label',title);d.append(t);return d;
 }
-const fresh=()=>({v:1,id:Array.from(crypto.getRandomValues(new Uint8Array(4)),x=>x.toString(16).padStart(2,'0')).join('').toUpperCase(),step:'ice',lastVisitedAt:0,year:null,islands:[],traces:[],rolls:0,answers:{},verdict:null,finished:false});
+const newId=()=>Array.from(crypto.getRandomValues(new Uint8Array(4)),x=>x.toString(16).padStart(2,'0')).join('').toUpperCase();
+const fresh=()=>({v:1,id:null,step:'ice',lastVisitedAt:0,year:null,islands:[],traces:[],rolls:0,answers:{},verdict:null,finished:false});
 let s=fresh(),session,failed=false,started=false,year=2022,encounter='brown',familyChoice='',picked=null;
 const shown=new Set(D.graph.map(g=>g.key));
 try{
- session=window.OpenSciEdSaveSession?.open(localStorage,'b5-hybrid',[KEY]);
+ session=window.OpenSciEdSaveSession?.open(localStorage,'b5-hybrid',[KEY],undefined,{routeMetadata:['step','lastVisitedAt']});
  const raw=session?.read(KEY);
  if(raw){
   const v=JSON.parse(raw);
@@ -40,9 +41,16 @@ try{
   s.islands=cleanArray(v.islands,['banks','victoria']);s.traces=cleanArray(v.traces,D.family.filter(k=>k.parents).map(k=>k.id));
   s.rolls=Number.isInteger(v.rolls)?Math.min(40,Math.max(0,v.rolls)):0;s.verdict=Object.hasOwn(checks,v.verdict)?v.verdict:null;
   for(const k of Object.keys(assignments))s.answers[k]=clean(v.answers?.[k],k);
-  s.finished=v.finished===true&&readyClaim();started=true;year=s.year??2022;
+  s.finished=v.finished===true&&readyClaim();
+  started=!!(s.lastVisitedAt||s.year||s.islands.length||s.traces.length||s.rolls||Object.values(s.answers).some(Boolean)||s.verdict);
+  year=s.year??2022;
+ }else if(session){
+  // Reserve the dataset before showing it. A seed without work is not a started lab.
+  s.id=newId();
+  if(!session.write(KEY,JSON.stringify({v:1,id:s.id})).ok)failed=true;
  }
 }catch(_){failed=true;}
+if(s.id===null)s.id=newId();
 const canSave=()=>!failed&&session?.check(KEY).ok;
 const identity=window.OpenSciEdSaveSession?.reportIdentity?.(session,[KEY],()=>window.Lab?.identity?.get?.()??null)??(()=>null);
 const say=t=>{$('status').textContent=t;};
@@ -225,7 +233,7 @@ $('reset').onclick=()=>{$('erase').value='';$('confirm').disabled=true;$('reset-
 $('cancel').onclick=()=>$('reset-dialog').close();
 $('erase').oninput=()=>{$('confirm').disabled=$('erase').value!=='ERASE';};
 $('reset-form').onsubmit=e=>{e.preventDefault();if($('erase').value!=='ERASE')return;
- if(!canSave()||!session.reset(KEY).ok){$('reset-error').textContent='Could not clear this notebook. Reload and try again.';return;}
+ if(!canSave()||!session.reset(KEY,JSON.stringify({v:1,id:newId()})).ok){$('reset-error').textContent='Could not clear this notebook. Reload and try again.';return;}
  history.replaceState(null,'',location.pathname+location.search);location.reload();
 };
 function report(){

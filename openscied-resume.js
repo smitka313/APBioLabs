@@ -26,7 +26,7 @@
       [pref+'b2-carbon-journey:v1','rows answers pending done presentation coverageReviewed'],
       [pref+'b2-carbon-journey:budget:v1','furthest prediction explanation']
     ],
-    'b3-screening': [[pref+'b3-screening:v1','started plan trial caseChecks claim limit finished']],
+    'b3-screening': [[pref+'b3-screening:v1','started plan trial caseChecks claim limit finished practice']],
     'b3-cancer-rates': [[pref+'b3-cancer-rates:v1','casework prediction evidence claim limits completed design ret']],
     'b3-cell-cycle': [[pref+'b3-cell-cycle:v1','game trials fields quick mechanism']],
     'b3-dna-workshop': [[pref+'b3-dna-workshop:v1','progress answers']],
@@ -62,6 +62,7 @@
   function project(saved, keys, extraFields=[]) {
     return Object.fromEntries(keys.split(' ').map(k=>{
       let value=saved[k];
+      if (k==='plan' && !saved.started) value=undefined; // Opening an untouched Screening district is not work.
       // Null means never edited; an empty saved set is a deliberate response.
       if (['scaleDraft','scaleCheck'].includes(k)&&Array.isArray(value)) value={recorded:true,choices:value};
       if (k==='fields' && Array.isArray(saved.responseIds) && saved.responseIds.length && value) {

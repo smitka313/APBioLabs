@@ -42,6 +42,7 @@ test('an old activity cannot restore its timestamp after its scoped results were
 
 test('new report-bearing classroom checks promote saved evidence but not visits',()=>{
   for(const [scope,base,extra] of [
+    ['b3-screening',{seed:419,plan:{screen:'hub'}},{practice:{'1:mobile:mobile:mobile:none':1}}],
     ['b5-wapusk',{fields:{}},{scaleDraft:['park']}],
     ['b5-wapusk',{fields:{}},{scaleCheck:[]}],
     ['b4-hawksbeard',{prediction:'city'},{denominatorChoice:'soil'}],

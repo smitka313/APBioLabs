@@ -57,6 +57,26 @@ test('ordinary cross-tab replacement cannot be overwritten by an older editor', 
   assert.equal(f.storage.getItem(dna), '{"steps":6}');
   assert.deepEqual(b.write(dna, '{"steps":6,"answer":"more"}'), { ok:true });
 });
+test('route-only tolerance is opt-in and cannot mask real work or a reset', () => {
+  const initial = JSON.stringify({ steps:1, answers:{claim:'original'}, lastSection:'review', lastVisitedAt:1 });
+  const nextRoute = JSON.stringify({ steps:1, answers:{claim:'original'}, lastSection:'intro', lastVisitedAt:2 });
+  const newWork = JSON.stringify({ steps:2, answers:{claim:'new evidence'}, lastSection:'model', lastVisitedAt:3 });
+  const f = fixture({ [dna]:initial });
+  const exact = f.open(D,[dna]);
+  const tolerant = S.open(f.storage,D,[dna],f.stamp,{routeMetadata:['lastSection','lastVisitedAt']});
+  assert.deepEqual(exact.write(dna,nextRoute),{ok:true});
+  assert.deepEqual(tolerant.check(dna),{ok:true},'routing alone is not new student work');
+  assert.deepEqual(tolerant.write(dna,newWork),{ok:true});
+  assert.deepEqual(exact.write(dna,nextRoute),{ok:false,reason:'changed'},'stale routing cannot overwrite newer evidence');
+  const other = S.open(f.storage,D,[dna],f.stamp,{routeMetadata:['lastSection','lastVisitedAt']});
+  assert.deepEqual(tolerant.write(dna,newWork.replace('new evidence','edited evidence')),{ok:true});
+  assert.deepEqual(other.write(dna,newWork),{ok:false,reason:'changed'},'nested responses are still compared');
+  const sameWork = S.open(f.storage,D,[dna],f.stamp,{routeMetadata:['lastSection','lastVisitedAt']});
+  const resetter = f.open(D,[dna]);
+  assert.deepEqual(resetter.reset(dna,resetter.read(dna)),{ok:true});
+  assert.deepEqual(sameWork.write(dna,newWork),{ok:false,reason:'erased'},'identical bytes cannot bypass a reset marker');
+});
+
 test('older non-guarded pages or browser deletion can still be observed before saving', () => {
   const f = fixture({ [dna]:'snapshot' });
   const a = f.open(D, [dna]);

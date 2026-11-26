@@ -540,7 +540,8 @@
       if (v.sim.stage !== lastStage) { if (v.sim.stage === 'burning' && lastStage === 'heating') api.announce('It caught fire after ' + v.res.igniteS + ' seconds.'); lastStage = v.sim.stage; }
       if (reduced()) draw();
       updateDesc();
-      if (v.phase === 'finished') { stopTick(); const active = host.contains(doc.activeElement); persist(); api.announce('The fuel is out. Lift the dome and weigh the ash before recording.'); render(active ? '[data-bn="after"]' : null); }
+      // The elapsed phase is derived from the saved start time; do not re-save unchanged state.
+      if (v.phase === 'finished') { stopTick(); const active = host.contains(doc.activeElement); api.announce('The fuel is out. Lift the dome and weigh the ash before recording.'); render(active ? '[data-bn="after"]' : null); }
     }
     const redraw = () => { draw(); };
     if (typeof ResizeObserver !== 'undefined') new ResizeObserver(redraw).observe(canvas.parentElement || host);

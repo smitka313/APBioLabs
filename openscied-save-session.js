@@ -87,12 +87,29 @@
     if (notice?.dataset?.workKey === key) notice.remove();
   }
 
+  // Route changes timestamp the whole saved record in some activities. They can
+  // be ignored for conflict checks only when an activity opts in and all its
+  // non-route data still matches the opening snapshot. Never ignore resets.
+  function sameWork(previous, current, routeMetadata) {
+    if (!routeMetadata.size || previous === null || current === null) return false;
+    try {
+      const a = JSON.parse(previous), b = JSON.parse(current);
+      const record = value => value && typeof value === 'object' && !Array.isArray(value);
+      if (!record(a) || !record(b)) return false;
+      const keys = value => Object.keys(value).filter(key => !routeMetadata.has(key));
+      const left = keys(a), right = keys(b);
+      return left.length === right.length && left.every(key =>
+        Object.hasOwn(b, key) && JSON.stringify(a[key]) === JSON.stringify(b[key]));
+    } catch (_) { return false; }
+  }
+
   // Initialize synchronously before restoring/creating the in-memory activity. Session
   // read() returns the exact snapshot used for that tab, not a later record it can't merge.
-  function open(storage, scope, keys, nonce = newNonce) {
+  function open(storage, scope, keys, nonce = newNonce, { routeMetadata = [] } = {}) {
     checkScope(scope);
     const all = trackedKeys(keys);
     const baseline = new Map(all.map(key => [key, { raw:null, epoch:null }]));
+    const routeFields = new Set(routeMetadata);
     let globalEpoch, scopeEpoch, ready = false;
     try {
       globalEpoch = storage.getItem(globalKey);
@@ -116,7 +133,7 @@
             storage.getItem(scopeKey(scope)) !== scopeEpoch ||
             storage.getItem(resetKey(key)) !== slot.epoch) return erased();
         const current = storage.getItem(key);
-        if (current !== slot.raw) return slot.raw !== null && current === null ? erased() : changed();
+        if (current !== slot.raw && !sameWork(slot.raw, current, routeFields)) return slot.raw !== null && current === null ? erased() : changed();
         return success();
       } catch (_) { return unavailable(); }
     }

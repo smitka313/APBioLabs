@@ -64,6 +64,20 @@ test('recorded burns survive a freshly opened activity, which does not rewrite s
   assert.equal(f.writes(),writes);
 });
 
+test('a second tab only browsing does not prevent the next completed burn from saving', () => {
+  const f=fixture(), active=f.open();
+  assert.equal(active.record(one),true);
+  const reader=f.open();
+  const before=f.writes();
+  reader.nav('#wrapup');
+  assert.equal(f.writes(),before+1,'navigation updates the saved resume route');
+  assert.equal(JSON.parse(f.localStorage.getItem(KEY)).lastSection,'wrapup');
+  active.change(KEY);
+  assert.equal(active.warning(),'');
+  assert.equal(active.record(two),true);
+  assert.equal(f.open().count(),2,'both samples remain after opening the activity again');
+});
+
 test('stale navigation and edits do not overwrite another tab’s newer burns', async () => {
   const f=fixture(), active=f.open();
   active.record(one);

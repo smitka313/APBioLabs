@@ -102,7 +102,11 @@
     let s;
     try{s=JSON.parse(raw);if(s?.v!==1||!Number.isInteger(s.seed)||s.seed<0||s.seed>4294967295)throw Error('Invalid save');}
     catch(_){return {...empty,summary:'Saved work could not be read. Download a copy before restarting.'};}
-    if(s.started!==true)return empty;
+    if(s.started!==true){
+      const practiced = s.practice && Object.values(s.practice).some(n=>n===1||n===2);
+      return practiced ? {started:true,section:'',visited:Number(s.lastVisitedAt)||0,stepsDone:0,stepsTotal:3,
+        stepsLabel:'Investigation milestones complete',summary:'Practice booking saved'} : empty;
+    }
     const zone=z=>z==='hub'||z==='mobile',p=s.trial;
     const compared=zone(p?.screen)&&zone(p?.machine)&&p.operator===p.machine&&(zone(p.rides)||p.rides===null)
       &&(p.screen==='mobile'||p.machine==='mobile'||p.rides!==null)
