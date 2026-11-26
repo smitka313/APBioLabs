@@ -403,7 +403,8 @@
         <p class="scene-notice" id="planner-notice" hidden>Interactive planner coming in the next update. The questions here already work.</p>
       </div>
       <div class="your-data panel" id="data-planner" aria-labelledby="data-planner-title"><h3 id="data-planner-title">Your plan</h3><div class="your-data-body" id="data-planner-body"><p class="muted">Run the planner first. Your dishes will appear here.</p></div></div>
-      <fieldset class="chipset" data-id="ctrl" data-answer="a,b,c,d"><legend>Tap what must stay the same in every dish.</legend>
+      <fieldset class="chipset" data-id="ctrl" data-answer="a,b,c,d" aria-describedby="ctrl-practice-note"><legend>Practice: what must stay the same in every dish?</legend>
+        <p class="hint" id="ctrl-practice-note">These choices only check your understanding. To save your experiment settings, use the controls at the top of the planner.</p>
         <label class="chip"><input type="checkbox" id="ctrl-a"> Yeast type and amount</label>
         <label class="chip"><input type="checkbox" id="ctrl-b"> Distance from the lamp</label>
         <label class="chip"><input type="checkbox" id="ctrl-c"> Days of growing</label>
@@ -449,7 +450,7 @@
           <label class="chip"><input type="checkbox" id="cer-ev-1" aria-describedby="cer-ev-1-note"> My dishes with more UV had fewer colonies</label><span class="ev-note" id="cer-ev-1-note"></span>
           <label class="chip"><input type="checkbox" id="cer-ev-2" aria-describedby="cer-ev-2-note"> My dark dish grew about the most</label><span class="ev-note" id="cer-ev-2-note"></span>
           <label class="chip"><input type="checkbox" id="cer-ev-3" aria-describedby="cer-ev-3-note"> Dishes with higher SPF had more colonies</label><span class="ev-note" id="cer-ev-3-note"></span>
-          <label class="chip"><input type="checkbox" id="cer-ev-4"> A skin-cancer graph rises with UV</label>
+          <label class="chip"><input type="checkbox" id="cer-ev-4" aria-describedby="cer-ev-4-note"> A skin-cancer graph rises with UV</label><span class="ev-note" id="cer-ev-4-note"></span>
         </fieldset>
         <fieldset class="mcq mini" data-id="cer-reason"><legend>Reasoning</legend>
           <label class="choice"><input type="radio" name="cer-reason" value="a"> UV damages DNA, and these yeast cannot repair it.</label>
@@ -573,3 +574,4 @@
 <script src="companion-pages.js"></script>
 </body>
 </html>
+

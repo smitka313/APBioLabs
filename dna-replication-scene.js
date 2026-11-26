@@ -122,7 +122,7 @@
       if (st === 'zipped') return 'Step 2 of 5 · Unzip. Press “Add helicase”, or drag the helicase to the left end of the DNA. Helicase unzips the two strands, like a zipper.';
       if (st === 'pairing') return 'Step 3 of 5 · Pair the letters by hand: A goes with T and G goes with C. Top strand ' + manualDone('top') + ' of ' + MANUAL + ', bottom strand ' + manualDone('bottom') + ' of ' + MANUAL + '. Pick the partner for the letter at each arrow.' + (sel ? ' (' + sel + ': now click a strand.)' : '');
       if (st === 'auto') return 'Step 3 of 5 · The model speeds up and pairs the rest of the letters on its own. Watch for red letters.';
-      if (st === 'complete') return 'Done. Both strands show 0 substitutions: two double strands, each with an old strand and a new strand that match. Use “Start over” to copy again (the model re-randomizes).';
+      if (st === 'complete') return 'Done. Both strands show 0 substitutions: two double strands, each with an old strand and a new strand that match. Try any p53 here to confirm there is no substitution, or use “Start over” to compare the versions on a new copy.';
       if (!triedAny()) return 'Step 4 of 5 · Count the substitutions. Red letters with a cross are substitutions. Your counts are in the table below. Then go on to step 5.';
       return 'Step 5 of 5 · Try p53. Add each version to each strand. Replace every letter that p53 removes with its correct partner until both strands show 0 substitutions.' + (sel ? ' (' + sel + ': now click a strand.)' : '');
     }
@@ -305,7 +305,9 @@
       refresh();
     }
     function doP53(v, k) {
-      if (busy || stage() !== 'p53' || !P53_PATH[v] || !NAME[k]) return;
+      const st = stage();
+      if (!P53_PATH[v] || !NAME[k] || (st !== 'p53' && st !== 'complete')) return;
+      if (busy) { say('Wait for the current test to finish before trying another p53.'); return; }
       const r = L.p53Apply(sites[k], v);
       held = null; busy = true;
       p53[v].tried++; if (r.removed) p53[v].removed++;
@@ -797,3 +799,4 @@
     relayout();
   }
 })();
+

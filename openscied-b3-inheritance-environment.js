@@ -311,21 +311,34 @@
   // Evidence chips about "my dishes" are checked against the student's own yeast table, so a statement the data do not show earns no credit.
   const EV_KEY = { 'cer-ev-1': 'more', 'cer-ev-2': 'dark', 'cer-ev-3': 'spf' };
   function whose(id, basis) { const b = basis[EV_KEY[id]]; return b === 'sensitive' ? 'Your UV-sensitive dishes' : b === 'wild' ? 'Your wild-type dishes' : 'Your dishes'; }
+  function evidenceVerdicts(dishes) {
+    const checks = L.evidenceChecks(dishes), basis = L.evidenceBasis(dishes);
+    const counted = dishes.some(x=>x && num(x.colonies));
+    const result = {};
+    Object.keys(EV_KEY).forEach(function (id) {
+      const v = checks[EV_KEY[id]], group = whose(id, basis);
+      result[id] = v === true ? {status:'supported',message:group+' show this.'} :
+        v === false ? {status:'unsupported',message:group+' do not show this. Check your table.'} :
+          {status:'unverified',message:counted?'Count more dishes to check this.':'Count your dishes first to check this.'};
+    });
+    result['cer-ev-4'] = {status:'supported',message:'The White-labeled graph generally rises as UV increases. The pattern is less clear in the other two graphs. This is a pattern, not proof of cause.'};
+    return result;
+  }
+  const evidenceMark = {supported:'✓ Supported:',unsupported:'✕ Not supported:',unverified:'Not yet checked:'};
+  function currentEvidence(){ return evidenceVerdicts(Array.isArray(state.yeast?.dishes) ? state.yeast.dishes : []); }
   function renderClaim(speak) {
     const ck = id => $('#' + id).checked, claimEl = $('input[name="cer-claim"]:checked'), reason = $('input[name="cer-reason"]:checked');
-    const dishes = state.yeast && Array.isArray(state.yeast.dishes) ? state.yeast.dishes : [], checks = L.evidenceChecks(dishes);
-    const counted = dishes.filter(function (x) { return x && num(x.colonies); }).length;
-    const basis = L.evidenceBasis(dishes), ok = {};
+    const verdicts = currentEvidence(), ok = {};
     let unsupported = false, unverified = false;
-    Object.keys(EV_KEY).forEach(function (id) {
-      const v = checks[EV_KEY[id]], note = $('#' + id + '-note'), on = ck(id);
-      ok[id] = on && v === true;
-      if (on && v === false) unsupported = true;
-      if (on && v == null) unverified = true;
-      if (note) note.textContent = !on ? '' : v === true ? '✓ ' + whose(id, basis) + ' show this.' : v === false ? '✕ ' + whose(id, basis) + ' do not show this. Check your table.' : (counted ? 'Count more dishes to check this.' : 'Count your dishes first to check this.');
+    Object.entries(verdicts).forEach(function ([id,v]) {
+      const note = $('#' + id + '-note'), on = ck(id);
+      ok[id] = on && v.status === 'supported';
+      if (on && v.status === 'unsupported') unsupported = true;
+      if (on && v.status === 'unverified') unverified = true;
+      if (note) note.textContent = on ? evidenceMark[v.status]+' '+v.message : '';
     });
     const claimOk = !!claimEl && claimEl.value !== 'c', reasonOk = !!reason && reason.value === 'a';
-    const flags = [claimOk, ok['cer-ev-1'] || ok['cer-ev-2'] || ok['cer-ev-3'], ck('cer-ev-4') || reasonOk, reasonOk, ck('cer-caveat')];
+    const flags = [claimOk, ok['cer-ev-1'] || ok['cer-ev-2'] || ok['cer-ev-3'], ok['cer-ev-4'] || reasonOk, reasonOk, ck('cer-caveat')];
     const review = unsupported ? 'Review your evidence: at least one selected statement does not match your dishes. Compare it with your table and revise your choices.' :
       unverified ? 'Check your evidence: count the dishes you need before using the selected statement.' : '';
     const level = review ? 'review' : L.claimLevel(flags), out = $('#cer-level');
@@ -352,7 +365,19 @@
     return out;
   }
   function chips() {
-    return $$('main fieldset.chipset').map(function (fs) { return { id: fs.dataset.id || legendOf(fs), question: legendOf(fs), chosen: $$('input:checked', fs).map(function (b) { return b.parentElement.textContent.trim(); }) }; });
+    return $$('main fieldset.chipset').map(function (fs) {
+      const checks = $$('input:checked', fs);
+      const chosen = checks.map(b=>b.parentElement.textContent.trim());
+      const chip = {id:fs.dataset.id||legendOf(fs),question:legendOf(fs),chosen};
+      if(chip.id==='cer-evidence' && checks.length){
+        const verdicts=currentEvidence();
+        chip.evidence=checks.map((input,i)=>{
+          const verdict=verdicts[input.id];
+          return verdict ? chosen[i]+' · '+evidenceMark[verdict.status]+' '+verdict.message : chosen[i];
+        });
+      }
+      return chip;
+    });
   }
   function textAnswers() { return $$('main textarea, main input[type=text]').filter(function (t) { return !t.readOnly && t.id; }).map(function (t) { return { id: t.id, prompt: labelFor(t.id), answer: t.value.trim() }; }); }
   function renderReport() {
@@ -532,7 +557,7 @@
       title:'My question and responses',items:[
         answer('My investigation question',state.question?.text),
         ...scopedChoices.map(x=>answer(x.question,x.answer)),
-        ...allChips.filter(x=>!lesson9Only||!partA.has(x.id)).map(x=>answer(x.question,x.chosen.join('; '))),
+        ...allChips.filter(x=>!lesson9Only||!partA.has(x.id)).map(x=>answer(x.question,x.evidence?.join('\n') ?? x.chosen.join('; '))),
         ...(!lesson9Only?[orderAnswer]:[]),
         ...response.filter(x=>x.answer&&(!lesson9Only||!partA.has(x.id))).map(x=>answer(x.prompt,x.answer))
       ]
@@ -557,3 +582,4 @@
 
   window.OpenSciEdSubmission?.mount({target:'#ose-submission-report',collect:submissionReport});
 })();
+

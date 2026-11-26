@@ -183,7 +183,23 @@ const out=path.join(ROOT,'artifacts','screening');
     await id('other-cases').locator(':scope > summary').click();
     await id('view').selectOption('base');
     const blocked=baseline.patients.find(x=>x.outcome==='screen-missed');
-    if(blocked){await id('patients').locator('button').nth(blocked.id-1).click();assert.match(await id('map-event').textContent(),/Missed screening/);}
+    if(blocked){
+      await id('patients').locator('button').nth(blocked.id-1).click();
+      assert.match(await id('map-event').textContent(),/Missed screening/);
+      assert.match(await id('trip-stops').innerText(),/Start at home.*No drive.*budget or time/s);
+      assert.equal(await id('traveler').getAttribute('data-stalled'),'true');
+    }
+    const drives=baseline.patients.find(x=>x.outcome==='imaged');
+    if(drives){
+      await id('patients').locator('button').nth(drives.id-1).click();
+      assert.match(await id('trip-stops').innerText(),/Drive to.*for screening.*Return home.*Drive to.*for ultrasound follow-up/s);
+      assert.ok(await id('traveler').locator('svg').isVisible());
+      if(width===1366){
+        await p.waitForFunction(()=>document.getElementById('sd-map-event').textContent.includes('is traveling'));
+        await p.waitForFunction(()=>document.getElementById('sd-map-event').textContent.includes('Ultrasound completed:') ||
+          document.getElementById('sd-map-event').textContent.includes('Ultrasound completed.'));
+      }else assert.match(await id('map-event').textContent(),/Ultrasound completed/);
+    }
     await id('view').selectOption('trial');
     assert.equal(await id('patients').locator('[aria-pressed="true"]').count(),1);
     await id('other-cases').locator(':scope > summary').click();
@@ -200,6 +216,8 @@ const out=path.join(ROOT,'artifacts','screening');
       }
       await id('case-pick').selectOption(answer);await id('check-case').click();
       assert.match(await id('case-progress').textContent(),new RegExp((i+1)+' of 3'));
+      assert.match(await id('status').textContent(),new RegExp('Redesign recorded. '+(i+1)+' of 3 comparisons checked'));
+      if(i===2)assert.match(await id('status').textContent(),/All comparisons are current/);
       assert.equal(await id('cases').locator('.sd-decision-stamp').count(),2*(i+1));
       assert.match(await id('decision-score').textContent(),new RegExp('Among the '+(i+1)+' checked'));
       if(i===0){await p.reload();assert.match(await id('case-progress').textContent(),/1 of 3/);assert.ok(await id('to-explain').isDisabled());}
@@ -230,7 +248,9 @@ const out=path.join(ROOT,'artifacts','screening');
     assert.match(await id('finished').textContent(),/Investigation complete/);
     assert.match(await id('claim').inputValue(),/redesign/);
     await p.getByRole('button',{name:'Preview report'}).click();
-    if(width===390)assert.match(await p.locator('.osr-dialog article').innerText(),/Practice cost-sheet bookings.*Visits booked/s);
+    const printed=await p.locator('.osr-dialog article').innerText();
+    assert.match(printed,/Patient comparisons checked.*3 of 3/s);
+    if(width===390)assert.match(printed,/Practice cost-sheet bookings.*Visits booked/s);
     assert.match(await p.getByRole('dialog').filter({hasText:'Cancer Screening Design Lab'}).innerText(),/Three patient scenarios.*Your comparison answers.*(Both plans|Neither plan|Hospital only|Redesign only).*Dispatch mission results.*Ultrasound acquisition.*Itemized patient cost sheets/s);
     assert.deepEqual(errors,[]);
     console.log('ok: Screening Design '+width+'px — map, staffing gate, budget, fair comparison, reload, report');
@@ -238,3 +258,4 @@ const out=path.join(ROOT,'artifacts','screening');
   }
  }finally{await browser?.close();await server.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
+
