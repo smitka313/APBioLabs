@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'openscied-b3-cancer-rates*'
+      - 'openscied-submission-report.*'
+      - 'openscied-save-session.js'
       - 'assets/*cancer-rates*'
       - 'tests/openscied-b3-cancer-rates*'
       - '.github/workflows/openscied-cancer-rates.yml'
@@ -22,7 +24,16 @@ jobs:
       - run: node --test tests/openscied-b3-cancer-rates-logic.test.js
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      - name: Install PDF text verification tool
+        run: |
+          if ! command -v pdftotext >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y poppler-utils
+          fi
+          pdftotext -v
       - run: node tests/openscied-b3-cancer-rates-browser.js
+        env:
+          REQUIRE_CANCER_PDF_TEXT: '1'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
