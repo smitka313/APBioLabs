@@ -161,26 +161,35 @@
     }
     host.replaceChildren(group);
   }
-  function needsCross(){
-    if(viewAction!==null||M.preview(model)?.action!=='breed')return false;
-    const assigned=M.step(model).generations.at(-1).pairs;
-    return assigned.length>0&&!assigned.some(pair=>B.complete(state.crosses[pair.id]));
+  function nextCrossProgress(){
+    if(viewAction!==null||M.preview(model)?.action!=='breed')return null;
+    return B.assignedProgress(M.step(model).generations.at(-1).pairs,state.crosses);
   }
+  const needsCross=()=>!!nextCrossProgress()?.pending.length;
   function crossGate(){
-    const breeding=viewAction===null&&M.preview(model)?.action==='breed';
-    const gated=needsCross();
+    const progress=nextCrossProgress();
+    const breeding=!!progress, gated=!!progress?.pending.length;
     const next=$('#rg-next'), near=$('#rg-produce'), jump=$('#rg-cross-jump');
     next.hidden=breeding||(viewAction===null&&model.done);
     next.disabled=next.hidden;
     near.hidden=!breeding;
     near.disabled=!breeding||gated;
     near.textContent=breeding?next.textContent:'';
-    set('produce-hint',breeding&&gated?'Complete one square above to unlock this action.':'');
+    const progressText=breeding
+      ? progress.done+' of '+progress.total+' assigned crosses complete.' : '';
+    const hint=gated?' Finish every assigned pair to unlock this generation.':'';
+    const status=$('#rg-produce-hint');
+    if(status.textContent!==progressText+hint)set('produce-hint',progressText+hint);
     $('#rg-cross-gate').hidden=!gated;
     jump.hidden=!breeding;
-    jump.href=gated?'#rg-burrow':'#rg-produce';
-    jump.textContent=gated?'Go to the Punnett workbench':'Go to the completed square to produce offspring';
-    set('cross-gate',gated?'Choose any assigned pair and build one square.':'');
+    jump.href=gated?'#rg-pairs':'#rg-produce';
+    jump.textContent=gated?'Go to the assigned pairs':'Go to Produce offspring';
+    set('cross-gate',gated?progressText+hint:'');
+    const nextPair=$('#rg-next-pair');
+    const readyToSwitch=!!(gated&&state.activePair&&B.complete(state.crosses[state.activePair]));
+    nextPair.hidden=!readyToSwitch;
+    nextPair.disabled=!readyToSwitch;
+    nextPair.dataset.pair=readyToSwitch?progress.pending[0].id:'';
   }
   let burrow, nextMotion=false;
   function drawBurrow(record,row,pair,workbench,showMotion){
@@ -214,19 +223,27 @@
     host.append(node('p',future?'Pairs ready to produce Generation '+target+'.':'Pairs that produced Generation '+target+'.'));
     const register=node('div','','rg-pair-list');host.append(register);
     const requested=past?activePair:state.activePair;
-    const focusId=crossList.some(p=>p.id===requested)?requested:crossList[0].id;
+    const focusId=crossList.some(p=>p.id===requested)?requested:
+      (future?crossList.find(p=>!B.complete(state.crosses[p.id])):null)?.id||crossList[0].id;
+    const pairLabel=(p,i)=>'Pair '+(i+1)+' · '+p.parents.map(parent=>parent.genotype).join(' × ')+
+      (future?(B.complete(state.crosses[p.id])?' · Complete':' · To do'):'');
     for(const [i,p] of crossList.entries()) {
-      const b=button('Pair '+(i+1)+' · '+p.parents.map(parent=>parent.genotype).join(' × '),()=>{
-        activePair=p.id;if(!past){state.activePair=p.id;save();}show(p);for(const other of register.children)other.setAttribute('aria-pressed',String(other===b));
+      const b=button(pairLabel(p,i),()=>{
+        activePair=p.id;if(!past){state.activePair=p.id;save();}show(p);crossGate();for(const other of register.children)other.setAttribute('aria-pressed',String(other===b));
       },{'data-rg-pair':p.id,'aria-pressed':String(p.id===focusId)},'rg-pair');
       register.append(b);
     }
     function show(p) {
       if(future){
         const workbench=B.mount(box,{
-          pair:p,progress:state.crosses[p.id],required:needsCross(),tokenUrl:TOKEN,
+          pair:p,progress:state.crosses[p.id],tokenUrl:TOKEN,
           announce:message=>announce(message,true),
-          onChange:progress=>{state.crosses[p.id]=progress;state.activePair=p.id;save();gates();crossGate();drawBurrow(record,row,p,workbench,false);}
+          onChange:progress=>{
+            state.crosses[p.id]=progress;state.activePair=p.id;
+            const i=crossList.indexOf(p);
+            register.children[i].textContent=pairLabel(p,i);
+            save();gates();crossGate();drawBurrow(record,row,p,workbench,false);
+          }
         });
         drawBurrow(record,row,p,workbench,showMotion);
         showMotion=false;
@@ -516,6 +533,12 @@
   for(const [key,limit] of Object.entries(fields))$('#rg-'+key).addEventListener('input',e=>{state.person[key]=tidy(e.currentTarget.value,limit);save();});
   $('#rg-next').addEventListener('click',advance);
   $('#rg-produce').addEventListener('click',advance);
+  $('#rg-next-pair').addEventListener('click',event=>{
+    const id=event.currentTarget.dataset.pair;
+    if(!id)return;
+    $('#rg-pairs [data-rg-pair="'+id+'"]')?.click();
+    $('#rg-punnett')?.focus();
+  });
   function analysisFeedback(choice){
     return choice==='alleles'?'Right. Count every copy of this gene: two per rat.':
       choice==='rats'?'Not quite. To find the fraction of rats showing resistance, count rats. To find the fraction of allele copies that are R, count two copies per rat.':

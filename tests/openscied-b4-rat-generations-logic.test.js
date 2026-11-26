@@ -118,3 +118,32 @@ test('completed results vary by seed, compact restores by replay, and invalid sa
   for (const data of [null,'','{',{}, {v:2,seed:0,step:0},{v:1,seed:2**32,step:0},
     {v:1,seed:0,step:-1},{v:1,seed:0,step:7},{v:1,seed:0,step:2.5}]) assert.equal(L.restore(data),null);
 });
+
+// Exercise the real activity gate rather than reimplementing it in an assertion.
+test('the next breeding event requires all assigned squares without rewriting old generations',()=>{
+  const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+  const M=require('../openscied-b4-rat-generations-logic');
+  const B=require('../openscied-b4-rat-cross-builder');
+  const controller=fs.readFileSync(path.join(__dirname,'../openscied-b4-rat-generations.js'),'utf8');
+  const start=controller.indexOf('  function nextCrossProgress(');
+  const from=start<0?controller.indexOf('  function needsCross('):start;
+  const gate=controller.slice(from,controller.indexOf('  function crossGate(',from));
+  const context={M,B,viewAction:null,state:{crosses:{}},model:M.step(M.create(5))};
+  const gated=()=>vm.runInNewContext(gate+'; needsCross();',{...context});
+  const full={parents:[true,true],headers:[true,true,true,true],cells:Array.from({length:4},()=>[true,true])};
+  const assigned=M.step(context.model).generations.at(-1).pairs;
+  assert.equal(assigned.length,4);
+  context.state.crosses['g2-pair1']=full;
+  assert.equal(gated(),true,'work from a past generation does not complete a new pair');
+  context.state.crosses[assigned[0].id]=full;
+  assert.equal(gated(),true,'one finished square does not unlock Generation 3');
+  for(const cross of assigned.slice(1))context.state.crosses[cross.id]=full;
+  assert.equal(gated(),false,'every currently assigned square unlocks the generation');
+  context.model=M.step(context.model);
+  context.state.crosses={};
+  assert.equal(gated(),false,'a legacy save at an existing selection event is never sent back');
+  context.model=M.step(context.model);
+  assert.equal(gated(),true,'the next upcoming breeding event still requires its own squares');
+  context.viewAction=0;
+  assert.equal(gated(),false,'the historical timeline never requires rebuilding an old square');
+});

@@ -76,7 +76,7 @@
   <section id="rg-model" data-rg-step="model" aria-labelledby="rg-model-title" hidden>
     <div class="rg-stage"><div><p class="eyebrow">02 · Run the colony model</p><h2 id="rg-model-title" tabindex="-1">Follow five generations</h2></div><span class="rg-chip" id="rg-trial-id"></span></div>
     <p class="rg-intro">Birth comes first. This model applies selection for the first time after Generation 3 is born, so you can compare the colony before and after. Real colonies do not follow a fixed schedule.</p>
-    <p class="rg-intro">Match the rats marked P1 and P2 to their nests. Then place their allele letters in one Punnett square to unlock the next generation. The boxes show expected outcomes, not guaranteed pups in nature.</p>
+    <p class="rg-intro">For each assigned pair, match P1 and P2 to their nests and build its Punnett square. Complete every assigned pair to produce the next generation.</p>
     <div class="rg-timeline" id="rg-timeline" aria-label="Model timeline"></div>
     <div class="rg-event rg-panel" id="rg-events" aria-labelledby="rg-event-title">
       <div><p class="eyebrow" id="rg-event-stage"></p><h3 id="rg-event-title" tabindex="-1"></h3><p id="rg-event-explanation"></p></div>
@@ -100,7 +100,7 @@
     </section>
     <div class="rg-columns rg-model-grid">
       <div class="rg-panel rg-colony-panel"><h3 id="rg-colony-title">Colony</h3><div id="rg-colony"></div><div id="rg-selection-record"></div></div>
-      <div class="rg-panel rg-pairs-panel"><h3 id="rg-cross-title">Build a Punnett square</h3><p id="rg-pair-instructions">Offspring use the expected Punnett-square mix for each pair, not four independent draws.</p><div id="rg-punnett" tabindex="-1" aria-labelledby="rg-cross-title"></div><div class="rg-actions"><button type="button" class="btn btn--primary" id="rg-produce" aria-describedby="rg-produce-hint" hidden></button><p class="rg-muted" id="rg-produce-hint"></p></div></div>
+      <div class="rg-panel rg-pairs-panel"><h3 id="rg-cross-title">Build a Punnett square</h3><p id="rg-pair-instructions">Each square gives four expected outcomes in this model. For example, an RB × BB square predicts half RB on average. A real litter of four could have a different mix by chance.</p><div id="rg-punnett" tabindex="-1" aria-labelledby="rg-cross-title"></div><div class="rg-actions"><button type="button" class="btn btn--primary" id="rg-produce" aria-describedby="rg-produce-hint" hidden></button><button type="button" class="btn" id="rg-next-pair" hidden disabled>Go to next unfinished pair</button><p class="rg-muted" id="rg-produce-hint" role="status"></p></div></div>
     </div>
   </section>
   <section id="rg-analyze" data-rg-step="analyze" aria-labelledby="rg-analyze-title" hidden>
@@ -109,7 +109,7 @@
       <div class="rg-panel">
         <h3>Plot your trial</h3>
         <div class="rg-metrics" id="rg-metrics" aria-label="Measure to plot"></div><div id="rg-chart"></div>
-        <p class="rg-muted">Survivors and starting counts are separate snapshots. A trait percentage can go up even when the colony gets smaller. Pairings vary by trial, but the model uses expected offspring counts rather than chance inheritance in each pup. Real litters can differ from those expected shares by chance. A real colony need not show the same jump in R frequency, even under similar selection pressure.</p>
+        <p class="rg-muted">Survivors and starting counts are separate snapshots. A trait percentage can go up even when the colony gets smaller. Pairings vary by trial, but the model uses expected offspring counts rather than chance inheritance in each pup. Real litters can differ from those expected shares by chance. In small real populations, which alleles get passed on can change their frequency by chance alone. This is called <strong>genetic drift</strong>. Our model varies pairings but does not draw each pup’s alleles independently, so it does not show the full effect of drift.</p>
       </div>
       <div class="rg-panel">
         <h3>Your generation record</h3><div id="rg-analysis-table"></div>
