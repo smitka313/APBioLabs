@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 200" width="560" height="200">
+ <!-- Original OpenSciEd B.1 Lesson 2 station illustration. All referenced paint and geometry are local to this image. -->
+ <defs>
+  <linearGradient id="morning" x2="0%" y2="100%">
+   <stop offset="0.00" stop-color="#86b6b8"/>
+   <stop offset="0.50" stop-color="#d4d9b7"/>
+   <stop offset="1.00" stop-color="#f5dfa5"/>
+  </linearGradient>
+  <linearGradient id="river" x2="0%" y2="100%">
+   <stop offset="0.00" stop-color="#537e7f"/>
+   <stop offset="0.50" stop-color="#8db2a7"/>
+   <stop offset="1.00" stop-color="#376a70"/>
+  </linearGradient>
+  <linearGradient id="leaves" x2="0%" y2="100%">
+   <stop offset="0.00" stop-color="#899755"/>
+   <stop offset="0.50" stop-color="#485b38"/>
+   <stop offset="1.00" stop-color="#2a402f"/>
+  </linearGradient>
+  <linearGradient id="gnu-fur" x2="0%" y2="100%">
+   <stop offset="0.00" stop-color="#b3a093"/>
+   <stop offset="0.50" stop-color="#827369"/>
+   <stop offset="1.00" stop-color="#4a413e"/>
+  </linearGradient>
+  <linearGradient id="bank" x2="0%" y2="100%">
+   <stop offset="0.00" stop-color="#d0ae70"/>
+   <stop offset="0.50" stop-color="#9b693e"/>
+   <stop offset="1.00" stop-color="#694632"/>
+  </linearGradient>
+  <g id="tuft" stroke-linecap="round" fill="none">
+   <path d="M0 0q-1-6-6-10m6 10q1-10 5-14m-5 14 8-6" stroke="#6e5a35" stroke-width="1.2"/>
+   <path d="M-1 0l-1-12m2 11 6-8" stroke="#eed095" stroke-width=".9"/>
+  </g>
+  <g id="pebble">
+   <path d="m-5 1 2-3 5-1 4 3-3 2z" fill="#694c37" opacity=".45"/>
+   <path d="m-4 0 2-2h4l2 1" fill="none" stroke="#f4dfab" opacity=".55"/>
+  </g>
+  <g id="acacia">
+   <path d="M49 83l4-31-2-13-15-11-14-3 2-3 15 2 16 9 13-14 4 2-12 19 1 13-5 30z" fill="#584333"/>
+   <path d="m52 80 4-34-3-9-13-11m16 15 9-13" fill="none" stroke="#9d794a" stroke-width="2"/>
+   <path d="M1 26q4-9 18-13 5-7 19-8 8-5 16-1 7-6 17-2 11-1 14 3 16 1 25 13l-5 6-20-2-12 5-11-3-12 6-13-4-17 3z" fill="url(#leaves) #485b38"/>
+   <path d="M7 22q9-8 17-7m2 3q13-11 25-10m5 5q9-8 17-6m3 5q14-6 28 6m-90 5q12-5 22-2m6 3 17-7m12 3 15-4" fill="none" stroke="#a0a76a" stroke-width="2" opacity=".65"/>
+  </g>
+  <g id="gnu">
+   <path d="M22 47Q10 50 9 64l-5 6 1 8 5-3 4-14 10-8" fill="#38312e"/>
+   <path d="m32 58-3 15 4 12-5 2-6-13 2-18m56-1 2 15 10 10-1 5-5 1-11-13-3-14" fill="#554741" stroke="#3b332f" stroke-width="1.6"/>
+   <path d="M19 42q7-10 27-8l17 1q10-12 26-10l6 14-13 22-10 4-11-4-17 4-14-4-11-9z" fill="url(#gnu-fur) #827369" stroke="#463832" stroke-width="2"/>
+   <path d="M25 54l6 4 6 4-4 13-10 12h-6l-1-4 9-12zm55 0 6-3 3 13-5 18-5 2-3-3 3-17z" fill="#77665b" stroke="#463832" stroke-width="1.7"/>
+   <path d="M71 36l-1-9 7 2 3-8 5 4 6-5 1 8 7 4-5 10z" fill="#403735"/>
+   <path d="m85 35 9-14 8 2 4 7 7 6-2 9-9 4-11-6-5 10-7 3 3-11z" fill="#6b5a50" stroke="#3f342f" stroke-width="1.6"/>
+   <path d="M94 32q-8 3-11-3-3-4-1-11 2 9 7 8l8-3m5 2q13 2 12-10 5 11-5 15" fill="none" stroke="#403936" stroke-width="3.5" stroke-linecap="round"/>
+   <path d="m87 37 3 8-5 13 3 5-5-2-4 4 1-11z" fill="#3e3431"/>
+   <path d="m60 40-1 15m7-17-1 18m7-20-1 17m7-16-2 13" stroke="#493e39" stroke-width="1.7" opacity=".74"/>
+   <path d="M101 34h1m7 18 0-11" stroke="#2f2827" stroke-width="2.5"/>
+   <path d="M24 43q10-6 26-5m2 21 13-2" fill="none" stroke="#d0b7a0" opacity=".49" stroke-width="2"/>
+  </g>
+  <clipPath id="crossing-waterline">
+   <path d="M180 49H335V116Q261 134 207 140L180 141z"/>
+  </clipPath>
+ </defs>
+ <rect x="0" y="0" width="560" height="200" rx="0" fill="url(#morning) #d4d9b7"/>
+ <path d="M0 87q107-45 218-40t146-5q74-26 196-24v108l-188 15-260-20z" fill="#ad9d62"/>
+ <path d="M0 95q82-32 148-32 59 3 113 12 63 10 117-24 65-37 182-20v99H0z" fill="#ccb679"/>
+ <path d="M0 106q95-44 158-35l92 16q57 14 120-22 67-39 190-26v63q-104-8-160 25-70 38-151 27-131-17-249 30z" fill="url(#bank) #9b693e"/>
+ <path d="M0 130q95-43 169-30 108 27 174 1 87-35 217-40v116q-78-6-166 12-26 5-53 11H0z" fill="url(#river) #8db2a7"/>
+ <path d="M0 146q112-48 203-23m150-5q62-19 99-16m-58 31q49-23 129-27M77 169q107-42 177-29m72 28q72-29 139-28M0 178l42-17m422 17q41-9 96-7M3 126q51-18 90-25" fill="none" stroke="#c7ded1" stroke-width="2.2" opacity=".82"/>
+ <path d="M0 187q45-21 98-21l40 11 58 23H0zm560-43-36 8-15 15-62 11-72 22h185z" fill="url(#bank) #9b693e" stroke="#9b704d" stroke-width="2"/>
+ <path d="m4 194 39-13 18 4 28-10 39 14m297 7 62-15 49-19" fill="none" stroke="#e6c68a" stroke-width="2" opacity=".75"/>
+ <use href="#acacia" transform="translate(21 39) scale(0.54) "/>
+ <use href="#acacia" transform="translate(469 0) scale(0.48) "/>
+ <use href="#gnu" transform="translate(331 17) scale(0.74) rotate(-13 50 45)"/>
+ <use href="#gnu" transform="translate(435 15) scale(0.62) "/>
+ <use href="#gnu" transform="translate(496 12) scale(0.47) "/>
+ <g clip-path="url(#crossing-waterline)">
+  <use href="#gnu" transform="translate(217 76) scale(0.86) rotate(-11 50 39)"/>
+ </g>
+ <path d="M219 139q21-5 49-4m-30 13q36-6 53-8m-7 11 28-8m-1-10q8-11 24-17l-8 11 19-6m-26 26q14-4 29-9" fill="none" stroke="#e4eee3" stroke-width="2.5" stroke-linecap="round"/>
+ <path d="m58 149 20-8 7 1 10-5 16-1 3 3-17 4-14 4-25 5z" fill="#44544a"/>
+ <path d="m74 146 10-2 8-3 9-2" fill="none" stroke="#81947a" stroke-width="1.5"/>
+ <circle cx="103" cy="138" r="1.5" fill="#d0b275"/>
+ <use href="#pebble" transform="translate(41 188) scale(0.69) "/>
+ <use href="#tuft" transform="translate(44 176) scale(0.81) "/>
+ <use href="#pebble" transform="translate(20 175) scale(0.28) "/>
+ <use href="#tuft" transform="translate(28 188) scale(0.31) "/>
+ <use href="#tuft" transform="translate(20 189) scale(0.95) "/>
+ <use href="#tuft" transform="translate(43 183) scale(0.75) "/>
+ <use href="#pebble" transform="translate(47 171) scale(0.46) "/>
+ <use href="#pebble" transform="translate(46 188) scale(0.96) "/>
+ <use href="#tuft" transform="translate(50 188) scale(0.79) "/>
+ <use href="#tuft" transform="translate(35 185) scale(0.78) "/>
+ <use href="#pebble" transform="translate(32 177) scale(0.77) "/>
+ <use href="#tuft" transform="translate(15 196) scale(0.44) "/>
+ <use href="#pebble" transform="translate(52 178) scale(0.97) "/>
+ <use href="#pebble" transform="translate(25 192) scale(0.33) "/>
+ <use href="#tuft" transform="translate(42 194) scale(0.74) "/>
+ <use href="#tuft" transform="translate(506 175) scale(0.69) "/>
+ <use href="#tuft" transform="translate(530 181) scale(0.97) "/>
+ <use href="#tuft" transform="translate(519 191) scale(0.28) "/>
+ <use href="#tuft" transform="translate(498 192) scale(0.26) "/>
+ <use href="#pebble" transform="translate(508 190) scale(0.5) "/>
+ <use href="#pebble" transform="translate(522 195) scale(0.67) "/>
+ <use href="#pebble" transform="translate(540 184) scale(0.76) "/>
+ <use href="#pebble" transform="translate(489 185) scale(0.93) "/>
+ <use href="#pebble" transform="translate(513 178) scale(0.76) "/>
+ <use href="#pebble" transform="translate(500 194) scale(0.37) "/>
+ <use href="#tuft" transform="translate(523 197) scale(0.45) "/>
+ <use href="#pebble" transform="translate(547 174) scale(0.92) "/>
+ <use href="#pebble" transform="translate(536 191) scale(0.32) "/>
+ <use href="#tuft" transform="translate(494 188) scale(0.81) "/>
+ <use href="#pebble" transform="translate(541 191) scale(0.43) "/>
+ <use href="#pebble" transform="translate(526 174) scale(0.25) "/>
+ <rect x=".5" y=".5" width="559" height="199" fill="none" stroke="#382c22" opacity=".26"/>
+</svg>

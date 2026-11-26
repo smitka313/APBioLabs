@@ -52,6 +52,9 @@ def page_specs():
         'openscied-b4-junco.html': ('Junco Investigation — OpenSciEd Biology B.4 Lesson 4 | Lab Bench',
                                    'Compare city and mountain juncos in field and shared aviary studies, then explore how corticosterone is associated with exploration.',
                                    'Junco Investigation'),
+        'openscied-b1-field-notebook.html': ('Serengeti Field Notebook — OpenSciEd Biology B.1 Lesson 2 | Lab Bench',
+                                             'Explore five Serengeti evidence stations, pin observations on a map, and explain why people established and changed protected areas.',
+                                             'Serengeti Field Notebook'),
         'openscied-b1-ripple.html': ('Serengeti Ripple Effects — OpenSciEd Biology B.1 Lesson 8 | Lab Bench',
                                     'Connect a Serengeti ecosystem web and compare how fewer visiting wildebeest affect dung beetles, soil, grass, and predator encounters.',
                                     'Serengeti Ripple Effects'),
@@ -188,11 +191,11 @@ def structured_data(filename, title, description, label):
                          'teaches': 'Controlled comparisons and the relationship between stress and behavior in juncos',
                          'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
                          'isBasedOn': 'https://openscied.org/instructional-materials/b-4-natural-selection-evolution/'})
-        elif filename == 'openscied-b1-ripple.html':
+        elif filename in ('openscied-b1-ripple.html','openscied-b1-field-notebook.html'):
             page.update({'@type': ['WebPage', 'LearningResource'],
                          'educationalLevel': 'High school biology',
-                         'learningResourceType': 'Interactive ecosystem model',
-                         'teaches': 'Direct and indirect effects of migration on a local Serengeti ecosystem',
+                         'learningResourceType': 'Interactive field evidence notebook' if filename.endswith('field-notebook.html') else 'Interactive ecosystem model',
+                         'teaches': 'Evidence and perspectives behind Serengeti conservation boundaries' if filename.endswith('field-notebook.html') else 'Direct and indirect effects of migration on a local Serengeti ecosystem',
                          'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
                          'isBasedOn': 'https://openscied.org/instructional-materials/b-1-ecosystem-interactions-dynamics/'})
         elif filename in ('openscied-b5-wapusk.html','openscied-b5-thermoregulation.html','openscied-b5-ancestry.html','openscied-b5-speciation.html','openscied-b5-hybrid.html'):

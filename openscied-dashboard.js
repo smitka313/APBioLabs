@@ -14,6 +14,7 @@
   const isOpenSciEdKey = key => key === SERENGETI_KEY || key === CARRYING_KEY || key.startsWith(PREFIX);
   // Each activity reads its own saved record: progress(raw) gives {started, section, visited, summary}; ids(saved) lists its written-response ids.
   const ACTIVITIES = [
+    { id:'field-notebook', name:'Serengeti Field Notebook', file: 'openscied-b1-field-notebook.html', key:PREFIX+'b1-field-notebook:v1', clears:'investigation questions, evidence pins, station notes, and explanations', progress:fieldNotebookProgress, ids:saved=>Object.keys(saved?.fields||{}) },
     { id: 'migration', name: 'Migration Map Explorer', file: 'openscied-b1-migration.html', key: PREFIX + 'b1-migration:v1', clears: 'visited months, notebook entries, and written responses', progress: migrationProgress, ids: migrationResponseIds, answers: true },
     { id: 'carrying', name: 'Carrying Capacity', file: 'openscied-b1-carrying-capacity.html', key: CARRYING_KEY, extraKeys: CARRYING_EXTRA_KEYS, clears: 'grass model runs, habitat trials, range estimates, field evidence work, and written responses', progress: carryingProgress, ids: carryingResponseIds, answers: true },
     { id: 'serengeti', name: 'Serengeti Board Game', file: 'openscied-b1-serengeti.html', key: SERENGETI_KEY, clears: 'board game record, concept checks, and answers', progress: serengetiProgress, ids: serengetiResponseIds, answers: true },
@@ -118,6 +119,17 @@
     const complete=compared&&checks===3&&s.finished===true&&screeningIds().every(id=>written(s,id));
     return {started:true,section:'',visited:Number(s.lastVisitedAt)||0,stepsDone:complete?3:compared&&checks===3?2:1,stepsTotal:3,stepsLabel:'Investigation milestones complete',
       summary:complete?'Investigation complete':compared?checks+'/3 patient comparisons checked':'Hospital plan recorded'};
+  }
+  function fieldNotebookProgress(raw) {
+    const empty={started:false, section:'', visited:0, summary:'Not started'};
+    if(raw==null)return empty;
+    try {
+      const model=window.SerengetiFieldNotebook;
+      const s=model.clean(JSON.parse(raw)), p=model.progress(s);
+      if(!p.started)return empty;
+      return {...empty, started:true, visited:s.lastVisitedAt, stepsDone:p.done, stepsTotal:3, stepsLabel:'Notebook steps complete',
+        summary:p.complete?'Notebook complete':p.evidence?'Evidence collected':p.questions?'Questions saved':'Notebook started'};
+    } catch(_) { return {...empty,summary:'Saved work could not be read. Download a copy before restarting.'}; }
   }
   function rippleResponseIds(){return ['choice','reason','claim','limit'];}
   function rippleProgress(raw){
@@ -632,7 +644,7 @@
   // Published, fixed denominators. A zero is meaningful even before a student starts.
   const STEP_SCALES = {
     migration:[12,'Months with saved observations'],carrying:[12,'Population model rounds'],
-    serengeti:[4,'Seasons completed'],ripple:[4,'Investigation steps completed'],'b2-burn':[5,'Fuels with saved results'],'b2-fires':[3,'Model evidence milestones complete'],
+    'field-notebook':[3,'Notebook steps complete'],serengeti:[4,'Seasons completed'],ripple:[4,'Investigation steps completed'],'b2-burn':[5,'Fuels with saved results'],'b2-fires':[3,'Model evidence milestones complete'],
     'peat-bog':[2,'Trials saved for a comparison'],'carbon-journey':[10,'Required turns recorded'],'cancer-rates':[6,'Case-file exhibits completed'],screening:[3,'Investigation steps completed'],
     'cell-cycle':[2,'Cell game rounds completed'],'dna-workshop':[6,'Workshop practices completed'],
     'dna-p53':[2,'Interactive models used'],'inh-env':[6,'Interactive models used'],

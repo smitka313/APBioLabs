@@ -179,7 +179,7 @@ async function checkMixedVersionWorkspace(browser,site) {
           const a=c.getBoundingClientRect(), b=c.querySelector('.dashboard-preview').getBoundingClientRect();
           return {x:Math.round(a.x),y:Math.round(a.y),width:a.width,thumb:b.width,height:b.height};
         }));
-        assert.equal(geometry.length,4);
+        assert.equal(geometry.length,5);
         assert.equal(new Set(geometry.map(c=>c.x)).size,width<580?1:width<920?2:3,'cards use the intended breakout columns');
         assert.ok(geometry.every(c=>c.thumb>0&&Math.abs(c.thumb/c.height-1.6)<.05),'preview artwork keeps the common 8:5 proportions');
         const overflow = await p.locator('.dashboard-activity').evaluateAll(cards=>cards.flatMap(card=> {
@@ -208,7 +208,7 @@ async function checkMixedVersionWorkspace(browser,site) {
           const cards = p.locator('.dashboard-activity');
           assert.equal(await cards.locator('.dashboard-card-restart:visible').count(),0,'blank phone cards do not show inactive Restart');
           assert.equal(await cards.locator('.dashboard-activity-metric:visible, .dashboard-activity-progress:visible').count(),0,'blank phone cards do not show empty measures');
-          assert.equal(await cards.locator('.dashboard-open:visible').count(),23,'each blank phone card still has its Open activity action');
+          assert.equal(await cards.locator('.dashboard-open:visible').count(),24,'each blank phone card still has its Open activity action');
         }
         const saveImage=async label=>{if(screenshots) await p.screenshot({path:path.join(screenshots,width+'-'+label+'.png'),animations:'disabled'});};
         await saveImage('masthead');

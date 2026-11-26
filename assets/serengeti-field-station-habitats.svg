@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 200" width="560" height="200">
+ <!-- Original OpenSciEd B.1 Lesson 2 station illustration. All referenced paint and geometry are local to this image. -->
+ <defs>
+  <linearGradient id="morning" x2="0%" y2="100%">
+   <stop offset="0.00" stop-color="#86b6b8"/>
+   <stop offset="0.50" stop-color="#d4d9b7"/>
+   <stop offset="1.00" stop-color="#f5dfa5"/>
+  </linearGradient>
+  <linearGradient id="river" x2="0%" y2="100%">
+   <stop offset="0.00" stop-color="#537e7f"/>
+   <stop offset="0.50" stop-color="#8db2a7"/>
+   <stop offset="1.00" stop-color="#376a70"/>
+  </linearGradient>
+  <linearGradient id="land" x2="0%" y2="100%">
+   <stop offset="0.00" stop-color="#e0c77b"/>
+   <stop offset="0.50" stop-color="#b88847"/>
+   <stop offset="1.00" stop-color="#80623b"/>
+  </linearGradient>
+  <linearGradient id="leaves" x2="0%" y2="100%">
+   <stop offset="0.00" stop-color="#899755"/>
+   <stop offset="0.50" stop-color="#485b38"/>
+   <stop offset="1.00" stop-color="#2a402f"/>
+  </linearGradient>
+  <linearGradient id="pine" x2="0%" y2="100%">
+   <stop offset="0.00" stop-color="#798c58"/>
+   <stop offset="1.00" stop-color="#334b37"/>
+  </linearGradient>
+  <g id="tuft" stroke-linecap="round" fill="none">
+   <path d="M0 0q-1-6-6-10m6 10q1-10 5-14m-5 14 8-6" stroke="#6e5a35" stroke-width="1.2"/>
+   <path d="M-1 0l-1-12m2 11 6-8" stroke="#eed095" stroke-width=".9"/>
+  </g>
+  <g id="pebble">
+   <path d="m-5 1 2-3 5-1 4 3-3 2z" fill="#694c37" opacity=".45"/>
+   <path d="m-4 0 2-2h4l2 1" fill="none" stroke="#f4dfab" opacity=".55"/>
+  </g>
+  <g id="acacia">
+   <path d="M49 83l4-31-2-13-15-11-14-3 2-3 15 2 16 9 13-14 4 2-12 19 1 13-5 30z" fill="#584333"/>
+   <path d="m52 80 4-34-3-9-13-11m16 15 9-13" fill="none" stroke="#9d794a" stroke-width="2"/>
+   <path d="M1 26q4-9 18-13 5-7 19-8 8-5 16-1 7-6 17-2 11-1 14 3 16 1 25 13l-5 6-20-2-12 5-11-3-12 6-13-4-17 3z" fill="url(#leaves) #485b38"/>
+   <path d="M7 22q9-8 17-7m2 3q13-11 25-10m5 5q9-8 17-6m3 5q14-6 28 6m-90 5q12-5 22-2m6 3 17-7m12 3 15-4" fill="none" stroke="#a0a76a" stroke-width="2" opacity=".65"/>
+  </g>
+  <g id="wood-tree">
+   <path d="m9 73 3-39 6-8 3 3-5 11-2 34z" fill="#504d35"/>
+   <path d="M0 28Q-6 18 3 13Q1 5 11 7Q15-2 24 3q12 1 10 12 4 4-1 10 2 8-8 12-10-4-17 0z" fill="url(#pine) #334b37"/>
+   <path d="M5 26 10 15l5-2m3 12 6-13 5 3" fill="none" stroke="#aeb17a" opacity=".6" stroke-width="1.5"/>
+  </g>
+  <g id="bird" fill="none" stroke="#514d3e" stroke-width="1.5" stroke-linecap="round">
+   <path d="M0 2q5-3 9 2 4-5 9-3"/>
+  </g>
+ </defs>
+ <rect x="0" y="0" width="560" height="200" rx="0" fill="url(#morning) #d4d9b7"/>
+ <circle cx="88" cy="51" r="24" fill="#f9ebbc" opacity=".75"/>
+ <path d="M0 102Q64 80 123 93t102 2q45-17 99-8 28 4 53 0 54-16 95-11 44 10 88 3v121H0z" fill="#87947c"/>
+ <path d="M0 107q71-14 131-4t102-4q91-16 154 3t173-13v111H0z" fill="#b1a46a"/>
+ <path d="M0 118q88 11 168-9t159 9q72 23 118 11l115-18v89H0z" fill="url(#land) #b88847"/>
+ <path d="M0 139q120-35 208-13t157 12l-28 62H0z" fill="#cba45f" opacity=".55"/>
+ <path d="M382 121q25 15-1 23-30 10-27 27 5 11 35 29h100q-79-22-96-30-25-9 6-24 19-10-11-27z" fill="url(#river) #8db2a7" stroke="#ead296" stroke-width="2"/>
+ <path d="M379 155q-13 10 2 17l27 12m-13-41 5-4q6-6-8-12m-17 55 17 9" fill="none" stroke="#d8e6c5" opacity=".64" stroke-width="2"/>
+ <path d="m17 148 12-14 17-3 13 5 14 12-25 4z" fill="#756951"/>
+ <path d="m25 141 7-7 15-2 9 3-9 8z" fill="#b1a480"/>
+ <use href="#bird" transform="translate(112 58) scale(0.8) "/>
+ <use href="#bird" transform="translate(131 63) scale(0.52) "/>
+ <use href="#bird" transform="translate(155 51) scale(0.6) "/>
+ <use href="#pebble" transform="translate(321 124) scale(0.82) "/>
+ <use href="#pebble" transform="translate(39 130) scale(0.64) "/>
+ <use href="#pebble" transform="translate(181 122) scale(0.98) "/>
+ <use href="#tuft" transform="translate(48 145) scale(0.66) "/>
+ <use href="#tuft" transform="translate(187 138) scale(0.55) "/>
+ <use href="#tuft" transform="translate(220 191) scale(0.26) "/>
+ <use href="#tuft" transform="translate(349 139) scale(0.45) "/>
+ <use href="#pebble" transform="translate(312 157) scale(0.95) "/>
+ <use href="#tuft" transform="translate(291 133) scale(0.76) "/>
+ <use href="#tuft" transform="translate(189 190) scale(0.56) "/>
+ <use href="#pebble" transform="translate(191 121) scale(0.89) "/>
+ <use href="#tuft" transform="translate(309 144) scale(0.73) "/>
+ <use href="#pebble" transform="translate(81 198) scale(0.77) "/>
+ <use href="#tuft" transform="translate(317 191) scale(0.88) "/>
+ <use href="#pebble" transform="translate(112 178) scale(0.54) "/>
+ <use href="#tuft" transform="translate(258 164) scale(0.76) "/>
+ <use href="#tuft" transform="translate(191 167) scale(0.5) "/>
+ <use href="#tuft" transform="translate(200 123) scale(0.8) "/>
+ <use href="#pebble" transform="translate(134 115) scale(0.92) "/>
+ <use href="#pebble" transform="translate(192 154) scale(0.81) "/>
+ <use href="#tuft" transform="translate(14 184) scale(0.65) "/>
+ <use href="#tuft" transform="translate(100 119) scale(0.74) "/>
+ <use href="#pebble" transform="translate(12 146) scale(0.4) "/>
+ <use href="#pebble" transform="translate(330 192) scale(0.62) "/>
+ <use href="#pebble" transform="translate(146 193) scale(0.77) "/>
+ <use href="#tuft" transform="translate(22 173) scale(0.59) "/>
+ <use href="#pebble" transform="translate(220 173) scale(0.69) "/>
+ <use href="#pebble" transform="translate(5 161) scale(0.79) "/>
+ <use href="#pebble" transform="translate(59 127) scale(0.51) "/>
+ <use href="#pebble" transform="translate(324 188) scale(0.93) "/>
+ <use href="#tuft" transform="translate(121 142) scale(0.99) "/>
+ <use href="#tuft" transform="translate(148 196) scale(0.29) "/>
+ <use href="#tuft" transform="translate(79 115) scale(0.41) "/>
+ <use href="#pebble" transform="translate(93 132) scale(0.72) "/>
+ <use href="#acacia" transform="translate(170 70) scale(0.64) "/>
+ <use href="#acacia" transform="translate(259 49) scale(0.99) "/>
+ <use href="#acacia" transform="translate(332 79) scale(0.54) "/>
+ <use href="#wood-tree" transform="translate(405 88) scale(0.57) "/>
+ <use href="#wood-tree" transform="translate(414 97) scale(0.65) "/>
+ <use href="#wood-tree" transform="translate(423 96) scale(0.77) "/>
+ <use href="#wood-tree" transform="translate(432 109) scale(1.08) "/>
+ <use href="#wood-tree" transform="translate(441 91) scale(0.47) "/>
+ <use href="#wood-tree" transform="translate(450 95) scale(0.59) "/>
+ <use href="#wood-tree" transform="translate(459 97) scale(0.76) "/>
+ <use href="#wood-tree" transform="translate(468 110) scale(0.91) "/>
+ <use href="#wood-tree" transform="translate(477 91) scale(0.58) "/>
+ <use href="#wood-tree" transform="translate(486 98) scale(0.66) "/>
+ <use href="#wood-tree" transform="translate(495 98) scale(0.76) "/>
+ <use href="#wood-tree" transform="translate(504 111) scale(0.93) "/>
+ <use href="#wood-tree" transform="translate(513 90) scale(0.53) "/>
+ <use href="#wood-tree" transform="translate(522 94) scale(0.59) "/>
+ <use href="#wood-tree" transform="translate(531 98) scale(0.9) "/>
+ <use href="#wood-tree" transform="translate(540 104) scale(1.02) "/>
+ <use href="#wood-tree" transform="translate(549 91) scale(0.44) "/>
+ <use href="#wood-tree" transform="translate(558 94) scale(0.7) "/>
+ <use href="#tuft" transform="translate(461 181) scale(0.55) "/>
+ <use href="#tuft" transform="translate(518 181) scale(0.79) "/>
+ <use href="#pebble" transform="translate(427 170) scale(0.84) "/>
+ <use href="#pebble" transform="translate(549 196) scale(0.3) "/>
+ <use href="#tuft" transform="translate(452 181) scale(0.89) "/>
+ <use href="#tuft" transform="translate(471 188) scale(0.75) "/>
+ <use href="#tuft" transform="translate(435 190) scale(0.86) "/>
+ <use href="#pebble" transform="translate(546 176) scale(0.93) "/>
+ <use href="#pebble" transform="translate(554 171) scale(0.51) "/>
+ <use href="#tuft" transform="translate(480 178) scale(0.91) "/>
+ <use href="#tuft" transform="translate(461 172) scale(0.82) "/>
+ <use href="#tuft" transform="translate(445 196) scale(0.96) "/>
+ <use href="#pebble" transform="translate(438 175) scale(0.49) "/>
+ <use href="#tuft" transform="translate(478 180) scale(0.44) "/>
+ <use href="#tuft" transform="translate(414 178) scale(0.43) "/>
+ <use href="#tuft" transform="translate(444 182) scale(0.61) "/>
+ <use href="#pebble" transform="translate(515 180) scale(0.29) "/>
+ <use href="#tuft" transform="translate(448 171) scale(0.82) "/>
+ <use href="#tuft" transform="translate(440 197) scale(0.41) "/>
+ <use href="#tuft" transform="translate(510 190) scale(0.88) "/>
+ <rect x=".5" y=".5" width="559" height="199" fill="none" stroke="#382c22" opacity=".26"/>
+</svg>

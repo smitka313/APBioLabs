@@ -10,6 +10,7 @@
   // must not promote an activity above work that was actually changed.
   const claimChecks = ['cer-ev-1','cer-ev-2','cer-ev-3','cer-ev-4','cer-ev-5','cer-caveat'];
   const sources = {
+    'b1-field-notebook': [[pref+'b1-field-notebook:v1','fields pins pinnedCards boundaryPick finished']],
     'b1-migration': [[pref+'b1-migration:v1','notes answers observations']],
     'b1-carrying-capacity': [
       ['aplab:openscied-b1-carrying-capacity:run-v1','baseline comparison answers checks grass'],

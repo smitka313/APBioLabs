@@ -4,7 +4,8 @@
 const T = require('./_h');
 const fs = require('fs'), path = require('path');
 const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: /gc\.zgo\.at/.test(r.request().url()) ? 'application/javascript' : 'text/css', body: '' }));
-const UNIT1 = ['openscied-b1-migration.html', 'openscied-b1-carrying-capacity.html', 'openscied-b1-serengeti.html', 'openscied-b1-ripple.html'];
+const UNIT1 = ['openscied-b1-field-notebook.html', 'openscied-b1-migration.html', 'openscied-b1-carrying-capacity.html', 'openscied-b1-serengeti.html', 'openscied-b1-ripple.html'];
+const FIELD_PREVIEW = 'assets/openscied-atlas-b1-field-notebook.svg';
 const MIGRATION_PREVIEW = 'assets/openscied-atlas-b1-migration.svg';
 const CARRYING_PREVIEW = 'assets/openscied-atlas-b1-carrying-capacity.svg';
 const SERENGETI_PREVIEW = 'assets/openscied-atlas-b1-serengeti.svg';
@@ -35,10 +36,13 @@ const CORRIDOR_PREVIEW='assets/openscied-atlas-b4-wildlife-corridor.svg';
       const hrefs = sel => p.$$eval(sel + ' .dashboard-preview', as => as.map(a => a.getAttribute('href')));
       const units = await p.$$eval('.dashboard-units > section.dashboard-unit.current', sections=>sections.map(s=>s.getAttribute('aria-labelledby')));
       T.ok(JSON.stringify(units) === JSON.stringify(['unit1','unit2','unit3','unit4','unit5']), width + ' px: all published units appear in curriculum order');
-      T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit1"]')) === JSON.stringify(UNIT1), width + ' px: first unit links to Migration Explorer, Carrying Capacity Lab, Serengeti Board Game, and Ripple Effects');
+      T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit1"]')) === JSON.stringify(UNIT1), width + ' px: first unit opens with the Field Notebook, then links to Migration Explorer, Carrying Capacity Lab, Serengeti Board Game, and Ripple Effects');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit2"]')) === JSON.stringify(UNIT2), width + ' px: Unit 2 cards are Burning Fuels, Fires, Peat Bog Carbon Lab, Carbon Atom Journey');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit3"]')) === JSON.stringify(UNIT3), width + ' px: Unit 3 starts with the data dive, and DNA Workshop immediately precedes DNA Copying and p53');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit4"]')) === JSON.stringify(UNIT4), width + ' px: Unit 4 links to Hawksbeard, Rat Generations, Junco, and Wildlife Corridor in lesson order');
+      const fieldImage=p.locator('img[src="'+FIELD_PREVIEW+'"]');
+      await fieldImage.scrollIntoViewIfNeeded();
+      await fieldImage.evaluate(img=>img.decode());
       const serengetiImage = p.locator('img[src="'+SERENGETI_PREVIEW+'"]');
       await serengetiImage.scrollIntoViewIfNeeded(); // Trigger lazy loading below the fold.
       await p.waitForFunction(path=>{const img = document.querySelector('img[src="'+path+'"]');return img?.complete&&img.naturalWidth>0;},SERENGETI_PREVIEW,{timeout:10000});
@@ -90,17 +94,20 @@ const CORRIDOR_PREVIEW='assets/openscied-atlas-b4-wildlife-corridor.svg';
         new Set(m.map(x => x.label)).size === files.length && actionCounts.every(n => n === 1),
         width + ' px: pointer artwork remains linked without duplicating the one named keyboard action for each activity');
       T.ok(m.every(x=>!x.pill), width + ' px: data-type pills are HTML and sit outside the artwork');
-      const first = m[0], poster = first?.img;
+      const field = m[0];
+      T.ok(field?.img?.complete && field.img.src===FIELD_PREVIEW && field.img.w===960 && field.img.h===600 &&
+        field.label==='Open activity: Serengeti Field Notebook',width+' px: field notebook opens Unit 1 with its illustrated card');
+      const first = m[1], poster = first?.img;
       T.ok(poster?.complete && poster.src===MIGRATION_PREVIEW && poster.w===960 && poster.h===600 &&
         poster.widthAttr==='960' && poster.heightAttr==='600' && Math.abs(poster.w/poster.h-1.6)<0.001,
-        width + ' px: first card illustration loads and has reserved 960×600 proportions');
+        width + ' px: Migration illustration loads and has reserved 960×600 proportions');
       T.ok(poster?.alt==='' && first.label === 'Open activity: Migration Map Explorer',
         width + ' px: the decorative Migration image has a named primary activity link alongside');
-      const carrying = m[1];
+      const carrying = m[2];
       T.ok(carrying?.img?.complete && carrying.img.src===CARRYING_PREVIEW &&
         carrying.img.w===960 && carrying.img.h===600 && carrying.img.alt==='' &&
         carrying.label === 'Open activity: Carrying Capacity',
-        width + ' px: second card has the revised carrying capacity illustration and a named link');
+        width + ' px: Carrying Capacity card has the revised carrying capacity illustration and a named link');
       const wapusk = m.find(x=>x.img?.src==='assets/openscied-wapusk-card.svg');
       T.ok(wapusk?.img?.complete && wapusk.img.w===960 && wapusk.img.h===600 &&
         wapusk.img.widthAttr==='960' && wapusk.img.heightAttr==='600' &&
@@ -164,10 +171,12 @@ const CORRIDOR_PREVIEW='assets/openscied-atlas-b4-wildlife-corridor.svg';
     const ctx = await T.ctxFor(b, { width: 1366, height: 900 });
     const p = await ctx.newPage(); await stub(p);
     await p.goto(srv.url + 'openscied-dashboard.html'); await p.waitForSelector('#b2-burn-progress');
-    const firstCard = p.locator('.dashboard-activity').first();
-    T.ok((await firstCard.locator('.dashboard-preview').getAttribute('href')) === UNIT1[0], 'first card (Migration Explorer) preview links to the exact activity URL');
+    const fieldCard = p.locator('.dashboard-activity').first();
+    T.ok((await fieldCard.locator('.dashboard-open').getAttribute('href')) === UNIT1[0], 'the first card opens the Field Notebook');
+    const firstCard = p.locator('.dashboard-activity').filter({has:p.locator('#migration-open')});
+    T.ok((await firstCard.locator('.dashboard-preview').getAttribute('href')) === UNIT1[1], 'Migration Explorer preview links to the exact activity URL');
     const migrationOpen = firstCard.locator('.dashboard-open');
-    const migrationStart = UNIT1[0];
+    const migrationStart = UNIT1[1];
     T.ok((await migrationOpen.getAttribute('href')) === migrationStart, 'a fresh Migration card opens the activity without a scroll anchor');
     const burnCard = p.locator('section[aria-labelledby="unit2"] .dashboard-activity').first();
     T.ok((await burnCard.locator('.dashboard-preview').getAttribute('href')) === UNIT2[0], 'first Unit 2 card (Burning Fuels) preview still links to its activity');

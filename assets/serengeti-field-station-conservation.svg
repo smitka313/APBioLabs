@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 200" width="560" height="200">
+ <!-- Original OpenSciEd B.1 Lesson 2 station illustration. All referenced paint and geometry are local to this image. -->
+ <defs>
+  <linearGradient id="paper" x2="0%" y2="100%">
+   <stop offset="0.00" stop-color="#fdf1c9"/>
+   <stop offset="1.00" stop-color="#e2c391"/>
+  </linearGradient>
+  <pattern id="ink-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(33)">
+   <path d="M1 0v7" stroke="#793f43" stroke-width="1.7" opacity=".64"/>
+  </pattern>
+  <pattern id="map-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+   <path d="M0 20V0h20" fill="none" stroke="#8f704b" opacity=".26"/>
+  </pattern>
+ </defs>
+ <rect x="0" y="0" width="560" height="200" rx="0" fill="#64513d"/>
+ <path d="M0 32h560M0 89h560M0 163h560" stroke="#493a2c" stroke-width="2"/>
+ <path d="M0 39q161-11 331 0t229-2M0 94q87 10 210 0t350 2M0 169q121 9 240 0t320 0" fill="none" stroke="#87694b" stroke-opacity=".72"/>
+ <g transform="rotate(-5 255 100)">
+  <rect x="101" y="4" width="330" height="193" rx="8" fill="#3b2d23" opacity=".45"/>
+  <path d="M91 7h333v177l-12 10H91z" fill="url(#paper) #e2c391" stroke="#bc9869" stroke-width="2"/>
+  <path d="M412 194v-10h12" fill="#c5a170" stroke="#a78660"/>
+  <path d="M108 19h295v159H108z" fill="url(#map-grid)" stroke="#a38962" stroke-opacity=".65"/>
+  <path d="M108 37q66 18 158 8t137 12m-295 77q62-36 116-34m-116 46q63-30 119-36m-116 47q71-28 110-35m95-27q43-10 87 1m-79 10q41-4 78 9m-63 5q27-3 64 7m-62 6q29 0 62 6" fill="none" stroke="#a68b61" opacity=".63"/>
+  <path d="M109 38q40 29 49 64l-6 33-42 9z" fill="#6e9b9b" opacity=".62"/>
+  <path d="M403 68q-39 7-64 31-39 39-89 23t-91-21" fill="none" stroke="#5a8992" stroke-width="2" opacity=".76"/>
+  <g transform="translate(177 -21) scale(.29)">
+   <path d="M109 362l37-12 35 10 44 3 19 10 55-3 36 10 16-36 14-21-10-38-11-21-26-20-11-19 29-38 134 72-9 85 17 46-7 39-17 11 10 27-14 43-12 29-25 26-12-9-19-10 1 40-1 37-22 15-11 25-19-36-4-39-14-27-22-20-15-47-23-20-9-29-30-17-32-7-9-27-40-5z" fill="#829065" fill-opacity=".44" stroke="#455b40" stroke-width="10"/>
+   <path d="M111 361l40-12 22 10 45 17 36 9 37 7 32-1 36 17 45 16 57 24 51 28 58 39 53 37-15 32-30 29-19 34-55 6-85-14-77-7-31-32-36-39-30-48-20-43-25-54-15-6-13-12-22-3-30-1z" fill="url(#ink-hatch)" stroke="#783942" stroke-width="9" stroke-dasharray="15 10"/>
+  </g>
+  <path d="M195 35V22m0 0-4 8 4-3 4 3z" fill="#625138" stroke="#625138" stroke-width="1.5"/>
+  <path d="M193 158h45" stroke="#4b6043" stroke-width="3"/>
+  <path d="M251 158h45" stroke="#783942" stroke-width="3" stroke-dasharray="6 4"/>
+ </g>
+ <g transform="translate(354 104) rotate(-34)">
+  <circle cy="2" r="38" fill="#382f29" opacity=".35"/>
+  <rect x="-7" y="31" width="14" height="72" rx="5" fill="#493f37" stroke="#222a28" stroke-width="2"/>
+  <rect x="-3" y="47" width="4" height="48" rx="2" fill="#82796a"/>
+  <circle cy="0" r="36" fill="#bed2c0" fill-opacity=".17" stroke="#48483c" stroke-width="6"/>
+  <circle cy="0" r="33" fill="none" stroke="#e8daad" stroke-width="1.8"/>
+  <path d="M-23-14q8-14 24-13M21 14q-6 10-17 13" fill="none" stroke="#fff1cc" stroke-width="3" stroke-linecap="round" opacity=".72"/>
+ </g>
+ <g transform="translate(65 130)">
+  <circle r="29" fill="#3c3025" opacity=".38"/>
+  <circle cy="-4" r="24" fill="#c29b5f" stroke="#47382c" stroke-width="3"/>
+  <circle cy="-4" r="18" fill="#ede0b4" stroke="#7b694e" stroke-width="1"/>
+  <path d="M-7 5 4-18l3 14z" fill="#844744"/>
+  <path d="m-7 5 3-14 11 5z" fill="#526d61"/>
+ </g>
+ <rect x=".5" y=".5" width="559" height="199" fill="none" stroke="#382c22" opacity=".26"/>
+</svg>

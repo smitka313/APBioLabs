@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 200" width="560" height="200">
+ <!-- Original OpenSciEd B.1 Lesson 2 station illustration. All referenced paint and geometry are local to this image. -->
+ <defs>
+  <linearGradient id="leaves" x2="0%" y2="100%">
+   <stop offset="0.00" stop-color="#899755"/>
+   <stop offset="0.50" stop-color="#485b38"/>
+   <stop offset="1.00" stop-color="#2a402f"/>
+  </linearGradient>
+  <linearGradient id="giraffe-fur" x2="0%" y2="100%">
+   <stop offset="0.00" stop-color="#f4d58c"/>
+   <stop offset="1.00" stop-color="#b77b42"/>
+  </linearGradient>
+  <linearGradient id="lion-fur" x2="0%" y2="100%">
+   <stop offset="0.00" stop-color="#deab66"/>
+   <stop offset="1.00" stop-color="#a96439"/>
+  </linearGradient>
+  <linearGradient id="paper" x2="0%" y2="100%">
+   <stop offset="0.00" stop-color="#fdf1c9"/>
+   <stop offset="1.00" stop-color="#e2c391"/>
+  </linearGradient>
+  <g id="tuft" stroke-linecap="round" fill="none">
+   <path d="M0 0q-1-6-6-10m6 10q1-10 5-14m-5 14 8-6" stroke="#6e5a35" stroke-width="1.2"/>
+   <path d="M-1 0l-1-12m2 11 6-8" stroke="#eed095" stroke-width=".9"/>
+  </g>
+  <g id="pebble">
+   <path d="m-5 1 2-3 5-1 4 3-3 2z" fill="#694c37" opacity=".45"/>
+   <path d="m-4 0 2-2h4l2 1" fill="none" stroke="#f4dfab" opacity=".55"/>
+  </g>
+  <g id="acacia">
+   <path d="M49 83l4-31-2-13-15-11-14-3 2-3 15 2 16 9 13-14 4 2-12 19 1 13-5 30z" fill="#584333"/>
+   <path d="m52 80 4-34-3-9-13-11m16 15 9-13" fill="none" stroke="#9d794a" stroke-width="2"/>
+   <path d="M1 26q4-9 18-13 5-7 19-8 8-5 16-1 7-6 17-2 11-1 14 3 16 1 25 13l-5 6-20-2-12 5-11-3-12 6-13-4-17 3z" fill="url(#leaves) #485b38"/>
+   <path d="M7 22q9-8 17-7m2 3q13-11 25-10m5 5q9-8 17-6m3 5q14-6 28 6m-90 5q12-5 22-2m6 3 17-7m12 3 15-4" fill="none" stroke="#a0a76a" stroke-width="2" opacity=".65"/>
+  </g>
+  <clipPath id="giraffe-body">
+   <path d="M27 94q13-12 31-9l20 1 33-58 10 1-18 61-12 15-8 58-8 1 1-44-7-13-10 3-8 30-5 23-7 1 2-37 2-18-4-2-7 22-6 28-8 2 4-42 3-13z"/>
+  </clipPath>
+  <g id="giraffe">
+   <path d="M28 100Q16 107 17 136l-5 8-4-5 5-5q-1-23 11-37M52 107l3 28 5 24-6 3-9-23-6-25m49-9 7 31 7 23-6 3-11-22-9-23" fill="#9d703f" stroke="#6b4832" stroke-width="1.9"/>
+   <path d="M27 94q13-12 31-9l20 1 33-58 10 1-18 61-12 15-8 58-8 1 1-44-7-13-10 3-8 30-5 23-7 1 2-37 2-18-4-2-7 22-6 28-8 2 4-42 3-13z" fill="url(#giraffe-fur) #d8aa67" stroke="#67462e" stroke-width="1.35" stroke-linejoin="round"/>
+   <g clip-path="url(#giraffe-body)">
+    <path d="m25 93 11-5 8 7-3 10-12 0zm24-6 16 0 3 9-10 7-11-6zm19 12 11-10 11 1 4 9-10 10-12-3zm24-15-9-5 4-10 11-2 6 7-4 8zM99 65l-8-5 6-11 12 4-4 11zm2-22 7-12 11 2-3 11-7 3zM28 111l7 0 0 13-8 1zM24 131l8 0-4 10-6 3zm20-13 7-8 8 3-2 12-8 3zm-3 14 8-1-1 12-8 1zm34-18 8-3 6 6-4 11-7-1zm1 18 8 2-2 10-8 2z" fill="#9b5e36" stroke="#754a31" stroke-width="1"/>
+    <path d="M39 92q21-6 40-2l32-57" stroke="#ffe2a2" stroke-width="3" fill="none" opacity=".6"/>
+   </g>
+   <path d="m109 25 4-13 5 1 1 9 5-12 5 1-2 12 13 0 9 8-4 5-15 1-9 1-10-5-6-9z" fill="#d7a365" stroke="#6b4832" stroke-width="1.5"/>
+   <path d="m128 26 3 1m13 4-4 1m-30-7-10-6m13-6 4-1m8-1 4 1M17 158l9-1m12 7 8-1m29 1 8-1" stroke="#523829" stroke-linecap="round" stroke-width="2.6"/>
+  </g>
+  <g id="lion">
+   <path d="M25 47Q10 35 5 45t4 21q7 4 9-4" fill="none" stroke="#7f5236" stroke-width="3.8" stroke-linecap="round"/>
+   <path d="M12 60q6-4 10 2l-5 7-6-2z" fill="#50382a"/>
+   <path d="M25 40q14-10 36-7 17 2 30 7l7 19-11 9-24 1-14 12-30 1-6-4 7-5 19-2 9-11-18-2-6-7z" fill="url(#lion-fur) #a96439" stroke="#754b35" stroke-width="1.7"/>
+   <path d="M65 55q9 1 13 8l9 9 27 2 5 3-3 5-34-1-18-13" fill="#c58552" stroke="#754b35" stroke-width="1.5"/>
+   <path d="m83 53-5-6 5-6-2-11 6-6 0-8 11-8 9 1 8 5 5 7 3 12 4 6-2 14-10 11-12 5-15-5z" fill="#895136"/>
+   <path d="M85 47 90 42l1-15 12-12 9 5 6 13m-29 24 12 4 9-3" fill="none" stroke="#bf7d49" stroke-width="2.4"/>
+   <path d="m99 25 3-5 6 2 4 7 6 2 4 6 10 4-1 10-10 4-16-4-7-10z" fill="#dbaa70" stroke="#754b35" stroke-width="1.4"/>
+   <path d="M118 47l4-5 8 1 1 6-6 4zm-7-10 5 1-3 2z" fill="#523627"/>
+   <path d="m125 55 11-3m-9 1 8 3m-20-7-6-2m4 7-7 1" stroke="#ead2a4" stroke-width="1"/>
+  </g>
+  <g id="ant">
+   <path d="M-14-2l-18-13-9 4m28 6-20 4-5 10m26 1-13 6-7 10m20-31 15-14 10-1m-23 17 20-1 9 8m-27 1 18 10 6 11M13-2q5-14 20-12m-19 18q12-8 20-1" fill="none" stroke="#45291f" stroke-width="2.7" stroke-linecap="round"/>
+   <ellipse cx="-25" rx="15" ry="9.7" fill="#653d2c"/>
+   <circle cx="-8" r="7" fill="#6b4030"/>
+   <ellipse cx="7" rx="8.6" ry="6.7" fill="#4f3228"/>
+   <path d="M-34-3q3-6 13-3m22 4 5-1" fill="none" stroke="#b27554" stroke-width="1.6"/>
+  </g>
+ </defs>
+ <rect x="0" y="0" width="560" height="200" rx="0" fill="url(#paper) #e2c391"/>
+ <path d="M0 32Q77 12 160 39v160H0z" fill="#c7cb97"/>
+ <path d="M176 9h166v191H176z" fill="#e8bd7e"/>
+ <path d="M351 0h209v200H351z" fill="#ccd097"/>
+ <path d="M0 149q54-21 171-15v66H0z" fill="#b69a5e"/>
+ <path d="M176 152q54-29 176-18v66H176z" fill="#c88d53"/>
+ <path d="M170 0v200m181-200v200" stroke="#f1deb3" stroke-width="5"/>
+ <path d="M368 187q69-71 178-144" fill="none" stroke="#6e6441" stroke-width="15" stroke-linecap="round"/>
+ <path d="M365 182q82-77 177-143" fill="none" stroke="#a49c62" stroke-width="4"/>
+ <path d="M418 142q-20-25-29-54 20 19 41 45m47-38q-7-30-7-63 9 32 18 56" fill="#eedbb6" stroke="#7e714b" stroke-width="1.5"/>
+ <path d="M490 85q21-39 63-42-12 30-53 42zm-34 26q18-17 73-11-27 21-73 11zM526 55Q516 7 545 2q13 23-19 53z" fill="#617948" stroke="#4a603d" stroke-width="1.3"/>
+ <path d="M501 80l38-28m-74 57 48-7m15-56 13-35" stroke="#a7b279" fill="none" stroke-width="1.5"/>
+ <ellipse cx="95" cy="179" rx="58" ry="7" fill="#634a37" opacity=".25"/>
+ <ellipse cx="263" cy="170" rx="68" ry="10" fill="#5b392a" opacity=".28"/>
+ <use href="#acacia" transform="translate(69 19) scale(0.9) "/>
+ <use href="#giraffe" transform="translate(18 14) scale(1.01) "/>
+ <use href="#lion" transform="translate(193 76) scale(1.06) "/>
+ <use href="#ant" transform="translate(454 115) scale(1.05) rotate(-34)"/>
+ <use href="#ant" transform="translate(507 69) scale(0.58) rotate(-37)"/>
+ <use href="#pebble" transform="translate(103 184) scale(0.5) "/>
+ <use href="#tuft" transform="translate(128 181) scale(0.98) "/>
+ <use href="#tuft" transform="translate(325 191) scale(0.86) "/>
+ <use href="#pebble" transform="translate(58 180) scale(0.55) "/>
+ <use href="#pebble" transform="translate(111 177) scale(0.39) "/>
+ <use href="#pebble" transform="translate(86 185) scale(0.27) "/>
+ <use href="#tuft" transform="translate(255 184) scale(0.67) "/>
+ <use href="#pebble" transform="translate(153 178) scale(0.67) "/>
+ <use href="#pebble" transform="translate(32 176) scale(0.68) "/>
+ <use href="#pebble" transform="translate(323 189) scale(0.61) "/>
+ <use href="#pebble" transform="translate(73 185) scale(0.9) "/>
+ <use href="#pebble" transform="translate(232 185) scale(0.99) "/>
+ <use href="#pebble" transform="translate(111 178) scale(0.73) "/>
+ <use href="#tuft" transform="translate(109 188) scale(0.54) "/>
+ <use href="#tuft" transform="translate(241 194) scale(0.44) "/>
+ <use href="#pebble" transform="translate(61 175) scale(0.42) "/>
+ <rect x=".5" y=".5" width="559" height="199" fill="none" stroke="#382c22" opacity=".26"/>
+</svg>
