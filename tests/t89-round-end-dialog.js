@@ -31,7 +31,10 @@ const game = (round, players, r1) => ({schema:3,mode:players.length>1?'group':'s
     T.ok((await p.locator('#round-end-title').textContent()) === 'Round 1 complete' && await p.evaluate(() => document.activeElement.id) === 'round-end-title', 'title "Round 1 complete"; focus is on the heading');
     const body = (await p.locator('#round-end-dialog').innerText()).replace(/\s+/g, ' ');
     T.ok(/used all 75 turns \(the turn limit\)/.test(body), 'the dialog names the reason (turn limit)');
-    T.ok(/Blue chips · non-cancer cells 3 2 5/.test(body) && /Cells destroyed by p53 1 0 1/.test(body) && /Times sent back by a checkpoint 2 1 3/.test(body) && /Checkpoints skipped 0 0 0/.test(body) && /Turns used 75 75 150/.test(body) && /Red chips · cancer cells \(game model\) 0 0 0/.test(body), 'per-player results: chips, destroyed, sent back, skipped, turns (with an all-players column)');
+    T.ok(/Blue chips · non-cancer cells 3 2 5/.test(body) && /Cells destroyed by p53 1 0 1/.test(body) && /Times sent back by a checkpoint 2 1 3/.test(body) && /Checkpoints skipped 0 0 0/.test(body) && /Red chips · cancer cells \(game model\) 0 0 0/.test(body), 'per-player results: chips, destroyed, sent back, skipped, turns (with an all-players column)');
+    const slotRow = p.locator('#round-end-dialog').getByRole('row', { name: 'Turn slots used (including skipped turns) 75 75 150', exact: true });
+    T.ok(await slotRow.count() === 1 && /Game actions \(including extra rolls\): 202\./.test(body),
+      'Round 1 distinguishes 150 all-player turn slots from 202 game actions');
     T.ok(!/winner|wins|won\b/i.test(body.replace(/There is no winner/, '')) && /There is no winner/.test(body), 'no winner is picked');
     T.ok((await p.locator('#round-end-dialog button').allTextContents()).join('|') === 'Start Round 2|Close', 'one clear next step: Start Round 2 (and Close)');
     const said = await p.locator('#game-announcer').textContent();
@@ -55,7 +58,7 @@ const game = (round, players, r1) => ({schema:3,mode:players.length>1?'group':'s
     T.ok(await isOpen() && (await p.locator('#round-end-title').textContent()) === 'Game over' && await p.evaluate(() => document.activeElement.id) === 'round-end-title', 'Round 2 ends: "Game over", focus on its heading');
     const over = (await p.locator('#round-end-dialog').innerText()).replace(/\s+/g, ' ');
     T.ok(/ended early/.test(over) && /Player 1 45, Player 2 47/.test(over), 'Game over names the reason with the real turn counts');
-    T.ok(/Player 1 Result Round 1 Round 2 Blue chips · non-cancer cells 3 1 Red chips · cancer cells \(game model\) 0 2/.test(over) && /Checkpoints skipped 0 3 Turns used 75 45/.test(over) && /Player 2 .*Cells destroyed by p53 0 2/.test(over), 'each player\'s results for both rounds, side by side');
+    T.ok(/Player 1 Result Round 1 Round 2 Blue chips · non-cancer cells 3 1 Red chips · cancer cells \(game model\) 0 2/.test(over) && /Checkpoints skipped 0 3 Turn slots used \(including skipped turns\) 75 45/.test(over) && /Player 2 .*Cells destroyed by p53 0 2/.test(over), 'each player\'s results for both rounds, side by side');
     T.ok(/New cells made 5 4/.test(over) && /Percent non-cancer cells 100% 25%/.test(over) && /Percent cancer cells 0% 75%/.test(over), 'class-style totals: % non-cancer and % cancer per round');
     T.ok(/There is no winner/.test(over) && /not a diagnosis/.test(over), 'no winner; game-model framing kept');
     T.ok((await p.locator('#round-end-dialog button').allTextContents()).join('|') === 'Answer the Making Sense questions|Set up a new game|Close', 'next steps: Making Sense questions, Set up a new game');
