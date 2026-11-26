@@ -74,6 +74,19 @@ const FIXTURE = '<!doctype html><html lang="en"><meta charset="utf-8"><title>Ope
     assert.equal(await page.evaluate(() => collectionCalls), 0, 'step changes do not collect or export anything');
     await page.getByRole('button', { name: 'Preview report' }).click();
     const dialog = page.getByRole('dialog');
+    const paperColor = () => dialog.locator('.osr-paper').evaluate(e => getComputedStyle(e).backgroundColor);
+    const setPreviewTheme = mode => page.evaluate(mode => {
+      if (mode) document.documentElement.dataset.theme = mode;
+      else document.documentElement.removeAttribute('data-theme');
+    }, mode);
+    assert.equal(await paperColor(), 'rgb(25, 47, 58)', 'auto follows the dark system theme');
+    await setPreviewTheme('light');
+    assert.equal(await paperColor(), 'rgb(255, 255, 255)', 'explicit Light overrides the dark system');
+    await page.emulateMedia({ colorScheme: 'light' });
+    await setPreviewTheme('dark');
+    assert.equal(await paperColor(), 'rgb(25, 47, 58)', 'explicit Dark overrides the light system');
+    assert.equal(await page.evaluate(() => localStorage.getItem('aplab:pref:theme')), null,
+      'preview does not persist a theme choice');
     assert.match(await dialog.innerText(), /In progress/i);
     assert.ok(await dialog.getByRole('button', { name: 'Print or save as PDF' }).isVisible());
     assert.ok(await dialog.getByRole('button', { name: 'Close report' }).isVisible());
@@ -136,6 +149,7 @@ const FIXTURE = '<!doctype html><html lang="en"><meta charset="utf-8"><title>Ope
     if (T.BROWSER === 'chromium') {
       const pdf = path.join(dir, 'report.pdf');
       await page.emulateMedia({ media: 'print' });
+      assert.equal(await paperColor(), 'rgb(255, 255, 255)', 'printing remains white paper in Dark');
       await page.pdf({ path: pdf, format: 'Letter', printBackground: true, preferCSSPageSize: true });
       assert.equal(fs.readFileSync(pdf).subarray(0,5).toString(), '%PDF-');
       let printed;

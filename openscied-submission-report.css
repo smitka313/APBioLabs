@@ -8,7 +8,7 @@
 :is(.ose-report-other, [data-ose-report-legacy]) > summary:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 :is(.ose-report-other, [data-ose-report-legacy])[open] > summary { margin-bottom: .35rem; }
 
-/* The modal is paper-colored in either activity theme, like the AP report. */
+/* Shared report layout. Print and the isolated PDF document keep paper colors. */
 .osr-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; }
 .osr-live { flex: 1 1 100%; margin: 0; font-size: .92rem; }
 .osr-live:empty { display: none; }
@@ -155,4 +155,36 @@
   .osr-table { font-size: 9pt; table-layout: fixed; }
   .osr-table thead { display: table-header-group; print-color-adjust: exact; }
   .osr-table tr { break-inside: avoid; }
+}
+
+/* The on-screen preview follows the activity; the exported report does not. */
+@media screen {
+  .osr-dialog {
+    color-scheme: light dark;
+    --osr-ink: light-dark(#1c2d36, #e6eff3);
+    --osr-blue: light-dark(#173d54, #b4def4);
+    --osr-muted: light-dark(#465965, #afc5d1);
+    --osr-line: light-dark(#c5d3da, #4b6572);
+    --osr-soft: light-dark(#e9f0f3, #243a46);
+    --osr-preview-frame: light-dark(#f1f4f6, #14262f);
+    --osr-preview-paper: light-dark(#fff, #192f3a);
+    --osr-preview-control: light-dark(#fff, #203845);
+    --osr-preview-control-line: light-dark(#7893a2, #7796a6);
+    --osr-preview-disabled: light-dark(#e0e5e9, #2a414d);
+    --osr-preview-primary-text: light-dark(#fff, #10232d);
+    --osr-preview-focus: light-dark(#185b84, #b4def4);
+    background: var(--osr-preview-frame);
+  }
+  :root[data-theme="light"] .osr-dialog { color-scheme: light; }
+  :root[data-theme="dark"] .osr-dialog { color-scheme: dark; }
+  .osr-dialog .osr-tools { background: var(--osr-preview-frame); }
+  .osr-dialog :is(.osr-paper, .osr-identity-editor[open]) { background: var(--osr-preview-paper); }
+  .osr-dialog :is(.btn, .osr-identity-fields input) {
+    background: var(--osr-preview-control); border-color: var(--osr-preview-control-line);
+  }
+  .osr-dialog .btn--primary {
+    background: var(--osr-blue); color: var(--osr-preview-primary-text); border-color: var(--osr-blue);
+  }
+  .osr-dialog .btn:disabled { background: var(--osr-preview-disabled); color: var(--osr-muted); }
+  .osr-dialog :focus-visible { outline-color: var(--osr-preview-focus); }
 }
