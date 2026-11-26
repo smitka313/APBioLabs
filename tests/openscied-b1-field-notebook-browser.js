@@ -1,0 +1,72 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs/promises');
+const path=require('node:path');
+const {chromium}=require('playwright');
+const {ROOT,serve}=require('./_h');
+(async()=>{
+ const site=await serve();
+ let browser;
+ try{
+  browser=await chromium.launch();
+  const out=path.join(ROOT,'artifacts','field-notebook');
+  await fs.mkdir(out,{recursive:true});
+  for(const [width,mode] of [[390,'dark'],[768,'dark'],[1366,'light'],[1920,'light']]){
+   const cx=await browser.newContext({viewport:{width,height:900},hasTouch:width===390,reducedMotion:'reduce'});
+   try{
+    await cx.addInitScript(m=>localStorage.setItem('aplab:pref:theme',m),mode);
+    await cx.route('**/*',r=>new URL(r.request().url()).origin===new URL(site.url).origin?r.continue():r.abort());
+    const p=await cx.newPage(), errors=[];
+    p.on('pageerror',err=>errors.push(err.message));
+    await p.goto(site.url+'openscied-b1-field-notebook.html');
+    const by=k=>p.locator('#sf-'+k), page=k=>p.locator('[data-page="'+k+'"]'), go=k=>p.locator('[data-go="'+k+'"]');
+    const shot=async stage=>{
+      assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),width+' fits '+stage);
+      await p.screenshot({path:path.join(out,width+'-'+stage+'.png'),fullPage:true,animations:'disabled'});
+    };
+    assert.equal(await p.locator('html').getAttribute('data-theme'),mode);
+    assert.ok(await go('explore').isDisabled());
+    await by('question1').fill('What did people want to protect?');
+    await by('question2').fill('What did people want to protect?');assert.ok(await go('explore').isDisabled());
+    await by('question2').fill('Why did the boundaries change?');
+    await shot('orientation');
+    await go('explore').click();
+    assert.ok(await page('explore').isVisible());
+    assert.ok(await go('explain').isDisabled());
+    assert.equal(await p.locator('iframe').count(),0);
+    const move=p.getByRole('button',{name:'Movement of animals',exact:true});
+    await move.focus();
+    await p.keyboard.press('Enter');
+    assert.ok(await p.locator('[data-layer=route]').isVisible());
+    await by('pin').click();
+    await by('note').fill('The herd regularly leaves the park.');
+    assert.ok(await go('explain').isDisabled());
+    const people=p.getByRole('button',{name:'People of the Serengeti',exact:true});
+    if(width===390) await people.tap();
+    else await people.click();
+    await by('pin').click();
+    assert.ok(await p.locator('[data-layer=protection]').isVisible());
+    await shot('stations');
+    await go('explain').click();
+    assert.match(await by('evidence-recap').innerText(),/The herd regularly leaves the park/);
+    assert.match(await by('evidence-recap').innerText(),/Nata elder/);
+    await by('claim').fill('The old boundary did not cover the herd’s route, and some local residents lost access to land.');
+    await by('wonder').fill('Where do the animals go next?');
+    await by('finish').click();
+    assert.match(await by('finish-note').textContent(),/Notebook complete/);
+    await p.reload();
+    assert.ok(await page('explain').isVisible());
+    assert.equal(await by('wonder').inputValue(),'Where do the animals go next?');
+    await p.getByRole('button',{name:'Preview report',exact:true}).click();
+    assert.match(await p.locator('.osr-dialog').innerText(),/The herd regularly leaves the park/);
+    await p.locator('.osr-dialog').getByRole('button',{name:'Close report'}).click();
+    await shot('explain');
+    await by('reset').click();
+    assert.ok(await by('clear').isDisabled());
+    await by('erase').fill('ERASE');await by('clear').click();
+    await p.waitForFunction(()=>localStorage.getItem('aplab:openscied:b1-field-notebook:v1')===null&&document.querySelector('[data-page=orient]').hidden===false);
+    assert.deepEqual(errors,[]);
+   }finally{await cx.close();}
+  }
+ }finally{await browser?.close();await site.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

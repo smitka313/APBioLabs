@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-labelledby="title">
+<title id="title">A blue wildebeest on grassland at dusk with flat-topped acacias and distant hills</title>
+<defs>
+ <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#3f4258"/><stop offset=".64" stop-color="#c77f52"/><stop offset="1" stop-color="#f8cb80"/></linearGradient>
+ <linearGradient id="ground" x2="0" y2="1"><stop stop-color="#ad793c"/><stop offset="1" stop-color="#3d3026"/></linearGradient>
+ <linearGradient id="coat" x2=".2" y2="1"><stop stop-color="#b79a79"/><stop offset=".52" stop-color="#72675d"/><stop offset="1" stop-color="#403c3c"/></linearGradient>
+ <pattern id="stubble" width="60" height="38" patternUnits="userSpaceOnUse"><path d="M4 35L1 24m3 11 8-13M32 10l-2-7m2 7 5-7m12 24-2-6m2 6 5-10" fill="none" stroke="#efc16d" stroke-width="1.5" stroke-opacity=".38"/></pattern>
+</defs>
+<path fill="url(#sky)" d="M0 0h960v600H0z"/>
+<circle cx="208" cy="237" r="63" fill="#ffe0a1" opacity=".84"/>
+<path d="M0 300l88-23 80 19 83-37 100 16 112-28 114 49 94-30 147 31 142-39v113H0Z" fill="#8f7067"/>
+<path d="M0 330q102-31 222-5t246 12q128-31 250-9t242-12v284H0z" fill="url(#ground)"/>
+<path d="M0 350q100-25 240 4t240 6q157-27 269-4t211-10v254H0z" fill="url(#stubble)"/>
+<g fill="#42362f">
+<path d="M126 366c9-39 10-81 19-112l10 2c-4 35-5 69-2 110zm20-93-41-33 5-4 39 24 42-33 6 2-46 50z"/>
+<path d="M40 244q17-26 64-26 26-18 57-11 13-12 44-4 32 3 57 21-35-5-62 11-34 6-59-3-39 19-101 12Z"/>
+<path d="M840 372q8-58 12-92l9 1-4 92zm16-58-33-26 4-4 33 20 36-27 5 3-40 36z"/>
+<path d="M783 290q21-18 57-17 20-16 43-11 31 6 45 22-32-4-56 8-51 0-89-2Z"/>
+</g>
+<ellipse cx="601" cy="518" rx="252" ry="24" fill="#221e1e" opacity=".32"/>
+<!-- Side profile: sloping back, high shoulders, heavy head, beard, out/up horns. -->
+<g stroke="#30292b" stroke-linejoin="round" stroke-linecap="round">
+ <path d="M764 362q48 21 49 88l-8 21-7-16q-1-54-42-76z" fill="#393236" stroke-width="6"/>
+ <path d="M698 417l20 36-6 62 17 3 7-66-10-37m-170-11 3 53-7 51 18 1 9-56 1-43" fill="#514644" stroke-width="6"/>
+ <path d="M741 401l-10 58 15 54 21 1-16-55 20-59m-185 2-12 49-4 63 18 1 9-63 17-53" fill="#61534a" stroke-width="6"/>
+ <path d="M482 353q35-54 85-47 61 7 114 23 61 13 87 32 23 31-12 62-42 24-105 7l-47-8q-32 5-60-9-50-11-73-42z" fill="url(#coat)" stroke-width="6"/>
+ <path d="M473 353l16-37 12 6 7-21 10 12 10-23 12 14 10-14 10 13 17 2-29 16-35 40z" fill="#383239" stroke-width="3"/>
+ <path d="M520 339q-21-18-46-3l-20 24-35 13-17 25 10 20 30 4 31-29 31-16z" fill="#7a6d60" stroke-width="5"/>
+ <path d="M457 395l-8 28 9-4 1 14 8-15 6 11 6-42" fill="#353036" stroke-width="3"/>
+ <path d="M453 348q-27 2-36-11l25-1 21 8m20-10q16-17 34-11-10 15-25 20z" fill="#78675b" stroke-width="4"/>
+ <path d="M462 343q-43 5-51-23-4-13 0-28 9 28 27 30l28-3m12 14q31-15 35-34 4-17-4-28-2 25-27 36l-19 8" fill="#cbb598" stroke-width="5"/>
+ <path d="M420 384l-15 13 6 15 18 4 12-9-3-19z" fill="#3d3436" stroke-width="3"/>
+ <path d="M556 329q15 27 7 68m16-65q13 30 6 66m17-62q12 24 7 57m17-53q13 25 8 53" fill="none" stroke="#453e40" opacity=".53" stroke-width="4"/>
+ <circle cx="458" cy="359" r="4.7" fill="#1f1d24" stroke="#ba9670" stroke-width="1.5"/>
+ <path d="M515 371q29 18 46 19m112 16q39 14 70 1" fill="none" stroke="#c9aa84" opacity=".42" stroke-width="3"/>
+</g>
+<g stroke="#ecd18a" stroke-opacity=".63" stroke-linecap="round" stroke-width="2"><path d="M61 537l-12-36m12 36 14-24m-14 24 3-46m74 68-10-37m10 37 14-35m170 44-12-31m12 31 16-44m469 27-6-28m6 28 13-34m60 11-9-34m9 34 16-27"/></g>
+<g fill="none" stroke-linecap="round">
+ <g stroke="#473c3e" stroke-width="2.3" opacity=".83">
+  <path d="M309 169q8-7 15 1q7-9 14-5"/><path d="M352 192q6-5 12 1q6-6 12-3"/><path d="M263 185q5-4 10 1q5-6 10-3"/>
+ </g>
+ <g stroke="#ead091" stroke-width="1.7" opacity=".59">
+  <path d="M40 422q-2-18-13-29m13 29q-1-22 7-31"/><path d="M97 451q-5-15-12-20m12 20q1-18 11-26"/>
+  <path d="M177 432q-5-21-15-27m15 27q1-19 8-32"/><path d="M230 479q-5-21-17-34m17 34q-1-20 11-30"/>
+  <path d="M306 513q-4-19-11-26m11 26q1-17 10-29"/><path d="M377 492q-6-15-15-22m15 22q1-18 9-26"/>
+  <path d="M42 574q-4-18-12-22m12 22q3-21 10-25"/><path d="M292 580q-9-30-18-37m18 37q1-23 11-36"/>
+  <path d="M420 577q-6-17-11-25m11 25q0-17 8-31"/><path d="M530 555q-6-25-17-33m17 33q-2-23 9-32"/>
+  <path d="M639 582q-11-26-23-35m23 35q0-25 14-34"/><path d="M722 553q-5-21-15-27m15 27q3-22 12-29"/>
+  <path d="M864 493q-6-17-14-28m14 28q3-18 11-26"/><path d="M921 471q-6-18-14-26m14 26q2-14 9-24"/>
+ </g>
+ <g stroke="#c09767" opacity=".45" stroke-width="2">
+  <path d="M142 343q2-14 2-24"/><path d="M140 306l4-13"/><path d="M851 354l3-22"/><path d="M147 287l1-15"/>
+ </g>
+</g></svg>

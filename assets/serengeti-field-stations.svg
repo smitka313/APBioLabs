@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="day" x2="0" y2="1"><stop stop-color="#c5ded4"/><stop offset="1" stop-color="#f3dba3"/></linearGradient>
+<linearGradient id="water" x2="0" y2="1"><stop stop-color="#88b5ad"/><stop offset="1" stop-color="#397a82"/></linearGradient>
+<g id="tree"><path d="M38 99l9-73 5-1-2 74zM49 49L25 26l4-2 20 17 26-18 3 2-29 26z" fill="#543c2a"/><path d="M1 28Q13 14 32 16 42 5 58 13 75 6 95 24 77 21 69 29 47 30 35 26 19 34 1 28z" fill="#55694a"/></g>
+<g id="small-herd" fill="#59483d"><path d="M7 20l6-8 18 2 8 5-3 9-18 1-8-4-6 3-4-3 3-6 5 1z"/><path d="M15 26l-2 13h3l3-12m11 1 3 11h3l-2-11M4 20Q-4 18 0 12l3 5 5-1z"/></g>
+</defs>
+<symbol id="habitats" viewBox="0 0 560 160">
+ <path fill="url(#day)" d="M0 0h560v160H0z"/>
+ <path fill="#a9a17b" d="M0 82q92-52 177-26t129 16q101-12 254-30v118H0z"/>
+ <path fill="#b99356" d="M0 100q108-28 231-13t159 15q107 8 170-17v75H0z"/>
+ <path fill="url(#water)" d="M305 90q-28 22 14 30t-31 40h-72q81-31 52-40t16-30z"/>
+ <g transform="translate(367 41)"><use href="#tree"/></g><g transform="translate(430 38) scale(.82)"><use href="#tree"/></g><g transform="translate(481 47) scale(.72)"><use href="#tree"/></g>
+ <path d="M13 142l5-16m-5 16-7-10m67 11-5-18m5 18 5-16m53 17 4-17m-4 17-6-15m57 14-4-14m4 14 7-15" stroke="#745a3e" stroke-width="2"/>
+</symbol>
+<symbol id="biodiversity" viewBox="0 0 560 160">
+ <path fill="#d9c38f" d="M0 0h560v160H0z"/>
+ <path d="M0 139Q153 100 274 59t286-45" fill="none" stroke="#514e36" stroke-width="12"/>
+ <g fill="#796741"><path d="M155 104l32-49-10 53zM252 75l33-48-10 45zM394 42l31-41-11 40z"/></g>
+ <g fill="#5c7749" stroke="#48603c" stroke-width="1"><path d="M291 56q48-42 79-30-36 32-79 30zM310 57q55 3 68 26-47 3-68-26zM418 31q49-17 90-10-39 23-90 10zM370 44q-8-28 4-41 28 16-4 41zM45 132q37-39 75-38-33 36-75 38z"/></g>
+ <g fill="#332c29" stroke="#332c29" stroke-width="2" transform="translate(218 92) rotate(-20)"><ellipse rx="10" ry="7"/><circle cx="14" r="5"/><circle cx="-17" r="5"/><path d="M-4-3l-12-14m7 16-12-4m16 7-14 13m21-17 9-15m-6 19 11-9m-13 9 12 4M17-1l11-7m-12 10 13-2" fill="none"/></g>
+ <g fill="#302322" transform="translate(441 83) rotate(12) scale(.66)"><ellipse rx="10" ry="7"/><circle cx="14" r="5"/><circle cx="-17" r="5"/><path d="M-4-3l-12-14m7 16-12-4m16 7-14 13m21-17 9-15m-6 19 11-9m-13 9 12 4" fill="none" stroke="#302322" stroke-width="2"/></g>
+</symbol>
+<symbol id="movement" viewBox="0 0 560 160">
+ <path fill="#bdb382" d="M0 0h560v160H0z"/>
+ <path fill="url(#water)" d="M0 56q117 34 280 10t280-5v55q-169-10-277 15T0 99z"/>
+ <path d="M0 79q115 34 278 11t282-12M0 92q115 34 278 11t282-12" stroke="#deeee4" stroke-width="2" fill="none" opacity=".57"/>
+ <g><use href="#small-herd" transform="translate(62 111)"/><use href="#small-herd" transform="translate(145 122) scale(.83)"/><use href="#small-herd" transform="translate(217 112) scale(.87)"/><use href="#small-herd" transform="translate(383 17)"/><use href="#small-herd" transform="translate(451 11) scale(.79)"/><use href="#small-herd" transform="translate(502 20) scale(.65)"/></g>
+</symbol>
+<symbol id="conservation" viewBox="0 0 560 160">
+ <path fill="#d7b879" d="M0 0h560v160H0z"/>
+ <path fill="#9da36a" stroke="#655039" stroke-width="3" stroke-dasharray="8 6" d="M18 41 130 25 186 47 156 121 28 133zM343 33 475 23 540 66 515 139 389 135 343 104z"/>
+ <path fill="#b2b775" stroke="#655039" stroke-width="3" d="M143 25 285 15 368 49 365 105 291 146 184 131 153 85z"/>
+ <path d="M57 110Q163 89 230 77T475 57" stroke="#f8efd5" stroke-width="8" fill="none" stroke-dasharray="13 7"/>
+ <path d="M57 110Q163 89 230 77T475 57" stroke="#6c3640" stroke-width="4" fill="none" stroke-dasharray="13 7"/>
+ <circle cx="271" cy="70" r="9" fill="#fff3d8" stroke="#6c3640" stroke-width="4"/>
+</symbol>
+<symbol id="people" viewBox="0 0 560 160">
+ <path fill="url(#day)" d="M0 0h560v160H0z"/>
+ <path fill="#bc9a64" d="M0 92Q104 60 236 92t324-15v83H0z"/>
+ <g transform="translate(39 34) scale(.9)"><use href="#tree"/></g>
+ <g fill="#8b6348" stroke="#614a37" stroke-width="2"><path d="M190 124v-28q19-17 53-2v30zM268 127v-31q21-16 55-3v34zM350 125v-28q25-15 53-2v30z"/></g>
+ <g fill="#6a5140"><path d="M181 97q25-31 71 0zM260 96q29-28 73 0zM342 96q27-30 68 0z"/></g>
+ <path d="M157 135q145 26 276-5" fill="none" stroke="#6b4833" stroke-width="4" stroke-dasharray="2 3"/>
+ <g fill="#4f392c"><path d="M213 122v-15h10v15zM292 125v-16h10v16zM376 123v-14h10v14z"/></g>
+</symbol>
+</svg>

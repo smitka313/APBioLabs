@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 const SaveSession = require('../openscied-save-session.js');
+const SerengetiFieldNotebook = require('../openscied-b1-field-notebook-logic.js');
 const source = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.js'), 'utf8');
 const workspaceEpochKey = 'aplab:pref:workspace-handoff:v1';
 function setup(blocked = false, overrides = {}, absent = [], tracker, workshopLogic) {
@@ -38,7 +39,7 @@ function setup(blocked = false, overrides = {}, absent = [], tracker, workshopLo
       data: { workspaceEpochKey, workspaceStatus: () => blocked ? 'unavailable' :
         (data[workspaceEpochKey] ?? null) === workspaceEpoch ? 'current' : 'changed' }
     },
-    localStorage: storage, window: { location:{origin:'https://biologylabbench.com'},OpenSciEdResume:tracker,OpenSciEdSaveSession:SaveSession,DNAWorkshopLogic:workshopLogic,addEventListener(type, fn) { events[type]=fn; } }, Blob,
+    localStorage: storage, window: { location:{origin:'https://biologylabbench.com'},OpenSciEdResume:tracker,OpenSciEdSaveSession:SaveSession,SerengetiFieldNotebook,DNAWorkshopLogic:workshopLogic,addEventListener(type, fn) { events[type]=fn; } }, Blob,
     URL: { createObjectURL(value) { if (failBackup) throw Error('blocked download'); blob = value; return 'blob:backup'; }, revokeObjectURL() {} }, setTimeout() {} };
   vm.runInNewContext(source, context);
   return { data, created, events, el: selector => elements.get(selector), mounted, mountOptions, blob: () => blob, blockBackup: () => { failBackup = true; } };
@@ -880,7 +881,7 @@ test('student gets five direct unit jumps, one named card link, and no live-regi
   const units = html.match(/<nav class="dashboard-unit-jumps"[^>]*>([\s\S]*?)<\/nav>/)?.[1] || '';
   assert.deepEqual([...units.matchAll(/href="#(unit[1-5])"/g)].map(m => m[1]), ['unit1','unit2','unit3','unit4','unit5']);
   const cards = [...html.matchAll(/<article class="dashboard-activity">([\s\S]*?)<\/article>/g)].map(m=>m[1]);
-  assert.equal(cards.length, 23);
+  assert.equal(cards.length, 24);
   const names = cards.map(card => {
     const image = card.match(/<a class="dashboard-preview"[^>]*>/)?.[0];
     assert.match(image || '', /tabindex="-1"/);
@@ -992,4 +993,18 @@ test('Inheritance counts the same choices as the activity, separately from writi
   assert.match(card(modern),/1 of 6 interactive models used · 23 of 23 choice questions answered/);
   assert.match(card({...modern,fields:{...fields,[choices[0]]:'  '}}),/22 of 23 choice questions answered/);
   assert.match(card(base),/28 of 31 answers saved \(choices and writing\)/,'legacy records still keep their work and label the combined count');
+});
+
+test('Field Notebook counts meaningful work and backs up the exact written responses', async()=>{
+  const key='aplab:openscied:b1-field-notebook:v1';
+  const fields={question1:'Why protect this area?',question2:'Who decided?',movement:'The herd leaves the park.',claim:'The herd needed land outside the park.',wonder:'Where does it go next?'};
+  const s=setup(false,{[key]:JSON.stringify({v:1,fields,pins:['people'],finished:true,lastVisitedAt:100})});
+  assert.equal(s.el('#field-notebook-progress').textContent,'Notebook complete');
+  assert.equal(s.el('#field-notebook-open').href,'openscied-b1-field-notebook.html');
+  s.el('#download-openscied-results').fire('click');
+  const archive=JSON.parse(await s.blob().text());
+  assert.deepEqual(archive.responses['field-notebook'],fields);
+  assert.deepEqual(JSON.parse(archive.work[key]).pins,['people']);
+  const before=setup(false,{[key]:'{"v":1,"fields":{},"step":"orient"}'});
+  assert.equal(before.el('#field-notebook-progress').textContent,'Not started');
 });

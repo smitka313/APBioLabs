@@ -5,6 +5,7 @@ const path = require('node:path');
 const T = require('./_h');
 
 const originals = {
+  "b1-field-notebook": ["openscied-atlas-b1-field-notebook.svg",960,600],
   "b5-wapusk": [
     "openscied-wapusk-card.svg",
     960,
@@ -22,7 +23,7 @@ const originals = {
   ]
 };
 const keys = [
-  'b1-migration','b1-carrying-capacity','b1-serengeti','b1-ripple',
+  'b1-field-notebook','b1-migration','b1-carrying-capacity','b1-serengeti','b1-ripple',
   'b2-burn-lab','b2-fires','b2-peat-bog-lab','b2-carbon-journey',
   'b3-cancer-rates','b3-screening','b3-cell-cycle','b3-dna-workshop','b3-dna-p53','b3-inheritance-environment',
   'b4-hawksbeard','b4-rat-generations','b4-junco','b4-wildlife-corridor',

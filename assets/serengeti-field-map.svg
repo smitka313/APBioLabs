@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 450" role="img" aria-labelledby="title">
+<title id="title">Schematic map of the Serengeti ecosystem spanning Tanzania and Kenya</title>
+<defs>
+ <linearGradient id="land" x2=".8" y2="1"><stop stop-color="#f4dea0"/><stop offset="1" stop-color="#b88752"/></linearGradient>
+ <pattern id="grass" width="40" height="36" patternUnits="userSpaceOnUse"><path d="M2 10l8-3m18 17l7-4M6 33l4-3" stroke="#67472f" opacity=".24" stroke-width="2" stroke-linecap="round"/></pattern>
+ <linearGradient id="lake" x2="1" y2="1"><stop stop-color="#80c9c5"/><stop offset="1" stop-color="#469b9e"/></linearGradient>
+</defs>
+<path fill="url(#land)" d="M0 0h720v450H0z"/>
+<path fill="url(#grass)" d="M0 0h720v450H0z"/>
+<path fill="#8e9d66" opacity=".55" d="M169 45Q312 5 478 64L585 169Q614 213 542 271L582 358Q510 428 376 405L245 344 203 246 172 159Z"/>
+<path fill="url(#lake)" stroke="#316e6f" stroke-width="3" d="M0 0h144l33 27-10 41-38 20 3 27-43 20-8 29-44 10L0 151Z"/>
+<path d="M670 23q-51 57-39 99t-13 84q-23 39 13 78t-18 143m57-311-4 62 18 60m-35 80-17 55" fill="none" stroke="#876447" stroke-width="13" opacity=".44"/>
+<path d="M536 34q-62 23-88 66t-103 22-92 34-85 10M495 169q-29-6-56 23t-100 23-77 17-97-7" fill="none" stroke="#2c6c7b" stroke-width="5" stroke-linecap="round"/>
+<path d="M157 106l90 8 80 6 79-10 84 17 92 6 115 13" fill="none" stroke="#593b41" stroke-width="2.5" stroke-dasharray="10 5"/>
+<path d="M291 160L388 139 469 156 492 229 457 305 375 344 269 307 222 251 249 199Z" fill="#fce6a9" fill-opacity=".37" stroke="#644f2f" stroke-width="3" stroke-dasharray="13 5 3 5"/>
+<g fill="#32261d" font-family="system-ui,sans-serif" font-weight="750" font-size="22">
+ <text x="27" y="60" fill="#143d42">Lake Victoria</text><text x="542" y="91">Kenya</text><text x="76" y="301">Tanzania</text>
+ <text x="277" y="192">Serengeti</text><text x="277" y="218">National Park</text><text x="332" y="375">Southern plains</text><text x="496" y="338">Ngorongoro</text>
+</g>
+<g font-family="system-ui,sans-serif" fill="#143d42" font-size="18" font-weight="650"><text x="340" y="87">Mara River</text><text x="166" y="271">Grumeti River</text></g>
+<g transform="translate(664 351)" fill="#32261d"><path d="M16 0L0 40l16-9 16 9z"/><text x="10" y="-8" font-family="system-ui" font-size="16" font-weight="800">N</text></g>
+</svg>
