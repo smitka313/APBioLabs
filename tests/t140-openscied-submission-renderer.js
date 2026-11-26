@@ -109,6 +109,13 @@ const FIXTURE = '<!doctype html><html lang="en"><meta charset="utf-8"><title>Ope
     await page.evaluate(() => { synthetic.status = 'final'; synthetic.missing = []; });
     await page.getByRole('button', { name: 'Preview report' }).click();
     assert.match(await dialog.innerText(), /Activity complete/i);
+    const printStyles = await dialog.getByRole('button', { name: 'Print or save as PDF' }).evaluate(e => {
+      const css = getComputedStyle(e);
+      return [css.color, css.backgroundColor];
+    });
+    assert.deepEqual(printStyles, ['rgb(16, 35, 45)', 'rgb(180, 222, 244)'], 'Dark Print action keeps its contrasting primary fill');
+    assert.equal(await dialog.locator('.osr-stamp').evaluate(e => getComputedStyle(e).backgroundColor),
+      'rgb(230, 239, 243)', 'Dark preview puts the blue seal on a light face');
     const previewSeal = await sealPng(dialog);
     const shots = process.env.POLISH_SCREENSHOTS;
     if (shots) {

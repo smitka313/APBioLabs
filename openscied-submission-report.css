@@ -172,6 +172,7 @@
     --osr-preview-control-line: light-dark(#7893a2, #7796a6);
     --osr-preview-disabled: light-dark(#e0e5e9, #2a414d);
     --osr-preview-primary-text: light-dark(#fff, #10232d);
+    --osr-preview-stamp-mat: light-dark(transparent, #e6eff3);
     --osr-preview-focus: light-dark(#185b84, #b4def4);
     background: var(--osr-preview-frame);
   }
@@ -179,12 +180,15 @@
   :root[data-theme="dark"] .osr-dialog { color-scheme: dark; }
   .osr-dialog .osr-tools { background: var(--osr-preview-frame); }
   .osr-dialog :is(.osr-paper, .osr-identity-editor[open]) { background: var(--osr-preview-paper); }
-  .osr-dialog :is(.btn, .osr-identity-fields input) {
+  .osr-dialog .btn,
+  .osr-dialog .osr-identity-fields input {
     background: var(--osr-preview-control); border-color: var(--osr-preview-control-line);
   }
   .osr-dialog .btn--primary {
     background: var(--osr-blue); color: var(--osr-preview-primary-text); border-color: var(--osr-blue);
   }
   .osr-dialog .btn:disabled { background: var(--osr-preview-disabled); color: var(--osr-muted); }
+  /* Preserve the original seal bitmap on a light seal face in Dark mode. */
+  .osr-dialog .osr-stamp { background: var(--osr-preview-stamp-mat); border-radius: 50%; }
   .osr-dialog :focus-visible { outline-color: var(--osr-preview-focus); }
 }
