@@ -34,7 +34,7 @@ def page_specs():
         'ap-biology.html': ('Free AP Biology Virtual Labs | AP Bio Digital Lab Bench',
                        'Explore all 13 AP Biology virtual labs for free. Interactive simulations, data analysis, printable student directions, and teacher resources. No installation.',
                        'Free AP Biology virtual labs'),
-        'openscied-dashboard.html': ('OpenSciEd Biology Companion Activities | Biology Lab Bench',
+        'openscied-dashboard.html': ('Biology Companion Activities (for OpenSciEd units) | Biology Lab Bench',
                                      'Explore free, independent interactive companion activities for all five OpenSciEd high school biology units.',
                                      'OpenSciEd Biology Companion Activities'),
         'teachers.html': ('Free AP Biology Virtual Labs for Teachers | Lab Bench',
