@@ -89,12 +89,12 @@
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
-<a class="skip-link" href="#setup">Skip to content</a>
+<a id="skip-content" class="skip-link" href="#setup">Skip to content</a>
 
-<main id="setup" class="setup">
+<main id="setup" class="setup" tabindex="-1" aria-labelledby="setup-title">
   <header>
     <div class="eyebrow">For the classroom screen</div>
-    <h1>Projector mode</h1>
+    <h1 id="setup-title">Projector mode</h1>
     <p class="lede">Choose a lab and today's parts. The next screen shows large type, a countdown timer, the bench safety reminders and a QR code students can scan.</p>
   </header>
   <form class="panel" id="form" autocomplete="off">
@@ -106,7 +106,7 @@
   </form>
 </main>
 
-<main id="display" class="disp" hidden>
+<main id="display" class="disp" tabindex="-1" aria-labelledby="d-title" hidden>
   <div class="bar">
     <div class="row">
       <button type="button" class="btn" id="b-setup">Setup</button>
@@ -297,8 +297,29 @@
   $('chime').addEventListener('change', function () { pref.chime = $('chime').checked; save(); if (pref.chime) chime(1); });
 
   /* ---------- views, fullscreen, theme, keys ---------- */
-  function start() { save(); $('setup').hidden = true; $('display').hidden = false; show(); resetT(); window.scrollTo(0, 0); }
-  function toSetup() { pauseT(); $('display').hidden = true; $('setup').hidden = false; document.title = 'Projector Mode — AP Bio Lab Bench'; }
+  var skip = $('skip-content');
+  skip.addEventListener('click', function (e) {
+    e.preventDefault(); // Keep the selected-lab URL fragment intact.
+    $($('display').hidden ? 'setup' : 'display').focus();
+  });
+  function start() {
+    save();
+    $('setup').hidden = true;
+    $('display').hidden = false;
+    skip.setAttribute('href', '#display');
+    show();
+    resetT();
+    $('display').focus({ preventScroll: true });
+    window.scrollTo(0, 0);
+  }
+  function toSetup() {
+    pauseT();
+    $('display').hidden = true;
+    $('setup').hidden = false;
+    skip.setAttribute('href', '#setup');
+    document.title = 'Projector Mode — AP Bio Lab Bench';
+    $('start').focus();
+  }
   $('form').addEventListener('submit', function (e) { e.preventDefault(); start(); });
   $('b-setup').addEventListener('click', toSetup);
   function fsEl() { return document.fullscreenElement || document.webkitFullscreenElement; }
