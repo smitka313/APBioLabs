@@ -190,11 +190,11 @@ test('Serengeti needs the four-season run, valid selected evidence and both expl
   assert.equal(r.status,'final');assert.equal(r.student,null);assert.equal(r.datasetId,undefined);
   assert.equal(r.allowIdentityEdit,false);
   assert.match(r.sections[0].items[0].text,/group record/);
-  assert.match(r.sections[0].items[0].text,/Recorded by: Device student · Class period: 3/);
+  assert.deepEqual(plain(r.recorder),{name:'Device student',period:'3'});
   assert.equal(r.sections[3].items[0].value,'Selected evidence Lion hunt');
   assert.equal(r.sections[2].items[0].rows[0][4],'Simulated capture');
   ctx.roleSetup.mode='solo';
-  r=collect('serengeti',ctx);assert.equal(r.student.name,'Device student');
+  r=collect('serengeti',ctx);assert.equal(r.student.name,'Device student');assert.equal(r.recorder,null);
   assert.equal(r.allowIdentityEdit,true);
   checkRetired('serengeti',ctx,'changed');
   ctx.answers.evidence='26';
@@ -232,4 +232,44 @@ test('Serengeti comparisons hold predator species and group size constant, only 
   assert.match(historyOptionText(rows[0],0),/Record 1 · Winter · Lion small group vs. wildebeest herd · Wildebeest escaped/);
   assert.match(historyOptionText(rows[4],4),/Record 5.*wildebeest individual/);
   assert.notEqual(historyOptionText(rows[0],0),historyOptionText(rows[0],1));
+});
+
+
+test('shared-device Word header identifies the recorder without claiming individual credit',async()=>{
+  const Report=require('../openscied-submission-report.js');
+  const fixture={title:'Group Report',unit:'Unit 1',source:'Simulated trial',student:null,
+    recorder:{name:'Fictional Recorder',period:'3'},status:'final',
+    keyResults:[{label:'Events recorded',value:4}],sections:[]};
+  const r=Report.normalize(fixture);
+  assert.deepEqual(r.student,{name:'',period:''});
+  assert.deepEqual(r.recorder,fixture.recorder);
+  assert.equal(r.allowIdentityEdit,false);
+  class Mock { constructor(options){this.options=options;} }
+  const D=new Proxy({Packer:{toBlob:output=>output},HeadingLevel:{TITLE:'title'},BorderStyle:{SINGLE:'single'},
+    ShadingType:{CLEAR:'clear'},WidthType:{PERCENTAGE:'%'},TabStopType:{RIGHT:'right'},
+    PageNumber:{CURRENT:'current',TOTAL_PAGES:'total'}},{get:(obj,key)=>obj[key]||Mock});
+  for(const status of ['final','recovery']){
+    const output=JSON.stringify(await Report.word({...r,status},D));
+    assert.match(output,/"text":"Recorded by: ".*?"text":"Fictional Recorder"/);
+    assert.match(output,/"text":"Class period: ".*?"text":"3"/);
+    assert.doesNotMatch(output,/Name not entered|"text":"Name: "/);
+  }
+});
+
+test('Carrying Capacity compares the student’s prediction with the observed opening change without extrapolating',()=>{
+  const js=source('carrying-capacity','js');
+  const start=js.indexOf('  function renderRoundOnePrediction()');
+  assert.ok(start>=0,'the lab gives a data-linked prediction revisit at round 1');
+  const script=js.slice(start,js.indexOf('  function renderLab()',start));
+  const note={textContent:''};
+  const state={selected:'baseline',baseline:require('../carrying-logic.js').run({},1),answers:{prediction:'I expect the herd to grow.'}};
+  const ctx=vm.createContext({state,$:id=>{assert.equal(id,'#cc-round-one-prediction');return note;}});
+  const render=()=>vm.runInContext(script+'\nrenderRoundOnePrediction();',ctx);
+  render();
+  assert.equal(note.hidden,false);
+  assert.match(note.textContent,/went from 2 to 3 wildebeest/);
+  assert.match(note.textContent,/I expect the herd to grow/);
+  assert.match(note.textContent,/One round does not show what will happen over 12 rounds or with less grass/);
+  state.selected='comparison';render();
+  assert.equal(note.hidden,true);
 });

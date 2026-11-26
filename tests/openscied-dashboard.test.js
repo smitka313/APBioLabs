@@ -77,6 +77,11 @@ test('backup preserves exact values without relabeling them to the current brows
   assert.deepEqual(payload.work, Object.fromEntries(Object.entries(before).filter(([k]) => k.startsWith('aplab:openscied:'))));
   assert.deepEqual({ ...s.data }, before);
 });
+test('browser backup is explained without attributing mixed work to one student', () => {
+  const html=fs.readFileSync(path.join(__dirname,'../openscied-dashboard.html'),'utf8');
+  assert.match(html,/id="download-openscied-results" aria-describedby="openscied-backup-help"/);
+  assert.match(html,/id="openscied-backup-help"[^>]*>[^<]*more than one student[^<]*Preview report/);
+});
 test('blocked browser storage disables actions and explains the problem', () => {
   const s = setup(true);
   assert.equal(s.el('#clear-openscied-results').disabled, true);
@@ -883,6 +888,15 @@ test('Rat Analyze saves attempts but counts completion only after a correct answ
   assert.match(s.el('#rat-generations-open').href,/#analyze$/);
   const corrected = setup(false, { [key]: JSON.stringify({v:1, seed:5, prediction:'same', action:6, step:'analyze', analysisAttempt:'alleles', analysisChecked:true}) });
   assert.equal(corrected.created.find(e=>e.tag==='progress'&&e.attrs['aria-label']?.includes('Rat Generations')).value,3);
+  const completed = {v:1, seed:5, prediction:'same', action:6, step:'explain', analysisAttempt:'alleles', analysisChecked:true,
+    answers:{claim:'A difference',evidence:'The measured counts.',limits:'The colony model is simplified.'}};
+  const final = setup(false, { [key]: JSON.stringify(completed) });
+  assert.equal(final.created.find(e=>e.tag==='progress'&&e.attrs['aria-label']?.includes('Rat Generations')).value,4);
+  assert.match(final.el('#rat-generations-open').href,/#explain$/);
+  completed.answers.limits='  ';
+  const missing = setup(false, { [key]: JSON.stringify(completed) });
+  assert.equal(missing.created.find(e=>e.tag==='progress'&&e.attrs['aria-label']?.includes('Rat Generations')).value,3,
+    'Blank responses do not count as complete.');
 });
 
 test('Wapusk tracks meaningful evidence, not tab browsing, and links Unit 5 independently',()=>{
@@ -943,4 +957,18 @@ test('Screening resumes saved cost-sheet practice without counting a district mi
   assert.equal(s.el('#openscied-resume-link').href,'openscied-b3-screening.html');
   const meter=s.created.find(e=>e.tag==='progress'&&e.attrs['aria-label']?.includes('Cancer Screening'));
   assert.equal(meter.value,0);
+});
+
+
+test('Inheritance counts the same choices as the activity, separately from writing and model progress', () => {
+  const choices = Array.from({length:23},(_,i)=>'choice-'+(i+1));
+  const other = ['prompt-a','prompt-b','prompt-c','prompt-d','prompt-e','prompt-f','prompt-g','order-meiosis-seq'];
+  const fields=Object.fromEntries([...choices,...other.slice(0,5)].map(id=>[id,'saved']));
+  const key='aplab:openscied:b3-inheritance-environment:v1';
+  const base={v:1,fields,responseIds:[...choices,...other],lastSection:'wrapup',meiosis:{runs:[{crossing:true}]}};
+  const modern={...base,choiceResponseIds:[...choices,choices[0], 'not-an-activity-response']};
+  const card=s=>setup(false,{[key]:JSON.stringify(s)}).el('#inh-env-progress').textContent;
+  assert.match(card(modern),/1 of 6 interactive models used · 23 of 23 choice questions answered/);
+  assert.match(card({...modern,fields:{...fields,[choices[0]]:'  '}}),/22 of 23 choice questions answered/);
+  assert.match(card(base),/28 of 31 answers saved \(choices and writing\)/,'legacy records still keep their work and label the combined count');
 });

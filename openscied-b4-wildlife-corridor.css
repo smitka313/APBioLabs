@@ -18,7 +18,7 @@
 .wc-nav button {border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);font:inherit;font-weight:780;min-height:44px;min-width:0;padding:.28rem .3rem;}
 .wc-nav button span {font:.78em var(--f-mono,monospace);margin-inline-end:.21rem;}
 .wc-nav button[aria-current="step"] {border-width:2px;border-color:var(--accent);background:var(--accent-soft);color:var(--ink);}
-.wc-nav button:disabled,.wc-shell button.btn:disabled {border-style:dashed;border-color:var(--line);background:var(--surface-2);color:var(--muted);cursor:not-allowed;opacity:1;}
+.wc-nav button:disabled,.wc-shell button.btn:disabled {border-style:solid;border-color:color-mix(in srgb,var(--muted) 65%,var(--line));background:var(--surface-2);color:var(--muted);cursor:not-allowed;opacity:1;}
 .wc-step-hint,.wc-stage small {color:var(--muted);font-size:.86rem;}
 .wc-step-hint {margin:.4rem 0 .6rem;min-height:1.25em;}
 .wc-stage,#wc-crossing-tile {scroll-margin-block-start:4.3rem;}

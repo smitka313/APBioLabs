@@ -9,7 +9,7 @@
 <meta name="robots" content="noindex, follow">
 <script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}</script>
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="openscied-b1-carrying-capacity.css">
+<link rel="stylesheet" href="openscied-b1-carrying-capacity.css?v=control-contrast-1">
 <link rel="stylesheet" href="carrying-habitat.css">
 <link rel="stylesheet" href="carrying-range.css">
 <link rel="stylesheet" href="carrying-field.css">
@@ -58,7 +58,7 @@
     <p class="cc-caption" id="cc-board-caption">Board shows the starting herd and available grass for the next round. One grass unit feeds one wildebeest in the model.</p>
     <div class="cc-turn"><p class="cc-tag">What happened and why?</p><p id="cc-outcome">No rounds yet. Predict how the herd will change, then run round 1 to see who gets enough grass.</p></div>
     <div class="cc-actions"><button type="button" class="cc-primary" id="cc-next">Run next round</button><button type="button" id="cc-finish">Run to round 12</button><button type="button" id="cc-range-jump" hidden>Estimate carrying capacity ↓</button></div>
-    <div class="cc-predict"><label for="cc-prediction">Predict: Will the herd keep growing? Why?</label><textarea id="cc-prediction" rows="2" maxlength="2000" placeholder="I predict… because…"></textarea></div>
+    <div class="cc-predict"><label for="cc-prediction">Predict: Will the herd keep growing? Why?</label><textarea id="cc-prediction" rows="2" maxlength="2000" placeholder="I predict… because…"></textarea><p id="cc-round-one-prediction" class="cc-caption" hidden></p></div>
   </div>
   <div class="cc-panel cc-analysis">
     <div class="cc-strip"><div><p class="cc-tag">Population over time</p><h3>Herd size by round</h3></div><span class="cc-badge">SIMULATED</span></div>

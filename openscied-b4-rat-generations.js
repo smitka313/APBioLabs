@@ -57,12 +57,14 @@
     $('#rg-save-warning').hidden=false;set('save-warning-text',message);
     set('save','Not saved · download a copy');
     if(warned!==message) {warned=message;announce(message);}
+    renderProgress();
     return false;
   }
   function saved() {
     invalid=false;writeBlocked=false;warned='';
     sharedReportIdentity();
     $('#rg-save-warning').hidden=true;set('save','Work saved on this device.');
+    renderProgress();
     return true;
   }
   function save() {
@@ -85,6 +87,17 @@
     if(focus){$('#rg-'+step+'-title').focus({preventScroll:true});$('#rg-'+step).scrollIntoView({block:'start'});}
   }
   const predictionLocked=()=>state.action>0||Object.values(state.crosses).some(cross=>cross.parents.some(Boolean));
+  const explanationPrompts={claim:'a claim',evidence:'an evidence response',limits:'a model limits response'};
+  const remainingExplanation=()=>Object.keys(explanationPrompts).filter(key=>!state.answers[key]?.trim());
+  const completedParts=()=> {
+    const analyze=model.done&&state.analysisChecked;
+    return {predict:!!state.prediction,model:model.done,analyze,explain:analyze&&!remainingExplanation().length};
+  };
+  function renderProgress(done=completedParts()) {
+    const progress=Object.values(done).filter(Boolean).length+' of '+STEPS.length+' investigation parts completed'+
+      (invalid||writeBlocked?' in this tab · changes not saved':'');
+    if($('#rg-progress').textContent!==progress)set('progress',progress);
+  }
   function gates() {
     const locked=predictionLocked();
     for(const r of $$('input[name=rg-prediction]')){
@@ -98,11 +111,15 @@
     $('#rg-prediction-hint').hidden=locked||own(PRED,picked);
     $('#rg-return-model').hidden=!locked;
     $('#rg-prediction-lock').hidden=!locked;
-    const done={predict:!!state.prediction,model:model.done,analyze:state.analysisChecked,
-      explain:['claim','evidence','limits'].every(key=>state.answers[key]?.trim())};
-    $('#rg-step-hint').hidden=model.done&&state.analysisChecked;
-    set('step-hint',model.done?'Use the feedback to check the denominator before opening Explain.':
-      state.prediction?'Finish the colony model to unlock Analyze.':'Save your prediction to unlock the colony model.');
+    const missing=remainingExplanation(), done=completedParts();
+    renderProgress(done);
+    const hint=$('#rg-step-hint');
+    hint.hidden=done.analyze&&(state.step!=='explain'||done.explain);
+    const next=done.analyze&&done.explain?'All three Explain responses are recorded.':
+      done.analyze?'To complete Explain, write '+new Intl.ListFormat('en',{style:'long',type:'conjunction'}).format(missing.map(key=>explanationPrompts[key]))+'.':
+      model.done?'Use the feedback to check the denominator before opening Explain.':
+      state.prediction?'Finish the colony model to unlock Analyze.':'Save your prediction to unlock the colony model.';
+    if(hint.textContent!==next)set('step-hint',next);
     for(const b of $$('[data-rg-go]')) {
       const wanted=b.dataset.rgGo;
       b.disabled=!available(wanted);
@@ -403,8 +420,7 @@
     if(!state.prediction)missing.push('Save a prediction.');
     if(!model.done)missing.push('Finish the colony model through Generation 5.');
     if(!state.analysisChecked)missing.push('Use the feedback to answer the Analyze quick check correctly.');
-    for(const [id,label] of [['claim','claim'],['evidence','evidence response'],['limits','model limits response']])
-      if(!state.answers[id]?.trim())missing.push('Write your '+label+'.');
+    for(const id of remainingExplanation())missing.push('Write '+explanationPrompts[id]+'.');
 
     const sections=[{title:'Prediction, analysis, and explanation',items:[
       {type:'answer',prompt:$('#rg-prediction legend')?.textContent?.trim()||'Prediction',value:PRED[state.prediction]||''},

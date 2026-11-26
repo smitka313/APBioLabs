@@ -383,6 +383,10 @@ async function exerciseNormalMotion(browser,base) {
 
 async function verifyCortData(page,label) {
   const filter=id(page,'ju-filter');
+  const populations=id(page,'ju-cort-populations');
+  check(await populations.isVisible() && /Both populations combined.*population is unknown.*aviary bars/i.test(tidy(await populations.textContent())) &&
+    await id(page,'ju-chart').getAttribute('aria-describedby')==='ju-cort-populations',
+    label+' the graph itself says population-specific data cannot be identified and points students to the aviary bars');
   const origins=await id(page,'ju-cort-table').locator('tbody tr[data-site]').evaluateAll(rows=>rows.map(row=>row.getAttribute('data-site')));
   check(await filter.isDisabled()&&await filter.inputValue()==='all'&&
     origins.length===40&&origins.every(site=>site==='all'),

@@ -175,7 +175,7 @@
     const st = state.tilt; if (!st || !st.recorded || !Array.isArray(st.settings) || typeof st.seed !== 'number') return [];
     const res = L.tiltResults(st.seed, st.settings);
     const rows = res.map(function (r) {
-      const row = ['Tube ' + r.tube, L.LIGHTS[r.light].short, Math.round(r.intensity * 100) + '%', r.btb.toFixed(1) + ' (' + r.btbLabel + ')', (r.net > 0 ? '+' : '') + r.net.toFixed(2)];
+      const row = ['Tube ' + r.tube, L.LIGHTS[r.light].short, Math.round(r.intensity * 100) + '%', r.btb.toFixed(1) + ' (' + r.btbLabel + ')', (r.net > 0 ? '+' : '') + r.net.toFixed(3)];
       if (st.starchDone) row.push(r.starchLabel + ' (' + r.starch.toFixed(2) + ')');
       return row;
     });
@@ -186,7 +186,7 @@
     const compared = highest && lowest && highest.intensity > lowest.intensity;
     const difference = compared ? el('p', 'small', 'Compare the numbers even if the colors look alike. Tube ' + highest.tube + ' received ' +
       Math.round(highest.intensity * 100) + '% of direct light; Tube ' + lowest.tube + ' received ' + Math.round(lowest.intensity * 100) +
-      '%. Their relative CO₂ changes were ' + highest.net.toFixed(3) + ' and ' + lowest.net.toFixed(3) + ', respectively. The color names group close readings.') : null;
+      '%. Their relative CO₂ changes were ' + highest.net.toFixed(3) + ' and ' + lowest.net.toFixed(3) + ', respectively. Compare the CO₂ changes if the indicator numbers tie: BTB groups close colors, is rounded, and cannot go below 1.0 or above 6.0.') : null;
     return [table('Simulated BTB tubes after the night', head, rows), ...(difference ? [difference] : []),
       el('p', 'small muted', 'SIMULATED. Relative CO₂ change is modeled CO₂ released by respiration minus CO₂ removed by photosynthesis, adjusted for plant size. The tubes started blue (2.0). Under 2 means less CO₂; over 2 means more. These are not measurements from a real lab.')];
   }

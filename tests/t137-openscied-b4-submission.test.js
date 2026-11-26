@@ -7,6 +7,7 @@ const test=require('node:test');
 const root=path.resolve(__dirname,'..');
 const L=require('../openscied-b4-hawksbeard-logic');
 const M=require('../openscied-b4-rat-generations-logic');
+const guard=require('../openscied-save-session');
 const B=require('../openscied-b4-rat-cross-builder');
 const D=require('../openscied-b4-junco-data');
 const flight=require('../openscied-b4-junco-flight');
@@ -103,6 +104,29 @@ test('Hawksbeard carries accurate simulated pairs and reports without requiring 
   assert.ok(JSON.stringify(report()).includes('student evidence'));
 });
 
+test('Hawksbeard route-only and disclosure changes in another tab do not demote a Word preview',()=>{
+  const key='aplab:openscied:b4-hawksbeard:v1', scope='b4-hawksbeard', map=new Map();
+  const storage={getItem:name=>map.get(name)??null,setItem:(name,value)=>map.set(name,value),removeItem:name=>map.delete(name)};
+  const initial={v:1,seed:20,page:'explain',lastSection:'explain',lastVisitedAt:1,
+    prediction:'city',released:5,answers:{reflection:'Both settings had different proportions.'},disclosures:{}};
+  storage.setItem(key,JSON.stringify(initial));
+  const src=source('hawksbeard');
+  const configure=()=>vm.runInNewContext(between(src,'  let session;','  const sharedReportIdentity')+'session;',
+    {window:{localStorage:storage},guard,scope,KEY:key});
+  const openReport=configure(), secondTab=configure();
+  const sharedIdentity=guard.reportIdentity(openReport,[key],()=>({name:'Original student',period:'2'}));
+  assert.equal(sharedIdentity().name,'Original student');
+  assert.ok(secondTab.write(key,JSON.stringify({...initial,page:'compare',lastSection:'compare',lastVisitedAt:2,
+    disclosures:{'hb-denominator-check':true}})).ok);
+  assert.equal(openReport.check(key).ok,true,'A second tab only opened a page and a help disclosure');
+  assert.equal(sharedIdentity().name,'Original student');
+  assert.ok(secondTab.write(key,JSON.stringify({...initial,answers:{reflection:'I revised my work.'}})).ok);
+  assert.equal(openReport.check(key).reason,'changed','A second tab edited actual student work');
+  const fresh=configure();
+  assert.ok(guard.invalidate(storage,scope,()=> 'reset').ok);
+  assert.equal(fresh.check(key).reason,'erased','Explicit reset is not presentation state');
+});
+
 test('Rat Generations keeps the attempted answer in draft and includes exact snapshots and built crosses in both formats',()=>{
   const state={seed:42,action:6,prediction:'decrease',analysisAttempt:'rats',analysisChecked:false,
     answers:{claim:'my claim',evidence:'my evidence',limits:'my limit'},crosses:{}};
@@ -115,10 +139,11 @@ test('Rat Generations keeps the attempted answer in draft and includes exact sna
     person:()=>({name:'Report name',period:'2'}),trialId:s=>'RG-'+s,selectionName:{born:'Born',survived:'Survived'},
     fraction:(n,d)=>n+' / '+d,$answer:['reason','claim','evidence','limits'].map(id=>input('rg',id))
   };
-  const helpers=between(src,'function snapshots(','function button(')+
+  const helpers=between(src,'const explanationPrompts=','  const completedParts=')+
+    between(src,'function snapshots(','function button(')+
     between(src,'function analysisSelection()','function submissionReport()');
   const report=collect('rat-generations','rg',bind,helpers);
-  const legacy=()=>vm.runInNewContext(helpers+between(src,'function report()','function copy(')+'report();',bind);
+  const legacy=()=>vm.runInNewContext(helpers+between(src,'function report()','function copy(')+'report();',{...bind});
   const r=report();
   assert.equal(r.status,'draft','An incorrect selection is kept as an attempt but does not finish Analyze');
   assert.equal(r.sections[0].items.at(-1).value,'Original response choice');

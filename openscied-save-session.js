@@ -168,6 +168,9 @@
         if (raw === null) storage.removeItem(key);
         else storage.setItem(key, raw);
         slot.raw = raw;
+        // Discard the previous evidence fingerprint when this tab starts over.
+        // Otherwise rebuilding the same answer can look like its old save.
+        try { globalThis.OpenSciEdResume?.recordSave?.(); } catch (_) {}
         return success();
       } catch (_) { return unavailable(); }
     }

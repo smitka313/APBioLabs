@@ -150,3 +150,33 @@ test('Carbon Journey repeats recorded totals beside Q2 and offers an optional se
   assert.equal(sample.rows.length,10);
   assert.ok(new Set(sample.rows.map(row=>row.from)).size>=6);
 });
+
+test('Fires distinguishes a 59 mm student trial from the fixed 62 mm model benchmark', () => {
+  const F = logic('fires'), sample = {seed:14, temps:[18,27,43], recorded:[20]};
+  assert.deepEqual(F.foamRows(sample)[0].h, [11,38,59]);
+  assert.equal(F.TARGET20[43], 62);
+  const html = source('openscied-b2-fires.html');
+  assert.match(html, /id="data-sense-foam-title">Your simulated results/);
+  assert.match(html, /The 62 mm is a fixed model benchmark; use the values in <strong>Your simulated results<\/strong> to describe your own run/);
+  assert.match(html, /These are fixed model benchmarks, not your results or real lab measurements\./);
+});
+
+test('Fires explains why same-color tubes can model different CO₂ changes and publishes the unchanged formula', () => {
+  const F = logic('fires');
+  const tubes=F.tiltResults(14,['direct','tilt45','foil']);
+  assert.deepEqual(tubes.map(({btbLabel,btb,net})=>[btbLabel,btb,net]),
+    [['deep blue',1.1,-0.563],['deep blue',1.2,-0.457],['yellow',6,0.318]]);
+  for (const [i,tube] of tubes.entries()) {
+    const light=[1,Math.SQRT1_2,0][i], rawNet=F.tubeFactor(14,i)*(0.30-1.10*light/(0.35+light));
+    const rawBtb=2+(rawNet<=0?rawNet/0.60:13*rawNet);
+    assert.equal(tube.net,Math.round(rawNet*1000)/1000);
+    assert.equal(tube.btb,Math.round(Math.min(6,Math.max(1,rawBtb))*10)/10);
+  }
+  const html=source('openscied-b2-fires.html');
+  assert.match(html,/CO₂ change = plant size × \(respiration per size − photosynthesis per size\)/);
+  assert.match(html,/1\.10 × light ÷ \(0\.35 \+ light\)/);
+  assert.match(html,/signed change divided by 0\.60 to 2\.0[\s\S]*13 times the change[\s\S]*caps BTB at 1\.0–6\.0/);
+  const scene=source('tilt-scene.js');
+  assert.match(scene,/If BTB values tie after rounding or reach a limit, compare the modeled CO₂ changes in the table/);
+  assert.match(scene,/x\.net\.toFixed\(3\)/);
+});

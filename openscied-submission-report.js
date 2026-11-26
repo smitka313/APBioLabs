@@ -60,6 +60,9 @@
     const r = record(raw, 'snapshot');
     const identity = r.student == null ? null : record(r.student, 'student');
     const student = identity ? { name: string(identity.name, 'name'), period: string(identity.period, 'class period') } : { name: '', period: '' };
+    // A shared-device recorder did not necessarily do the group's work.
+    const groupIdentity = identity === null && r.recorder != null ? record(r.recorder, 'group recorder') : null;
+    const recorder = groupIdentity ? { name: string(groupIdentity.name, 'recorder name'), period: string(groupIdentity.period, 'recorder class period') } : null;
     const title = string(r.title, 'title', true);
     const unit = string(r.unit, 'unit', true);
     const source = string(r.source, 'source', true);
@@ -77,12 +80,13 @@
       ? i.value.trim() : i.type === 'table' ? i.rows.some(row => row.some(c => c.trim())) : i.text.trim()));
     const requested = own(labels, r.status) ? r.status : 'draft';
     const status = requested === 'final' && (!hasEvidence || missing.length) ? 'draft' : requested;
-    return { title, unit, source, status, student, allowIdentityEdit: status !== 'recovery' && r.allowIdentityEdit !== false,
+    return { title, unit, source, status, student, recorder, allowIdentityEdit: !recorder && status !== 'recovery' && r.allowIdentityEdit !== false,
       datasetId, keyResults, sections, missing, exportedAt: printDate.toISOString(), printTime: localeDate.format(printDate) };
   }
 
   function identityRows(r) {
-    return [['Name', r.student.name || 'Not entered'], ['Class period', r.student.period || 'Not entered'],
+    const person = r.recorder || r.student;
+    return [[r.recorder ? 'Recorded by' : 'Name', person.name || 'Not entered'], ['Class period', person.period || 'Not entered'],
       ['Date', r.printTime]].concat(r.datasetId ? [['Dataset ID', r.datasetId]] : []);
   }
   // Running metadata is compact; the first-page identity always remains unabridged.
@@ -91,8 +95,10 @@
     return chars.length <= limit ? chars.join('') : chars.slice(0, limit - 1).join('') + '…';
   }
   function runningInfo(r) {
+    const person = r.recorder || r.student;
+    const name = r.recorder ? ('Recorded by: ' + (person.name.trim() || 'Not entered')) : (person.name.trim() || 'Name not entered');
     return {
-      who: runningText((r.student.name.trim() || 'Name not entered') + (r.student.period.trim() ? ' · Class ' + r.student.period.trim() : ''), 44),
+      who: runningText(name + (person.period.trim() ? ' · Class ' + person.period.trim() : ''), 44),
       title: runningText(r.title, 46),
       dataset: r.datasetId ? 'Dataset ID: ' + runningText(r.datasetId, 40) : '',
     };
@@ -565,7 +571,8 @@
       // and its exports; they do not change the browser identity or the underlying record.
       function originalOwnerIsCurrent(now) {
         return now.status !== 'recovery' && now.student.name === original.student.name &&
-          now.student.period === original.student.period;
+          now.student.period === original.student.period && Boolean(now.recorder) === Boolean(original.recorder) &&
+          now.recorder?.name === original.recorder?.name && now.recorder?.period === original.recorder?.period;
       }
       function canApplyIdentity() {
         try {

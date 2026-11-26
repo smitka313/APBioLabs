@@ -157,6 +157,42 @@ async function unit2SectionThemes(browser,base) {
   }
 }
 
+async function disabledControls(browser,base) {
+  const ctx=await browser.newContext({colorScheme:'light',reducedMotion:'reduce'});
+  const origin=new URL(base).origin;
+  await ctx.route('**/*',route=>new URL(route.request().url()).origin===origin?route.continue():route.abort());
+  try {
+    const page=await ctx.newPage();
+    for(const [file,selector] of [
+      [DASHBOARD,'#download-openscied-results'],
+      ['openscied-b3-dna-workshop.html','#dw-next'],
+      ['openscied-b4-wildlife-corridor.html','#wc-run-crossing'],
+      ['openscied-b5-speciation.html','#ice-reset']
+    ]) {
+      await page.goto(base+file);
+      for(const mode of ['dark','light']) {
+        await control(page,mode).click();
+        await themeState(page,mode);
+        const button=page.locator(selector);
+        const css=await button.evaluate(el=>{
+          const s=getComputedStyle(el);
+          return {border:s.borderTopStyle,opacity:s.opacity,background:s.backgroundColor,fg:s.color,cursor:s.cursor};
+        });
+        const lum=color=>color.match(/[\d.]+/g).slice(0,3).map(Number).map(c=>{
+          const v=c/255;
+          return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4);
+        }).reduce((n,v,i)=>n+v*[.2126,.7152,.0722][i],0);
+        const [a,b]=[lum(css.background),lum(css.fg)].sort((x,y)=>y-x);
+        ok(await button.isDisabled()&&css.border==='solid'&&css.opacity==='1'&&
+          css.cursor==='not-allowed'&&(a+.05)/(b+.05)>=4.5,
+          file+' has solid, readable disabled controls in '+mode);
+      }
+    }
+  } finally {
+    await ctx.close();
+  }
+}
+
 // Use an actual HTTP redirect: a Playwright route handler registered for the
 // redirected URL does not intercept a request already following a redirect.
 function serveCleanRoute(fixtures) {
@@ -190,6 +226,7 @@ function serveCleanRoute(fixtures) {
     await hop(browser,server.url,'light','dark',false);
     await hop(browser,clean.url,'dark','light',true);
     await unit2SectionThemes(browser,server.url);
+    await disabledControls(browser,server.url);
     console.log('openscied-theme-navigation-browser: '+checks+' checks passed');
   } finally {
     if(browser)await browser.close();

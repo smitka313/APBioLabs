@@ -64,3 +64,19 @@ test('new report-bearing classroom checks promote saved evidence but not visits'
     assert.equal(dashboard.snapshot(path).changed,120,scope+' does not promote another visit');
   }
 });
+
+test('after Start over, re-entering the exact same answer is a new save',()=>{
+  const f=fixture(), editor=resume.connect(f.storage,f.clock,{scope:'b1-migration'}),
+    dashboard=resume.connect(f.storage,f.clock), session=guard.open(f.storage,'b1-migration',[m],()=>String(f.clock()));
+  const identical=JSON.stringify({notes:[{text:'A note'}]});
+  editor.snapshot(migration,'open');
+  globalThis.OpenSciEdResume={recordSave:()=>editor.snapshot(migration,'save')};
+  try{
+    f.at(110);assert.ok(session.write(m,identical).ok);
+    assert.equal(dashboard.snapshot(migration).changed,110);
+    f.at(120);assert.ok(session.reset(m).ok);
+    assert.equal(dashboard.snapshot(migration).changed,0);
+    f.at(130);assert.ok(session.write(m,identical).ok);
+    assert.equal(dashboard.snapshot(migration).changed,130);
+  }finally{delete globalThis.OpenSciEdResume;}
+});

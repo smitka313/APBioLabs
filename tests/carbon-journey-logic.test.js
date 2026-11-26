@@ -425,3 +425,39 @@ test('blank journey Restart is inert, then unlocks for actual journey work and r
   const unreadable = openFictionalJourney('{unreadable local save');
   a.equal(unreadable.get('#restart').disabled, false);
 });
+
+test('Soil-loop reference shows a missing animal without changing official seeded outcomes',()=>{
+  let state=L.initial(1336800262);
+  for(let i=0;i<6;i++)state=L.record({...state,pending:L.die(state.seed,i)});
+  state.coverageCheckpoint='repeat';
+  const raw=JSON.stringify(state), page=openFictionalJourney(raw,'#play');
+  a.match(page.get('#coverage-route').textContent,/Herbivores → Omnivores/);
+  a.match(page.get('#coverage-reason').textContent,/dice, location and journal stay the same/);
+  page.get('#coverage-continue').click();
+  const after=JSON.parse(page.read());
+  a.deepEqual(after.coverageReviewed,['herbivores']);
+  a.deepEqual(after.rows,state.rows);
+  a.equal(after.seed,state.seed);
+  a.equal(L.die(after.seed,after.rows.length),6);
+});
+
+test('editable Journey downloads clean actual Turn 8 and energy labels without changing saved official rolls',()=>{
+  let state=L.initial(1336800262);
+  for(let i=0;i<10;i++)state=L.record({...state,pending:L.die(state.seed,i)});
+  state.coverageReviewed=L.missingCoverage(state).map(card=>card.from);
+  state.done=true;
+  a.equal(state.rows[7].card,'hWell');
+  a.match(state.rows[7].text,/burned to for/);
+  const raw=JSON.stringify(state), page=openFictionalJourney(raw,'#evidence');
+  page.get('#download').click();
+  const file=JSON.parse(page.downloads[0]);
+  a.match(file.rows[7].text,/burned for energy/);
+  a.doesNotMatch(JSON.stringify(file),/burned to for|same arrangement of atoms|generate energy/);
+  a.equal(file.rows[3].energy,'No energy transfer tracked');
+  a.match(file.rows[3].text,/stores chemical energy/);
+  a.match(file.referenceCardsReviewed.find(card=>card.from==='herbivores').energyExplanation,/transferred or changes form/);
+  a.deepEqual(file.rows.map(({turn,die,from,to,card})=>[turn,die,from,to,card]),
+    state.rows.map(({turn,die,from,to,card})=>[turn,die,from,to,card]));
+  a.deepEqual(L.readSaved(JSON.stringify(file)),state,'display-safe exports still parse into the original official buckets');
+  a.equal(page.read(),raw,'downloading never rewrites the recorded journey');
+});

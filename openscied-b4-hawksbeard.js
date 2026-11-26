@@ -76,7 +76,11 @@
   }
   const scope='b4-hawksbeard', guard=window.OpenSciEdSaveSession;
   let session;
-  try {session=guard?.open(window.localStorage,scope,[KEY]);} catch (_) {}
+  // Other tabs can browse lessons or open help without changing the saved trial.
+  // The save guard still rejects any change to work/identity or any explicit reset.
+  try {session=guard?.open(window.localStorage,scope,[KEY],undefined,{
+    routeMetadata:['page','lastSection','lastVisitedAt','disclosures']
+  });} catch (_) {}
   const sharedReportIdentity=guard?.reportIdentity?.(session,[KEY],()=>window.Lab?.identity?.get?.() ?? null) ?? (()=>null);
   let state = fresh(), preserved = false, blocked = false, running = false, frame = 0, trial;
   let warned='';

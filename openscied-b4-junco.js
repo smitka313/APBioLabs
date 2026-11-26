@@ -128,6 +128,7 @@
     $('cort-x').textContent=xName;
     $('cort-id').textContent=identified?'Population':'Bird (dot)';
     $('cort-pool-note').hidden=identified;
+    $('cort-populations').hidden=identified;
     const tbody=$('cort-table').tBodies[0];
     tbody.replaceChildren(...rows.map((p,i)=>{
       const tr=mk('tr');tr.dataset.site=p.site||'all';

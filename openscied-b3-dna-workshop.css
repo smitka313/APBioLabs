@@ -113,7 +113,7 @@
 #dw-next:disabled {
   color:var(--dw-disabled-ink,#505050);
   background:var(--dw-disabled-bg,#efefef);
-  border:1px dashed var(--dw-disabled-ink,#505050);
+  border:1px solid var(--dw-disabled-ink,#505050);
   opacity:1;
   filter:none;
   cursor:not-allowed;
@@ -122,7 +122,7 @@
 @media(prefers-color-scheme:dark) {
   :root:not([data-theme=light]) .dw-shell { --dw-disabled-bg:#262626; --dw-disabled-ink:#bcbcbc; }
 }
-.dw-stage-nav button:disabled { cursor:not-allowed; color:var(--muted); background:var(--surface-2); border-style:dashed; }
+.dw-stage-nav button:disabled { cursor:not-allowed; color:var(--muted); background:var(--surface-2); border-style:solid; border-color:color-mix(in srgb,var(--muted) 65%,var(--line)); }
 .dw-shell .dw-unlock { margin:0 .04rem .44rem; color:var(--muted); font-size:.82rem; line-height:1.28; }
 .dw-stage-nav button:not(:disabled):hover { border-color:var(--accent); }
 .dw-heading {

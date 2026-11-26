@@ -16,6 +16,11 @@
     [2011,11,4.34],[2012,17,3.39],[2013,13,5.05],[2014,17,5.03],[2015,9,4.43],[2016,10,4.17],
     [2017,13,4.66],[2018,23,4.66],[2019,18,4.19],[2020,16,3.82],[2021,16,4.77],[2022,19,4.70],[2023,19,4.26]
   ];
+  const parkSource='https://parks.canada.ca/pn-np/mb/wapusk/nature/climatique-climate';
+  const parkAreaKm2=11475;
+  const parkScale='Wapusk National Park covers 11,475 km². The sightings maps include places in and around the park.';
+  const parkLink=el('a','Parks Canada');parkLink.href=parkSource;
+  $('park-scale').append(parkScale+' (',parkLink,').');
   const scaleInputs=all('[name="scale-match"]');
   const scaleOptions=Object.fromEntries(scaleInputs.map(b=>[b.value,b.parentElement.textContent.trim()]));
   const requiredScales=['canada','bay','arctic'];
@@ -266,6 +271,7 @@
       sections:[
         {title:'Evidence notebook · '+r.name,items:Object.entries(labels).map(([k,prompt])=>({type:'answer',prompt,value:state.fields[k]||''}))},
         {title:'Concept checks',items:[
+          {type:'text',text:parkScale+' Source: Parks Canada ('+parkSource+').'},
           {type:'answer',prompt:'Owl River claim verdict',value:owlResultText(owl)},
           {type:'answer',prompt:scale.question,value:scale.verdict+(scale.choices.length?' · '+scale.choices.join(' '):'')+(scale.feedback?' '+scale.feedback:'')}
         ]},
@@ -308,7 +314,7 @@
     const r=makeReport(),region=regions[state.region];
     const json={format:'wapusk-activity-v1',title:r.title,status:r.status,datasetId:r.datasetId,student:r.student,exportedAt:new Date().toISOString(),evidenceSource,
       season:state.season,region:{name:region.name,columns:popColumns,rows:region.rows},responses:{...state.fields},
-      conceptChecks:{owlRiver:owlRecord(),evidenceScale:scaleRecord()},seaIceMinimumExtent:{source:'NSIDC Sea Ice Index v4 annual five-day minima',units:'million km²',values:iceRows.map(([year,day,extent])=>({year,date:year+'-09-'+String(day).padStart(2,'0'),extent}))}};
+      conceptChecks:{owlRiver:owlRecord(),evidenceScale:scaleRecord()},localScale:{parkAreaKm2,scope:parkScale,source:parkSource},seaIceMinimumExtent:{source:'NSIDC Sea Ice Index v4 annual five-day minima',units:'million km²',values:iceRows.map(([year,day,extent])=>({year,date:year+'-09-'+String(day).padStart(2,'0'),extent}))}};
     downloadReport(JSON.stringify(json,null,2),'application/json','json',r);
   };
   window.OpenSciEdSubmission?.mount({target:'#wb-report',filename:'three-bears-wapusk',collect:makeReport});

@@ -128,7 +128,7 @@
       top.appendChild(list);
     }
     function hint(done) {
-      if (st.recorded) return 'Compare the BTB numbers too. Tubes can look the same color and still have different readings.';
+      if (st.recorded) return 'Compare the BTB numbers too. Tubes can look the same color and still have different readings. If BTB values tie after rounding or reach a limit, compare the modeled CO₂ changes in the table.';
       if (done) return 'The night is over. Unwrap the foil and read every tube.';
       return 'The tubes stay under the lights. The foil tube’s color stays hidden until morning.';
     }
@@ -148,11 +148,13 @@
       t.appendChild(h('thead', {}, h('tr', {}, head.map(x => h('th', { scope: 'col', text: x })))));
       const tb = h('tbody');
       r.forEach(x => {
-        const cells = [h('th', { scope: 'row', text: 'Tube ' + x.tube }), h('td', { text: L.LIGHTS[x.light].short }), h('td', { class: 'num', text: Math.round(x.intensity * 100) + '%' }), h('td', { class: 'num', text: x.btb.toFixed(1) }), h('td', { text: x.btbLabel }), h('td', { class: 'num', text: (x.net > 0 ? '+' : '') + x.net.toFixed(2) })];
+        const cells = [h('th', { scope: 'row', text: 'Tube ' + x.tube }), h('td', { text: L.LIGHTS[x.light].short }), h('td', { class: 'num', text: Math.round(x.intensity * 100) + '%' }), h('td', { class: 'num', text: x.btb.toFixed(1) }), h('td', { text: x.btbLabel }), h('td', { class: 'num', text: (x.net > 0 ? '+' : '') + x.net.toFixed(3) })];
         if (st.starchDone) cells.push(h('td', { text: x.starchLabel + ' (' + x.starch.toFixed(2) + ')' }));
         tb.appendChild(h('tr', {}, ...cells));
       });
       t.appendChild(tb); tw.appendChild(t); wrap.appendChild(tw);
+      wrap.appendChild(h('p', { class: 'tl-note', text:
+        'CO₂ change = respiration release − photosynthesis uptake, adjusted for plant size (relative model units). BTB is an indicator: its color name and rounded 1.0–6.0 scale can hide differences in CO₂. The model formulas are below under What this simulation models.' }));
       const figBox = h('div', { class: 'tl-chart', 'data-tl': 'chart' });
       wrap.appendChild(h('figure', { class: 'tl-fig' }, figBox, h('figcaption', { class: 'tl-note', text: 'Bar chart of the BTB reading for each tube (simulated). The tubes started blue, at 2.0. Lower is bluer, so carbon dioxide went down. Higher is yellower, so it went up.' })));
       if (st.starchDone) {

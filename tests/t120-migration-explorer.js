@@ -45,6 +45,19 @@ async function auditNotesAndRain(browser,base){
     const field=p.locator('#observation'),play=p.locator('#play');
     await play.tap();
     ok(await play.getAttribute('aria-pressed')==='true','the year starts before note editing');
+    ok(await field.evaluate(el=>el.readOnly)&&await p.locator('#month-note-playback').isVisible(),
+      'playing shows a stop-before-writing hint and keeps the editor read-only');
+    await p.waitForFunction(()=>document.querySelector('#month-title').textContent==='June');
+    ok(await field.getAttribute('data-editor-month')==='4','an advancing map does not silently rebind the draft editor');
+    await field.tap();
+    ok(await play.getAttribute('aria-pressed')==='false'&&await field.getAttribute('data-editor-month')==='5'&&!(await field.evaluate(el=>el.readOnly)),
+      'direct touch pauses and binds to the frozen month before any text is entered');
+    await field.fill('Direct touch in June.');
+    await p.waitForTimeout(1900);
+    ok(await p.locator('#month-title').textContent()==='June'&&await field.inputValue()==='Direct touch in June.',
+      'a scheduled tick cannot replace a draft begun by directly touching the editor');
+    await p.locator('[data-month="4"]').tap();
+    await play.tap();
     await p.locator('#pause-and-note').tap();
     ok(await field.evaluate(input=>input===document.activeElement)&&await p.locator('#month-note-month').textContent()==='May',
       'the stable map shortcut pauses the displayed month and focuses its note on touch');
@@ -57,8 +70,8 @@ async function auditNotesAndRain(browser,base){
       await p.locator('#visit-progress').textContent()==='Months with notes: 0 of 12',
       'a draft is visible on its month without being counted as a notebook entry');
     await p.locator('#next').tap();
-    ok(await p.locator('#month-note-month').textContent()==='June'&&await field.inputValue()==='',
-      'moving manually opens a separate June draft');
+    ok(await p.locator('#month-note-month').textContent()==='June'&&await field.inputValue()==='Direct touch in June.',
+      'moving manually restores the separate June draft');
     await field.fill('June has its own observation.');
     await p.locator('[data-month="4"]').tap();
     ok(await field.inputValue()==='May draft belongs with May.','returning to May restores the original draft');
@@ -87,7 +100,8 @@ async function auditNotesAndRain(browser,base){
     const limits=await p.locator('.mx-evidence-intro').textContent();
     ok(/group averages for sampled male wildebeest/.test(limits)&&/several studies/.test(limits)&&/outbreak year/.test(limits)&&/whole herd/.test(limits),
       'sex, time/sample limits, and outbreak context are visible beside the field cards');
-    ok(/90% bone-marrow fat in May and 23% in August/.test(limits)&&/different sampled groups/.test(limits)&&/do not report group sample sizes/.test(limits),
+    ok(/90% bone-marrow fat in May and 23% in August/.test(limits)&&/different sampled groups/.test(limits)&&/do not report the sample size for either group/.test(limits)&&
+      /126 carcasses sampled in 1968–1973 in one study, not the number behind any one card/.test(limits),
       'field cards explain the apparent swing without inventing sample sizes or tracking the same animals');
     await p.locator('[data-collection="rainfall"]').tap();
     ok(await darkGraph('#collection-rainfall .mx-rain-grid > :last-child'),'Investigate adapts its source image to dark mode too');

@@ -109,6 +109,17 @@
     if (chart && state.page === 'run') chart.update({hLines:marks});
   }});
   const field = window.CarryingField.mount($('#cc-field-app'),{announce:speak,getSaveSession,onSaveConflict:showSaveConflict});
+  function renderRoundOnePrediction() {
+    const note=$('#cc-round-one-prediction');
+    const first=state.selected==='baseline'?state.baseline.rows[0]:null;
+    note.hidden=!first||state.baseline.round!==1;
+    if(note.hidden)return;
+    const prediction=state.answers.prediction?.trim();
+    const guess=prediction?.length>160?prediction.slice(0,157)+'…':prediction;
+    const result='Round 1: The herd went from '+first.starting+' to '+first.ending+' wildebeest with all grass available.';
+    note.textContent=guess ? result+' You predicted: “'+guess+'” Did the first change match your prediction? One round does not show what will happen over 12 rounds or with less grass.' :
+      result+' Was that what you expected? Before running round 2, predict what will happen over the rest of the run.';
+  }
   function renderLab() {
     const s = current(), last = s.rows.at(-1), done = s.round === ROUNDS, compared = !!state.comparison;
     const replaying = comparisonReplay!==null && state.selected==='comparison';
@@ -120,6 +131,7 @@
     $('#cc-board-caption').textContent = (done ? 'Final herd and grass that would be available if another round were run.' : 'Starting herd and available grass for the next round.')+' One grass unit feeds one wildebeest.';
     scene.update({herd:s.population,grass:L.available(s),round:s.round,label:done ? 'End of run' : 'Before round '+(s.round+1)});
     $('#cc-outcome').textContent = outcome(last);
+    renderRoundOnePrediction();
     $('#cc-next').disabled = $('#cc-finish').disabled = done;
     $('#cc-range-jump').hidden = !done;
     $('#cc-history tbody').innerHTML = s.rows.map((r)=>tableRow([r.round,r.starting,r.grassAvailable,r.survivors,r.births,r.deaths,r.ending])).join('');
@@ -321,7 +333,7 @@
   });
   for (const id of strings) {
     const el = $('#cc-'+id); el.value = state.answers[id] || '';
-    el.addEventListener('input',()=>{state.answers[id]=el.value;save();if(id!=='prediction')updateExplainProgress();});
+    el.addEventListener('input',()=>{state.answers[id]=el.value;save();if(id==='prediction')renderRoundOnePrediction();else updateExplainProgress();});
   }
   function renderCheck(key, resultId, choice, correct, announce = false) {
     const target = $('#'+resultId);

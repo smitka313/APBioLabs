@@ -97,7 +97,8 @@
   </script>
 </div>
 <p class="dashboard-student-note">Your work stays in this browser. To hand in an activity, open it and choose <strong>Preview report</strong>. On a shared device, finish saving your work and close activity tabs before choosing <strong>Switch student</strong>.</p>
-<div class="dashboard-student-actions"><button class="btn" type="button" id="download-openscied-results" disabled>Download backup (.json)</button><button class="btn btn--danger" type="button" id="clear-openscied-results" aria-haspopup="dialog" disabled>Clear saved OpenSciEd work…</button></div>
+<div class="dashboard-student-actions"><button class="btn" type="button" id="download-openscied-results" aria-describedby="openscied-backup-help" disabled>Download backup (.json)</button><button class="btn btn--danger" type="button" id="clear-openscied-results" aria-haspopup="dialog" disabled>Clear saved OpenSciEd work…</button></div>
+<p class="dashboard-student-note" id="openscied-backup-help">The browser backup can include work from more than one student, so it does not put one name on the whole file. For a named file to turn in, use Preview report inside your activity.</p>
 <p class="dashboard-student-note" id="openscied-results-status" role="status" aria-live="polite">No saved work yet. Choose an activity to get started.</p>
 </section>
       </div>
@@ -262,7 +263,7 @@
 <script src="openscied-b3-dna-workshop-codon-wheel.js?v=translation-2"></script>
 <script src="openscied-b3-dna-workshop-logic.js?v=translation-2"></script>
 <script src="openscied-save-session.js"></script>
-<script src="openscied-dashboard.js?v=save-guard-1"></script>
+<script src="openscied-dashboard.js?v=audit-progress-1"></script>
 </body>
 </html>
 

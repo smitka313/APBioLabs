@@ -67,7 +67,24 @@ const INH = 'aplab:openscied:b3-inheritance-environment:v1', DNA = 'aplab:opensc
       await p.waitForFunction(() => document.querySelector('#exit8.is-current'));
       T.ok(await p.isChecked('input[name="exit-q1"][value="b"]'), 'Resume opens the activity with saved picks');
 
+      // Simulate answering all choice prompts with the real controls, so the page
+      // itself records the same count even with an unfinished written response.
+      const answeredChoiceCount = await p.evaluate(() => {
+        const choiceGroups = [...document.querySelectorAll('main fieldset.mcq[data-id]')];
+        const choices = choiceGroups.map(fs =>
+          fs.querySelector('input[type=radio]:checked') || fs.querySelector('input[type=radio]'));
+        choices.forEach(choice => { choice.checked = true; });
+        choices[choices.length - 1].dispatchEvent(new Event('change', {bubbles:true}));
+        return choices.length;
+      });
+      const actualChoiceSummary = answeredChoiceCount + ' of ' + answeredChoiceCount + ' choice questions answered';
+      T.ok(answeredChoiceCount === 23 &&
+        (await p.locator('#investigation-report').textContent()).includes(actualChoiceSummary),
+        width + ' px: the activity report counts all 23 answered choices separately from writing');
+
       await p.goto(server.url + 'openscied-dashboard.html');
+      T.ok((await p.locator('#inh-env-progress').innerText()).includes(actualChoiceSummary),
+        width + ' px: the dashboard agrees with the activity report');
       const [dl] = await Promise.all([p.waitForEvent('download'), p.locator('#download-openscied-results').click()]);
       const payload = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));
       T.ok(payload.work[INH] && payload.responses['inh-env'] && payload.responses['inh-env']['exit-q1'] === 'b' && payload.responses['dna-p53'] && payload.responses['cell-cycle'], 'download has responses for all three activities');
@@ -86,3 +103,4 @@ const INH = 'aplab:openscied:b3-inheritance-environment:v1', DNA = 'aplab:opensc
   } finally { await browser.close(); server.close(); }
   T.done('t96-inheritance-dashboard');
 })().catch(e => { console.error(e); process.exit(1); });
+
