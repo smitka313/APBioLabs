@@ -32,7 +32,8 @@ const setRange = async (p, id, v) => { await p.evaluate(([i, x]) => { const r = 
     T.ok(/^Created by Robert Smitka\./.test(foot) && /CC BY-NC-SA 4\.0/.test(foot), 'footer starts "Created by Robert Smitka." and names the site license');
     T.ok(/Unit B\.2/.test(foot) && /not OpenSciEd material/.test(foot) && /Not affiliated with, endorsed by, or sponsored by OpenSciEd/.test(foot), 'footer: B.2 credit, "not OpenSciEd material", not affiliated');
     T.ok(await p.locator('.site-footer a[href="https://creativecommons.org/licenses/by-nc/4.0/"]').count() === 1 && await p.locator('.site-footer a[href="https://www.openscied.org/"]').count() >= 1, 'footer links CC BY-NC 4.0 and openscied.org');
-    T.ok(/GoatCounter/.test(foot) && /Nothing you type/.test(foot), 'privacy line');
+    T.ok(/counts anonymous page visits without cookies/.test(foot) && /Nothing you type/.test(foot) && !/GoatCounter/i.test(foot), 'plain privacy line');
+    T.ok(await p.locator('script[data-goatcounter]').count() === 1, 'one page-visit tracker remains');
     await go(p, 'model');
     const attr = await p.locator('.attribution').innerText();
     T.ok(/original interactive simulator by Robert Smitka/.test(attr) && /CC BY-NC 4\.0/.test(attr) && /What this site changed/.test(attr) && /Not affiliated with, endorsed by, or sponsored by OpenSciEd/.test(attr), 'attribution block');
