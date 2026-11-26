@@ -1212,11 +1212,19 @@
     return Object.fromEntries(Object.keys(localStorage).filter(openSciEdKey)
       .map(key => [key,localStorage.getItem(key)]).filter(([,raw]) => raw !== null));
   }
-  function openSciEdBackup() {
+  let openSciEdArchiveLoad;
+  async function openSciEdBackup() {
     if (staleEditor()) throw new Error(staleEditorMessage);
-    // Keep opaque activity values intact, including unreadable saves. A device
-    // sign-in is not proof of ownership for every record in a shared workspace.
-    return { format:'openscied-saved-work-v1', exportedAt:new Date().toISOString(), student:null, work:openSciEdWork(), responses:{} };
+    if (typeof window.OpenSciEdArchive?.build !== 'function') {
+      openSciEdArchiveLoad ||= loadScript('openscied-dashboard.js').catch(error => {
+        openSciEdArchiveLoad = null; // A failed request may be retried.
+        throw error;
+      });
+      await openSciEdArchiveLoad;
+    }
+    // Another tab could switch students while the archive code is loading.
+    if (staleEditor()) throw new Error(staleEditorMessage);
+    return window.OpenSciEdArchive.build(localStorage);
   }
   const labNo = id => +String(id).slice(3);
   const FLASH_KEY = 'aplab:flash';
@@ -1416,21 +1424,23 @@
       {
         kids.push(h('div', {class:'dm-openscied-work', hidden:!openSciEdFound}, h('p', { class:'dm-sub' }, 'Saved OpenSciEd activity work'),
           h('p', { class:'small muted' }, 'The backup includes the saved records, including anything the site could not read. It is not a classroom submission.'),
-          h('button', { class:'btn btn--sm dm-openscied-backup', type:'button', onclick:() => {
+          h('button', { class:'btn btn--sm dm-openscied-backup', type:'button', onclick:async event => {
+            const button = event.currentTarget;
+            button.disabled = true;
             try {
               if (staleEditor()) throw new Error(staleEditorMessage);
               if (opts.downloadOpenSciEd) {
                 if (opts.downloadOpenSciEd() !== true) throw new Error('Could not download OpenSciEd work.');
               } else {
-                const backup = openSciEdBackup();
+                const backup = await openSciEdBackup();
                 if (!Object.keys(backup.work).length) { say('No OpenSciEd work remains to download.'); return; }
                 downloadBlob(new Blob([JSON.stringify(backup,null,2)], {type:'application/json'}), 'openscied-saved-work.json');
               }
               say('OpenSciEd backup requested. Check your browser’s downloads before clearing this device.');
             } catch (e) {
               say(e?.message === staleEditorMessage ? staleEditorMessage :
-                'Could not download OpenSciEd work. Check browser storage and try again before clearing this device.', true);
-            }
+                'Could not download OpenSciEd work. Check your connection and browser storage, then try again before clearing this device.', true);
+            } finally { button.disabled = false; }
           } }, 'Download OpenSciEd backup')));
       }
       if (openSciEdUnreadable) kids.push(h('p', {class:'small muted'}, 'OpenSciEd work could not be checked. Check browser storage before clearing this device.'));

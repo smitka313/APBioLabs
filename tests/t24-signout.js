@@ -4,6 +4,7 @@ const T = require('./_h');
 const OUT = process.env.OUT || require('os').tmpdir();
 const ME = { name: 'Jordan Lee', period: '3' };
 const OPENSCIED = 'aplab:openscied:b1-migration:v1';
+const HAWKSBEARD = 'aplab:openscied:b4-hawksbeard:v1';
 
 /* Fresh context that seeds ONCE (a marker in localStorage that sign-out does not touch), so a sign-out really leaves the browser empty. */
 async function ctxFor(b, o = {}) {
@@ -19,6 +20,7 @@ async function ctxFor(b, o = {}) {
 const base = () => ({
   'aplab:student': ME, 'aplab:tour': { seen: true, v: 1 },
   [OPENSCIED]: { v: 1, answers: { claim: 'my migration evidence' } },
+  [HAWKSBEARD]: { v: 1, seed: 42, prediction: 'Fewer seeds land on soil in the city.' },
   'aplab:ui:allParts': true, 'aplab:pref:theme': 'dark',
   'aplab:lab05:field:zz-test': 'my answer', 'aplab:lab05:keyres:x': { label: 'x', value: 1 },
   'aplab:progress:lab05': { done: 4, total: 6, sections: 8, t: Date.now() },
@@ -62,7 +64,23 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   T.ok(await confirm.isDisabled(), 'Sign out and erase starts disabled');
   const [oseFile] = await Promise.all([p.waitForEvent('download'), dlg.getByRole('button', {name:'Download OpenSciEd backup'}).click()]);
   const ose = JSON.parse(require('fs').readFileSync(await oseFile.path(), 'utf8'));
-  T.ok(ose.format === 'openscied-saved-work-v1' && ose.student === null && JSON.parse(ose.work[OPENSCIED]).answers.claim === 'my migration evidence', 'AP sign-out offers an ownership-neutral raw OpenSciEd backup');
+  T.ok(ose.format === 'openscied-saved-work-v1' && ose.archiveRevision === 2 && ose.scope === 'browser' &&
+    ose.student === null && JSON.parse(ose.work[OPENSCIED]).answers.claim === 'my migration evidence',
+    'AP sign-out saves an ownership-neutral OpenSciEd archive and preserves the raw work');
+  T.ok(ose.datasetIds?.hawksbeard === 'HB-0000002A' &&
+    ose.responses?.hawksbeard?.prediction === 'Fewer seeds land on soil in the city.',
+    'AP sign-out includes the prefixed Dataset ID and readable response summary');
+  const dashboard = await ctx.newPage();
+  await dashboard.goto(srv.url + 'openscied-dashboard.html');
+  const [dashboardFile] = await Promise.all([
+    dashboard.waitForEvent('download'), dashboard.locator('#download-openscied-results').click()
+  ]);
+  const { exportedAt: apTime, ...apArchive } = ose;
+  const { exportedAt: oseTime, ...dashboardArchive } = JSON.parse(require('fs').readFileSync(await dashboardFile.path(), 'utf8'));
+  T.ok(oseFile.suggestedFilename() === dashboardFile.suggestedFilename() &&
+    require('node:util').isDeepStrictEqual(apArchive, dashboardArchive),
+    'AP sign-out and OpenSciEd dashboard export the same archive for the same browser work');
+  await dashboard.close();
   await dlg.locator('.dm-title').focus();
   await p.screenshot({ path: OUT + '/t24-signout-1366.png' });
 
