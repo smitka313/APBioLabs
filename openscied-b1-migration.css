@@ -81,7 +81,7 @@
   .mx-header .b1-hero-copy{padding-block:8px}
   .mx-header .b1-hero h1{font-size:clamp(1.9rem,3.2vw,2.45rem)}
   .mx-header .b1-hero .b1-hero-lead{margin-top:.3rem}
-  .mx-atlas .mx-map{height:clamp(220px,calc(100svh - 520px),300px)}
+  .mx-atlas .mx-map{height:clamp(220px,calc(100svh - 548px),300px)}
 }
 
 /* Break the writing task into short question sets while retaining all drafts and print text. */

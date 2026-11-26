@@ -67,7 +67,8 @@ const screenshot=process.env.BENCH_AUDIT_SCREENSHOTS;
      if(page==='openscied-b4-hawksbeard.html'){
       const art=p.locator(theme==='dark'?'.hb-hero-dusk':'.hb-hero-day');
       assert.ok(await art.isVisible());
-      assert.equal((await art.evaluate(e=>getComputedStyle(e).filter)).includes('brightness(1.2)'),theme==='dark');
+      await art.evaluate(img=>img.decode());
+      assert.equal(await art.evaluate(e=>getComputedStyle(e).filter),'none','dusk palette is baked into the art');
      }
      assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),page+' fits '+width);
      if(screenshot)await p.screenshot({path:path.join(screenshot,width+'-'+theme+'-'+page.replace('.html','.png'))});

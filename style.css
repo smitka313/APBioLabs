@@ -1312,17 +1312,14 @@ html[data-openscied] nav:is(
 
   /* A map stays readable: tone down the base canvas, not its overlaid labels and controls. */
   :root[data-theme="dark"] .mx-map canvas { filter: brightness(.89) saturate(1.05); }
-  :root[data-theme="dark"] .hb-hero img.hb-hero-dusk { filter: brightness(1.2) saturate(1.16); }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .mx-map canvas { filter: brightness(.89) saturate(1.05); }
-    :root:not([data-theme="light"]) .hb-hero img.hb-hero-dusk { filter: brightness(1.2) saturate(1.16); }
   }
 
   /* Match the existing step controls without changing any page's gates or click handlers. */
   html[data-openscied] nav:is([aria-label="Notebook steps"], [aria-label="Activity steps"],
     [aria-label="Activity sections"], [aria-label="Investigation steps"], [aria-label="Investigation sections"],
     [aria-label="Workshop steps"]) :is(button, li > a[href^="#"]):not(.nav-arrow) {
-    min-block-size: 42px;
     border: 1px solid var(--line);
     border-radius: var(--r-sm);
     text-underline-offset: .2em;
@@ -1334,7 +1331,7 @@ html[data-openscied] nav:is(
     color: var(--ink);
     border-color: var(--accent);
     box-shadow: inset 0 -3px 0 var(--accent);
-    font-weight: 750;
+    font-weight: 700;
   }
   html[data-openscied] nav[aria-label="Notebook steps"] button:disabled {
     opacity: 1;
@@ -1342,6 +1339,7 @@ html[data-openscied] nav:is(
     color: var(--muted);
     border-color: color-mix(in srgb, var(--muted) 72%, var(--line));
   }
+  html[data-openscied] .ms-switch { scroll-margin-block: 4rem 1rem; }
   @media (max-width: 560px) {
     html[data-openscied] nav.dw-stage-nav {
       grid-template-columns: repeat(2, minmax(0, 1fr));
