@@ -24,6 +24,31 @@
   const changed = () => ({ ok:false, reason:'changed' });
   const success = () => ({ ok:true });
 
+  // The shared Resume script loads asynchronously. Buffer a short transition history
+  // per key until it attaches. These snapshots never leave memory/this page.
+  const pendingResume = new Map();
+  function recordResumeWrite(transition) {
+    try {
+      const notify=globalThis.OpenSciEdResume?.recordSave;
+      if (typeof notify==='function') notify(transition);
+      else {
+        const earlier=pendingResume.get(transition.key);
+        const sameEpoch=earlier?.epoch.every((mark,i)=>mark===transition.epoch[i]);
+        // Keep a small tail to distinguish an early real edit from a later
+        // display change while the script is still loading.
+        pendingResume.set(transition.key, sameEpoch ? {
+          ...transition, previous:earlier.previous,
+          steps:[...(earlier.steps||[]),{raw:earlier.raw,at:earlier.at}].slice(-8)
+        } : transition);
+      }
+    } catch (_) { /* A resume receipt cannot invalidate a successful answer save. */ }
+  }
+  function flushResumeWrites(consume) {
+    const writes=[...pendingResume.values()].sort((a,b)=>a.at-b.at);
+    pendingResume.clear();
+    for(const write of writes) consume(write);
+  }
+
   function checkScope(scope) {
     if (typeof scope !== 'string' || !/^b[1-5]-[a-z0-9-]+$/.test(scope)) {
       throw new TypeError('An OpenSciEd activity scope is required.');
@@ -162,18 +187,23 @@
         return success();
       } catch (_) { return unavailable(); }
     }
+    function updateResume(key, previous, raw) {
+      recordResumeWrite({key,previous,raw,at:Date.now(),scope,
+        epoch:[globalEpoch,scopeEpoch,state(key).epoch]});
+    }
     function write(key, raw) {
       if (typeof raw !== 'string') throw new TypeError('A serialized OpenSciEd record is required.');
       const result = check(key);
       if (!result.ok) { warn(key, result.reason); return result; }
       try {
         if (raw === state(key).raw) { clearWarning(key); return success(); }
+        const previous=state(key).raw;
         storage.setItem(key, raw);
         state(key).raw = raw;
         clearWarning(key);
         // Fresh evidence is observable even if the editor has not left the page.
         // Resume bookkeeping failure must not demote a successful saved activity.
-        try { globalThis.OpenSciEdResume?.recordSave?.(); } catch (_) {}
+        updateResume(key,previous,raw);
         return success();
       } catch (_) { warn(key, 'unavailable'); return unavailable(); }
     }
@@ -188,14 +218,14 @@
         storage.setItem(resetKey(key), epoch);
         // If writing/removing the record is denied after bumping the marker,
         // this same editor may retry. The other tabs stay invalidated.
-        const slot = state(key);
+        const slot = state(key), previous=slot.raw;
         slot.epoch = epoch;
         if (raw === null) storage.removeItem(key);
         else storage.setItem(key, raw);
         slot.raw = raw;
         // Discard the previous evidence fingerprint when this tab starts over.
         // Otherwise rebuilding the same answer can look like its old save.
-        try { globalThis.OpenSciEdResume?.recordSave?.(); } catch (_) {}
+        updateResume(key,previous,raw);
         return success();
       } catch (_) { return unavailable(); }
     }
@@ -225,5 +255,5 @@
     return get;
   }
 
-  return Object.freeze({ open, erase, invalidate, isActivityKey, globalKey, scopeKey, resetKey, reportIdentity });
+  return Object.freeze({ open, erase, invalidate, isActivityKey, globalKey, scopeKey, resetKey, reportIdentity, flushResumeWrites });
 });

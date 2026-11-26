@@ -1243,7 +1243,14 @@
     }
     // Another tab could switch students while the archive code is loading.
     if (staleEditor()) throw new Error(staleEditorMessage);
-    return window.OpenSciEdArchive.build(localStorage);
+    try {
+      const backup=await window.OpenSciEdArchive.build(localStorage);
+      if (staleEditor()) throw new Error(staleEditorMessage);
+      return backup;
+    } catch (error) {
+      if (staleEditor()) throw new Error(staleEditorMessage);
+      throw error;
+    }
   }
   const labNo = id => +String(id).slice(3);
   const FLASH_KEY = 'aplab:flash';
@@ -1572,7 +1579,7 @@
         } }, 'Download OpenSciEd backup');
         asyncDownloads.push(archive);
         kids.push(h('div', {class:'dm-openscied-work', hidden:!openSciEdFound}, h('p', { class:'dm-sub' }, 'Saved OpenSciEd activity work'),
-          h('p', { class:'small muted' }, 'The backup includes the saved records, including anything the site could not read. It is not a classroom submission.'),
+          h('p', { class:'small muted' }, 'This backup includes saved records, even those the site could not read. The current sign-in is listed only as the person downloading it, not as owner of the work. It is not a classroom submission.'),
           archive));
       }
       if (openSciEdUnreadable) kids.push(h('p', {class:'small muted'}, 'OpenSciEd work could not be checked. Check browser storage before clearing this device.'));

@@ -50,7 +50,13 @@ const destination = (page, activity) => page.waitForFunction(({ activity }) => {
     assert.equal(await read(dashboard, 'aplab:student'), null);
     pass('clean guest profile has no Resume destination and is not signed in');
 
-    await go(edit, MIGRATION);
+    // Simulate slow delivery of the asynchronously loaded tracker, with the
+    // actual activity code and two real same-origin tabs running normally.
+    let release;
+    const trackerDelay=new Promise(resolve=>{release=resolve;});
+    const delayed='**/openscied-resume.js*';
+    await edit.route(delayed,async route=>{await trackerDelay;await route.continue();});
+    await edit.goto(new URL(MIGRATION,server.url).href,{waitUntil:'domcontentloaded'});
     const note = edit.locator('#observation');
     const weather = edit.locator('#weather');
     await note.waitFor({ state:'visible' });
@@ -64,6 +70,16 @@ const destination = (page, activity) => page.waitForFunction(({ activity }) => {
     await edit.locator('#record').click();
     await destination(dashboard, MIGRATION);
     assert.equal((await read(dashboard, MIGRATION_KEY)).notes.some(n => n.observation === FIRST), true);
+    const saved=(await read(edit,MIGRATION_KEY)).lastVisitedAt;
+    await edit.waitForFunction(stamp=>Date.now()>stamp+25,saved);
+    await weather.check();
+    const nav=(await read(edit,MIGRATION_KEY)).lastVisitedAt;
+    assert.ok(nav>saved);
+    release();
+    await edit.waitForFunction(()=>typeof window.OpenSciEdResume?.recordSave==='function');
+    await edit.unroute(delayed);
+    const receipt=await read(dashboard,'aplab:pref:openscied-resume:v1:b1-migration');
+    assert.ok(receipt.changed>=saved && receipt.changed<nav,'late tracker keeps a real edit above a subsequent display write');
     assert.match(await dashboard.locator('#openscied-resume-link').textContent(), /continue my saved/i);
     await dashboard.reload();
     await destination(dashboard, MIGRATION);
@@ -76,7 +92,7 @@ const destination = (page, activity) => page.waitForFunction(({ activity }) => {
     assert.equal((await read(dashboard, JUNCO_KEY)).observation, SECOND);
     await go(dashboard, DASHBOARD);
     await destination(dashboard, JUNCO);
-    await weather.check();
+    await weather.uncheck();
     await dashboard.reload();
     await destination(dashboard, JUNCO);
     pass('new observation outranks an older activity even when the older tab changes a setting');

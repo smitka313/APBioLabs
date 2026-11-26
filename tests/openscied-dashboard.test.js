@@ -6,6 +6,7 @@ const path = require('node:path');
 const SaveSession = require('../openscied-save-session.js');
 const source = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.js'), 'utf8');
 const workspaceEpochKey = 'aplab:pref:workspace-handoff:v1';
+const ArcticBearData = require('../openscied-b5-hybrid-data.js');
 function setup(blocked = false, overrides = {}, absent = [], tracker, workshopLogic) {
   const elements = new Map(), created = [], events = {};
   function element(tag) {
@@ -40,6 +41,7 @@ function setup(blocked = false, overrides = {}, absent = [], tracker, workshopLo
     },
     localStorage: storage, window: { location:{origin:'https://biologylabbench.com'},OpenSciEdResume:tracker,OpenSciEdSaveSession:SaveSession,DNAWorkshopLogic:workshopLogic,addEventListener(type, fn) { events[type]=fn; } }, Blob,
     URL: { createObjectURL(value) { if (failBackup) throw Error('blocked download'); blob = value; return 'blob:backup'; }, revokeObjectURL() {} }, setTimeout() {} };
+  context.window.ArcticBearData=ArcticBearData;
   vm.runInNewContext(source, context);
   return { data, created, events, el: selector => elements.get(selector), mounted, mountOptions, blob: () => blob, blockBackup: () => { failBackup = true; } };
 }
@@ -65,35 +67,48 @@ test('mounts the shared sign-in and confirms an OpenSciEd-only reset', () => {
   assert.equal(s.el('#clear-openscied-dialog').open, false);
   assert.equal(s.el('#clear-openscied-results').disabled, true);
 });
-test('backup preserves exact values without relabeling them to the current browser identity', async () => {
+test('backup stores parsed records and gives the current sign-in an explicit non-owner role', async () => {
   const s = setup();
   s.data['aplab:student'] = JSON.stringify({ name: 'Fictional Other Student', period: '3' });
   const before = { ...s.data };
   s.el('#download-openscied-results').fire('click');
   const payload = JSON.parse(await s.blob().text());
-  assert.equal(payload.student, null);
-  assert.doesNotMatch(JSON.stringify(payload), /Fictional Other Student/);
-  assert.equal(payload.format, 'openscied-saved-work-v1');
-  assert.deepEqual(payload.work, Object.fromEntries(Object.entries(before).filter(([k]) => k.startsWith('aplab:openscied:'))));
+  assert.equal(Object.hasOwn(payload,'student'),false);
+  assert.equal(payload.recordOwnership,'not-verified');
+  assert.deepEqual(payload.exportedBy,{name:'Fictional Other Student',period:'3'});
+  assert.equal(payload.format, 'openscied-saved-work-v2');
+  assert.deepEqual(payload.work, Object.fromEntries(Object.entries(before).filter(([k]) => k.startsWith('aplab:openscied:')).map(([k,v])=>[k,JSON.parse(v)])));
   assert.deepEqual({ ...s.data }, before);
 });
 test('backup indexes exact activity report IDs without attributing a shared archive to the active student', async () => {
   const known={
     'aplab:openscied:b1-ripple:v1': JSON.stringify({v:1,seed:0}),
     'aplab:openscied:b4-junco:v1': JSON.stringify({v:1,notebookSeed:0x7f1}),
-    'aplab:openscied:b5-hybrid:v1': JSON.stringify({v:1,id:'FE8D9975'}),
+    'aplab:openscied:b5-hybrid:v1': JSON.stringify({v:1,id:'FE8D9975',rolls:5}),
     'aplab:openscied:b5-speciation:v1': JSON.stringify({v:1,id:'BAD-ID'}),
     'aplab:openscied:b5-wapusk:v1': '{"v":1,'
   };
   const s=setup(false,known);
   s.el('#download-openscied-results').fire('click');
   const archive=JSON.parse(await s.blob().text());
-  assert.equal(archive.format,'openscied-saved-work-v1');
-  assert.equal(archive.archiveRevision,2);
+  assert.equal(archive.format,'openscied-saved-work-v2');
   assert.equal(archive.scope,'browser');
-  assert.equal(archive.student,null);
+  assert.equal(Object.hasOwn(archive,'student'),false);
+  assert.equal(archive.recordOwnership,'not-verified');
   assert.deepEqual(archive.datasetIds,{ripple:'SR-00000000',junco:'JU-000007F1','bear-hybrid':'HY-FE8D9975'});
-  for(const [key,raw] of Object.entries(known)) assert.equal(archive.work[key],raw);
+  assert.deepEqual(archive.exportedBy,{name:'Student',period:'2'});
+  for(const [key,raw] of Object.entries(known)) {
+    const parsed=key.includes('wapusk')?{unreadable:true,raw}:JSON.parse(raw);
+    assert.deepEqual(archive.work[key],parsed);
+  }
+  const futures=archive.models['bear-hybrid'];
+  assert.equal(futures.datasetId,'HY-FE8D9975');
+  assert.equal(futures.recordedFlips,5);
+  assert.deepEqual(futures.coinFlips,ArcticBearData.coinFlipDetails('FE8D9975',5));
+  assert.deepEqual(futures.coinFlips.map(({mating,gene})=>[mating,gene]),
+    [[1,'LYST'],[1,'APOB'],[1,'ARID5B'],[1,'NOS3'],[2,'LYST']]);
+  assert.ok(futures.coinFlips.every(({side,simulatedTrait})=>['Heads','Tails'].includes(side)&&simulatedTrait));
+
 });
 test('browser backup is explained without attributing mixed work to one student', () => {
   const html=fs.readFileSync(path.join(__dirname,'../openscied-dashboard.html'),'utf8');
@@ -207,7 +222,7 @@ test('DNA Workshop comes before DNA Copying and saves a resumable local practice
   s.el('#dna-workshop-reset').fire('click');
   s.el('#backup-before-openscied-clear').fire('click');
   const payload=JSON.parse(await s.blob().text());
-  assert.deepEqual(payload.work,{[key]:raw});
+  assert.deepEqual(payload.work,{[key]:JSON.parse(raw)});
   assert.equal(payload.responses['dna-workshop'].build,'One new strand.');
   const primer=JSON.stringify({v:1,step:'nucleotide',progress:{v:1,placed:{'nucleotide-sugar':'deoxyribose'}},answers:{nucleotide:'Sugar, phosphate, and a base.'},lastVisitedAt:1800000001000});
   const starter=setup(false,{[key]:primer});
@@ -272,7 +287,7 @@ test('Unit 4 shows Hawksbeard, Rat Generations, then Junco, with a real curricul
   assert.doesNotMatch(page, /<details class="dashboard-coming-soon">/);
 });
 
-test('Wildlife Corridor tracks real work, resumes without a hash, and preserves both raw and readable work in scoped backups', async () => {
+test('Wildlife Corridor tracks real work, resumes without a hash, and preserves both structured saved work and readable responses in scoped backups', async () => {
   const key='aplab:openscied:b4-wildlife-corridor:v1', file='openscied-b4-wildlife-corridor.html';
   const base={v:1,model:'Aa',seed:4892,step:'predict',prediction:null,generations:{baseline:0,corridor:0},
     crossing:-1,claim:'',limits:'',finished:false,lastVisitedAt:1800000000000};
@@ -296,8 +311,9 @@ test('Wildlife Corridor tracks real work, resumes without a hash, and preserves 
   finished.el('#wildlife-corridor-reset').fire('click');
   finished.el('#backup-before-openscied-clear').fire('click');
   const payload=JSON.parse(await finished.blob().text());
-  assert.deepEqual(payload.work,{[key]:JSON.stringify(saved)});
-  assert.equal(payload.student,null);
+  assert.deepEqual(payload.work,{[key]:saved});
+  assert.equal(Object.hasOwn(payload,'student'),false);
+  assert.equal(payload.recordOwnership,'not-verified');
   assert.deepEqual(payload.responses['wildlife-corridor'],{claim:saved.claim,limits:saved.limits,
     prediction:saved.prediction.choice,predictionReason:saved.prediction.reason});
   finished.el('#openscied-erase-confirmation').value='ERASE';
@@ -340,7 +356,7 @@ test('Hawksbeard continues the saved phase and includes its written answers in a
   s.el('#hawksbeard-reset').fire('click');
   s.el('#backup-before-openscied-clear').fire('click');
   const payload = JSON.parse(await s.blob().text());
-  assert.deepEqual(payload.work,{[key]:save});
+  assert.deepEqual(payload.work,{[key]:JSON.parse(save)});
   assert.equal(payload.responses.hawksbeard.reflection,'I kept my prediction after comparing 2/9 and 2/5.');
   assert.equal(payload.responses.hawksbeard.claim,'The landings differ.');
   assert.equal(payload.responses.hawksbeard.evidence,'I compared both sites.');
@@ -362,7 +378,7 @@ test('Rat Generations resumes the saved stage and exports the prediction and wri
   s.el('#rat-generations-reset').fire('click');
   s.el('#backup-before-openscied-clear').fire('click');
   const payload = JSON.parse(await s.blob().text());
-  assert.deepEqual(payload.work,{[key]:raw});
+  assert.deepEqual(payload.work,{[key]:JSON.parse(raw)});
   assert.equal(payload.responses['rat-generations'].prediction,'increase');
   assert.equal(payload.responses['rat-generations'].claim,'The survivors were not a random subset.');
 });
@@ -382,7 +398,9 @@ test('dashboard backups and OpenSciEd-only clearing include the exact Serengeti 
   const s = setup(false, {[serengetiKey]:serengetiSaved,[nearSerengetiKey]:'separate local data'});
   s.el('#download-openscied-results').fire('click');
   const payload = JSON.parse(await s.blob().text());
-  assert.equal(payload.work[serengetiKey],serengetiSaved);
+  assert.deepEqual(payload.work[serengetiKey],JSON.parse(serengetiSaved));
+  const script=fs.readFileSync(path.join(__dirname,'../openscied-b1-serengeti.js'),'utf8');
+  assert.equal(payload.responses.serengeti.modelQuestion,script.match(/const MODEL_QUESTION = '([^']+)'/)[1]);
   assert.equal(payload.work[nearSerengetiKey],undefined);
   assert.equal(payload.responses.serengeti.claim,'The group survived.');
   assert.equal(payload.responses.serengeti.evidence,'0');
@@ -427,11 +445,11 @@ test('Cancer Rates Data Dive resumes, backs up its prediction and comparison, an
   assert.equal(s.el('#openscied-resume-link').href, 'openscied-b3-cancer-rates.html#explain');
   s.el('#download-openscied-results').fire('click');
   const whole = JSON.parse(await s.blob().text());
-  assert.equal(whole.work[key], raw);
+  assert.deepEqual(whole.work[key], JSON.parse(raw));
   s.el('#cancer-rates-reset').fire('click');
   s.el('#backup-before-openscied-clear').fire('click');
   const payload = JSON.parse(await s.blob().text());
-  assert.deepEqual(payload.work, { [key]:raw });
+  assert.deepEqual(payload.work, { [key]:JSON.parse(raw) });
   assert.deepEqual(payload.responses['cancer-rates'], {
     claim:saved.claim, limits:saved.limits, prediction:saved.prediction.choice, predictionReason:saved.prediction.reason,
     investigationQuestion:saved.casework.question,exhibitObservations:{A:'A note',B:'B note',C:'C note'}
@@ -478,7 +496,7 @@ test('a submitted case question resumes Explore and is included in readable back
   const payload = JSON.parse(await s.blob().text());
   assert.equal(payload.responses['cancer-rates'].investigationQuestion,question);
   assert.deepEqual(payload.responses['cancer-rates'].exhibitObservations,{A:'A note',B:'B note',C:'C note'});
-  assert.equal(payload.work[key],raw);
+  assert.deepEqual(payload.work[key],JSON.parse(raw));
 });
 
 
@@ -497,7 +515,7 @@ test('Junco resumes its supported step and backs up prediction and written evide
   s.el('#junco-reset').fire('click');
   s.el('#backup-before-openscied-clear').fire('click');
   const payload = JSON.parse(await s.blob().text());
-  assert.deepEqual(payload.work,{[key]:raw});
+  assert.deepEqual(payload.work,{[key]:JSON.parse(raw)});
   assert.deepEqual(payload.responses.junco,{prediction:saved.prediction,claim:saved.claim,limits:saved.limits});
   s.el('#openscied-erase-confirmation').value='ERASE';
   s.el('#clear-openscied-form').fire('submit');
@@ -560,8 +578,9 @@ test('Resume ranks changed evidence, separately shows last opened, and renders a
   tracker.snapshot('/openscied-b1-migration','exit');
   refresh();
   assert.match(s.el('#openscied-resume-link').href,/migration\.html#explain$/);
-  assert.match(stamp.textContent,/^Last opened: /);
-  assert.equal(stamp.dateTime,new Date(base+1000).toISOString());
+  assert.match(stamp.textContent,/^Saved: /);
+  assert.match(stamp.title,/^Last opened: /);
+  assert.equal(stamp.dateTime,new Date(base+2000).toISOString());
   const ledger=s.data[Resume.META_KEY+':b1-migration'];
   assert.doesNotMatch(ledger,/analysis|claim/);
   delete s.data['aplab:student'];
@@ -571,6 +590,7 @@ test('Resume ranks changed evidence, separately shows last opened, and renders a
   assert.match(s.el('#openscied-resume-link').textContent,/^Continue my saved Migration Map Explorer/);
   s.el('#download-openscied-results').fire('click');
   const payload=JSON.parse(await s.blob().text());
+  assert.equal(payload.exportedBy,null);
   assert.equal(Object.keys(payload.work).some(Resume.isMetaKey),false,'metadata never exports as student work');
 });
 
@@ -854,8 +874,9 @@ test('dashboard hands off to the guarded student-switch flow and provides standa
   assert.equal(s.mountOptions?.sharedDevice, true);
   assert.equal(s.mountOptions.downloadOpenSciEd(), true);
   const payload = JSON.parse(await s.blob().text());
-  assert.equal(payload.format, 'openscied-saved-work-v1');
-  assert.equal(payload.student, null);
+  assert.equal(payload.format, 'openscied-saved-work-v2');
+  assert.equal(Object.hasOwn(payload,'student'),false);
+  assert.equal(payload.recordOwnership,'not-verified');
   assert.deepEqual({ ...s.data }, before);
   s.blockBackup();
   assert.equal(s.mountOptions.downloadOpenSciEd(), false, 'the sign-out dialog can show its own failure feedback');

@@ -80,3 +80,56 @@ test('after Start over, re-entering the exact same answer is a new save',()=>{
     assert.equal(dashboard.snapshot(migration).changed,130);
   }finally{delete globalThis.OpenSciEdResume;}
 });
+
+test('a late tracker cannot turn a view-only write into freshly saved evidence',()=>{
+  const f=fixture(), path='/openscied-b1-migration', active=resume.connect(f.storage,f.clock,{scope:'b1-migration'});
+  const prior=JSON.stringify({answers:{claim:'same work'},lastVisitedAt:90,page:'explore'});
+  const raw=JSON.stringify({answers:{claim:'same work'},lastVisitedAt:250,page:'explain'});
+  f.at(250);f.storage.setItem(m,raw);
+  active.snapshot(path,'save',{key:m,previous:prior,raw,at:250,scope:'b1-migration',epoch:[null,null,null]});
+  active.snapshot(path,'open');
+  assert.equal(active.snapshot(path).changed,90);
+  assert.equal(active.snapshot(path).opened,250);
+});
+
+test('the first meaningful edit made before tracker startup keeps its edit time',()=>{
+  const f=fixture(), path='/openscied-b1-migration', editor=guard.open(f.storage,'b1-migration',[m]);
+  const raw=JSON.stringify({answers:{claim:'new evidence'}});
+  assert.equal(editor.write(m,raw).ok,true);
+  const start=Date.now();f.at(start+200);
+  const active=resume.connect(f.storage,f.clock,{scope:'b1-migration'});
+  let handled=0;
+  guard.flushResumeWrites(transition=>{
+    handled++;
+    active.snapshot(path,'save',transition);
+  });
+  active.snapshot(path,'open');
+  assert.equal(handled,1);
+  const stamp=active.snapshot(path).changed;
+  assert.ok(stamp>0&&stamp<=start);
+  assert.equal(active.snapshot(path).opened,start+200);
+});
+
+test('a deferred save from a cleared workspace cannot promote the next student’s work',()=>{
+  const f=fixture(), path='/openscied-b1-migration', active=resume.connect(f.storage,f.clock,{scope:'b1-migration'});
+  const draft=JSON.stringify({answers:{claim:'matching words'},lastVisitedAt:90});
+  f.storage.setItem(m,draft);
+  assert.equal(guard.erase(f.storage,null,[m]).ok,true);
+  f.at(250);f.storage.setItem(m,draft);
+  assert.deepEqual(active.snapshot(path,'save',{key:m,previous:null,raw:draft,at:100,scope:'b1-migration',epoch:[null,null,null]}),{});
+  assert.equal(f.storage.getItem(resume.META_KEY+':b1-migration'),null);
+});
+
+test('a dashboard receiving the raw storage event first waits for the new save receipt',()=>{
+  const f=fixture(), path='/openscied-b1-migration';
+  const old=JSON.stringify({answers:{claim:'Prior observation.'},lastVisitedAt:90});
+  const next=JSON.stringify({answers:{claim:'Revised observation.'},lastVisitedAt:200});
+  const activity=resume.connect(f.storage,f.clock,{scope:'b1-migration'});
+  const dashboard=resume.connect(f.storage,f.clock);
+  f.storage.setItem(m,old);
+  activity.snapshot(path,'open');
+  f.at(200);f.storage.setItem(m,next);
+  assert.equal(dashboard.snapshot(path).changed,90,'raw route timestamp is not a save receipt');
+  activity.snapshot(path,'save',{key:m,previous:old,raw:next,at:200,scope:'b1-migration',epoch:[null,null,null]});
+  assert.equal(dashboard.snapshot(path).changed,200);
+});

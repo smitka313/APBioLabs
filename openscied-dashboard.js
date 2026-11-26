@@ -6,6 +6,9 @@
   const SERENGETI_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
   const CARRYING_KEY = 'aplab:openscied-b1-carrying-capacity:run-v1';
   const CARBON_BUDGET_KEY = PREFIX + 'b2-carbon-journey:budget:v1';
+  const FUTURES_KEY = PREFIX + 'b5-hybrid:v1';
+  // Kept in sync with the board game's published fixed Model investigation question.
+  const SERENGETI_MODEL_QUESTION = 'How do event cards and hunts change the wildebeest population across the four seasons?';
   const CARRYING_PARTS = ['range', 'habitat', 'field'];
   const CARRYING_EXTRA_KEYS = CARRYING_PARTS.map(part => PREFIX + 'b1-carrying-capacity:' + part + ':v1');
   const isOpenSciEdKey = key => key === SERENGETI_KEY || key === CARRYING_KEY || key.startsWith(PREFIX);
@@ -33,7 +36,7 @@
     { id:'thermoregulation', name:'Bear Thermoregulation Lab', file: 'openscied-b5-thermoregulation.html', key:PREFIX+'b5-thermoregulation:v1', clears:'treadmill notebook, human readings, and matter and energy cards', progress:thermProgress, ids:thermIds },
     { id:'bear-ancestry', name:'Bear Ancestry Lab', file: 'openscied-b5-ancestry.html', key:PREFIX+'b5-ancestry:v1', clears:'trait notes, DNA comparisons, tree, and explanations', progress:bearAncestryProgress, ids:()=>['conclusion','revise'], answers:true },
     { id:'bear-speciation', name:'Ice Age Bear Speciation Explorer', file: 'openscied-b5-speciation.html', key:PREFIX+'b5-speciation:v1', clears:'model maps, fossil pins, and argument notebook', progress:bearSpeciationProgress, ids:()=>['first','needed','fossilNote','traitNote','revised','future'], answers:true },
-    { id:'bear-hybrid', name:'Arctic Bear Futures & Hybridization', file: 'openscied-b5-hybrid.html', key:PREFIX+'b5-hybrid:v1', clears:'pinned climate comparisons, pedigree work, ten simulated matings, and responses', progress:bearHybridProgress, ids:()=>['prediction','evidence','claim','limit'], answers:true }
+    { id:'bear-hybrid', name:'Arctic Bear Futures & Hybridization', file: 'openscied-b5-hybrid.html', key:FUTURES_KEY, clears:'pinned climate comparisons, pedigree work, ten simulated matings, and responses', progress:bearHybridProgress, ids:()=>['prediction','evidence','claim','limit'], answers:true }
   ];
   const SECTIONS = ['overview', 'background', 'cell-game', 'growth-model', 'analyze', 'submit'];
   // Written-response fields. The activity saves the ids of every response field it has (saved.responseIds), so the
@@ -653,23 +656,49 @@
     return Number.isInteger(value) && value>=0 && value<=0xffffffff
       ? prefix+value.toString(16).toUpperCase().padStart(8,'0') : null;
   }
+  function currentExporter(storage) {
+    try {
+      const identity=JSON.parse(storage.getItem('aplab:student'));
+      const name=typeof identity?.name==='string'?identity.name.trim():'';
+      if (name) return {name,period:typeof identity.period==='string'?identity.period:''};
+    } catch (_) { /* The record can be anonymous or damaged. */ }
+    return null;
+  }
   function buildArchive(storage, onlyKeys) {
-    const work = {};
-    const keys = (onlyKeys || Object.keys(storage).filter(isOpenSciEdKey)).filter(key => {
-      const raw = storage.getItem(key);
-      if (raw === null) return false;
-      work[key] = raw;
-      return true;
-    }), responses = {}, datasetIds = {};
+    const values=new Map();
+    for (const key of new Set(onlyKeys||Object.keys(storage))) {
+      if (typeof key!=='string'||!isOpenSciEdKey(key)) continue;
+      const text=storage.getItem(key);
+      if (text===null) continue;
+      try {
+        values.set(key,{parsed:true,value:JSON.parse(text)});
+      } catch (_) {
+        // Preserve exact bytes for recovery without burying every readable record
+        // inside an escaped JSON string.
+        values.set(key,{parsed:false,value:{unreadable:true,raw:text}});
+      }
+    }
+    const work=Object.fromEntries([...values].map(([key,{value}])=>[key,value]));
+    const responses={}, datasetIds={}, models={};
     // A readable copy of every written response (Making Sense and analysis) next to the raw saved work.
-    ACTIVITIES.filter(activity => keys.includes(activity.key)).forEach(activity => {
-      let saved = null;
-      try { saved = JSON.parse(work[activity.key]); } catch (e) { return; }
+    ACTIVITIES.filter(activity => values.has(activity.key)).forEach(activity => {
+      const archived=values.get(activity.key);
+      if (!archived?.parsed) return;
+      const saved=archived.value;
       const datasetId = backupDataset(activity,saved);
       if (datasetId) datasetIds[activity.id] = datasetId;
       const fields = saved && (['cancer-rates', 'junco', 'wildlife-corridor', 'ripple', 'screening'].includes(activity.id) ? saved : activity.answers ? saved.answers : saved.fields) || {};
       responses[activity.id] = {};
       activity.ids(saved).forEach(id => { responses[activity.id][id] = typeof fields[id] === 'string' ? fields[id] : ''; });
+      if (activity.id==='serengeti') {
+        responses.serengeti.modelQuestion=SERENGETI_MODEL_QUESTION;
+        if (written(fields,'question')) responses.serengeti.investigationQuestion=fields.question;
+      }
+      if (activity.id==='bear-hybrid' && datasetId && Number.isInteger(saved.rolls) && saved.rolls>0 && saved.rolls<=40) {
+        const data=window.ArcticBearData;
+        models[activity.id]={datasetId,recordedFlips:saved.rolls,
+          ...(data?.coinFlipDetails ? {coinFlips:data.coinFlipDetails(saved.id,saved.rolls)} : {detailUnavailable:true})};
+      }
       // The DNA activity was shortened: answers saved by the longer version are no longer in its id list, so keep them in the copy.
       if (['hawksbeard','rat-generations'].includes(activity.id) && typeof saved?.prediction === 'string') responses[activity.id].prediction = saved.prediction;
       if (activity.id === 'bear-ancestry' && saved) {
@@ -702,20 +731,49 @@
       }
       if (activity.id === 'dna-p53') Object.keys(fields).forEach(id => { if (!(id in responses[activity.id]) && typeof fields[id] === 'string') responses[activity.id][id] = fields[id]; });
     });
-    if (keys.includes(CARBON_BUDGET_KEY)) {
-      try {
-        const saved = JSON.parse(work[CARBON_BUDGET_KEY]);
-        if (saved?.v === 1) {
-          responses['carbon-journey'] ||= {};
-          for (const id of ['prediction','explanation']) if (typeof saved[id] === 'string') responses['carbon-journey']['budget-'+id] = saved[id];
-        }
-      } catch (_) { /* Keep unreadable budget data in the raw backup. */ }
+    const budget=values.get(CARBON_BUDGET_KEY);
+    if (budget?.parsed && budget.value?.v===1) {
+      responses['carbon-journey'] ||= {};
+      for (const id of ['prediction','explanation']) {
+        if (typeof budget.value[id]==='string') responses['carbon-journey']['budget-'+id]=budget.value[id];
+      }
     }
-    // Only per-activity reports can attribute a student. Browser backups may contain mixed or older work.
-    return { format: 'openscied-saved-work-v1', archiveRevision: 2, exportedAt: new Date().toISOString(), scope: onlyKeys ? 'activity' : 'browser', student: null, datasetIds, work, responses };
+    // 'exportedBy' is the person downloading, not an attribution of records.
+    // Only the named reports inside activities can label their evidence.
+    return {format:'openscied-saved-work-v2',exportedAt:new Date().toISOString(),scope:onlyKeys?'activity':'browser',
+      exportedBy:currentExporter(storage),recordOwnership:'not-verified',datasetIds,work,responses,models};
   }
-  // AP sign-out loads this script on demand; only the OpenSciEd dashboard mounts the UI.
-  if (typeof window === 'object') window.OpenSciEdArchive = { build: buildArchive };
+  // AP sign-out loads this script on demand. Load the same model helper there
+  // only when this browser has Futures flips; re-check workspace ownership
+  // after the async load so a stale tab can never export a new student's work.
+  const currentScript=document.currentScript?.src;
+  let loadingFutures;
+  if (typeof window === 'object') window.OpenSciEdArchive = { async build(storage, onlyKeys) {
+    const current=()=>Lab.data?.workspaceStatus?.()==='current';
+    const check=()=>{if(!current())throw Error('Saved work was cleared in another tab. Reload before downloading.');};
+    check();
+    if ((!onlyKeys||onlyKeys.includes(FUTURES_KEY)) && !window.ArcticBearData?.coinFlipDetails) {
+      let relevant=false;
+      try {
+        const saved=JSON.parse(storage.getItem(FUTURES_KEY));
+        relevant=saved?.v===1&&/^[A-F0-9]{8}$/.test(saved.id)&&Number.isInteger(saved.rolls)&&saved.rolls>0&&saved.rolls<=40;
+      } catch (_) { /* The present but unreadable record will still export. */ }
+      if (relevant) {
+        loadingFutures ||= new Promise((resolve,reject)=>{
+          const script=document.createElement('script');
+          script.src=currentScript?new URL('openscied-b5-hybrid-data.js',currentScript).href:'openscied-b5-hybrid-data.js';
+          script.onload=resolve;
+          script.onerror=()=>{script.remove();reject(Error('Could not load model details for the backup.'));};
+          document.head.append(script);
+        }).catch(error=>{loadingFutures=null;throw error;});
+        try { await loadingFutures; } catch (_) { /* The structured seed and count are still recoverable. */ }
+        check();
+      }
+    }
+    const archive=buildArchive(storage,onlyKeys);
+    check();
+    return archive;
+  }};
 
   function init() {
     $('[data-ph="dashboard-identity"]')?.remove();
@@ -763,14 +821,16 @@
       bar.setAttribute('aria-label',activity.name+' · '+label);
       bar.setAttribute('aria-valuetext',detail);
     }
-    function dateLabel(opened, legacy=0) {
-      const seen=opened||legacy;
+    function dateLabel(seen, opened=0) {
       if (!Number.isFinite(seen) || seen<=0 || seen>Date.now()) {
         resumeDate.hidden=true; return;
       }
       const date = new Date(seen);
       resumeDate.dateTime=date.toISOString();
-      resumeDate.textContent=(opened?'Last opened: ':'Saved: ')+date.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+      const format=d=>d.toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
+      resumeDate.textContent='Saved: '+format(date);
+      resumeDate.title=opened>0&&opened<=Date.now()?'Last opened: '+format(new Date(opened)):'Last recorded activity work';
+
       resumeDate.hidden=false;
     }
     function savedKeys() {
@@ -842,14 +902,14 @@
           // ledger once, but after that only a change in evidence can promote the activity.
           if (item.started) {
             const meta=tracker?.snapshot(activity.file)||{};
-            recent.push({activity,item,index,changed:meta.changed??item.visited,opened:meta.opened,legacy:meta.legacy??item.visited});
+            recent.push({activity,item,index,changed:meta.changed??item.visited,opened:meta.opened});
           }
         });
         recent.sort((a,b)=>b.changed-a.changed || a.index-b.index);
         $('#openscied-resume').hidden = !recent.length;
         if (recent.length) {
-          const { activity, item, opened, legacy } = recent[0];
-          dateLabel(opened,legacy);
+          const { activity, item, opened, changed } = recent[0];
+          dateLabel(changed,opened);
           const guest = !Lab.identity.get()?.name;
           $('#resume-title').textContent = guest ? 'Saved work on this device' : 'Continue your activity';
           $('#openscied-resume-description').textContent = guest
@@ -881,12 +941,14 @@
       }
       try {
         const payload = buildArchive(localStorage, onlyKeys);
+        if (workspaceError()) throw Error('Saved work changed before the backup.');
         const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
         const link = document.createElement('a');
         link.href = url; link.download = 'openscied-saved-work.json';
         document.body.appendChild(link); link.click(); link.remove();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-        if (feedback) feedback.textContent = 'Backup download started: openscied-saved-work.json. This is not a classroom report.';
+        if (feedback) feedback.textContent = 'Backup download started: openscied-saved-work.json. This is not a classroom report.'+
+          (payload.models['bear-hybrid']?.detailUnavailable?' The saved Futures record is included, but the flip detail could not be generated.':'');
         return true;
       } catch (e) {
         if (feedback) feedback.textContent = 'Could not download the backup. Nothing was cleared.';
@@ -956,6 +1018,7 @@
       if (event.target?.closest?.('#openscied-student-identity')) setTimeout(refresh,0);
     });
     window.addEventListener('pageshow', () => refresh());
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refresh();});
     refresh();
   }
   const mount = () => { if ($('#openscied-student-identity')) init(); };
