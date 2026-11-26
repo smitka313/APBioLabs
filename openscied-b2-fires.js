@@ -190,6 +190,16 @@
     return [table('Simulated BTB tubes after the night', head, rows), ...(difference ? [difference] : []),
       el('p', 'small muted', 'SIMULATED. Relative CO₂ change is modeled CO₂ released by respiration minus CO₂ removed by photosynthesis, adjusted for plant size. The tubes started blue (2.0). Under 2 means less CO₂; over 2 means more. These are not measurements from a real lab.')];
   }
+  // Personal 20-minute observations are not the fixed class target, even if
+  // their displayed heights happen to be equal. No seed or reading is changed.
+  function warmBenchmarkNote(st) {
+    const row = L.lastRow(L.foamRows(st));
+    if (!row || row.t !== 20) return '';
+    const values = L.normalizeTemps(st.temps).map((temp,i)=>temp===43 ? L.BEAKER_NAMES[i] + ': ' + row.h[i] + ' mm' : '').filter(Boolean);
+    return values.length ? 'Your 43 °C reading at 20 min (' + values.join('; ') +
+      ') comes from your simulated trial. The class example uses a fixed ' + L.TARGET20[43] +
+      ' mm target. Beaker size and simulated reading variation can change your result.' : '';
+  }
   const BOXES = [['#data-decomp-body', function () { return decompNodes(false); }], ['#data-sense-foam-body', function () { return decompNodes(false, false); }], ['#data-tilt-body', tiltNodes]];
   function renderData() {
     const e = L.sceneEvidence(state);
@@ -199,6 +209,10 @@
       if (!nodes.length) box.appendChild(el('p', 'muted', 'Run the test first. Your results will appear here.'));
       else {
         nodes.forEach(function (n) { box.appendChild(n); });
+        if (b[0] === '#data-sense-foam-body') {
+          const note = warmBenchmarkNote(state.decomp);
+          if (note) box.appendChild(el('p', 'small', note));
+        }
         if (b[0] === '#data-sense-foam-body' && e.foamAfterBaseline && !e.foamComparison) {
           box.appendChild(el('p', 'small', 'Same temperature in all beakers: readings saved, but this is not a temperature comparison. You can still use the class example below.'));
         }

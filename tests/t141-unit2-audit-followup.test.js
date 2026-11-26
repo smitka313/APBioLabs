@@ -180,3 +180,49 @@ test('Fires explains why same-color tubes can model different CO₂ changes and 
   assert.match(scene,/If BTB values tie after rounding or reach a limit, compare the modeled CO₂ changes in the table/);
   assert.match(scene,/x\.net\.toFixed\(3\)/);
 });
+
+test('Burning Fuels calls the grass/leaves instrument tie honestly and points to recorded timing', () => {
+  const L = logic('burn');
+  const state = { burn:{seed:44, records:[{fuel:'grass',n:1,obs:[]},{fuel:'leaves',n:1,obs:[]}] }};
+  const rows = L.tableRows(state.burn);
+  assert.deepEqual(rows.map(({tempRise,btbBefore,btbAfter,igniteS})=>[tempRise,btbBefore,btbAfter,igniteS]),
+    [[3,2,2.9,4],[3,2,2.9,6]]);
+  const helper = source('openscied-b2-burn-lab.js').match(/  function senseBurnNodes\(\) \{[\s\S]*?\n  \}/)[0];
+  const generate = vm.runInNewContext(helper+'\nsenseBurnNodes',{
+    L,state,el:(_tag,_cls,text)=>text,table:(_caption,head,rows)=>({head,rows})
+  });
+  const result = generate();
+  assert.match(result[1],/Dried grass and Dried leaves tie at the displayed precision: \+3 °C and BTB 2\.0 → 2\.9/);
+  assert.match(result[1],/Dried grass: 4 s; Dried leaves: 6 s/);
+  assert.doesNotMatch(result[1],/2\.50|2\.60/,'hidden model readout precision cannot split the measured tie');
+  state.burn.records.splice(1,1);
+  assert.doesNotMatch(generate().slice(1).join(' '), /tie at the displayed precision/,'one fuel cannot tie with itself');
+});
+
+test('Fires describes a student’s 59 mm value as their trial rather than the fixed benchmark', () => {
+  const L=logic('fires');
+  const src=source('openscied-b2-fires.js');
+  const fn=src.match(/  function warmBenchmarkNote\(st\) \{[\s\S]*?\n  \}/)?.[0];
+  assert.ok(fn,'Fires generates an explicit personal-versus-benchmark note');
+  const note=vm.runInNewContext(fn+'\nwarmBenchmarkNote',{L});
+  const data={seed:14,temps:[18,27,43],recorded:[20]};
+  assert.match(note(data),/Your 43 °C reading at 20 min \(Beaker 3: 59 mm\) comes from your simulated trial\. The class example uses a fixed 62 mm target/);
+  assert.equal(note({...data,recorded:[18]}),'');
+  assert.equal(note({...data,temps:[18,27,55]}),'');
+  assert.match(src,/data-sense-foam-body'\) \{\s*const note = warmBenchmarkNote\(state.decomp\)/,'the note is rendered beside the data being explained');
+});
+
+test('Just viewing Peat warming is not evidence; the interface describes which action counts', () => {
+  const html=source('openscied-b2-peat-bog-lab.html');
+  assert.match(html,/id="warming-use-status">Viewing the default graph does not count as a saved test\. Move a slider, enter a year/);
+  const sourceFn=source('openscied-dashboard.js').match(/  function peatBogProgress\(raw\) \{[\s\S]*?\n  \}/)[0];
+  const fn=vm.runInNewContext(sourceFn+'\npeatBogProgress',{
+    PEAT_DEFAULTS:logic('peat-bog').DEFAULTS,PEAT_CLIMATE:{fossil:10,forest:100,year:2100},
+    PEAT_SECTIONS:['warming','bog','overview'],written:(obj,key)=>!!obj[key]?.trim()
+  });
+  const state={v:1,climate:{fossil:10,forest:100,year:2100},warmingUsed:false,lastSection:'warming'};
+  assert.equal(fn(JSON.stringify(state)).started,false,'just opening warming cannot make Peat a Resume candidate');
+  const existing={...state,settings:{wet:30}};
+  assert.match(fn(JSON.stringify(existing)).summary,/warming controls not used/);
+  assert.match(fn(JSON.stringify({...existing,warmingUsed:true})).summary,/warming controls used/);
+});

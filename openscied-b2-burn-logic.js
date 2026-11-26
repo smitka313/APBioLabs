@@ -226,6 +226,23 @@
         massLost: mean(r.map(x => x.massLost)), btbAfter: mean(r.map(x => x.btbAfter)), btbChange: mean(r.map(x => x.btbChange)) };
     }).filter(Boolean);
   }
+  // Compare exactly what the student can read on screen. Never split an
+  // instrument tie by exposing the model's hidden temperature or gas values.
+  function matchingReadouts(groups) {
+    const matches = new Map();
+    for (const group of groups) {
+      const rise = round1(group.tempRise), btb = round1(group.btbAfter);
+      const key = rise + ':' + btb;
+      if (!matches.has(key)) matches.set(key, { rise, btb, groups:[] });
+      matches.get(key).groups.push(group);
+    }
+    return Array.from(matches.values()).filter(match => match.groups.length > 1)
+      .map(({rise,btb,groups: tied}) =>
+        tied.map(g=>g.label).join(' and ') + ' tie at the displayed precision: ' +
+        (rise > 0 ? '+' : '') + rise + ' °C and BTB ' + START_BTB.toFixed(1) + ' → ' + btb.toFixed(1) +
+        '. That does not make the fuels identical. Compare time to catch fire (' +
+        tied.map(g=>g.label + ': ' + round1(g.igniteS) + ' s').join('; ') + ') or mass lost for another line of evidence.');
+  }
   const METRICS = {
     rise: { label: 'Temperature rise (°C)', yLabel: 'Temperature rise (°C, simulated)', yShort: 'Rise (°C, simulated)', get: r => r.tempRise },
     mass: { label: 'Mass lost (g)', yLabel: 'Mass lost (g, simulated)', yShort: 'Lost (g, simulated)', get: r => r.massLost },
@@ -348,5 +365,5 @@
 
   return { num, clamp, hash32, makeRng, FUELS, FUEL_IDS, FUEL, SHORT, SHORT_NARROW, fuelLabel, normalizeFuel, massOf, DISSOLVED_SHARE, btbFor, dropletLevel, DROP_FULL, START_TEMP, START_BTB, MAX_SAMPLES, TAIL, RATE, QUICK_S,
     BTB_LABELS, BTB_RGB, btbLabel, btbColor, btbText, btbFromDissolved, burnResult, instrumentCaption, simSeconds, burnedFraction, stateAt, OBS, OBS_IDS, obsTruth,
-    cleanState, samplesOf, nextSample, tableRows, byFuel, METRICS, chartSeries, checkPrediction, checkDataPick, PICKS, checkPick, claimLevel, evidenceChecks, evidenceFromGroups, evidenceDetail };
+    cleanState, samplesOf, nextSample, tableRows, byFuel, matchingReadouts, METRICS, chartSeries, checkPrediction, checkDataPick, PICKS, checkPick, claimLevel, evidenceChecks, evidenceFromGroups, evidenceDetail };
 });

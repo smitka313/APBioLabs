@@ -454,7 +454,7 @@
       stepsDone:Math.min(conditions.size,2),stepsTotal:2,stepsLabel:'Trials saved for a comparison',
       summary: started ? trials + ' simulated trial' + (trials === 1 ? '' : 's') + ' recorded' +
         (trials>=2 && conditions.size===1 ? ' · The trials use the same conditions' : '') +
-        ' · bog settings ' + (bogChanged ? 'changed' : 'unchanged') + ' · warming ' + (warmChanged ? 'explored' : 'not explored') : 'Not started' };
+        ' · bog settings ' + (bogChanged ? 'changed' : 'unchanged') + ' · warming controls ' + (warmChanged ? 'used' : 'not used') : 'Not started' };
   }
   // Burning Fuels (Unit B.2, Lesson 2): the activity saves the ids of every response; the burn scene may save recorded samples.
   const BURN_SECTIONS = ['overview', 'ideas', 'fuels', 'burn', 'sense', 'sort', 'peat', 'wrapup'];

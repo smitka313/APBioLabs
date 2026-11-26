@@ -461,3 +461,28 @@ test('editable Journey downloads clean actual Turn 8 and energy labels without c
   a.deepEqual(L.readSaved(JSON.stringify(file)),state,'display-safe exports still parse into the original official buckets');
   a.equal(page.read(),raw,'downloading never rewrites the recorded journey');
 });
+
+test('A locked Budget tells students the exact remaining task and returns to Journey without changing rolls', ()=>{
+  let journey=L.initial(1);
+  const baseline=openFictionalJourney(JSON.stringify(journey),'#play');
+  a.equal(baseline.get('#budget-next-step').hidden,true,'the nav banner does not take vertical space in the play viewport');
+  a.match(baseline.get('#budget-ready-next').textContent,/record 10 more rolls/);
+  for(let i=0;i<10;i++)journey=L.record({...journey,pending:1});
+  journey.answers=Object.fromEntries([1,2,3,4,5].map(n=>['q'+n,'An answer']));
+  const page=openFictionalJourney(JSON.stringify(journey),'#sense');
+  a.equal(page.get('[data-page="budget"]').disabled,true,'ten rolls and all Make sense answers are not the gate');
+  a.equal(page.get('#budget-next-step').hidden,false);
+  a.match(page.get('#budget-next-text').textContent,/review 6 missed station cards.*Make sense answers do not unlock it/);
+  page.get('#budget-return-to-journey').click();
+  a.equal(page.get('#play').hidden,false);
+  a.deepEqual(JSON.parse(page.read()).rows,journey.rows);
+  page.get('#finish').click();
+  a.match(page.get('#coverage-reason').textContent,/6 reference cards left.*No extra rolls are needed/);
+  for(let i=0;i<5;i++)page.get('#coverage-continue').click();
+  a.match(page.get('#coverage-reason').textContent,/One reference card left.*unlocks the optional Budget/);
+  a.equal(page.get('[data-page="budget"]').disabled,true);
+  page.get('#coverage-continue').click();
+  a.equal(page.get('[data-page="budget"]').disabled,false);
+  a.equal(page.get('#budget-next-step').hidden,true);
+  a.deepEqual(JSON.parse(page.read()).rows,journey.rows);
+});

@@ -32,7 +32,7 @@ const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r =>
     await q.close();
     await p.reload(); await p.waitForSelector('#peat-bog-progress');
     const txt = await p.locator('#peat-bog-progress').innerText();
-    T.ok(/2 simulated trials recorded/.test(txt) && /bog settings changed/.test(txt) && /warming not explored/.test(txt), 'progress text: ' + txt);
+    T.ok(/2 simulated trials recorded/.test(txt) && /bog settings changed/.test(txt) && /warming controls not used/.test(txt), 'progress text: ' + txt);
     T.ok(/^Continue/.test(await p.locator('#peat-bog-open').innerText()) && /openscied-b2-peat-bog-lab\.html#(bog|trials)/.test(await p.locator('#peat-bog-open').getAttribute('href')), 'Continue link returns to the last section');
     T.ok(/Resume Peat Bog Carbon Lab/.test(await p.locator('#openscied-resume-link').innerText()), 'resume card names the activity');
     await p.evaluate(k => localStorage.setItem(k, '{broken'), KEY); await p.reload(); await p.waitForSelector('#peat-bog-progress');

@@ -172,14 +172,18 @@ const ann = p => p.locator('#announcer').textContent();
     const c2 = await T.ctxFor(browser, { width: 1366, height: 900 });
     const q = await c2.newPage(); await stub(q);
     await q.goto(server.url + PAGE + '#warming'); await q.waitForFunction(() => window.B2Peat && document.querySelector('.step.is-current'));
+    T.ok(/Viewing the default graph does not count as a saved test/.test(await q.locator('#warming-use-status').innerText()) &&
+      await q.evaluate(k => JSON.parse(localStorage.getItem(k))?.warmingUsed !== true, KEY),
+      'C4: entering the warming page does not claim a tested scenario');
     await q.fill('#n-year', '2060'); await q.press('#n-year', 'Enter');
     await q.fill('#n-year', '2100'); await q.press('#n-year', 'Enter');
+    T.ok(/You used a warming control/.test(await q.locator('#warming-use-status').innerText()), 'C4: changing a control updates the nearby explanation');
     const saved = await q.evaluate(k => JSON.parse(localStorage.getItem(k)), KEY);
     T.ok(saved.warmingUsed === true && saved.climate.year === 2100 && saved.climate.fossil === 10 && saved.climate.forest === 100, 'C4: the page saves warmingUsed even though the climate ends on today\'s values');
     const d = await c2.newPage(); await stub(d);
     await d.goto(server.url + 'openscied-dashboard.html'); await d.waitForSelector('#peat-bog-progress');
-    T.ok(/warming explored/.test(await d.locator('#peat-bog-progress').innerText()), 'C4: dashboard says warming explored: ' + await d.locator('#peat-bog-progress').innerText());
-    T.ok(!/warming not explored/.test(await d.locator('body').innerText()), 'C4: "warming not explored" appears nowhere on the dashboard (including the Continue banner)');
+    T.ok(/warming controls used/.test(await d.locator('#peat-bog-progress').innerText()), 'C4: dashboard says warming controls used: ' + await d.locator('#peat-bog-progress').innerText());
+    T.ok(!/warming controls not used/.test(await d.locator('body').innerText()), 'C4: "warming controls not used" appears nowhere on the dashboard (including the Continue banner)');
     T.ok(JSON.stringify(saved.responseIds) === JSON.stringify(['graph-answer']) && !saved.fields['graph-answer'] &&
       !/answers saved/.test(await d.locator('#peat-bog-progress').innerText()),
       'D1: Peat declares the graph response field without claiming an untouched answer was saved');
@@ -191,10 +195,10 @@ const ann = p => p.locator('#announcer').textContent();
     // old saves (no flag) still work: changed climate counts, untouched climate does not
     await d.evaluate(k => localStorage.setItem(k, JSON.stringify({ v: 1, settings: { wet: 30 }, climate: { fossil: 10, forest: 100, year: 2100 }, trials: [] })), KEY);
     await d.reload(); await d.waitForSelector('#peat-bog-progress');
-    T.ok(/warming not explored/.test(await d.locator('#peat-bog-progress').innerText()), 'C4: an old save with untouched climate still reads "not explored"');
+    T.ok(/warming controls not used/.test(await d.locator('#peat-bog-progress').innerText()), 'C4: an old save with untouched climate still reads "controls not used"');
     await d.evaluate(k => localStorage.setItem(k, JSON.stringify({ v: 1, settings: { wet: 30 }, climate: { fossil: 14, forest: 100, year: 2100 }, trials: [] })), KEY);
     await d.reload(); await d.waitForSelector('#peat-bog-progress');
-    T.ok(/warming explored/.test(await d.locator('#peat-bog-progress').innerText()), 'C4: an old save with a changed climate still reads "explored"');
+    T.ok(/warming controls used/.test(await d.locator('#peat-bog-progress').innerText()), 'C4: an old save with a changed climate still reads "controls used"');
     await c2.close();
   } finally { await browser.close(); server.close(); }
   T.done('t110-b2-peat-bog-audit');

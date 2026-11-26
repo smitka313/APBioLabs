@@ -204,6 +204,8 @@
         h('td', { text: L.btbText(r.btbBefore) + ' → ' + L.btbText(r.btbAfter) }), h('td', { class: 'num', text: r.tempBefore + ' → ' + r.tempAfter }), h('td', { class: 'num', text: r.massBefore.toFixed(1) + ' → ' + r.massAfter.toFixed(1) }), h('td', { text: obsText(r.obs) }))));
       t.appendChild(tb); tw.appendChild(t); wrap.appendChild(tw);
       wrap.appendChild(h('p', { class: 'bn-note', 'data-bn': 'temp-note', text: 'A rise of only a degree or two can be thermometer noise (the laser thermometer shows whole degrees). Compare fuels with big differences.' }));
+      L.matchingReadouts(L.byFuel(rows)).forEach(note =>
+        wrap.appendChild(h('p', { class: 'bn-note', 'data-bn':'matching-readouts', text:note })));
       const chips = h('div', { class: 'bn-chips', role: 'group', 'aria-label': 'Chart shows' }, h('span', { class: 'bn-legend', text: 'Chart shows:' }));
       Object.keys(L.METRICS).forEach(k => {
         const b = h('button', { type: 'button', class: 'bn-chip', 'aria-pressed': metric === k ? 'true' : 'false', text: L.METRICS[k].label });

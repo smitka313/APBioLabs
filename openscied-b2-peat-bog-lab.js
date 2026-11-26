@@ -803,7 +803,16 @@
     const tt = svgEl('text', { x: 84, y: 34, class: 'lbl-b' }, svg); tt.textContent = row.y + ': +' + row.T.toFixed(1) + ' °C'; paint(tt, 'fill', '--b2-heat-t');
     svg.setAttribute('aria-label', 'Simulated greenhouse effect in ' + row.y + ': ' + Math.round(row.C) + ' ppm of carbon dioxide in the air and ' + row.T.toFixed(1) + ' degrees Celsius of warming since the 1800s. Of 6 heat arrows, ' + trapped + ' are sent back down to the ground and ' + (N - trapped) + ' escape to space.');
   }
+  function warmingControlsUsed() {
+    return state.warmingUsed || CLIMATE_IDS.some(key=>state.climate[key] !== { fossil:10, forest:100, year:2100 }[key]);
+  }
+  function updateWarmingUseStatus() {
+    const status = byId('warming-use-status');
+    if (status && warmingControlsUsed()) status.textContent =
+      'You used a warming control. Your simulated projection uses the settings below.';
+  }
   function updateClimate(now) {
+    updateWarmingUseStatus();
     const c = state.climate, ids = { fossil: byId('fossil'), forest: byId('forest'), year: byId('year') };
     syncControl(ids.fossil, byId('n-fossil'), c.fossil, c.fossil.toFixed(1) + ' gigatonnes of carbon per year');
     syncControl(ids.forest, byId('n-forest'), c.forest, c.forest + ' percent of today');
@@ -843,6 +852,7 @@
     byId('sendBog').addEventListener('click', function () {
       const vals = L.bogForYear(rows, state.climate.year);
       state.warmingUsed = true;
+      updateWarmingUseStatus();
       const c = state.climate;
       const previous = state.climateTests.at(-1);
       if (!previous || CLIMATE_IDS.some(k => previous[k] !== c[k])) {

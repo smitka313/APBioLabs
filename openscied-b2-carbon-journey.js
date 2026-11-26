@@ -73,17 +73,36 @@
   });
   let budgetUI;
   const canOpenBudget = () => state.done || saveSession?.read(budgetKey) != null;
-  function updateBudgetGate() {
+  function budgetNextStep() {
+    if (state.rows.length < 10) {
+      const remaining = 10 - state.rows.length;
+      return 'Optional Budget: record ' + remaining + ' more roll' + (remaining === 1 ? '' : 's') +
+        ', then review any missed station cards and finish the Journey.';
+    }
+    const missing = L.missingCoverage(state).length;
+    if (missing) {
+      return 'Optional Budget: review ' + missing + ' missed station card' + (missing === 1 ? '' : 's') +
+        ' on the Journey tab and finish. Make sense answers do not unlock it.';
+    }
+    return 'Optional Budget: choose Finish journey on the Journey tab. Make sense answers do not unlock it.';
+  }
+  function updateBudgetGate(page = section) {
     const budget = $('[data-page="budget"]'), hint = $('#budget-unlock');
     budget.disabled = !canOpenBudget();
     hint.hidden = !budget.disabled;
+    const next = budgetNextStep();
+    hint.textContent = next;
+    const text = $('#budget-next-text'), banner = $('#budget-next-step'), inline = $('#budget-ready-next');
+    if (text) text.textContent = next;
+    if (banner) banner.hidden = !budget.disabled || page === 'play' || page === 'budget';
+    if (inline) { inline.hidden = !budget.disabled; inline.textContent = next; }
   }
   function setPage(id, saveSection = true) {
     if (id === 'budget' && !canOpenBudget()) {
       id = 'play';
-      announce('Finish your carbon journey to unlock the optional Carbon & Energy Budget.');
+      announce(budgetNextStep());
     }
-    updateBudgetGate();
+    updateBudgetGate(id);
     const budgeting = id === 'budget';
     if (!budgeting) {
       section = id;
@@ -114,6 +133,12 @@
     if (budgeting) $('#cb-title')?.focus({preventScroll:true});
   }
   document.querySelectorAll('[data-page]').forEach(b => b.addEventListener('click', () => setPage(b.dataset.page)));
+  $('#budget-return-to-journey')?.addEventListener('click', () => {
+    setPage('play');
+    if (!$('#coverage-continue').hidden) $('#coverage-continue').focus();
+    else if (!$('#finish').hidden) $('#finish').focus();
+    else if (!$('#roll').hidden) $('#roll').focus();
+  });
   $('[data-show-evidence]').addEventListener('click', () => setPage('evidence'));
   const questions = [
     ['q1', 'Your atom started in atmospheric carbon dioxide. Is that a rule of this model or a claim about where all Earth’s carbon is? Explain.'],
@@ -249,7 +274,8 @@
         (L.current(state) === 'soil' && ['herbivores','omnivores'].includes(review.from)
           ? 'Your atom stayed in Soil and rock. Look at how carbon moves through animals on this reference card. Your dice, location and journal stay the same.'
           : 'Your atom has stayed in one place or repeated a route. Read a card from another part of the cycle before your next roll. This does not change your dice or journal.') :
-        'Your rolls are complete. Review the missing station evidence before finishing (' + missing.length + ' to read).';
+        (missing.length === 1 ? 'One reference card left. Reading it completes the Journey and unlocks the optional Budget.' :
+          missing.length + ' reference cards left before you can finish the Journey and unlock the optional Budget. No extra rolls are needed.');
       $('#coverage-route').textContent = review.process + ': ' + name(review.from) + ' → ' + name(review.to);
       $('#coverage-card').textContent = L.cardText(review.text) + ' ' + L.energyMeaning(review.energy);
       $('#coverage-continue').textContent = state.coverageCheckpoint === 'finish' && missing.length === 1 ?
