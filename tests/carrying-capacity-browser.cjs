@@ -559,7 +559,7 @@ async function dashboardRelease(browser, base) {
       await image.evaluate(async el => {
         await el.decode();
         const r = el.getBoundingClientRect();
-        return el.currentSrc.endsWith('/assets/openscied-atlas-b1-carrying-capacity.svg') &&
+        return el.currentSrc.endsWith('/assets/openscied-activity-b1-carrying-capacity.webp') &&
           el.naturalWidth > 0 && el.naturalHeight > 0 && r.width > 100 && Math.abs(r.width / r.height - 1.6) < 0.04;
       }), 'the linked dashboard card decodes the revised atlas art and preserves the standard 8:5 crop');
     await shot(p, '1366-light-dashboard-carrying-capacity', true);
