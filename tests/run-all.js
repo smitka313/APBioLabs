@@ -35,6 +35,7 @@ const GROUPS = {
   'a11y-keys': ['t59-a11y keys'],
   'a11y-resp': ['t59-a11y resp'],
 };
+GROUPS.core.push('t151-teacher-exemplar-print');
 GROUPS.a11y = [...GROUPS['a11y-axe'], ...GROUPS['a11y-keys'], ...GROUPS['a11y-resp']];
 GROUPS.checklist = [...GROUPS.core, ...GROUPS.e2e, ...GROUPS.science, ...GROUPS.a11y];
 const HELPERS = new Set(['t59-drive', 't59-lib']);   // modules used by other tests, not tests themselves

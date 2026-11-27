@@ -444,7 +444,7 @@
   // Open a local, report-only document on a direct user gesture. A native
   // print prompt must not hold up the activity tab or run its print listeners.
   // The snapshot has already passed the activity's export check.
-  function openPrintView(report, preview) {
+  function openPrintView(report, preview, exemplar = false) {
     let tab;
     try {
       tab = root.open?.('', '_blank');
@@ -485,7 +485,9 @@
       shell.setAttribute('aria-labelledby', heading.id);
       const tools = node('div', 'osr-tools');
       const print = action('Print or save as PDF', true);
-      const help = node('p', 'osr-screen-help', 'Choose “Save as PDF” in the print window. ' + HAND_IN_REPORT + ' Close this tab to return to your activity.');
+      const help = node('p', 'osr-screen-help', exemplar
+        ? 'Choose “Save as PDF” in the print window. Close this tab to return to the teacher notes.'
+        : 'Choose “Save as PDF” in the print window. ' + HAND_IN_REPORT + ' Close this tab to return to your activity.');
       const status = node('p', 'osr-live', cssText ? '' : 'Preparing the print layout…');
       status.setAttribute('role', 'status');
       print.disabled = !cssText;
@@ -708,5 +710,18 @@
     return { open: show, destroy() { stopPlacing(); root.removeEventListener('beforeprint', beforePrint); if (dialog.open) { dialog.close(); clearPrint(); } dialog.remove(); tray.remove(); } };
   }
 
-  return Object.freeze({ mount, normalize, word });
+  // Use the student paper, seal and print pagination without mounting a lab or touching its saves.
+  function openExemplar(sample, content) {
+    const report = normalize({ title: sample.title, unit: sample.unit, source: sample.source,
+      status: 'final', student: sample.recorder ? null : { name: sample.name, period: sample.period }, recorder: sample.recorder,
+      datasetId: sample.datasetId, sections: [{ title: 'Exemplar', items: [{ type: 'text', text: content.textContent.trim() }] }]
+    }, sample.date);
+    const paper = article(report, 'osr-exemplar-title');
+    paper.querySelector('.osr-section')?.remove();
+    paper.querySelector('.osr-header').append(node('p', 'osr-source', 'Teacher exemplar · fictional work, not a student submission.'));
+    paper.append(...content.childNodes);
+    return openPrintView(report, paper, true);
+  }
+
+  return Object.freeze({ mount, normalize, word, openExemplar });
 }));

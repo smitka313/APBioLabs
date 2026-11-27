@@ -1848,10 +1848,10 @@
   function printRun(a, body) { // a: {left, right, bottomLeft} plain text; body: the page HTML. A real table so every browser repeats the header group.
     return `<table class="pr-t" role="presentation"><thead class="pr-thead print-run" aria-hidden="true"><tr><td><span>${esc(a.left)}</span><span>${esc(a.right)}</span><span>${esc(a.bottomLeft)}</span></td></tr></thead><tbody><tr><td class="pr-body">${body}</td></tr></tbody></table>`;
   }
-  function printPageStyle(id, a, margin) {
+  function printPageStyle(id, a, margin, body = document.body) {
     const f = 'font: 9pt Arial, sans-serif; color: #444;';
     const boxes = HAS_MARGIN_BOXES ? ` @top-left { content: ${cssStr(a.left)}; ${f} } @top-right { content: ${cssStr(a.right)}; ${f} } @bottom-left { content: ${cssStr(a.bottomLeft)}; ${f} } @bottom-right { content: "Page " counter(page) " of " counter(pages); ${f} }` : '';
-    document.body.classList.toggle('pr-fallback', !HAS_MARGIN_BOXES);
+    body.classList.toggle('pr-fallback', !HAS_MARGIN_BOXES);
     return h('style', { id, text: `@page { size: letter; margin: ${margin};${boxes} }` });
   }
   const labTag = () => { const m = /^lab(\d\d)$/.exec(PAGE.id); return m ? 'Lab' + m[1] : 'Lab'; };
@@ -2057,10 +2057,12 @@
 
   /* Print-styled report view (body.report-mode) for Save as PDF. */
   let reportOpener = null, restoreTheme = null;
+  function reportHeadHtml(rep) {
+    return `<header class="rv-head">${rep.stamp ? `<img class="rv-stamp" src="${rep.stamp.dataUrl}" alt="${esc(rep.stamp.alt)}" width="110" height="110">` : ''}<p class="rv-eyebrow">AP Biology lab report</p><h1 id="rv-title">${esc(rep.docTitle || rep.title)}</h1>
+      <dl class="rv-info"><div><dt>Name</dt><dd>${esc(rep.name || '(not entered)')}</dd></div><div><dt>Class period</dt><dd>${esc(rep.period || '—')}</dd></div><div><dt>Date</dt><dd>${esc(rep.date)}</dd></div><div><dt>Dataset ID</dt><dd>${esc(rep.datasetId)}</dd></div>${rep.datasetOwner ? `<div><dt>Dataset started by</dt><dd>${esc(ownerText(rep.datasetOwner))}</dd></div>` : ''}${rep.datasetOwnerUnverified ? `<div><dt>Dataset owner</dt><dd>${esc(UNVERIFIED_TEXT)}</dd></div>` : ''}</dl><p class="rv-sim">${esc(SIM_REPORT)}</p></header>`;
+  }
   function reportHtml(rep) {
-    const out = [];
-    out.push(`<header class="rv-head">${rep.stamp ? `<img class="rv-stamp" src="${rep.stamp.dataUrl}" alt="${esc(rep.stamp.alt)}" width="110" height="110">` : ''}<p class="rv-eyebrow">AP Biology lab report</p><h1 id="rv-title">${esc(rep.docTitle || rep.title)}</h1>
-      <dl class="rv-info"><div><dt>Name</dt><dd>${esc(rep.name || '(not entered)')}</dd></div><div><dt>Class period</dt><dd>${esc(rep.period || '—')}</dd></div><div><dt>Date</dt><dd>${esc(rep.date)}</dd></div><div><dt>Dataset ID</dt><dd>${esc(rep.datasetId)}</dd></div>${rep.datasetOwner ? `<div><dt>Dataset started by</dt><dd>${esc(ownerText(rep.datasetOwner))}</dd></div>` : ''}${rep.datasetOwnerUnverified ? `<div><dt>Dataset owner</dt><dd>${esc(UNVERIFIED_TEXT)}</dd></div>` : ''}</dl><p class="rv-sim">${esc(SIM_REPORT)}</p></header>`);
+    const out = [reportHeadHtml(rep)];
     if (rep.keyResults && rep.keyResults.length) { const anyNote = rep.keyResults.some(r => r.note); out.push(`<section class="rv-sec"><h2>Key results</h2><table class="rv-table"><thead><tr><th>Result</th>${anyNote ? '<th>Notes</th>' : ''}</tr></thead><tbody>${rep.keyResults.map(r => `<tr><td><strong>${esc(r.label)}</strong>: ${esc(r.text)}</td>${anyNote ? `<td>${esc(r.note)}</td>` : ''}</tr>`).join('')}</tbody></table></section>`); }
     if (!rep.sections.length) out.push('<p>No answers or data yet.</p>');
     rep.sections.forEach((s, si) => {
@@ -2129,6 +2131,19 @@
     return rep;
   }
   Lab.report = {
+    // Protected exemplar preview uses fictional inputs, never the student collector.
+    exemplarPaper(view, sample, content) {
+      const rep = { ...sample, date: sample.dateLabel, docTitle: sample.title };
+      if (sample.datasetId) rep.stamp = Lab.stamp.png({ datasetId: sample.datasetId, date: sample.date });
+      const run = { left: rep.name + (rep.period ? ' · Class ' + rep.period : ''), right: rep.title,
+        bottomLeft: rep.datasetId ? 'Dataset ID: ' + rep.datasetId : '' };
+      const paper = view.createElement('article');
+      paper.className = 'rv-paper';
+      paper.innerHTML = printRun(run, reportHeadHtml(rep));
+      paper.querySelector('.pr-body').append(view.importNode(content, true));
+      view.head.append(printPageStyle('rv-page-style', run, '.7in .6in .6in', view.body));
+      return paper;
+    },
     collect: collectReport,
     filename: () => reportFileBase(),
     open: openReport, close: closeReport,

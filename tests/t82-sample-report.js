@@ -29,5 +29,6 @@ test('the teacher guide links to a gate and the gate has no readable example con
   assert.match(locked, /type="password"/);
   assert.match(locked, /crypto\.subtle\.decrypt/);
   assert.match(locked, /^const P = \{.*"n":310000\};$/m);
-  assert.ok(!publicCopy.test(locked) && !locked.includes('lab5-model-report'));
+  // The public bootstrap may name a selector; the matching report element and text stay encrypted.
+  assert.ok(!publicCopy.test(locked) && !/\bid=["']lab5-model-report["']/i.test(locked));
 });
