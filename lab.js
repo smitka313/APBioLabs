@@ -2500,7 +2500,7 @@
     const status = h('p', { class: 'tool-status', 'aria-live': 'polite' });
     const note = previewNote();
     const say = (t, bad) => { status.textContent = t; status.classList.toggle('is-bad', !!bad); };
-    const docxBtn = h('button', { class: 'btn btn--primary', type: 'button', onclick: async () => {
+    const docxBtn = h('button', { id: 'lab-report-download-word', class: 'btn btn--primary', type: 'button', onclick: async () => {
       docxBtn.disabled = true; say('Building your Word file…');
       try {
         const name = reportFileBase() + '.docx';
@@ -2518,7 +2518,7 @@
         else { console.error(e); say('Something went wrong building the Word file. Use Save as PDF instead.', true); }
       } finally { docxBtn.disabled = false; }
     } }, 'Download Word (.docx)');
-    const pdfBtn = h('button', { class: 'btn', type: 'button', onclick: () => openReport({ print: true, opener: pdfBtn }) }, 'Print or save as PDF');
+    const pdfBtn = h('button', { id: 'lab-report-print-pdf', class: 'btn', type: 'button', onclick: () => openReport({ print: true, opener: pdfBtn }) }, 'Print or save as PDF');
     const prevBtn = h('button', { class: 'btn report-preview-btn', type: 'button', onclick: () => openReport({ opener: prevBtn }) }, 'Preview my report');
     const tlBox = h('input', { type: 'checkbox', id: 'tl-include', checked: tlInclude() || null, onchange: () => store.set('tl-include', tlBox.checked) });
     const tlRow = h('label', { class: 'check tl-include', for: 'tl-include', hidden: true }, tlBox, ' Include my timelapse in the report');

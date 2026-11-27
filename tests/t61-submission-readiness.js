@@ -14,8 +14,11 @@ const T = require('./_h');
       const transferHelp = await p.locator('details.move-work .inner').textContent();
       T.ok(/answers and Dataset ID/.test(transferHelp) && /cannot restore editable lab progress/.test(transferHelp), lab + ': transfer instructions distinguish progress backups from reports');
 
-      T.ok(await p.getByRole('button', { name: 'Download Word (.docx)', exact: true }).isEnabled(), lab + ': Word download enabled with incomplete work');
-      T.ok(await p.getByRole('button', { name: 'Print or save as PDF', exact: true }).isEnabled(), lab + ': PDF enabled with incomplete work');
+      const toolbar = p.locator('#submit .report-bar');
+      const word = toolbar.locator('#lab-report-download-word').and(toolbar.getByRole('button', { name: 'Download Word (.docx)', exact: true }));
+      const pdf = toolbar.locator('#lab-report-print-pdf').and(toolbar.getByRole('button', { name: 'Print or save as PDF', exact: true }));
+      T.ok(await word.isVisible() && await word.isEnabled(), lab + ': labeled Word download visible and enabled with incomplete work');
+      T.ok(await pdf.isVisible() && await pdf.isEnabled(), lab + ': labeled PDF action visible and enabled with incomplete work');
       T.ok(/saved in this browser; it has not been sent to your teacher/i.test(text), lab + ': saved work is not represented as submitted');
       T.ok(/activities remaining/i.test(text), lab + ': unfinished activity counts visible');
       const resume = ready.getByRole('button', { name: 'Continue unfinished work' });
