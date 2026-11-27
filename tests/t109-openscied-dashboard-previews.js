@@ -90,8 +90,8 @@ const CORRIDOR_PREVIEW='assets/openscied-atlas-b4-wildlife-corridor.svg';
             complete: img.complete, widthAttr: img.getAttribute('width'), heightAttr: img.getAttribute('height')} : null
         };
       }));
-      T.ok(m.length===files.length && m.every(x=>x.img?.src?.endsWith('.svg') && x.img.alt===''),
-        width + ' px: all published activities have their own decorative SVG image');
+      T.ok(m.length===files.length && m.every((x,i)=>x.img?.alt==='' && (i===0 ? x.img.src===FIELD_PREVIEW : x.img.src.endsWith('.svg'))),
+        width + ' px: all published activities have their own decorative image');
       const actionCounts = await Promise.all((await p.locator('.dashboard-activity').all()).map(card => card.getByRole('link').count()));
       T.ok(m.every(x => x.previewHidden && /^Open activity: .+/.test(x.label)) &&
         new Set(m.map(x => x.label)).size === files.length && actionCounts.every(n => n === 1),
