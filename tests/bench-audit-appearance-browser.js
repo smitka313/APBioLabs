@@ -14,7 +14,7 @@ const pages=[
  ['ap-biology.html',null],
  ['openscied-dashboard.html',null]
 ];
-const privacy='This site counts anonymous page visits without cookies. Nothing you type, including your name and answers, is sent anywhere.';
+const privacy='This site counts page visits without cookies. Student names and answers stay in this browser unless you choose to share them.';
 const screenshot=process.env.BENCH_AUDIT_SCREENSHOTS;
 (async()=>{
  let browser,site;
@@ -38,11 +38,17 @@ const screenshot=process.env.BENCH_AUDIT_SCREENSHOTS;
      await footer.waitFor();
      assert.equal(await p.locator('script[data-goatcounter]').count(),1,'tracking tag remains on '+page);
      const text=await footer.evaluate(a=>a.closest('footer').innerText);
-     assert.ok(text.includes(privacy),page+' has the standard privacy line');
+     assert.equal(text.split(privacy).length-1,1,page+' has exactly one standard privacy line');
      assert.doesNotMatch(text,/GoatCounter/i,page+' has no vendor-facing footer wording');
      if(course){
       assert.equal(await bar.count(),1);
-      assert.ok((await bar.locator('.bench-activity-course').textContent()).endsWith(course));
+      const coursePath=page.startsWith('lab')?'ap-biology.html':'openscied-dashboard.html';
+      const courseLink=bar.locator('a[href$="/'+coursePath+'"]');
+      assert.equal(await courseLink.count(),1,page+' has exactly one link back to its course');
+      assert.ok((await courseLink.textContent()).endsWith(course),page+' labels the course link');
+      const helpLink=bar.locator('a[href$="/privacy-help.html#saving"]');
+      assert.equal(await helpLink.count(),1,page+' has exactly one Saving & help link');
+      assert.equal((await helpLink.textContent()).trim(),'Saving & help');
       const logo=bar.locator('.bench-footer-'+theme);
       await logo.evaluate(img=>img.decode());
       assert.ok(await logo.isVisible(),page+' uses the current theme’s logo');
