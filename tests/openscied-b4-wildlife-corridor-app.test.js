@@ -14,6 +14,8 @@ function browser(backing=new Map(),hash='',name='QA Student'){
     get textContent(){return [this.text||'',...this.nodes.map(n=>n.textContent)].join(' ');}
     setAttribute(n,v){this[n]=String(v);}
     removeAttribute(n){delete this[n];}
+    closest(s){return s==='.wc-nav'?this.navAncestor??null:null;}
+    toggleAttribute(n,force){const on=force===undefined?!Object.hasOwn(this,n):Boolean(force);if(on)this.setAttribute(n,'');else this.removeAttribute(n);return on;}
     replaceChildren(...nodes){this.nodes=nodes;}
     append(...nodes){this.nodes.push(...nodes);}
     checkValidity(){return true;}
@@ -25,7 +27,7 @@ function browser(backing=new Map(),hash='',name='QA Student'){
     click(){this.fire('click');}
   }
   const ids=new Map(), lists={}, node=id=>ids.has(id)?ids.get(id):ids.set(id,new Node()).get(id);
-  lists['[data-wc-go]']=['predict','model','explain'].map(step=>Object.assign(new Node(),{dataset:{wcGo:step}}));
+  const rail=node('step-rail'); lists['[data-wc-go]']=['predict','model','explain'].map(step=>Object.assign(new Node(),{dataset:{wcGo:step},navAncestor:rail}));
   lists['[data-wc-step]']=['predict','model','explain'].map(step=>Object.assign(new Node(),{dataset:{wcStep:step}}));
   lists['[name="wc-prediction"]']=['connected','same','divided'].map(value=>Object.assign(new Node(),{value}));
   lists['[data-wc-crossing-slot]']=[0,1,2].map(i=>Object.assign(new Node(),{dataset:{wcCrossingSlot:String(i)}}));
