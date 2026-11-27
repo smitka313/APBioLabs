@@ -1,0 +1,29 @@
+/* A text cue complements color and the existing completion ticks. Keep the AP
+   rails compact, and leave the activity layouts and native controls in place. */
+@media screen {
+  [data-blb-step-nav] .blb-step-status {
+    color: var(--muted);
+    font: 700 .66rem/1.05 var(--f-body, system-ui, sans-serif);
+    letter-spacing: .015em;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  /* Badges do not change the existing rail height or width during load. */
+  nav[data-blb-step-nav] :is(a,button)[data-blb-step-state] { position: relative; }
+  nav[data-blb-step-nav] :is(a,button) > .blb-step-status {
+    position: absolute;
+    inset: auto .18rem .06rem;
+    text-align: center;
+    font-size: .59rem;
+  }
+  [data-blb-step-nav] [data-blb-step-state="current"] .blb-step-status,
+  [data-blb-step-nav] [data-blb-step-state="complete"] .blb-step-status { color: var(--accent); }
+  .blb-step-unlock {
+    max-inline-size: 72ch;
+    margin: .3rem 0 .65rem;
+    color: var(--muted);
+    font-size: .9rem;
+    overflow-wrap: break-word;
+  }
+}
+@media print { .blb-step-status, .blb-step-unlock { display: none !important; } }

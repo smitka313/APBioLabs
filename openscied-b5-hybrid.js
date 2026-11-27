@@ -63,7 +63,8 @@ function readyIce(){return validYear(s.year)&&written('prediction');}
 function readyFamily(){return s.islands.length===2&&[1,2].every(g=>D.family.some(k=>k.group===g&&s.traces.includes(k.id)))&&written('evidence');}
 function readyClaim(){return readyIce()&&readyFamily()&&s.rolls===40&&written('claim')&&written('limit')&&s.verdict==='clue';}
 function gate(step){const idx=routes.indexOf(step);return idx===0||(idx>0&&readyIce()&&(idx===1||(readyFamily()&&(idx===2||s.rolls===40))));}
-function done(){return Number(readyIce())+Number(readyIce()&&readyFamily())+Number(readyIce()&&readyFamily()&&s.rolls===40)+Number(s.finished);}
+function completeSteps(){const ice=readyIce(),family=ice&&readyFamily();return [ice,family,family&&s.rolls===40,s.finished];}
+function done(){return completeSteps().filter(Boolean).length;}
 const receipt=window.OpenSciEdB5Workspace.mount({output:$('save'),key:KEY,session,canSave,restored:()=>legacy,getRecord:()=>s});
 let writeFailed=false;
 function saveStatus(){
@@ -91,7 +92,14 @@ function controls(){
  saveStatus();$('backup').disabled=!started;
  for(const k of ['claim','limit'])$(k).readOnly=s.finished;
  all('input[name=hy-check]').forEach(e=>e.disabled=s.finished);
- all('[data-step],[data-go]').forEach(b=>{b.disabled=!gate(b.dataset.step||b.dataset.go);if(b.hasAttribute('data-step')){if(b.dataset.step===s.step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');}});
+ const completed=completeSteps();
+ all('[data-step],[data-go]').forEach(b=>{
+   b.disabled=!gate(b.dataset.step||b.dataset.go);
+   if(b.hasAttribute('data-step')){
+     if(b.dataset.step===s.step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');
+     b.toggleAttribute('data-nav-step-complete',Boolean(completed[routes.indexOf(b.dataset.step)]));
+   }
+ });
 }
 function go(k,focus=true){
  if(!gate(k))return;

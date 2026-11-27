@@ -39,6 +39,12 @@ function openFictionalJourney(snapshot, hash = '', budgetRecord, shared) {
       get id() { return this.localId; },
       value: '', textContent: 'Download journey and budget', dataset: {}, style: {}, events: {},
       classList: { toggle() {}, add() {}, remove() {} },
+      attrs: new Map(),
+      toggleAttribute(name, force) {
+        const present = force === undefined ? !this.attrs.has(name) : Boolean(force);
+        if (present) this.attrs.set(name, ''); else this.attrs.delete(name);
+        return present;
+      },
       addEventListener(event, handler) { this.events[event] = handler; },
       click() { if (typeof this.download === 'string') downloads.push(this.download); else this.events.click?.(); },
       querySelectorAll() { return []; }, querySelector: get, append() {}, remove() {}, replaceChildren() {}, setAttribute() {},

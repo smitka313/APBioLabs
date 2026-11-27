@@ -53,7 +53,8 @@ function candidate(k){return s.choices[k]===null?null:D.roster(s.id,s.rosterVers
 function suitable(k){const c=candidate(k);return Boolean(c&&D.suitability(k,c).supported);}
 function readyTraits(){return s.genes.length===3&&written('traitNote')&&(
  s.rosterVersion===1?s.choices.north!==null&&s.choices.south!==null:suitable('north')&&suitable('south'));}
-function doneCount(){return Number(s.locked)+Number(s.locked&&readyFossils())+Number(s.locked&&readyFossils()&&readyTraits())+Number(s.finished);}
+function completeSteps(){const fossils=s.locked&&readyFossils();return [s.locked,fossils,fossils&&readyTraits(),s.finished];}
+function doneCount(){return completeSteps().filter(Boolean).length;}
 function readyFinal(){return s.locked&&readyFossils()&&readyTraits()&&s.limit&&written('revised')&&written('future');}
 function gate(route){
  const i=routes.indexOf(route);
@@ -68,7 +69,12 @@ function nextHint(){
 function controls(){
  const done=doneCount();
  $('progress').textContent=done+' of 4 steps complete.'+(!s.locked?' Save your first argument to open the fossil archive.':!readyFossils()?' Pin both fossil types and write a comparison to unlock traits.':!readyTraits()?' Open all three gene cards and test both habitats to unlock revision.':s.finished?' Investigation complete. Your final report is ready.':'');
- all('[data-step]').forEach(b=>{b.disabled=!gate(b.dataset.step);if(b.dataset.step===s.step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');});
+ const completed=completeSteps();
+ all('[data-step]').forEach(b=>{
+   b.disabled=!gate(b.dataset.step);
+   if(b.dataset.step===s.step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');
+   b.toggleAttribute('data-nav-step-complete',Boolean(completed[routes.indexOf(b.dataset.step)]));
+ });
  all('[data-go]').forEach(b=>b.disabled=!gate(b.dataset.go));
  $('gate-cycles').textContent=s.locked?'First argument saved. To revise it, use Step 4.':nextHint();
  $('gate-fossils').textContent=readyFossils()?'':'Pin one polar bear fossil and one brown bear fossil, then write a comparison.';

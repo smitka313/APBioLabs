@@ -542,6 +542,8 @@
       const ok=ready(target) && (!running || !['compare','explain'].includes(target));
       if ('disabled' in b) b.disabled=!ok;
       b.setAttribute('aria-disabled',String(!ok));
+      if (b.closest('.hb-steps')) b.setAttribute('data-nav-step-unlock',ok?'':running&&ready(target)?
+        'Wait for the current seed release to finish.':nextStepHint());
     }
   }
   function render() {

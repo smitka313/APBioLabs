@@ -133,6 +133,9 @@
       const step=b.dataset.step;
       b.disabled=step==='explore'&&!p.questions||step==='explain'&&!p.evidence;
       b.setAttribute('aria-current',step===state.step?'step':'false');
+      b.toggleAttribute('data-nav-step-complete',step==='orient'?p.questions:step==='explore'?p.evidence:p.complete);
+      b.setAttribute('data-nav-step-unlock',!b.disabled?'':!p.questions?'Write two different investigation questions to unlock the stations.':
+        'Collect evidence from two stations before writing your explanation.');
     });
     all('[data-go]').forEach(b=>{b.disabled=b.dataset.go==='explore'?!p.questions:!p.evidence;});
     const pinned=M.pinList(state,state.station).includes(exhibit);

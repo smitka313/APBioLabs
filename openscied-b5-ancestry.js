@@ -47,10 +47,15 @@ const stationNames={profile:'Bear profiles',skull:'Skulls',teeth:'Teeth',claw:'C
 const notesCount=()=>Object.values(s.notes).filter(v=>v.trim()).length;
 function gate(k){return k==='traits'||(s.prediction!==null&&(k==='dna'||s.checked.length===3&&(k==='tree'||s.treeGood)));}
 function nav(){
-  const done=Number(s.prediction!==null)+Number(s.checked.length===3)+Number(s.treeGood)+Number(Boolean(s.answers.conclusion?.trim()&&s.answers.revise?.trim()));
+  const complete=[s.prediction!==null,s.checked.length===3,s.treeGood,Boolean(s.answers.conclusion?.trim()&&s.answers.revise?.trim())];
+  const done=complete.filter(Boolean).length;
   $('reset').disabled=!canSave()||!Object.keys(s.notes).length;
   $('progress').textContent=done+' of 4 steps complete.'+(!gate('dna')?' Save a first guess to unlock DNA.':!gate('tree')?' Check all three DNA comparisons to unlock the tree.':!gate('explain')?' Check the tree to unlock Explain.':'');
-  all('[data-step],[data-go]').forEach(b=>{const k=b.dataset.step||b.dataset.go;b.disabled=!gate(k);if(b.dataset.step&&k===s.step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');});
+  all('[data-step],[data-go]').forEach(b=>{
+    const k=b.dataset.step||b.dataset.go;b.disabled=!gate(k);
+    if(b.dataset.step&&k===s.step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');
+    if(b.dataset.step)b.toggleAttribute('data-nav-step-complete',Boolean(complete[routes.indexOf(k)]));
+  });
 }
 function log(parent){
  const t=el('table');t.className='ba-log';
