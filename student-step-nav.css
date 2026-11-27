@@ -32,3 +32,17 @@
   }
 }
 @media print { .blb-step-status, .blb-step-unlock { display: none !important; } }
+
+/* Journey intentionally fits the whole play view on small screens. Keep the
+   status in the existing tab padding and use Journey's original unlock cue. */
+@media screen and (max-width: 850px) {
+  html[data-openscied] nav.journey-tabs[data-blb-step-nav] > button[data-blb-step-state] {
+    min-block-size: 0;
+    padding-block-end: 8px;
+  }
+  html[data-openscied] nav.journey-tabs[data-blb-step-nav] > button > .blb-step-status {
+    inset-block-end: 0;
+    font-size: .56rem;
+  }
+  nav.journey-tabs[data-blb-step-nav] + .blb-step-unlock { display: none; }
+}
