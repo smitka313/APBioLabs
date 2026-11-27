@@ -46,11 +46,11 @@ const keys = [
           await img.decode();
           return {src:img.currentSrc,alt:img.alt,loaded:img.naturalWidth>0,width:img.naturalWidth,height:img.naturalHeight};
         });
-        assert.ok(panorama.loaded && /field atlas, with grassland wildlife and a close-up of an animal cell/i.test(panorama.alt));
+        assert.ok(panorama.loaded && /field atlas with a Serengeti wildebeest and a close-up of an animal cell/i.test(panorama.alt));
         const isPhone = width <= 580;
-        const bannerFile = isPhone ? 'bench-field-atlas-mobile.svg' : 'bench-field-atlas.svg';
+        const bannerFile = isPhone ? 'bench-field-atlas-mobile.webp' : 'bench-field-atlas-desktop.webp';
         assert.equal(new URL(panorama.src).pathname, '/assets/' + bannerFile);
-        assert.deepEqual([panorama.width,panorama.height],isPhone ? [600,272] : [1200,226]);
+        assert.deepEqual([panorama.width,panorama.height],isPhone ? [1200,544] : [1800,302]);
         for (const key of keys) {
           const poster=page.locator('.dashboard-preview[href="openscied-'+key+'.html"] img');
           await poster.scrollIntoViewIfNeeded();
