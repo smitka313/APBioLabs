@@ -91,11 +91,10 @@ async function verifyOpenSciEd(page, go) {
   assert.equal(await observation.inputValue(), oseNote, 'OpenSciEd dashboard resumes the saved note');
 
   await page.locator('button[data-page="explain"]').click();
-  await page.locator('[data-ose-report-final] .osr-actions > button').click();
+  await page.locator('[data-ose-report-final] .osr-actions').getByRole('button', { name: 'Preview report', exact: true }).click();
   const report = page.locator('dialog.osr-dialog[open]');
   await report.getByText(oseNote, { exact: false }).waitFor();
-  await report.locator('details.osr-formats > summary').click();
-  await wordDocument(page, report.locator('details.osr-formats > button'), oseName, oseNote);
+  await wordDocument(page, report.getByRole('button', { name: 'Download Word (.docx)', exact: true }), oseName, oseNote);
 }
 
 async function inFreshProfile(browser, server, label, fn) {
