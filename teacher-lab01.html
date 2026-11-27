@@ -104,6 +104,11 @@ function show(html) {
     lockButton.addEventListener('click', lock);
     toolbar.append(print, lockButton);
     document.head.append(st); document.body.append(toolbar);
+    if (document.querySelector('details.grade-report, details.full-model-report, details#lab5-model-report')) {
+      const exemplarPrint = document.createElement('script');
+      exemplarPrint.src = 'teacher-exemplar-print.js';
+      document.head.append(exemplarPrint);
+    }
   };
   add(); if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add);
 }
