@@ -19,9 +19,14 @@ async function fit(p, sel, label, w) {
     const small = texts.map(t => parseFloat(getComputedStyle(t).fontSize) * k).filter(x => x < 10.6).length;
     const targets = Array.from(host.querySelectorAll('.ped-person .ped-sym, .tg-person .tg-sym')).map(e => Math.min(e.getBoundingClientRect().width, e.getBoundingClientRect().height));
     const btns = Array.from(host.querySelectorAll('button')).map(b => { const x = b.getBoundingClientRect(); return Math.min(x.width, x.height); });
-    return { over: document.documentElement.scrollWidth - document.documentElement.clientWidth, inside: sb.left >= hb.left - 1 && sb.right <= hb.right + 1, hostOver: host.scrollWidth - host.clientWidth, small, minTarget: Math.min.apply(null, targets), minBtn: Math.min.apply(null, btns), minFont: Math.min.apply(null, texts.map(t => parseFloat(getComputedStyle(t).fontSize) * k)) };
+    const pageWidth = document.documentElement.clientWidth;
+    const offenders = [host, svg, ...document.querySelectorAll('.bench-activity-inner, .bench-activity-inner > *')]
+      .map(el => ({name:el.id||el.getAttribute('class')||el.tagName,right:Math.round(el.getBoundingClientRect().right*10)/10,
+        scroll:el.scrollWidth,client:el.clientWidth}))
+      .filter(o => o.right > pageWidth + 1 || o.scroll > o.client + 1);
+    return { offenders, over: document.documentElement.scrollWidth - pageWidth, inside: sb.left >= hb.left - 1 && sb.right <= hb.right + 1, hostOver: host.scrollWidth - host.clientWidth, small, minTarget: Math.min.apply(null, targets), minBtn: Math.min.apply(null, btns), minFont: Math.min.apply(null, texts.map(t => parseFloat(getComputedStyle(t).fontSize) * k)) };
   }, sel);
-  T.ok(r.over <= 0 && r.hostOver <= 0 && r.inside, label + ' ' + w + ' px: fits, no sideways scroll');
+  T.ok(r.over <= 0 && r.hostOver <= 0 && r.inside, label + ' ' + w + ' px: fits, no sideways scroll' + (r.over > 0 || r.hostOver > 0 || !r.inside ? ' ' + JSON.stringify(r) : ''));
   T.ok(r.minFont >= 10.6, label + ' ' + w + ' px: smallest drawing text ' + r.minFont.toFixed(1) + ' px (about 11 CSS px or more)');
   T.ok(r.minTarget >= 24 && r.minBtn >= 24, label + ' ' + w + ' px: targets at least 24 px (symbol ' + r.minTarget.toFixed(0) + ', button ' + r.minBtn.toFixed(0) + ')');
 }
