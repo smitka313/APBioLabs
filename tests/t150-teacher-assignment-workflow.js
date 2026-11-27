@@ -137,8 +137,9 @@ async function checkViews(browser,base,opt,routeLibs) {
     const report=page.locator('dialog.osr-dialog[open]');
     await report.waitFor();
     assert.ok((await report.innerText()).includes(note),'saved note appears in report preview');
-    await report.getByText('More formats',{exact:true}).click();
-    await report.getByRole('button',{name:'Download Word (.docx)',exact:true}).click();
+    const wordAction=report.getByRole('button',{name:'Download Word (.docx)',exact:true});
+    assert.ok(await wordAction.isVisible(),'Word download is available directly in the report preview');
+    await wordAction.click();
     await report.getByText(/Could not download the Word file/i).waitFor({timeout:18000});
     assert.ok(await report.getByRole('button',{name:'Print or save as PDF',exact:true}).isVisible());
     assert.ok(blocked.some(u=>u.includes('docx@')),'Word exporter requests actually blocked');
