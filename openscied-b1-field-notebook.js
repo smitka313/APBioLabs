@@ -6,8 +6,10 @@
   const element=(tag,txt)=>Object.assign(document.createElement(tag),{textContent:txt});
   const say=msg=>{$('status').textContent=msg;};
   if(!M){say('The notebook did not load. Reload this page to try again.');return;}
-  let state=M.clean(null), session, unreadable=false, map='region', exhibit=0, month=0;
-  const coordinates={plains:[386,657],woodland:[266,396],mara:[404,242],park:[370,439],ngorongoro:[549,551]};
+  let state=M.clean(null), session, unreadable=false, unsaved=false, map='region', exhibit=0, month=0;
+  // Each station's anchor followed by its offset button position, leaving map labels legible.
+  const coordinates={plains:[386,657,456,713],woodland:[266,396,172,392],
+    mara:[404,242,491,248],park:[370,439,315,506],ngorongoro:[549,551,603,532]};
   const attempts={};
   const mapDescriptions={
     region:'Land and water: Lake Victoria lies west, the Rift Valley lies east, and the Mara and Grumeti cross the region.',
@@ -19,18 +21,22 @@
     route:[['route','Typical migration route'],['herd','Selected month'],['park','Later park outline']],
     protection:[['historic','Original national park'],['park','Later national park'],['reserve','Neighboring protected area']]
   };
-  try {session=api.open(localStorage,scope,[key],undefined,{routeMetadata:['step','station','lastVisitedAt']});state=M.clean(JSON.parse(session.read(key)));} catch (_) {unreadable=true;}
+  try {session=api.open(localStorage,scope,[key],undefined,{routeMetadata:['step','station','lastVisitedAt','migrationMonth']});state=M.clean(JSON.parse(session.read(key)));} catch (_) {unreadable=true;}
+  month=state.migrationMonth;
   const identity=api?.reportIdentity?.(session,[key],()=>window.Lab?.identity?.get?.()??null)??(()=>null);
   const usable=()=>!unreadable&&!!session?.check(key).ok;
   function notice(){
-    $('save').textContent=usable()?'Your notebook is stored in this browser. Download a report to share it.':
-      'This tab cannot save this notebook. Use Preview report for a recovery copy before reloading.';
-    $('reset').disabled=!usable();
+    const canSave=usable();
+    $('save').textContent=!canSave?'This tab cannot save this notebook. Use Preview report for a recovery copy before reloading.':
+      unsaved?'Recent changes are not saved. Use Preview report for a recovery copy before reloading.':
+      'Your notebook is stored in this browser. Download a report to share it.';
+    $('reset').disabled=!canSave;
   }
   function save(){
     state.lastVisitedAt=Date.now();
     const result=!unreadable&&session?.write(key,JSON.stringify(state));
-    if(result?.ok) identity();
+    unsaved=!result?.ok;
+    if(!unsaved) identity();
     notice();
     if(!result?.ok) say('Not saved to this browser. Use Preview report to keep a recovery copy.');
     return !!result?.ok;
@@ -117,7 +123,7 @@
       b.onclick=()=>{exhibit=i;showExhibit();say(card[0]+' opened.');};return b;
     }));
     $('note-label').textContent=st.prompt;
-    if(fillNote) $('note').value=state.fields[st.id]||'';
+    if(fillNote){$('note').value=state.fields[st.id]||'';setNoteStatus();}
     $('movement-video').hidden=st.id!=='movement';$('people-video').hidden=st.id!=='people';
     showCheck();showExhibit();
   }
@@ -142,7 +148,8 @@
     $('pin').disabled=comparing()&&!pinned&&!marked()?.changed;
     $('pin').textContent=pinned?'Remove exhibit pin':'Pin this exhibit';
     $('pin').setAttribute('aria-pressed',String(pinned));
-    $('collected').textContent=Math.min(p.used,2)+' of 2 stations collected'+(p.used>2?' · '+p.used+' total':p.evidence?' · Ready to explain':'');
+    const pinCount=M.stations.reduce((n,st)=>n+M.pinList(state,st.id).length,0);
+    $('collected').textContent=p.used+' '+(p.used===1?'station':'stations')+' with evidence (2 needed) · '+pinCount+' '+(pinCount===1?'exhibit':'exhibits')+' pinned';
     $('finish').disabled=!p.ready||p.complete;
     $('finish-note').textContent=p.complete?'Notebook complete. Use Preview report to share your work.':
       'Write your explanation and one new question to finish.';
@@ -173,7 +180,14 @@
   function change(id,value){
     state.fields[id]=value.slice(0,M.limit);
     if(!M.progress(state).ready)state.finished=false;
-    save();renderProgress();
+    const saved=save();renderProgress();return saved;
+  }
+  function setNoteStatus(saved=usable()&&!unsaved){
+    $('note-status').textContent=!saved?'Note not saved to this browser.':$('note').value.trim()?'Station note saved to this browser.':'Notes save as you type.';
+  }
+  function pickMonth(i){
+    month=i;$('month').value=String(i);state.migrationMonth=i;
+    if(M.progress(state).started)save();
   }
   for(const st of M.stations){
     const b=element('button',st.icon+' · '+st.name);
@@ -181,7 +195,10 @@
     const open=()=>{state.station=st.id;exhibit=0;setMap(st.view);showStation();say(st.name+' station opened.');};
     b.onclick=open;
     $('stations').append(b);
-    const pin=element('button',st.icon), [x,y]=coordinates[st.place];
+    const pin=element('button',st.icon), [anchorX,anchorY,x,y]=coordinates[st.place];
+    const line=document.createElementNS('http://www.w3.org/2000/svg','path');
+    line.setAttribute('d','M'+anchorX+' '+anchorY+'L'+x+' '+y);
+    $('pin-leaders').append(line);
     pin.className='sf-map-pin';pin.type='button';pin.dataset.station=st.id;pin.dataset.mapPin='';
     pin.style.setProperty('--x',(x-40)/6.1+'%');pin.style.setProperty('--y',(y-100)/6.5+'%');
     pin.onclick=open;$('map-pins').append(pin);
@@ -195,7 +212,7 @@
     box.value=state.fields[box.dataset.field]||'';
     box.addEventListener('input',()=>change(box.dataset.field,box.value));
   });
-  $('note').addEventListener('input',()=>change(state.station,$('note').value));
+  $('note').addEventListener('input',()=>setNoteStatus(change(state.station,$('note').value)));
   $('pin').onclick=()=>{
     if($('pin').disabled)return;
     const pinned=M.togglePin(state,state.station,exhibit);
@@ -204,7 +221,8 @@
     renderProgress();
   };
   M.months.forEach((m,i)=>{const option=element('option',m[0]);option.value=String(i);$('month').append(option);});
-  $('month').onchange=()=>{month=Number($('month').value);setMap(map);say(M.months[month][0]+': '+M.months[month][3]+'.');};
+  $('month').value=String(month);
+  $('month').onchange=()=>{pickMonth(Number($('month').value));setMap(map);if(usable())say(M.months[month][0]+': '+M.months[month][3]+'.');};
   $('boundary').onchange=()=>{setMap(map);say($('map-caption').textContent);};
   $('jump-exhibit').onclick=()=>$('exhibit-title').focus();
   const dialog=$('map-dialog');
@@ -243,7 +261,7 @@
   };});
   $('locate').onclick=()=>{
     const st=station();
-    if(st.id==='movement'){month=exhibit===2?8:9;$('month').value=String(month);}
+    if(st.id==='movement')pickMonth(exhibit===2?8:9);
     if(st.id==='conservation')$('boundary').value='both';
     setMap(st.view);$('field-map').focus();say($('map-caption').textContent);
   };
@@ -269,18 +287,22 @@
   };
   window.addEventListener('storage',notice);window.addEventListener('pageshow',notice);
   const report=()=>{
-    const p=M.progress(state), recovery=!usable();
+    const p=M.progress(state), recovery=unsaved||!usable();
     const section=(title,ids)=>({title,items:ids.map(id=>({type:'answer',prompt:M.fields[id],value:state.fields[id]||''}))});
     return {
       title:'Serengeti Field Notebook', unit:'OpenSciEd Biology B.1 · Lesson 2', source:'OpenSciEd B.1 Lesson 2 history reading, maps, and scavenger-hunt evidence. Map is schematic, not to scale.',
       status:recovery?'recovery':p.complete?'final':'draft',student:identity(recovery),
-      missing:[!p.questions&&'Write two different investigation questions.',!p.evidence&&'Gather evidence from at least two stations.',!p.complete&&'Finish the explanation and remaining question.'].filter(Boolean),
+      missing:[!p.questions&&'Write two different investigation questions.',!p.evidence&&'Gather evidence from at least two stations.',!state.fields.claim?.trim()&&'Write your explanation.',!state.fields.wonder?.trim()&&'Write one question you still have.',p.ready&&!p.complete&&'Select Finish notebook to mark this work complete.'].filter(Boolean),
       sections:[section('Investigation questions',['question1','question2']),
-        {title:'Station evidence',items:[{type:'table',title:'Evidence and notes',columns:['Station','Source','Pinned evidence','My note'],rows:M.stations.flatMap(st=>{
+        {title:'Station evidence',items:M.stations.flatMap(st=>{
           const selected=M.pinList(state,st.id), note=state.fields[st.id]||'';
-          return selected.length?selected.map((i,row)=>{const [title,evidence,source]=M.exhibits[st.id][i];return [st.name,source,title+' — '+evidence,row===0?note:''];}):
-            note.trim()?[[st.name,M.references[st.id],'',note]]:[];
-        })}]},
+          const items=selected.map(i=>{
+            const [title,evidence,source]=M.exhibits[st.id][i];
+            return {type:'answer',prompt:st.name+' · '+title,value:evidence+' ('+source+')'};
+          });
+          if(note.trim())items.push({type:'answer',prompt:st.name+' · Station note',value:note});
+          return items;
+        })},
         ...(marked()?[{title:'Park boundary comparison',items:[{type:'answer',prompt:'Area I marked',value:marked().label}]}]:[]),
         section('Graphic organizer',['system','components','interactions','decisions']),section('Explain and share',['claim','wonder'])]
     };

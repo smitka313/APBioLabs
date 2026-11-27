@@ -122,7 +122,7 @@
     const pins=stations.map(x=>x.id).filter(id=>Object.hasOwn(pinnedCards,id)?pinnedCards[id].length:
       Array.isArray(raw?.pins)&&raw.pins.includes(id));
     return { v:1, pinnedCards, boundaryPick:Object.hasOwn(boundaryPlaces,raw?.boundaryPick)?raw.boundaryPick:'', fields:Object.fromEntries(Object.keys(fields).filter(k=>typeof f[k]==='string').map(k=>[k,f[k].slice(0,limit)])),
-      pins,
+      pins, migrationMonth:Number.isInteger(raw?.migrationMonth)&&months[raw.migrationMonth]?raw.migrationMonth:0,
       finished:raw?.finished===true, step:['orient','explore','explain'].includes(raw?.step)?raw.step:'orient',
       station:stations.some(x=>x.id===raw?.station)?raw.station:'habitats',
       lastVisitedAt:Number.isFinite(raw?.lastVisitedAt)?raw.lastVisitedAt:0 };
