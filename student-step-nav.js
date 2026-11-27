@@ -68,7 +68,8 @@
         const { locked, current, complete } = stateOf(el, rail);
         const value = locked ? 'Locked' : current ? (complete ? 'Current ✓' : 'Current') : complete ? 'Complete' : '';
         const kind = locked ? 'locked' : current ? 'current' : complete ? 'complete' : 'open';
-        const label = el.querySelector(':scope > .nl') || el;
+        // Keep the actual step label unchanged. Progress and accessibility readers use it.
+        const label = el;
         if (el.getAttribute('data-blb-step-state') !== kind) el.setAttribute('data-blb-step-state', kind);
         let status = label.querySelector(':scope > .blb-step-status');
         if (value && !status) {

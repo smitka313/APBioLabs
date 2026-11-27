@@ -8,20 +8,13 @@
     pointer-events: none;
     white-space: nowrap;
   }
-  .step-nav[data-blb-step-nav] .nl > .blb-step-status { display: block; }
-  .step-nav[data-blb-step-nav] .nl { text-align: start; }
-  html[data-openscied] nav[data-blb-step-nav] > button[data-blb-step-state] {
-    position: relative;
-  }
-  html[data-openscied] nav[data-blb-step-nav] > button[data-blb-step-state] {
-    min-block-size: 3rem;
-    padding-block-end: .95rem;
-  }
-  html[data-openscied] nav[data-blb-step-nav] > button > .blb-step-status {
+  /* Badges do not change the existing rail height or width during load. */
+  nav[data-blb-step-nav] :is(a,button)[data-blb-step-state] { position: relative; }
+  nav[data-blb-step-nav] :is(a,button) > .blb-step-status {
     position: absolute;
-    inset: auto .15rem .19rem;
+    inset: auto .18rem .06rem;
     text-align: center;
-    font-size: .65rem;
+    font-size: .59rem;
   }
   [data-blb-step-nav] [data-blb-step-state="current"] .blb-step-status,
   [data-blb-step-nav] [data-blb-step-state="complete"] .blb-step-status { color: var(--accent); }

@@ -127,13 +127,19 @@ test('Cell Cycle revision CTA gates on three responses, not keywords or arrow fo
 
 test('Screening distinguishes ready, complete and editable recommendations',()=>{
   const fields=Object.fromEntries(['finish','edit-recommendation','claim','limit','finished'].map(id=>[id,{}]));
+  const steps=['compare','explain'].map(step=>({
+    dataset:{sdStep:step}, complete:false,
+    toggleAttribute(name, on){assert.equal(name,'data-nav-step-complete');this.complete=Boolean(on);}
+  }));
   const r=controllerSlice('screening','  function renderFinish(){','  function nav(step)',{
-    $:id=>fields[id],fields,ready:()=>true,hasRecommendation:()=>true
+    $:id=>fields[id],fields,steps,document:{querySelectorAll(selector){assert.equal(selector,'.sd-steps [data-sd-step]');return steps;}},
+    ready:()=>true,hasRecommendation:()=>true
   },`let done=false;const complete=()=>done;
     renderFinish(); const readyState=[fields.finish.disabled,fields.finish.hidden];
-    done=true;renderFinish(); [readyState,fields.finish.hidden,fields['edit-recommendation'].hidden,fields.claim.readOnly,fields.finished.textContent]`);
+    done=true;renderFinish(); [readyState,fields.finish.hidden,fields['edit-recommendation'].hidden,fields.claim.readOnly,fields.finished.textContent,steps.map(step=>step.complete)]`);
   assert.deepEqual(r.slice(0,4),[[false,false],true,false,true]);
   assert.match(r[4],/Nothing is sent automatically/);
+  assert.deepEqual(r[5],[true,true]);
 });
 
 test('p53 core response IDs exclude partner feedback without losing the form',()=>{
