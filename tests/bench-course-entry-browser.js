@@ -115,6 +115,9 @@ const T=require('./_h'),assert=require('node:assert/strict'),fs=require('node:fs
       return el.disabled && css.opacity==='1' && css.borderTopStyle==='solid' &&
         css.backgroundColor!=='rgba(0, 0, 0, 0)';
     }),'disabled dashboard controls use a legible solid surface');
+    assert.equal(await p.locator('.bench-dashboard-actions .bench-dashboard-browse').innerText(), 'Browse activities ↓');
+    assert.equal(await p.locator('.bench-dashboard-actions .bench-dashboard-teachers').getAttribute('href'), 'teacher-hub.html');
+    assert.equal(await p.locator('.dashboard-activity .dashboard-open').count(),24);
     const atlas=p.locator('.dashboard-hero-art');
     assert.equal(await atlas.getAttribute('src'),'assets/bench-field-atlas-desktop.webp');
     const banner = await atlas.evaluate(async img=>{
