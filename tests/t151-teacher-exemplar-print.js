@@ -18,10 +18,17 @@ const T = require('./_h');
       <section><h4>Evidence</h4><div><table><caption>Recorded comparison</caption><thead><tr><th>Trial</th><th>Value</th></tr></thead>
       <tbody><tr><td>A</td><td>12</td></tr></tbody></table></div><h5>What changed?</h5><p>Fictional evidence and reasoning.</p></section>
       <section><h4>Teacher grading notes</h4><p>PRIVATE-GRADING-GUIDANCE</p></section></details>`;
+    const legacyFullReport = `<details class="full-model-report"><summary>Complete exemplar</summary><div>
+      <p>Sample AP lab · Legacy Sample (fictional) · Period 3 · Complete. Dataset LEG-XYZ.</p>
+      <h4>Evidence</h4><table><caption>Recorded comparison</caption><thead><tr><th>Trial</th><th>Value</th></tr></thead>
+      <tbody><tr><td>A</td><td>12</td></tr></tbody></table>
+      <h4>Analysis</h4><p>Fictional evidence and reasoning.</p>
+      <h4>Teacher grading notes</h4><p>PRIVATE-GRADING-GUIDANCE</p></div></details>`;
     const layout = (title, markup, scripts = '') => `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${title}</title>
       <link rel="stylesheet" href="style.css"></head><body><main><h1>${title}</h1>
       <details class="grading-rubric"><summary>Rubric</summary><p>PRIVATE-RUBRIC</p></details>${markup}</main>${scripts}</body></html>`;
     fs.writeFileSync(path.join(src, 'teacher-lab01.html'), layout('Sample AP lab', example('Sample Student', 'ABC-XYZ'), '<script src="lab.js"></script>'));
+    fs.writeFileSync(path.join(src, 'teacher-lab09.html'), layout('Sample AP lab', legacyFullReport, '<script src="lab.js"></script>'));
     fs.writeFileSync(path.join(src, 'openscied-teacher-notes.html'), layout('Companion notes',
       `<article class="ose-teacher-card" id="guide-b1-migration"><h3>Migration Map Explorer</h3>${example('Sample Explorer', 'ME-A123')}</article>
        <article class="ose-teacher-card" id="guide-b1-serengeti"><h3>Serengeti Board Game</h3>${example('Group Recorder', 'SB-A123')}</article>`));
@@ -29,7 +36,7 @@ const T = require('./_h');
       { env: { ...process.env, NOTES_PASSWORD: 'fixture-teacher-password' } });
     for (const name of ['domain-redirect.js', 'style.css', 'lab.js', 'openscied-submission-report.css',
       'openscied-submission-report.js', 'teacher-exemplar-print.js']) fs.copyFileSync(path.join(T.ROOT, name), path.join(out, name));
-    for (const name of ['teacher-lab01.html', 'openscied-teacher-notes.html']) {
+    for (const name of ['teacher-lab01.html', 'teacher-lab09.html', 'openscied-teacher-notes.html']) {
       const locked = fs.readFileSync(path.join(out, name), 'utf8');
       assert.doesNotMatch(locked, /PRIVATE-RUBRIC|Fictional evidence and reasoning|Sample Student/);
     }
@@ -38,7 +45,7 @@ const T = require('./_h');
     const context = await browser.newContext({ viewport: { width: 1000, height: 800 }, colorScheme: 'dark' });
     await context.route(url => !url.href.startsWith(server.url) && !url.href.startsWith('about:'), route => route.abort());
     const page = await context.newPage();
-    for (const route of ['teacher-lab01.html', 'openscied-teacher-notes.html']) {
+    for (const route of ['teacher-lab01.html', 'teacher-lab09.html', 'openscied-teacher-notes.html']) {
       const ap = route.startsWith('teacher-lab');
       await page.goto(server.url + route);
       assert.equal(await page.locator('.tn-exemplar-actions').count(), 0, 'No exemplar controls while locked');
@@ -49,7 +56,7 @@ const T = require('./_h');
       await page.fill('#pw', 'fixture-teacher-password');
       await page.click('#f button');
       await page.locator('.tn-exemplar-actions').first().waitFor({ state: 'attached' });
-      const examples = page.locator('details.grade-report');
+      const examples = page.locator('details.grade-report,details.full-model-report');
       assert.equal(await examples.count(), ap ? 1 : 2);
       for (let n = 0; n < await examples.count(); n++) {
         const specimen = examples.nth(n);
@@ -60,6 +67,7 @@ const T = require('./_h');
         assert.match(await paper.innerText(), /Teacher exemplar.*fictional/i);
         assert.match(await paper.innerText(), /Fictional evidence and reasoning/);
         assert.match(await paper.innerText(), /Recorded comparison/);
+        if (route === 'teacher-lab09.html') assert.match(await paper.innerText(), /Legacy Sample/);
         assert.doesNotMatch(await paper.innerText(), /PRIVATE-GRADING-GUIDANCE|PRIVATE-RUBRIC/);
         assert.equal(await paper.locator(ap ? 'img.rv-stamp' : 'img.osr-stamp').count(), n === 1 ? 0 : 1);
         if (n === 1) assert.match(await paper.innerText(), /Recorded by/);
@@ -81,7 +89,7 @@ const T = require('./_h');
       assert.equal(await page.locator('.tn-exemplar-actions').count(), 0);
       assert.match(await page.locator('main').innerText(), /password/i);
     }
-    console.log('Protected AP, named OpenSciEd, and group OpenSciEd exemplars use student-style PDF previews.');
+    console.log('Protected AP (including legacy full reports), named OpenSciEd, and group OpenSciEd exemplars use student-style PDF previews.');
   } finally {
     await browser?.close();
     server?.close();
