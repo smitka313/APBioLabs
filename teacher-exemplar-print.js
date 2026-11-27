@@ -95,26 +95,34 @@
       view.documentElement.dataset.theme = 'light';
       const viewport = make(view, 'meta');
       viewport.name = 'viewport'; viewport.content = 'width=device-width, initial-scale=1';
-      const css = make(view, 'link');
-      css.rel = 'stylesheet'; css.href = new URL('style.css', document.baseURI);
+      const base = make(view, 'base');
+      base.href = document.baseURI;
+      const cssUrl = new URL('style.css', document.baseURI).href;
+      let sheetText = '';
+      for (const sheet of document.styleSheets) {
+        if (sheet.href !== cssUrl) continue;
+        try { sheetText = Array.from(sheet.cssRules, rule => rule.cssText).join('\n'); }
+        catch (_) { /* Keep the direct stylesheet fallback. */ }
+        break;
+      }
+      const css = make(view, sheetText ? 'style' : 'link', sheetText);
+      if (!sheetText) { css.rel = 'stylesheet'; css.href = cssUrl; }
       const extras = make(view, 'style', '.tn-exemplar-paper > * + *{margin-top:10px}.rv-table td,.rv-table th{overflow-wrap:anywhere}.rv-table thead{display:table-header-group}.rv-sec h4,.rv-q{break-after:avoid}.rv-paper figure img{max-width:100%;height:auto}.tn-exemplar-paper dt{font-weight:700}.tn-exemplar-paper dd{margin:0 0 .4rem .6rem}');
       const tools = make(view, 'div', '', 'rv-tools');
       const print = make(view, 'button', 'Print or save as PDF', 'btn btn--primary');
-      print.type = 'button'; print.disabled = true;
+      print.type = 'button'; print.disabled = !sheetText;
       const hint = make(view, 'p', 'Choose “Save as PDF” in the print window. Close this tab to return to the teacher notes.', 'small');
       const status = make(view, 'p', '', 'rv-status');
       status.setAttribute('role', 'status');
       tools.append(print, hint, status);
       print.addEventListener('click', () => { try { tab.print(); } catch (_) { status.textContent = 'Try your browser’s Print command, then choose “Save as PDF”.'; } });
-      css.onload = async () => {
-        await Promise.all([...view.images].map(image => image.decode().catch(() => {})));
-        await view.fonts?.ready;
-        print.disabled = false;
-      };
-      css.onerror = () => { status.textContent = 'Could not load the report layout. Close this tab and open the exemplar again.'; };
+      if (!sheetText) {
+        css.onload = () => { print.disabled = false; };
+        css.onerror = () => { status.textContent = 'Could not load the report layout. Close this tab and open the exemplar again.'; };
+      }
       const reportFonts = [...document.querySelectorAll('link[rel="stylesheet"]')].filter(link =>
         new URL(link.href, document.baseURI).hostname === 'fonts.googleapis.com');
-      view.head.append(viewport, ...reportFonts.map(link => view.importNode(link, true)), css, extras);
+      view.head.append(base, viewport, ...reportFonts.map(link => view.importNode(link, true)), css, extras);
       const shell = make(view, 'main', '', 'report-view');
       shell.id = 'lab-report';
       shell.append(tools, window.Lab.report.exemplarPaper(view, sample, content));
@@ -154,11 +162,28 @@
     });
   }
 
-  if (ose && !window.OpenSciEdSubmission) {
-    const script = make(document, 'script');
-    script.src = 'openscied-submission-report.js';
-    script.addEventListener('load', mount, { once: true });
-    document.head.append(script);
+  if (ose) {
+    const href = new URL('openscied-submission-report.css', document.baseURI).href;
+    const complete = [...document.styleSheets].some(sheet => sheet.href === href);
+    const getStyles = complete ? Promise.resolve() : new Promise((resolve, reject) => {
+      const css = make(document, 'link');
+      css.rel = 'stylesheet'; css.href = href;
+      css.addEventListener('load', resolve, { once: true });
+      css.addEventListener('error', reject, { once: true });
+      document.head.append(css);
+    });
+    const getRenderer = window.OpenSciEdSubmission ? Promise.resolve() : new Promise((resolve, reject) => {
+      const script = make(document, 'script');
+      script.src = 'openscied-submission-report.js';
+      script.addEventListener('load', resolve, { once: true });
+      script.addEventListener('error', reject, { once: true });
+      document.head.append(script);
+    });
+    Promise.all([getStyles, getRenderer]).then(mount, () => {
+      const message = make(document, 'p', 'The exemplar PDF layout did not load. Reload the teacher notes to try again.', 'small');
+      message.setAttribute('role', 'status');
+      document.querySelector('main')?.prepend(message);
+    });
   } else if (ap && !window.Lab?.report?.exemplarPaper) {
     const script = make(document, 'script');
     script.src = 'lab.js';
