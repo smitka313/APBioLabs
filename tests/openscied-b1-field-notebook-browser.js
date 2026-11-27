@@ -18,6 +18,7 @@ const {ROOT,serve}=require('./_h');
    try{
     await cx.addInitScript(m=>localStorage.setItem('aplab:pref:theme',m),mode);
     await cx.route('**/*',r=>new URL(r.request().url()).origin===new URL(site.url).origin?r.continue():r.abort());
+    if(width===390) await cx.route('https://www.youtube-nocookie.com/embed/**',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Test player</title>'}));
     const p=await cx.newPage(), errors=[];
     p.on('pageerror',err=>errors.push(err.message));
     await p.goto(site.url+'openscied-b1-field-notebook.html');
@@ -27,6 +28,19 @@ const {ROOT,serve}=require('./_h');
       await p.screenshot({path:path.join(out,width+'-'+stage+'.png'),fullPage:true,animations:'disabled'});
     };
     assert.equal(await p.locator('html').getAttribute('data-theme'),mode);
+    const checkClip=async(panel,id)=>{
+      const request=p.waitForRequest(r=>r.url()==='https://www.youtube-nocookie.com/embed/'+id+'?cc_load_policy=1');
+      await panel.locator('summary').click();
+      await request;
+      assert.equal(await panel.locator('iframe').getAttribute('src'),'https://www.youtube-nocookie.com/embed/'+id+'?cc_load_policy=1');
+      assert.equal(await panel.getByRole('link',{name:/Open on YouTube/}).getAttribute('href'),'https://youtu.be/'+id);
+      await panel.locator('summary').click();
+      await panel.locator('iframe').waitFor({state:'detached'});
+    };
+    if(width===390){
+      assert.equal(await p.locator('iframe').count(),0);
+      await checkClip(p.locator('details.ose-video').first(),'Pg35n6eIF3Y');
+    }
     assert.ok(await go('explore').isDisabled());
     await by('question1').fill('What did people want to protect?');
     await by('question2').fill('What did people want to protect?');assert.ok(await go('explore').isDisabled());
@@ -45,6 +59,11 @@ const {ROOT,serve}=require('./_h');
     ];
     for(const [key,caption] of stations){
      await p.locator('#sf-stations [data-station="'+key+'"]').click();
+     if(width===390 && key==='movement'){
+      await checkClip(by('movement-video').locator('details').nth(0),'ipYb3Gw6fBY');
+      await checkClip(by('movement-video').locator('details').nth(1),'7JOk6ivcuco');
+     }
+     if(width===390 && key==='people') await checkClip(by('people-video').locator('details'),'cVj4883yze0');
      assert.match(await by('art-caption').innerText(),caption);
      assert.equal(await by('art').getAttribute('src'),'assets/serengeti-field-station-'+key+'.webp');
      await by('art').evaluate(async img=>{await img.decode();});
