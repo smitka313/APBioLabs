@@ -188,9 +188,15 @@
   if(!scope)return; // The dashboard calls snapshot for each card directly.
   let tracker;
   try { tracker=connect(root.localStorage,Date.now,{scope}); } catch (_) { return; }
-  root.OpenSciEdResume.recordSave=write=>tracker.snapshot(path,'save',write);
+  function publish(result) {
+    if (typeof result?.changed !== 'number') return result;
+    root.BiologyBenchSaveState = { ...root.BiologyBenchSaveState, at: result.changed };
+    root.dispatchEvent(new Event('blb:save-state'));
+    return result;
+  }
+  root.OpenSciEdResume.recordSave=write=>publish(tracker.snapshot(path,'save',write));
   root.OpenSciEdSaveSession?.flushResumeWrites?.(root.OpenSciEdResume.recordSave);
-  const open=()=>tracker.snapshot(path,'open');
+  const open=()=>publish(tracker.snapshot(path,'open'));
   const exit=()=>tracker.snapshot(path,'exit');
   open();
   root.addEventListener('pageshow',event=>{if(event.persisted)open();});

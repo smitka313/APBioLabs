@@ -109,3 +109,14 @@
   if (mode === 'auto') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme', mode);
 }());
+
+/* Display browser-local save feedback only on student activity pages. */
+(function () {
+  'use strict';
+  var source = document.currentScript;
+  if (!source || !source.src ||
+      !/(?:^|\/)(?:lab(?:0[1-9]|1[0-3])|openscied-b[1-5]-[a-z0-9-]+)(?:\.html)?\/?$/i.test(location.pathname)) return;
+  var script = document.createElement('script');
+  script.src = new URL('student-save-status.js', source.src).href;
+  document.head.appendChild(script);
+}());

@@ -291,8 +291,9 @@
         localStorage.setItem(k, json);
         /* When this lab's work last really changed (a restore compares it with the file's date). Rewriting the same value,
            or a blank value where there was none (pages save their fields on load), does not count. */
-        if (PAGE.kind === 'lab' && prev !== json && !(prev == null && isBlankVal(val))) localStorage.setItem(`aplab:${LAB_ID}:saved-at`, String(Date.now()));
-        saveNote(true);
+        const changedWork = PAGE.kind === 'lab' && prev !== json && !(prev == null && isBlankVal(val));
+        if (changedWork) localStorage.setItem(`aplab:${LAB_ID}:saved-at`, String(Date.now()));
+        saveNote(true, changedWork);
       } catch (e) { storageFailed(); saveNote(false); }
     },
     clearLab() {
@@ -404,8 +405,17 @@
     const t = savedClock();
     document.querySelectorAll('.id-saved').forEach(n => { n.hidden = !t; n.dataset.state = SAVE.ok === false ? 'bad' : 'ok'; if (n.textContent !== t) n.textContent = t; });
   }
-  function saveNote(ok) {
+  function saveNote(ok, changedWork = false) {
     if (PAGE.kind !== 'lab') return;
+    let committed = Number(window.BiologyBenchSaveState?.at) || 0;
+    if (ok && changedWork) committed = Date.now();
+    if (!committed) {
+      try { committed = Number(localStorage.getItem(`aplab:${LAB_ID}:saved-at`)) || 0; } catch (_) {}
+    }
+    // A no-op write must not clear an unresolved warning from a failed write.
+    const failed = !ok || (window.BiologyBenchSaveState?.failed === true && !changedWork);
+    window.BiologyBenchSaveState = { at: committed, failed };
+    window.dispatchEvent(new Event('blb:save-state'));
     const changed = SAVE.ok !== ok;
     SAVE.ok = ok; if (ok) SAVE.at = Date.now();
     renderSavedClock();
