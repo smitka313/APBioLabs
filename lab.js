@@ -291,8 +291,9 @@
         localStorage.setItem(k, json);
         /* When this lab's work last really changed (a restore compares it with the file's date). Rewriting the same value,
            or a blank value where there was none (pages save their fields on load), does not count. */
-        if (PAGE.kind === 'lab' && prev !== json && !(prev == null && isBlankVal(val))) localStorage.setItem(`aplab:${LAB_ID}:saved-at`, String(Date.now()));
-        saveNote(true);
+        const changedWork = PAGE.kind === 'lab' && prev !== json && !(prev == null && isBlankVal(val));
+        if (changedWork) localStorage.setItem(`aplab:${LAB_ID}:saved-at`, String(Date.now()));
+        saveNote(true, changedWork);
       } catch (e) { storageFailed(); saveNote(false); }
     },
     clearLab() {
@@ -404,8 +405,17 @@
     const t = savedClock();
     document.querySelectorAll('.id-saved').forEach(n => { n.hidden = !t; n.dataset.state = SAVE.ok === false ? 'bad' : 'ok'; if (n.textContent !== t) n.textContent = t; });
   }
-  function saveNote(ok) {
+  function saveNote(ok, changedWork = false) {
     if (PAGE.kind !== 'lab') return;
+    let committed = Number(window.BiologyBenchSaveState?.at) || 0;
+    if (ok && changedWork) committed = Date.now();
+    if (!committed) {
+      try { committed = Number(localStorage.getItem(`aplab:${LAB_ID}:saved-at`)) || 0; } catch (_) {}
+    }
+    // A no-op write must not clear an unresolved warning from a failed write.
+    const failed = !ok || (window.BiologyBenchSaveState?.failed === true && !changedWork);
+    window.BiologyBenchSaveState = { at: committed, failed };
+    window.dispatchEvent(new Event('blb:save-state'));
     const changed = SAVE.ok !== ok;
     SAVE.ok = ok; if (ok) SAVE.at = Date.now();
     renderSavedClock();
@@ -2078,6 +2088,9 @@
   function reportStamp(rep) { try { return Lab.stamp.png({ datasetId: rep.datasetId }); } catch (e) { return null; } }
   /* A report was downloaded or sent to the print dialog: the one confetti burst (see Celebrations), only if every part is done. */
   function reportSaved() { try { Lab.celebrate.lab(); } catch (e) { /* never block a download */ } }
+  /* A local report download and handing in that file are separate actions. */
+  const HAND_IN_REPORT = 'To hand in, upload or share the saved report where your teacher directs. Downloading does not submit it.';
+
   async function openReport(o = {}) {
     if (IS_LAB && staleEditor()) { Lab.toast(staleEditorMessage, {type:'error'}); return null; }
     closeReport(); flushSaves();
@@ -2096,7 +2109,7 @@
         h('div', { class: 'row' },
           h('button', { class: 'btn btn--primary', type: 'button', onclick: doPrint }, 'Print or save as PDF'),
           h('button', { class: 'btn', type: 'button', onclick: closeReport }, 'Close report')),
-        h('p', { class: 'small' }, 'In the print window, set the printer (Destination) to “Save as PDF” or “Microsoft Print to PDF”, then hand in the PDF the way your teacher asks.'),
+        h('p', { class: 'small' }, 'In the print window, choose “Save as PDF” or “Microsoft Print to PDF”. ' + HAND_IN_REPORT),
         note, status),
       h('article', { class: 'rv-paper', html: printRun(run, reportHtml(rep)) }));
     document.body.append(view);
@@ -2497,7 +2510,7 @@
     const status = h('p', { class: 'tool-status', 'aria-live': 'polite' });
     const note = previewNote();
     const say = (t, bad) => { status.textContent = t; status.classList.toggle('is-bad', !!bad); };
-    const docxBtn = h('button', { class: 'btn btn--primary', type: 'button', onclick: async () => {
+    const docxBtn = h('button', { id: 'lab-report-download-word', class: 'btn btn--primary', type: 'button', onclick: async () => {
       docxBtn.disabled = true; say('Building your Word file…');
       try {
         const name = reportFileBase() + '.docx';
@@ -2505,7 +2518,7 @@
         const blob = await Lab.report.docx();
         if (staleEditor()) throw new Error(staleEditorMessage);
         downloadBlob(blob, name);
-        say(`Downloaded ${name} to this device. It has not been submitted; upload or hand in the file where your teacher directs.` + nameWarn);
+        say(`Downloaded ${name} to this device. It has not been submitted.` + nameWarn);
         reportSaved();
         Lab.toast(`Downloaded ${name}`, { type: 'ok', announce: false });
         if (LIKELY_PREVIEW) note.hidden = false;
@@ -2514,15 +2527,15 @@
         else if (e?.message === 'docx-load') { say('Could not load the Word file tool. Check your internet connection, or use Save as PDF.', true); note.hidden = false; }
         else { console.error(e); say('Something went wrong building the Word file. Use Save as PDF instead.', true); }
       } finally { docxBtn.disabled = false; }
-    } }, 'Download .docx');
-    const pdfBtn = h('button', { class: 'btn', type: 'button', onclick: () => openReport({ print: true, opener: pdfBtn }) }, 'Save as PDF');
+    } }, 'Download Word (.docx)');
+    const pdfBtn = h('button', { id: 'lab-report-print-pdf', class: 'btn', type: 'button', onclick: () => openReport({ print: true, opener: pdfBtn }) }, 'Print or save as PDF');
     const prevBtn = h('button', { class: 'btn report-preview-btn', type: 'button', onclick: () => openReport({ opener: prevBtn }) }, 'Preview my report');
     const tlBox = h('input', { type: 'checkbox', id: 'tl-include', checked: tlInclude() || null, onchange: () => store.set('tl-include', tlBox.checked) });
     const tlRow = h('label', { class: 'check tl-include', for: 'tl-include', hidden: true }, tlBox, ' Include my timelapse in the report');
     const tlSync = () => { tlRow.hidden = !Lab.timelapse.withRun().length; };
     window.addEventListener('aplab:timelapse', tlSync); setTimeout(tlSync, 400);
     const bar = h('div', { class: 'responses-bar report-bar' },
-      h('span', { class: 'grow' }, 'Step 1 — Download a report: choose Word (.docx), or choose Save as PDF and save the file from the print window. Step 2 — Submit the downloaded file in the location your teacher specifies (such as your class LMS). Downloading does not submit it. To continue editing on another device, use Move your work to another computer below; a report is not a progress backup.'), docxBtn, pdfBtn, prevBtn,
+      h('span', { class: 'grow' }, 'Preview your report or save a Word or PDF copy. ' + HAND_IN_REPORT + ' To keep editing on another device, use the separate progress tools below.'), docxBtn, pdfBtn, prevBtn,
       h('button', { class: 'btn btn--ghost', type: 'button', onclick: printWorksheet }, 'Print worksheet'), tlRow);
     // Informational only: existing sectionWork() drives the same progress indicators as the step navigation.
     // Do not gate report downloads or introduce additional completion requirements.

@@ -22,3 +22,23 @@ for (const [file, clips] of Object.entries(pages)) {
   assert.match(src, /<script defer src="openscied-video.js"><\/script>/);
 }
 console.log('OpenSciEd video markup: all five previously linked clips have optional embedded players.');
+
+const localEvidence = {
+  'openscied-b1-field-notebook.html': ['history timeline', 'animal movement exhibits', 'Herd movement', 'people station exhibits'],
+  'openscied-b1-migration.html': ['health cards below'],
+  'openscied-b3-inheritance-environment.html': ['on-page model of Lakita’s family'],
+  'openscied-b5-wapusk.html': ['sightings map below', 'minimum-extent chart', 'ice region above'],
+};
+let localCount = 0;
+for (const [file, tasks] of Object.entries(localEvidence)) {
+  const src = fs.readFileSync(path.join(root, file), 'utf8');
+  const alternatives = [...src.matchAll(/<p\b[^>]*\bdata-local-media-alternative(?=[\s>])[^>]*>([\s\S]*?)<\/p>/g)].map(([, body]) => body);
+  assert.equal(alternatives.length, tasks.length, file + ' has a local alternative for each targeted viewing task');
+  for (const [i, task] of tasks.entries()) {
+    assert.ok(alternatives[i].includes(task), file + ' directs students to ' + task);
+    assert.doesNotMatch(alternatives[i], /https?:|<iframe/i, 'the alternative does not need a third-party site or frame');
+    assert.match(alternatives[i], /Continue without video/);
+    localCount++;
+  }
+}
+console.log('OpenSciEd video alternatives: ' + localCount + ' classroom tasks can use local evidence.');

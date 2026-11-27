@@ -98,7 +98,7 @@ test('dashboard and teacher guide offer the same masthead theme control and hone
   assert.match(guide, /class="bench-logo" href="index\.html"/);
   assert.match(guide, /class="ose-teacher-hero__art" src="assets\/bench-field-atlas\.svg"/);
   for (const page of [ap, dashboard, read('index.html')]) {
-    assert.match(page, /counts anonymous page visits without cookies\. Nothing you type, including your name and answers, is sent anywhere/);
+    assert.match(page, /counts page visits without cookies\. Student names and answers stay in this browser unless you choose to share them/);
   }
   assert.match(read('style.css'), /neutral fill distinguishes disabled controls[\s\S]*?background: var\(--surface-2\);[\s\S]*?border: 1px solid/);
 });

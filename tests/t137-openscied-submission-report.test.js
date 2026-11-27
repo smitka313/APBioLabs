@@ -13,6 +13,12 @@ const fixture = () => ({
   ] }],
 });
 
+test('preview explains how to hand in a saved report and that downloading is not submission', () => {
+  const f = mountedReport();
+  const help = f.doc.body.querySelector('.osr-screen-help');
+  assert.match(help.textContent, /To hand in, upload or share the saved report where your teacher directs\. Downloading does not submit it\./);
+});
+
 test('report normalization snapshots typed activity evidence and preserves zero, false and multiline answers', () => {
   const input = fixture(), actual = Report.normalize(input, NOW);
   input.sections[0].items[0].value = 'changed after capture';
@@ -177,6 +183,7 @@ test('Word packing revalidates the open snapshot before download', async () => {
   wordButton.click();
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(f.downloads, ['ecosystem-report-recovery.docx']);
+  assert.match(f.doc.body.all().find(n => n.id?.endsWith('-preview-status')).textContent, /downloaded to this device.*not been submitted/);
 });
 
 test('opted-in Print opens a report-only tab and never prints the live activity', () => {
@@ -189,6 +196,7 @@ test('opted-in Print opens a report-only tab and never prints the live activity'
   assert.equal(sheet.querySelector('.osr-title').tag, 'h1');
   assert.equal(sheet.querySelector('.osr-label').textContent, 'Activity complete');
   assert.ok(sheet.all().some(n => n.textContent === 'Original Student'));
+  assert.match(sheet.querySelector('.osr-screen-help').textContent, /Downloading does not submit it/);
   const print = sheet.all().find(n => n.tag === 'button');
   const css = f.printTab.document.head.children.find(n => n.tag === 'link');
   assert.equal(css.href, 'https://example.test/openscied-submission-report.css');

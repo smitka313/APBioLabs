@@ -1,0 +1,362 @@
+[
+  {
+    "id": "openscied-b1-field-notebook",
+    "title": "Serengeti Field Notebook",
+    "unit": 1,
+    "lesson": "Lesson 2",
+    "time": "25–35 min · selected stations",
+    "question": "Why did people protect the Serengeti, and how did they decide what to protect?",
+    "plan": [
+      "Write two different investigation questions.",
+      "Compare two months on the map. Pin or note evidence from two stations.",
+      "Use two pieces of evidence to explain a boundary decision. Write one new question."
+    ],
+    "turnIn": "Preview report: turn in your explanation, station evidence, and new question.",
+    "fallback": "If a video is blocked, use the history and written station exhibits."
+  },
+  {
+    "id": "openscied-b1-migration",
+    "title": "Migration Map Explorer",
+    "unit": 1,
+    "lesson": "Lessons 3–4",
+    "time": "40–50 min · selected questions",
+    "question": "What might explain why wildebeest move through the Serengeti during the year?",
+    "plan": [
+      "Compare two months on the map. Pause and save a note about each month.",
+      "In Investigate evidence, compare the same anthrax measure across June or July groups.",
+      "Explain what the evidence supports. Cite the month, group, and measure."
+    ],
+    "turnIn": "Turn in a draft report with the two saved observations and an evidence-based explanation.",
+    "fallback": "If the interview is blocked, use the field health cards and their matching graph."
+  },
+  {
+    "id": "openscied-b1-carrying-capacity",
+    "title": "Carrying Capacity",
+    "unit": 1,
+    "lesson": "Lesson 5",
+    "time": "45–55 min · grass model",
+    "question": "How does grass availability affect the number of wildebeest the model can support?",
+    "plan": [
+      "Save a prediction and run the baseline grass model.",
+      "Change only grass availability. Record a comparison and examine rounds 7–12.",
+      "Use counts from both runs to answer the five core explanation prompts."
+    ],
+    "turnIn": "Turn in the report with both model runs and your core explanations.",
+    "fallback": "Use a projected model run and copy its round counts into a comparison table."
+  },
+  {
+    "id": "openscied-b1-serengeti",
+    "title": "Serengeti Board Game",
+    "unit": 1,
+    "lesson": "Lesson 7",
+    "time": "45–60 min · includes analysis",
+    "question": "How do migration and predator–prey encounters change the modeled herd?",
+    "plan": [
+      "Choose solo or numbered group roles. Review the dice example before the first hunt.",
+      "Play from winter through fall. Keep track of events and changes in the record.",
+      "Choose a numbered event or hunt. Use it to explain one herd change and a model limit."
+    ],
+    "turnIn": "Turn in the board’s report with the event number and your analysis. Group reports need no names.",
+    "fallback": "Use the written How to play and dice example if the walkthrough video is blocked."
+  },
+  {
+    "id": "openscied-b1-ripple",
+    "title": "Serengeti Ripple Effects",
+    "unit": 1,
+    "lesson": "Lesson 8",
+    "time": "15–20 min · after the board game",
+    "question": "Why might migration matter to organisms that never migrate?",
+    "plan": [
+      "Build and check all six connections in the local influence web.",
+      "Predict a change in dung beetle activity. Record both visit scenarios.",
+      "Compare the same model step, trace two links, and explain one limit."
+    ],
+    "turnIn": "Turn in your report with both runs and your explanation of the ripple effect.",
+    "fallback": "If devices are limited, compare both scenarios from a shared or projected run."
+  },
+  {
+    "id": "openscied-b2-burn-lab",
+    "title": "Burning Fuels: What Burns and Why",
+    "unit": 2,
+    "lesson": "Lesson 2",
+    "time": "About 40 min",
+    "question": "What can simulated burning tell us about why peat can fuel a fire?",
+    "plan": [
+      "Predict the temperature change. Weigh each fuel and take its starting temperature.",
+      "Simulate all five burns. Reweigh and reread temperature to save each run.",
+      "Compare mass loss, temperature change, and indicator color. Explain one fair-test limit."
+    ],
+    "turnIn": "Turn in the report with recorded burns and an evidence-based explanation.",
+    "fallback": "If the simulation will not run, analyze teacher-provided readings. Do not burn fuels at home."
+  },
+  {
+    "id": "openscied-b2-fires",
+    "title": "Fires: Peat, Decomposition & Earth’s Tilt",
+    "unit": 2,
+    "lesson": "Lessons 3 and 5",
+    "time": "About 60 min total · can split",
+    "question": "How could temperature and light affect how much peat builds up?",
+    "plan": [
+      "Lesson 3: predict and compare yeast foam over time at different temperatures.",
+      "Lesson 5: compare indicator readings from tubes under different light conditions.",
+      "Use a reading from each test to explain how peat formed or remained."
+    ],
+    "turnIn": "Turn in evidence from both tests and your explanation, or a draft for one assigned test.",
+    "fallback": "Use the labeled class example to discuss an unavailable comparison. Mark it as example data."
+  },
+  {
+    "id": "openscied-b2-peat-bog-lab",
+    "title": "Peat Bog Carbon Lab",
+    "unit": 2,
+    "lesson": "Unit B.2 companion",
+    "time": "45–60 min · trial comparison",
+    "question": "What changes whether a modeled Arctic peat bog stores or releases carbon?",
+    "plan": [
+      "Choose a starting scenario and record a baseline trial.",
+      "Change one setting and save a labeled trial. Keep other settings fixed.",
+      "Use two graph values to compare process rates and explain the net carbon result."
+    ],
+    "turnIn": "Turn in the report with your matched trials and the Test one variable response.",
+    "fallback": "Use a projected or printed trial table and label its readings as simulated."
+  },
+  {
+    "id": "openscied-b2-carbon-journey",
+    "title": "Carbon Atom Journey",
+    "unit": 2,
+    "lesson": "Lesson 9",
+    "time": "30–40 min · dice journey",
+    "question": "Where can one carbon atom go, and how is its movement different from energy transfer?",
+    "plan": [
+      "Record at least ten rolls, including stays.",
+      "Review any required reference cards, then finish the Journey.",
+      "Use two recorded turns in Make sense. Distinguish what moved from what happened to energy."
+    ],
+    "turnIn": "Turn in the report with your journal and Make sense responses. Budget is optional unless assigned.",
+    "fallback": "Use the printed Lesson 9 station cards and a paper journal if the model is unavailable."
+  },
+  {
+    "id": "openscied-b3-cancer-rates",
+    "title": "Cancer Rates Data Dive",
+    "unit": 3,
+    "lesson": "Lesson 1 companion",
+    "time": "25–35 min",
+    "question": "What do cancer diagnosis and death rates tell us, and what do they leave out?",
+    "plan": [
+      "Save a prediction. Open the Evidence Folder, save observations for A–C, and complete the checks for D–F.",
+      "Save a follow-up question. Choose a dataset that answers it and pin two groups with reported values.",
+      "In Explain, use both values and units to support a claim. Name one limit and select Finish investigation."
+    ],
+    "turnIn": "Submit your finished activity report with the six exhibits, question, pinned comparison, claim, and limitation. Use population data only; no personal or family health information.",
+    "fallback": "If the chart is hard to read, use its data table. If the site is unavailable, use the lesson figures and a teacher-provided table to record a comparison and limitation on paper."
+  },
+  {
+    "id": "openscied-b3-screening",
+    "title": "Cancer Screening Design Lab",
+    "unit": 3,
+    "lesson": "Engineering extension after the Data Dive",
+    "time": "25–30 min",
+    "question": "How could a clinic network improve access to needed care within its budget?",
+    "plan": [
+      "Read the three fictional cases and run the hospital plan. Note each person’s care needs, costs, and travel time.",
+      "Move the ultrasound machine and trained operator together. Run a redesign and check the same three cases in both plans.",
+      "In Recommend a plan, use patient and clinic costs as evidence. Name who could still miss care and finish."
+    ],
+    "turnIn": "Submit the finished report with both plans, all three checked comparisons, and your recommendation. A winning design is not required.",
+    "fallback": "Without a device, use a teacher-provided district results table and cost sheets. Compare the same cases on paper. The fictional credits and imaging outcomes are not medical advice."
+  },
+  {
+    "id": "openscied-b3-cell-cycle",
+    "title": "Cell Cycle & Cancer",
+    "unit": 3,
+    "lesson": "Lessons 3–4; short route uses Lesson 4",
+    "time": "About 40 min for the short route; 2 periods for the full activity",
+    "question": "How does a longer time to divide change the number of opportunities to copy DNA?",
+    "plan": [
+      "Skip the Cell-cycle game for this short route. In Growth model, write a prediction and run skin cells to age 50 at average body size.",
+      "Run a second set to age 70 with the same tissue and body size. Both sets have three trials.",
+      "In Analyze, answer Q1, Q2, and Q4a with your results. Select one model limit, then open Wrap up."
+    ],
+    "turnIn": "Submit your report with both sets and the assigned answers and limit. An In progress report is expected for this short route.",
+    "fallback": "Use a teacher-provided pair of three-trial sets. Compare means and variation on paper. Simulated counts are not individual cancer risks."
+  },
+  {
+    "id": "openscied-b3-dna-workshop",
+    "title": "DNA Workshop: Build, Copy, Decode",
+    "unit": 3,
+    "lesson": "Preparation for Lessons 5–6",
+    "time": "20–30 min",
+    "question": "How do copying DNA, making RNA, and building an amino acid chain differ?",
+    "plan": [
+      "Build a nucleotide from a phosphate, a sugar, and a base. Use the pairing key to build the complementary DNA.",
+      "Copy DNA and identify an original strand in each result. Make RNA using one DNA strand as the template.",
+      "Decode the fictional RNA message with the codon key. Complete the final product sort."
+    ],
+    "turnIn": "Show your completed final sort or submit the activity report if assigned. Written observations are optional.",
+    "fallback": "If dragging is difficult, select a piece and then its slot by touch or keyboard. Without a device, use a teacher-provided fictional sequence and printed pairing and codon keys."
+  },
+  {
+    "id": "openscied-b3-dna-p53",
+    "title": "DNA Copying, p53 & Gene Expression",
+    "unit": 3,
+    "lesson": "Lessons 5–6; first session uses Lesson 5",
+    "time": "60–75 min total or 2 sessions by lesson",
+    "question": "How can a DNA copying error change the information a cell passes on?",
+    "plan": [
+      "Open DNA fork and record the correctly paired letters and mismatches on both strands before using the p53 model.",
+      "Try version a, replace any missing letters, and record both strands again. Use the before-and-after counts to explain the result.",
+      "In Making sense and Explanation, distinguish a copying error from a lasting mutation. Save your work for the next session."
+    ],
+    "turnIn": "Submit your Lesson 5 report as a draft. In Lesson 6, record expression runs for strands A, B, and C and complete the remaining responses for the finished report.",
+    "fallback": "Use teacher-provided before-and-after fork evidence to write an explanation. The model simplifies DNA repair; its p53 piece does not show what the protein does directly in a cell."
+  },
+  {
+    "id": "openscied-b3-inheritance-environment",
+    "title": "Inheritance, Environment & Cancer Risk",
+    "unit": 3,
+    "lesson": "Lessons 8–9; single-session route uses Lesson 9",
+    "time": "1 period for Lesson 9 only; 60–80 min for both lessons",
+    "question": "What can a controlled UV model show that a pattern across places cannot?",
+    "plan": [
+      "Start at Environment for Lesson 9 only. Compare the skin-cancer graphs and note one pattern and one uncertainty.",
+      "In Plan a test, choose one variable to change and a result to measure. Run a controlled comparison in Virtual yeast.",
+      "Use recorded colony counts for a claim and explanation. In Wrap up, distinguish simulated yeast survival from cancer risk in people."
+    ],
+    "turnIn": "Submit the Lesson 9 report with your testable question, modeled results, evidence-based claim, and wrap-up. The family activities are not required for this route.",
+    "fallback": "Use teacher-provided lesson graphs and virtual results without any real exposure experiment. Compare the graph pattern and classroom model on paper. No family health information is needed."
+  },
+  {
+    "id": "openscied-b4-hawksbeard",
+    "title": "Hawksbeard Wind Lab",
+    "unit": 4,
+    "lesson": "Lesson 2",
+    "time": "20–30 min digitally; allow extra time for the published study.",
+    "question": "How does the landing surface affect which hawksbeard seeds reach soil in a field and a city?",
+    "plan": [
+      "Predict where feathery and nonfeathery seeds will land before starting a release.",
+      "Release all five matched plant pairs. Compare soil landings in the field and city.",
+      "Revisit your prediction, then compare the nonfeathery share of soil landings. Name both denominators and explain a limit."
+    ],
+    "turnIn": "Use Preview report to save your prediction, paired trial data, and written comparison and explanation.",
+    "fallback": "Use the physical seed-dispersal test or teacher-provided paired landing counts. On paper, compute both fractions and explain what a soil landing does not show."
+  },
+  {
+    "id": "openscied-b4-rat-generations",
+    "title": "Rat Generations",
+    "unit": 4,
+    "lesson": "Lesson 3",
+    "time": "30–40 min for the model and explanation; reading discussion is separate.",
+    "question": "How can selection change which inherited alleles become more common over generations?",
+    "plan": [
+      "Save a prediction. Move each assigned parent pair to its nest and complete its Punnett square.",
+      "Follow the colony through Gen 5. Compare births with survivors in Gen 3 and Gen 4.",
+      "Use a count and a percentage to explain what changed. Keep colony size, trait percentage, and allele frequency separate."
+    ],
+    "turnIn": "Save your generation record, quick check, and explanations through Preview report.",
+    "fallback": "Use the Lesson 3 bead model and paper Punnett squares. Record births and survivors, then make the same comparison from your table."
+  },
+  {
+    "id": "openscied-b4-junco",
+    "title": "Junco Investigation",
+    "unit": 4,
+    "lesson": "Lesson 4",
+    "time": "25–35 min for the digital investigation and partner discussion.",
+    "question": "What does shared aviary care help explain about differences between city and mountain juncos?",
+    "plan": [
+      "Compare flight distances for one matching field situation. Write a note naming both populations.",
+      "Identify the matched aviary conditions. Save an exploration prediction and reveal the results.",
+      "Read one CORT scatterplot point. Explain the aviary outcome with evidence from two parts and name a limit."
+    ],
+    "turnIn": "Save your field note, aviary prediction, evidence-based explanation, and limit or next question through Preview report.",
+    "fallback": "Use printed field, aviary, and CORT graphs from Lesson 4. Write the same prediction, evidence comparison, and limitation on paper."
+  },
+  {
+    "id": "openscied-b4-wildlife-corridor",
+    "title": "Wildlife Corridor Lab",
+    "unit": 4,
+    "lesson": "Lessons 7–9",
+    "time": "25–35 min for the digital companion; keep the original reading and discussion.",
+    "question": "How could a road crossing change the movement of inherited alleles between separated populations?",
+    "plan": [
+      "Compare earlier and recent Florida panther range maps. Predict which modeled setup will make allele counts more similar.",
+      "Run the connected habitat and no-crossing road for eight generations. Place a crossing and rerun from the same start.",
+      "Inspect one offspring’s two inherited copies. Compare the road runs using A-copy counts and explain what the model cannot show."
+    ],
+    "turnIn": "Choose Finish investigation, then save your matched runs and evidence-based explanation through Preview report.",
+    "fallback": "Provide a printed matched set of the three model runs. Have students trace one inheritance example with allele cards and compare the A-copy gaps on paper."
+  },
+  {
+    "id": "openscied-b5-wapusk",
+    "title": "Three Bears in Wapusk",
+    "unit": 5,
+    "lesson": "Lesson 1",
+    "time": "25–35 min of digital work across the lesson; keep the original discussions and models.",
+    "question": "What do different kinds of evidence tell us about bears in changing Arctic habitats?",
+    "plan": [
+      "Switch seasons in the Wapusk map and compare the schematic with the original sighting maps. Record a seasonal pattern.",
+      "Compare evidence at two scales. Investigate one assigned region and separate what its evidence shows from what remains unknown.",
+      "Draw or describe two initial models, one for seasonal ice and one for persistent ice. Write one Driving Question Board question."
+    ],
+    "turnIn": "Save your observations, regional evidence, two initial models, and question through Preview report.",
+    "fallback": "Use the original sighting maps, Data Exploration slides, Scale Organizer, and regional handouts or transcript. Record both models on paper."
+  },
+  {
+    "id": "openscied-b5-thermoregulation",
+    "title": "Bear Thermoregulation Lab",
+    "unit": 5,
+    "lesson": "Lesson 2",
+    "time": "25–35 min digitally; collecting human readings and class discussion need separate time.",
+    "question": "Could overheating help explain why a polar bear might give up a food source?",
+    "plan": [
+      "Predict what happens at a shared food source. Revisit the prediction using a field observation.",
+      "Compare breaks at two treadmill speeds and read the core-temperature graph. Analyze human surface readings or the labeled practice table.",
+      "Sort all six matter and energy cards. Explain the overheating idea using field and lab evidence, then propose a field test."
+    ],
+    "turnIn": "Save your field and treadmill comparisons, temperature analysis, card placements, and explanation through Preview report.",
+    "fallback": "Use the printed field evidence, treadmill table, and temperature graph. Provide the labeled practice readings and sort paper matter and energy cards."
+  },
+  {
+    "id": "openscied-b5-ancestry",
+    "title": "Bear Ancestry Lab",
+    "unit": 5,
+    "lesson": "Lesson 3",
+    "time": "25–35 min digitally; specimen stations and partner discussion are separate.",
+    "question": "Which two of the three bears share the most recent common ancestor, and what evidence supports that?",
+    "plan": [
+      "Compare the trait stations. Save a first guess about the closest pair using an observed trait.",
+      "Compare DNA alignments for the three pairs. Record differences in the comparison log.",
+      "Build and check a tree. Explain one branch point and whether the trait and DNA evidence changed your first guess."
+    ],
+    "turnIn": "Save your trait observation, DNA comparison log, tree, and revised explanation through Preview report.",
+    "fallback": "Use available specimens or printed trait stations, the Bear Traits Organizer, and a printed alignment. Count differences and sketch the tree on paper."
+  },
+  {
+    "id": "openscied-b5-speciation",
+    "title": "Ice Age Bear Speciation Explorer",
+    "unit": 5,
+    "lesson": "Lesson 4",
+    "time": "30–40 min digitally; if split across periods, pause after the first argument.",
+    "question": "How might changing ice and inherited traits have contributed to the separation of bear lineages?",
+    "plan": [
+      "Choose a climate cycle, place bears in both phases, and check generation estimates. Save a first argument.",
+      "Pin one fossil of each bear type and compare their ages and sites. Read all three gene cards and test a bear in each habitat.",
+      "Revise your argument using climate, fossil, and genetic evidence. Name what remains uncertain and write one next question."
+    ],
+    "turnIn": "Finish the investigation and save both arguments, fossil pins, trait matches, and conclusion check through Preview report.",
+    "fallback": "Use the Glacial and Interglacial Periods, Bear Fossils Map, and Genetic Bear Data handouts. Save the initial argument on paper before introducing the fossil and trait evidence."
+  },
+  {
+    "id": "openscied-b5-hybrid",
+    "title": "Arctic Bear Futures & Hybridization",
+    "unit": 5,
+    "lesson": "Lesson 6",
+    "time": "25–35 min digitally plus class discussion; use after the Lesson 5 model revision.",
+    "question": "What can sea-ice projections, a real bear family, and a simulation tell us about possible futures for hybrids?",
+    "plan": [
+      "Pin a future year. Compare lower- and higher-emissions September sea-ice area and write a prediction.",
+      "Visit both islands and trace one first-generation hybrid and one backcross. Separate family evidence from encounter counts.",
+      "Record ten simulated matings. Use a trait count to explain one habitat trade-off and state what the simulation cannot predict."
+    ],
+    "turnIn": "Finish the investigation and save the climate comparison, family evidence, mating record, and claim through Preview report.",
+    "fallback": "Use the printed Future Predictions figure and pedigree. Use four coin flips per mating for ten matings, then tally traits and write the claim on paper."
+  }
+]

@@ -86,7 +86,10 @@ async function runLab(b, srv, lab, dir) {
   ok(after.ds === before.ds && after.id.name === name, 'key results, Dataset ID and identity persist: ' + after.ds);
   // 7. .docx report from the Submit part
   await p.evaluate(() => Lab.pages.go('submit')); await sleep(600);
-  const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 30000 }), p.locator('section.step.is-current').getByRole('button', { name: 'Download .docx' }).first().click()]);
+  const reportBar = p.locator('#submit.is-current .report-bar');
+  const word = reportBar.locator('#lab-report-download-word');
+  ok(await word.and(reportBar.getByRole('button', { name: 'Download Word (.docx)', exact: true })).isVisible(), 'the report toolbar shows the Word download label');
+  const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 30000 }), word.click()]);
   const docx = path.join(dir, lab + '-report.docx'); await dl.saveAs(docx);
   const zip = await JSZip.loadAsync(fs.readFileSync(docx));
   const xml = (await zip.file('word/document.xml').async('string')).replace(/<w:tab\/>/g, ' ').replace(/<\/w:p>/g, '\n').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'");

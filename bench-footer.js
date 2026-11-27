@@ -29,10 +29,15 @@
       logo.height = 144;
       home.appendChild(logo);
     });
-    var course = document.createElement('span');
+    var course = document.createElement('a');
+    course.href = linkTo(ap ? 'ap-biology.html' : 'openscied-dashboard.html');
     course.className = 'bench-activity-course';
     course.textContent = ap ? 'AP Biology labs' : 'Biology Companion Activities · Unit ' + ose[1];
-    wrap.append(home, course);
+    var help = document.createElement('a');
+    help.className = 'bench-activity-course';
+    help.textContent = 'Saving & help';
+    help.href = linkTo('privacy-help.html#saving');
+    wrap.append(home, course, help);
     header.appendChild(wrap);
     // Keep the existing skip link the first keyboard stop.
     var skip = Array.from(document.body.children).find(function (el) {
@@ -43,7 +48,7 @@
 
   function privacyCopy(wrap) {
     if (!document.querySelector('script[data-goatcounter]')) return;
-    var standard = 'This site counts anonymous page visits without cookies. Nothing you type, including your name and answers, is sent anywhere.';
+    var standard = 'This site counts page visits without cookies. Student names and answers stay in this browser unless you choose to share them.';
     var found = false;
     var variants = /This site counts anonymous page visits (?:with GoatCounter \(no cookies\)|without cookies)\. Nothing you type, including your name and answers, is sent anywhere\.|(?:Analytics count page visits only|Anonymous page visits (?:only|are counted without cookies))\./gi;
     wrap.querySelectorAll('p').forEach(function (p) {
@@ -58,7 +63,7 @@
       }
       if (!p.textContent.trim() && !p.children.length) p.remove();
     });
-    if (!found) {
+    if (!found && !wrap.textContent.includes(standard)) {
       var line = document.createElement('p');
       line.textContent = standard;
       wrap.appendChild(line);

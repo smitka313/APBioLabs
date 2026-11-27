@@ -48,7 +48,7 @@ function page(localStorage,pathname='/index.html', beforeScriptLoad=()=>{}, prog
   const location={pathname,reload:()=>nav.push('reload'),assign:file=>nav.push(file)};
   const env={console,navigator:{},document:doc,location,localStorage,sessionStorage:storage(),
     setTimeout:noop,clearTimeout:noop,setInterval:noop,clearInterval:noop,addEventListener:noop,requestAnimationFrame:noop,cancelAnimationFrame:noop,
-    Blob,TextEncoder,TextDecoder,btoa,atob,URL:{createObjectURL:blob=>(downloads.push(blob),'blob:test'),revokeObjectURL:noop}};
+    dispatchEvent:noop,Event,Blob,TextEncoder,TextDecoder,btoa,atob,URL:{createObjectURL:blob=>(downloads.push(blob),'blob:test'),revokeObjectURL:noop}};
   doc.head=new Element('head');
   doc.head.append=script=>{
     assert.ok(['openscied-dashboard.js','openscied-b5-hybrid-data.js'].includes(script.src));

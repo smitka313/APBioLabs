@@ -83,9 +83,12 @@ const PAGES = ['ap-biology.html', 'teachers.html', 'teacher-dashboard.html', 'pr
 
     // .docx through the real button and the real download path.
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 't60-'));
-    await p.evaluate(() => { const b = Array.from(document.querySelectorAll('button')).find(x => x.textContent.trim() === 'Download .docx'); b.scrollIntoView({ block: 'center' }); });
+    const reportBar = p.locator('#submit .report-bar');
+    const word = reportBar.locator('#lab-report-download-word');
+    T.ok(await word.and(reportBar.getByRole('button', { name: 'Download Word (.docx)', exact: true })).isVisible(), 'the report toolbar shows the Word download label');
+    await word.scrollIntoViewIfNeeded();
     try {
-      const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 30000 }), p.click('button:has-text("Download .docx")')]);
+      const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 30000 }), word.click()]);
       const f = path.join(dir, dl.suggestedFilename()); await dl.saveAs(f);
       const buf = fs.readFileSync(f);
       T.ok(/\.docx$/.test(dl.suggestedFilename()) && buf.length > 5000 && buf.slice(0, 2).toString() === 'PK', `.docx downloaded: ${dl.suggestedFilename()} (${buf.length} bytes)`);
