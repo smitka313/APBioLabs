@@ -35,6 +35,9 @@ async function art(page) {
         assert.match(image.alt, /Microscope.*agar plates.*flask.*gel electrophoresis/i);
         assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
         assert.equal(await p.locator('#labs .card').count(), 13);
+        assert.equal(await p.locator('#labs .bench-card-open').count(), 13);
+        assert.equal(await p.locator('.bench-dashboard-actions .bench-dashboard-browse').getAttribute('href'), '#labs');
+        assert.equal(await p.locator('.bench-dashboard-actions .bench-dashboard-teachers').getAttribute('href'), 'teacher-hub.html');
         assert.equal(await p.locator('#bench-note, #bench-preview, #migration-help').count(), 0);
         assert.equal(await p.locator('[data-lab-progress="lab05"] .prog-bar i').evaluate(el => el.style.width), '100%');
         assert.ok(await p.locator('#resume').isVisible(), 'saved work remains resumable independently of the banner');
@@ -46,7 +49,7 @@ async function art(page) {
             return r*.2126 + g*.7152 + b*.0722;
           };
           const bg = lum(getComputedStyle(document.querySelector('.hero')).backgroundColor);
-          return ['h1', '.eyebrow', 'p.lede', '.hero-links a', '.hero-browse'].map(sel => {
+          return ['h1', '.eyebrow', 'p.lede', '.bench-dashboard-teachers'].map(sel => {
             const fg = lum(getComputedStyle(document.querySelector('.hero ' + sel)).color);
             return (Math.max(fg,bg)+.05)/(Math.min(fg,bg)+.05);
           });

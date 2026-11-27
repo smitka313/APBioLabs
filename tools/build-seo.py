@@ -346,11 +346,12 @@ def cards():
                        f'        <img class="thumb" src="img/lab{number:02}.webp" width="480" height="300" alt="{escape(lab["alt"], quote=True)}" {image_attrs}>\n'
                        f'        <span class="num">Investigation {number}</span>\n'
                        f'        <h3>{escape(lab["title"])}</h3>\n'
+                       f'        <span class="card-assignment bench-dashboard-activity-time small muted"><strong>Time:</strong> {lab["minutes"]} min (full lab) · <strong>Turn in:</strong> lab report.</span>\n'
                        f'        <span class="dq">{escape(lab["q"])}</span>\n'
                        f'        <span class="sim-line">{escape(lab["sim"])}</span>\n'
-                       f'        <span class="card-assignment small muted"><strong>Time:</strong> {lab["minutes"]} min (full lab) · <strong>Turn in:</strong> lab report.</span>\n'
                        '        <span class="meta">' + ''.join('<span class="tag">' + escape(t) + '</span>' for t in lab['topics']) + '</span>\n'
                        f'        <span class="lab-prog" data-lab-progress="lab{number:02}"></span>\n'
+                       '        <span class="bench-card-open" aria-hidden="true">Open activity →</span>\n'
                        '      </a>')
         out.append('    </div>\n  </section>')
     return '\n'.join(out)

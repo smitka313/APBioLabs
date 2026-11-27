@@ -1,0 +1,21 @@
+/* Shared course entrances and card actions. */
+.bench-course-dashboard.bench-ap-hero { padding-block-start: 0; }
+.bench-course-dashboard .bench-dashboard-banner { width: min(1088px, calc(100% - 32px)); margin: clamp(10px,1.35vw,18px) auto 0; border: 1px solid #426456; border-radius: 12px; overflow: hidden; }
+.bench-course-dashboard .bench-dashboard-grid { grid-template-columns: minmax(0,1.05fr) minmax(0,.95fr); align-items: start; gap: clamp(.85rem,2vw,1.2rem) clamp(1.1rem,4vw,2.6rem); padding: clamp(.9rem,2vw,1.6rem) 0 1.1rem; }
+.bench-course-dashboard :is(.bench-dashboard-intro,.bench-dashboard-workspace) { min-width: 0; max-width: none; }
+.bench-dashboard-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem .9rem; margin-top: .75rem; }
+.bench-course-dashboard .bench-dashboard-actions .bench-dashboard-browse { min-height: 44px; margin: 0; color: #0b2a21; background: var(--h-link); border-color: var(--h-link); font-weight: 700; }
+.bench-course-dashboard .bench-dashboard-actions .bench-dashboard-browse:hover { background: #fff; border-color: #fff; }
+.bench-dashboard-teachers { display: inline-flex; align-items: center; min-height: 44px; color: var(--h-link); text-underline-offset: .17em; }
+.bench-dashboard-actions :focus-visible { outline: 2px solid var(--h-link); outline-offset: 3px; }
+.bench-course-dashboard .bench-dashboard-resume { margin: .75rem 0 0; max-width: 32rem; border-inline-start: 5px solid var(--accent); }
+.bench-course-dashboard .bench-dashboard-resume[hidden] { display: none !important; }
+#labs .cards > .card { display: flex; flex-direction: column; gap: 7px; }
+#labs .cards > .card .lab-prog { margin-block-start: auto; padding-block-start: .38rem; }
+.bench-card-open { min-height: 36px; display: grid; place-items: center; padding: .25rem .55rem; color: var(--accent-ink); background: var(--accent); border-radius: var(--r); text-align: center; font-weight: 700; }
+.bench-dashboard-activity-time,.dashboard-activity .dashboard-meta { color: var(--muted); font-size: .84rem; line-height: 1.35; }
+@media (max-width: 760px) { .bench-course-dashboard .bench-dashboard-grid { grid-template-columns: minmax(0,1fr); } }
+@media print {
+  .bench-course-dashboard .bench-dashboard-banner,.bench-dashboard-actions,.bench-card-open { display: none; }
+  .bench-course-dashboard .bench-dashboard-grid { display: block; padding: 0; }
+}
