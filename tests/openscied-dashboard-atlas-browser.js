@@ -5,7 +5,7 @@ const path = require('node:path');
 const T = require('./_h');
 
 const originals = {
-  "b1-field-notebook": ["openscied-atlas-b1-field-notebook-preview.svg",960,600],
+  "b1-field-notebook": ["openscied-atlas-b1-field-notebook-preview.webp",960,600],
   "b5-wapusk": [
     "openscied-wapusk-card.svg",
     960,
