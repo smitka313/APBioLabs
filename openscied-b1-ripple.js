@@ -257,6 +257,9 @@
     document.querySelectorAll('button[data-step]').forEach(btn=>{
       btn.disabled=!available(btn.dataset.step);
       if(btn.dataset.step===s.step)btn.setAttribute('aria-current','step');else btn.removeAttribute('aria-current');
+      btn.toggleAttribute('data-nav-step-complete',Boolean(btn.dataset.step==='build'?ready(s):btn.dataset.step==='compare'?done(s):validFinished(s)));
+      btn.setAttribute('data-nav-step-unlock',!btn.disabled?'':!ready(s)?'Check all six food-web connections before opening Predict and run.':
+        'Save a prediction and record both model runs before opening Explain.');
     });
     rp('to-compare').disabled=!ready(s);
     rp('form').querySelector('button').disabled=!!prediction(s);

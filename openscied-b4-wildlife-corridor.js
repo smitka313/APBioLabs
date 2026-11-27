@@ -293,9 +293,13 @@
     }
   }
   function gates(){
+    const done={predict:!!state.prediction,model:state.generations.baseline===END&&state.generations.corridor===END,
+      explain:state.finished&&Boolean(state.claim.trim()&&state.limits.trim())};
     for(const btn of $$('[data-wc-go]')){
-      btn.disabled=!available(btn.dataset.wcGo);
-      if(btn.dataset.wcGo===state.step)btn.setAttribute('aria-current','step');else btn.removeAttribute('aria-current');
+      const step=btn.dataset.wcGo;
+      btn.disabled=!available(step);
+      if(step===state.step)btn.setAttribute('aria-current','step');else btn.removeAttribute('aria-current');
+      if(btn.closest('.wc-nav')) btn.toggleAttribute('data-nav-step-complete',Boolean(done[step]));
     }
     const baseline=state.generations.baseline, corridor=state.generations.corridor, hasCrossing=state.crossing===1;
     const baselineButton=by('run-baseline'), crossingButton=by('run-crossing'), tile=by('crossing-tile');

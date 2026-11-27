@@ -585,6 +585,8 @@
     for(const b of document.querySelectorAll('[data-sd-step]')){
       b.disabled=b.dataset.sdStep==='explain'&&!ready();
       if((b.dataset.sdStep==='explain')===explain)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');
+      b.setAttribute('data-nav-step-unlock',!b.disabled?'':!s.started?'Run the hospital plan first.':!s.trial?
+        'Run a redesign before comparing patients.':'Compare all three patients to unlock your recommendation.');
     }
     $('journeys').hidden=!s.started;$('to-explain').disabled=!ready();$('to-explain').hidden=!s.trial;$('unlock-explain').hidden=!s.trial||ready();
     $('view').options[1].disabled=!s.trial;$('view').value=view;
@@ -601,6 +603,9 @@
   }
   function renderFinish(){
     const done=complete(), canFinish=ready()&&hasRecommendation();
+    for(const b of document.querySelectorAll('.sd-steps [data-sd-step]')){
+      b.toggleAttribute('data-nav-step-complete',b.dataset.sdStep==='explain'?done:ready());
+    }
     $('finish').hidden=done;
     $('finish').disabled=!canFinish||done;
     $('edit-recommendation').hidden=!done;
