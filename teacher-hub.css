@@ -53,3 +53,11 @@
 @media (max-width: 720px) {
   .assign-start ol { grid-template-columns: 1fr; gap: 0; }
 }
+
+#assign-copy-text {
+  box-sizing: border-box;
+  width: 100%;
+  margin-block: .5rem;
+  min-height: 8rem;
+  resize: vertical;
+}

@@ -36,27 +36,66 @@ async function contract(root) {
   for (const f of copyTargets) assert.match(f,/^(?:lab\d\d|openscied-b[1-5]-[a-z\d-]+)\.html$/);
   assert.match(sample,/fictional/i);
   assert.doesNotMatch(sample,/sample-report-lab05|53V-BFN|sample-report:start/i);
+  const cards = [...hub.matchAll(/<article class="assign-card">[\s\S]*?<\/article>/g)].map(m => m[0]);
+  assert.equal(cards.length, 37, 'all activities have an assignment');
+  for (const name of ['assign-copy-title', 'assign-copy-url-label', 'assign-copy-text', 'assign-copy-text-label']) {
+    assert.ok(hasId(hub, name), 'copy dialog includes ' + name);
+  }
+  for (const [guide, course] of [['teachers.html','ap'],['openscied-teacher-guide.html','openscied']]) {
+    assert.ok(read(root, guide).includes('href="teacher-hub.html#' + course + '"'), 'guide links to its assignment list');
+  }
   const js=read(root,'teacher-hub.js');
-  // Exercise the actually shipped click handler in a minimal DOM contract.
-  // This does not test browser clipboard permission or native dialog rendering.
-  for (const clipboard of [true,false]) {
-    let copied, focused=false, selected=false, open=false, fallbackOnClose;
-    const status={textContent:''}, field={ value:'', select(){selected=true;} };
-    const dialog={ addEventListener(type,fn){assert.equal(type,'close');fallbackOnClose=fn;},showModal(){open=true;} };
-    let handler;
-    const button={hidden:true,addEventListener(type,fn){assert.equal(type,'click');handler=fn;},focus(){focused=true;},closest(){return {querySelector(){return {getAttribute(){return MIGRATION;}};}};}};
-    const els={'.teacher-hub':{querySelectorAll(){return [button];}},'#assign-status':status,'#assign-copy-dialog':dialog,'#assign-copy-url':field};
-    vm.runInNewContext(js,{document:{querySelector(s){return els[s];}},
-      navigator:{clipboard:{writeText:async url=>{if(!clipboard) throw new Error('clipboard denied'); copied=url;}}},
-      URL,setTimeout(){return 1;},clearTimeout(){}});
-    assert.equal(button.hidden,false);
-    await handler();
-    const expected=ORIGIN+'/'+MIGRATION.replace(/\.html$/,'');
-    if (clipboard) {
-      assert.equal(copied,expected); assert.match(status.textContent,/copied/i); assert.equal(open,false);
-    } else {
-      assert.equal(open,true);assert.equal(field.value,expected); assert.equal(selected,true);
-      fallbackOnClose(); assert.equal(focused,true);
+  // Exercise the shipped click handler using each real card's public text.
+  // This contract alone does not test native clipboard permission or dialog rendering.
+  for (const [i, raw] of cards.entries()) {
+    assert.match(raw, /<button\b[^>]*\bdata-copy-assignment\b[^>]*>Copy assignment/);
+    const text = value => ({textContent:value.replace(/&amp;/g, '&')});
+    const titleText = raw.match(/<h4>([^<]+)<\/h4>/)[1];
+    const timing = raw.match(/<p class="assign-meta">.*?<span>([^<]+)<\/span>/s)[1];
+    const turnIn = raw.match(/<p class="assign-turnin"><strong>Turn in:<\/strong> ([^<]+)/)[1];
+    for (const full of [false,true]) for (const clipboard of [true,false]) {
+      let copied, focused=false, open=false, fallbackOnClose, handler;
+      const status={textContent:''}, title={textContent:''};
+      const field = () => ({value:'', selected:false, focus(){}, select(){this.selected=true;}});
+      const urlField=field(), textField=field(), urlLabel={}, textLabel={};
+      const dialog={addEventListener(type,fn){assert.equal(type,'close');fallbackOnClose=fn;},showModal(){open=true;}};
+      const ct={
+        '[data-assignment]':{getAttribute(){return copyTargets[i];}},
+        'h4':text(titleText), '.assign-meta span':text(timing), '.assign-turnin':text('Turn in: ' + turnIn),
+      };
+      const button={
+        hidden:true,hasAttribute(){return full;},addEventListener(type,fn){assert.equal(type,'click');handler=fn;},
+        focus(){focused=true;},closest(){return {querySelector(selector){return ct[selector];}};},
+      };
+      const els={
+        '.teacher-hub':{querySelectorAll(){return [button];}}, '#assign-status':status, '#assign-copy-dialog':dialog,
+        '#assign-copy-title':title, '#assign-copy-url':urlField, '#assign-copy-url-label':urlLabel,
+        '#assign-copy-text':textField, '#assign-copy-text-label':textLabel,
+      };
+      vm.runInNewContext(js,{document:{querySelector(s){return els[s];}},
+        navigator:{clipboard:{writeText:async value=>{if(!clipboard) throw new Error('clipboard denied'); copied=value;}}},
+        URL,setTimeout(){return 1;},clearTimeout(){}});
+      assert.equal(button.hidden,false);
+      await handler();
+      const url=ORIGIN+'/'+copyTargets[i].replace(/\.html$/,'');
+      const usedField=full?textField:urlField;
+      const value=clipboard?copied:usedField.value;
+      if (full) {
+        assert.ok(value.startsWith(text(titleText).textContent + '\n\n'));
+        assert.ok(value.includes('Open the activity: ' + url + '\n\n'));
+        assert.ok(value.includes('Estimated time: ' + text(timing).textContent));
+        assert.ok(value.includes('Turn in: ' + text(turnIn).textContent));
+        assert.match(value,/Upload one file to this Schoology assignment[.]$/);
+        assert.doesNotMatch(value,/teacher-(?:lab|notes)|aplab:/);
+      } else assert.equal(value,url);
+      if (clipboard) {
+        assert.match(status.textContent,/copied/i); assert.equal(open,false);
+      } else {
+        assert.equal(open,true); assert.equal(usedField.selected,true);
+        assert.equal(urlLabel.hidden,full); assert.equal(textLabel.hidden,!full);
+        fallbackOnClose();
+        assert.equal(focused,true); assert.equal(usedField.value,'');
+      }
     }
   }
   console.log('PASS HTML contracts and isolated copy success/fallback logic');
@@ -101,6 +140,19 @@ async function checkViews(browser,base,opt,routeLibs) {
     const copied=await page.evaluate(()=>window.__blbTestCopy);
     assert.equal(copied,ORIGIN+'/'+MIGRATION.replace(/\.html$/,''));
     assert.equal(new URL(copied).search+new URL(copied).hash,'');
+
+    const fullCopy=migrationCard.getByRole('button',{name:'Copy assignment: Migration Map Explorer',exact:true});
+    await fullCopy.press('Enter');
+    await page.waitForFunction(()=>window.__blbTestCopy?.startsWith('Migration Map Explorer\n'));
+    const migrationText=await page.evaluate(()=>window.__blbTestCopy);
+    assert.ok(migrationText.includes(copied));
+    assert.match(migrationText,/Estimated time: 40–50 min for selected questions/);
+    assert.match(migrationText,/Schoology assignment/);
+    await cardFor('lab01.html').locator('[data-copy-assignment]').click();
+    await page.waitForFunction(()=>window.__blbTestCopy?.startsWith('Artificial Selection\n'));
+    const apText=await page.evaluate(()=>window.__blbTestCopy);
+    assert.match(apText,/Estimated time: 115 min/);
+    assert.match(apText,/In Submit, download your report as Word/);
     await localLink(page,SAMPLE).click();
     await page.getByRole('heading',{level:1,name:/sample student report/i}).waitFor();
     assert.match(await page.locator('main').innerText(),/fictional/i);
@@ -186,6 +238,16 @@ async function checkViews(browser,base,opt,routeLibs) {
       await dialog.getByRole('button',{name:/close/i}).press('Enter');
       await dialog.waitFor({state:'hidden'});
       assert.ok(await trigger.evaluate(el=>el===document.activeElement),'restore focus after clipboard failure');
+      const fullTrigger=guest.locator('.assign-card').filter({has:guest.locator('[data-assignment][href="'+MIGRATION+'"]')}).locator('[data-copy-assignment]');
+      await fullTrigger.press('Enter');
+      await dialog.waitFor();
+      const textValue=dialog.getByRole('textbox',{name:'Assignment text'});
+      assert.equal(await textValue.inputValue(),migrationText);
+      assert.equal(await textValue.evaluate(el=>el.selectionEnd-el.selectionStart),migrationText.length);
+      assert.ok(await value.isHidden());
+      await dialog.getByRole('button',{name:/close/i}).press('Enter');
+      await dialog.waitFor({state:'hidden'});
+      assert.ok(await fullTrigger.evaluate(el=>el===document.activeElement),'restore focus to Copy assignment');
     } finally {await other.close();}
     console.log('PASS assignment, privacy, sample, saved work, resume and blocked-media/export fallback at '+opt.viewport.width+'px');
   } finally {await context.close();}
