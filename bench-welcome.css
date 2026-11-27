@@ -8,6 +8,7 @@
 .bench-portal h1 em{font-weight:600}
 .bench-portal h2{font-size:clamp(1.72rem,3vw,2.65rem);margin:.3rem 0 .55rem}
 .bench-kicker{font:720 .76rem/1.35 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--brass);margin:0}
+.bench-hook :is(strong,span){display:block}
 .bench-intro .lede{max-width:60ch;margin:0;color:var(--ink);font-size:clamp(1rem,2vw,1.28rem);line-height:1.5}
 .bench-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(.85rem,2vw,1.7rem);padding-block:clamp(1.2rem,3.5vw,2.7rem)}
 .bench-choice{background:var(--surface);border:1px solid var(--lined);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;min-width:0;box-shadow:0 10px 26px var(--card-shadow)}
@@ -19,6 +20,8 @@
 .bench-choice-links{margin-top:auto;display:flex;flex-wrap:wrap;align-items:center;gap:.55rem .9rem}
 .bench-choice-links .btn{white-space:normal;min-height:44px}
 .bench-choice-links .bench-guide{min-height:32px;display:inline-flex;align-items:center;text-underline-offset:4px}
+.bench-data-note p{margin:0}
+.bench-data-note p+p{margin-top:.18rem}
 .bench-data-note{padding-block:0 1.5rem;margin:0 auto;color:var(--muted);font-size:.88rem}
 .bench-portal-theme{display:flex;flex-wrap:wrap;gap:.15rem}
 .bench-portal-theme button{min-height:31px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);font:inherit;font-size:.8rem;padding:.18rem .42rem}
