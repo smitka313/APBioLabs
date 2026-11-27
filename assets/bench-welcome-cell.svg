@@ -1,40 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="960" height="364" viewBox="0 0 960 364">
 <defs>
- <radialGradient id="wall" cx=".5" cy=".47" r=".68"><stop stop-color="#386553"/><stop offset=".62" stop-color="#234538"/><stop offset="1" stop-color="#142f2c"/></radialGradient>
- <radialGradient id="light" cx=".5" cy=".42"><stop stop-color="#def2ba" stop-opacity=".19"/><stop offset="1" stop-color="#def2ba" stop-opacity="0"/></radialGradient>
- <pattern id="grid" width="38" height="38" patternUnits="userSpaceOnUse"><path d="M38 0H0V38" fill="none" stroke="#b5c9a4" stroke-opacity=".17"/></pattern>
+ <radialGradient id="wall" cx=".48" cy=".42" r=".69"><stop stop-color="#325749"/><stop offset=".58" stop-color="#203d36"/><stop offset="1" stop-color="#132d2a"/></radialGradient>
     <radialGradient id="cell" cx=".43" cy=".32"><stop stop-color="#8ebfa1"/><stop offset=".72" stop-color="#4d8d79"/><stop offset="1" stop-color="#225951"/></radialGradient>
+ <radialGradient id="vignette" cx=".5" cy=".44" r=".7"><stop offset=".37" stop-color="#0b211d" stop-opacity="0"/><stop offset="1" stop-color="#0b211d" stop-opacity=".58"/></radialGradient>
+ <radialGradient id="key-light"><stop stop-color="#cfe6b2" stop-opacity=".21"/><stop offset="1" stop-color="#cfe6b2" stop-opacity="0"/></radialGradient>
 </defs>
 <rect width="960" height="364" fill="url(#wall)"/>
-<rect width="960" height="364" fill="url(#grid)"/>
-<ellipse cx="480" cy="174" rx="385" ry="201" fill="url(#light)"/>
-<g fill="none" stroke="#abc6a1" stroke-opacity=".19">
-  <circle cx="480" cy="182" r="208"/>
-  <circle cx="480" cy="182" r="202" stroke-dasharray="1 5"/>
-  <path d="M0 182h267m426 0h267M480 0v11m0 342v11"/>
+<ellipse cx="448" cy="154" rx="380" ry="245" fill="url(#key-light)"/>
+<g fill="none" stroke="#a0be9c" stroke-opacity=".19"><circle cx="480" cy="182" r="160"/><path d="M480 18v10m0 308v10M316 182h10m308 0h10"/></g>
+<g fill="#65937a" fill-opacity=".12" stroke="#9eb79d" stroke-opacity=".20" stroke-width="1.75">
+  <path d="M103 232q22-33 62-34t67 28q15 22 1 46t-43 28q-50 7-73-12t-14-56Z"/>
+  <path d="M130 241q13-16 31-10t15 24q-8 17-26 13t-20-27Z"/>
+  <path d="M739 110q14-26 44-27t47 24q9 14-1 32t-44 12q-61-7-46-41Z"/>
+  <path d="M779 110q8-6 20-1 11 8 2 15-8 7-21 0-7-6-1-14Z"/>
 </g>
-<g fill="#4c7c66" fill-opacity=".26" stroke="#94b895" stroke-opacity=".4" stroke-width="2">
-  <path d="M79 245q22-33 62-34t67 28q15 22 1 46t-43 28q-50 7-73-12t-14-56Z"/>
-  <path d="M106 254q13-16 31-10t15 24q-8 17-26 13t-20-27Z"/>
-  <path d="M730 90q14-26 44-27t47 24q9 14-1 32t-44 12q-61-7-46-41Z"/>
-  <path d="M770 90q8-6 20-1 11 8 2 15-8 7-21 0-7-6-1-14Z"/>
-</g>
-  <g transform="translate(480 182) scale(2.36)">
-    <circle r="70" fill="#15372f" stroke="#90a78b" stroke-width="1.5"/>
-    <circle r="63" fill="none" stroke="#91aa8b" stroke-dasharray="1 4"/>
+  <g transform="translate(480 182) scale(2.6)">
+<circle r="57" fill="#1c3e34" fill-opacity=".52" stroke="#a9b893" stroke-opacity=".27" stroke-width=".5"/>
     <path d="M-54-10C-50-43-21-60 2-51 26-43 45-49 53-22 60-4 50 10 51 24 49 43 26 47 7 49-10 52-25 44-38 37-52 25-61 8-54-10Z" fill="url(#cell)" stroke="#c4d8b6" stroke-width="2.7"/>
     <path d="M-51 1q7-41 39-47m-38 61q14 24 47 28m25-81q22 3 27 31m-6 29q-11 17-33 19" fill="none" stroke="#dce3bf" stroke-opacity=".63" stroke-width="1.7"/>
-    <path d="M-20-7C-19-27 7-32 21-21 38-9 31 11 17 22 4 31-20 21-21 5Z" fill="#d0b97e" stroke="#f5dca6" stroke-width="2"/>
+    <path d="M-20-7C-19-27 7-32 21-21 38-9 31 11 17 22 4 31-20 21-21 5Z" fill="#c4aa72" stroke="#f0d39b" stroke-width="2"/>
     <path d="M-11-8Q2-21 15-12T17 10 0 15-11-8Z" fill="#a8784b"/>
     <path d="M-10-2q7-7 10-2t11-2m-17 13q4-6 13 1" fill="none" stroke="#f5dbad" stroke-width="1.5"/>
     <g fill="none" stroke="#d4deaa" stroke-width="1.5">
       <path d="M-41-19q13-11 18-3t-4 10-14-7Zm2 0 5-2 1 4 4-3 3 3M18 32q7-8 14-5t-1 10q-11 4-13-5Zm5-1 1 3 5-4 1 4M-42 18q10 1 16 12m-17-6q11 2 15 9m-11-4 10 8M30-24q8-1 12 5m-15-11q9-3 14 2"/>
     </g>
     <g fill="#d2e0b7"><circle cx="-38" cy="10" r="2"/><circle cx="-47" cy="-5" r="1.5"/><circle cx="34" cy="15" r="2.5"/><circle cx="42" cy="2" r="1.5"/><circle cx="-21" cy="-32" r="2.1"/><circle cx="8" cy="36" r="1.8"/></g>
-    <path d="M-80 0h7m146 0h7M0-80v7m0 146v7" stroke="#cfad73" stroke-width="1.5"/>
   </g>
-<g fill="none" stroke="#d1ad70" stroke-opacity=".6" stroke-width="1.25">
-  <path d="M22 45V22h23m870 0h23v23M22 319v23h23m870 0h23v-23"/>
-  <path d="M42 182h12m852 0h12"/>
-</g>
+<rect width="960" height="364" fill="url(#vignette)"/>
 </svg>

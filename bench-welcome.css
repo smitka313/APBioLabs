@@ -1,8 +1,7 @@
-.bench-portal{--brass:#8c5719;--cream:#f6f3e7;--lined:#c9cabc;--fern:#163b33}
-:root[data-theme=dark] .bench-portal{--brass:#efbd75;--cream:#172c25;--lined:#3c584a;--fern:#e5f3e9}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .bench-portal{--brass:#efbd75;--cream:#172c25;--lined:#3c584a;--fern:#e5f3e9}}
-.bench-welcome-hero{position:relative;background:var(--cream);color:var(--ink);border-bottom:1px solid var(--lined);overflow:hidden}
-.bench-welcome-hero::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent 40px,var(--lined) 40px,var(--lined) 41px),repeating-linear-gradient(0deg,transparent,transparent 40px,var(--lined) 40px,var(--lined) 41px);opacity:.35;mask-image:linear-gradient(90deg,transparent 40%,#000);pointer-events:none}
+.bench-portal{--brass:#8c5719;--cream:#f6f3e7;--lined:#c9cabc;--fern:#163b33;--wash:rgba(105,143,99,.19);--card-shadow:rgba(17,43,29,.08)}
+:root[data-theme=dark] .bench-portal{--brass:#efbd75;--cream:#172c25;--lined:#3c584a;--fern:#e5f3e9;--wash:rgba(98,143,110,.20);--card-shadow:rgba(4,15,11,.22)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .bench-portal{--brass:#efbd75;--cream:#172c25;--lined:#3c584a;--fern:#e5f3e9;--wash:rgba(98,143,110,.20);--card-shadow:rgba(4,15,11,.22)}}
+.bench-welcome-hero{position:relative;background:radial-gradient(ellipse at 83% 5%,var(--wash),transparent 57%),var(--cream);color:var(--ink);border-bottom:1px solid var(--lined)}
 .bench-intro{position:relative;z-index:1;padding-block:clamp(1.7rem,4vw,3.2rem) clamp(1.7rem,4vw,2.9rem)}
 .bench-portal h1,.bench-portal h2{color:var(--fern);font-family:Georgia,'Times New Roman',serif;letter-spacing:-.037em;line-height:1.06;text-wrap:balance}
 .bench-portal h1{font-weight:650;max-width:20ch;font-size:clamp(2.4rem,6vw,5.2rem);margin:.4rem 0 .55rem}
@@ -11,10 +10,9 @@
 .bench-kicker{font:720 .76rem/1.35 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--brass);margin:0}
 .bench-intro .lede{max-width:60ch;margin:0;color:var(--ink);font-size:clamp(1rem,2vw,1.28rem);line-height:1.5}
 .bench-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(.85rem,2vw,1.7rem);padding-block:clamp(1.2rem,3.5vw,2.7rem)}
-.bench-choice{background:var(--surface);border:1px solid var(--lined);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;min-width:0;box-shadow:0 10px 27px #112b1d0d}
-.bench-choice-art{display:block;width:100%;aspect-ratio:2.65;object-fit:cover;background:#243f3d}
-.bench-choice .bench-ap-art{object-position:center 50%}
-.bench-choice .bench-os-art{object-position:center;background:#1d3d35}
+.bench-choice{background:var(--surface);border:1px solid var(--lined);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;min-width:0;box-shadow:0 10px 26px var(--card-shadow)}
+/* Override the intrinsic HTML height so the full artwork stays visible at every card width. */
+.bench-choice-art{display:block;width:100%;height:auto;aspect-ratio:960 / 364;object-fit:contain;background:#1a3731;border-bottom:1px solid var(--lined)}
 .bench-choice-body{padding:clamp(1rem,2.6vw,1.8rem);display:flex;flex:1;flex-direction:column;align-items:flex-start}
 .bench-choice-body p:not(.bench-kicker){margin:0 0 1rem;max-width:49ch}
 .bench-choice-meta{color:var(--muted);font-weight:650;font-size:.87rem;margin-bottom:1.05rem}
@@ -25,4 +23,4 @@
 .bench-portal-theme{display:flex;flex-wrap:wrap;gap:.15rem}
 .bench-portal-theme button{min-height:31px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);font:inherit;font-size:.8rem;padding:.18rem .42rem}
 .bench-portal-theme button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);font-weight:750}
-@media(max-width:650px){.bench-choices{grid-template-columns:1fr}.bench-choice-art{aspect-ratio:2.85}}
+@media(max-width:650px){.bench-choices{grid-template-columns:1fr}}

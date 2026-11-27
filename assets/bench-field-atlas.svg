@@ -1,86 +1,83 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="226" viewBox="0 0 1200 226">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="226" viewBox="0 0 1200 226" role="img" aria-labelledby="atlas-title atlas-description">
+  <title id="atlas-title">Five studies from the OpenSciEd biology field atlas</title>
+  <desc id="atlas-description">A schematic panorama with a wildebeest on grassland, a forest fire, an animal cell in a microscopy field, a rat, and a polar bear on ice.</desc>
   <defs>
-    <linearGradient id="paper" x2="1" y2="1"><stop stop-color="#183930"/><stop offset=".52" stop-color="#24483d"/><stop offset="1" stop-color="#172e2a"/></linearGradient>
-    <linearGradient id="cream" x2="0" y2="1"><stop stop-color="#fbf0d4"/><stop offset=".65" stop-color="#c2c9a9"/><stop offset="1" stop-color="#829b85"/></linearGradient>
-    <linearGradient id="mint" x2="0" y2="1"><stop stop-color="#b4d0aa"/><stop offset="1" stop-color="#568a73"/></linearGradient>
-    <linearGradient id="brass" x2="0" y2="1"><stop stop-color="#f7d38f"/><stop offset=".55" stop-color="#d39d59"/><stop offset="1" stop-color="#9c633c"/></linearGradient>
-    <radialGradient id="cell" cx=".43" cy=".32"><stop stop-color="#8ebfa1"/><stop offset=".72" stop-color="#4d8d79"/><stop offset="1" stop-color="#225951"/></radialGradient>
-    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" stroke="#b9c4a7" stroke-opacity=".17" fill="none"/></pattern>
-    <pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(29)"><path d="M0 0v5" stroke="#183a32" stroke-opacity=".47"/></pattern>
-    <path id="tree" d="M0 0-8 17h5l-11 16h6l-12 19h16v12h8V52h16L8 33h6L3 17h5Z"/>
+    <linearGradient id="sky" x2="1" y2=".35"><stop stop-color="#193b37"/><stop offset=".32" stop-color="#263f36"/><stop offset=".53" stop-color="#153533"/><stop offset=".78" stop-color="#122c31"/><stop offset="1" stop-color="#254a56"/></linearGradient>
+    <radialGradient id="dusk"><stop stop-color="#dcb474" stop-opacity=".55"/><stop offset=".55" stop-color="#d69d66" stop-opacity=".23"/><stop offset="1" stop-color="#dfb270" stop-opacity="0"/></radialGradient>
+    <radialGradient id="embers"><stop stop-color="#eb8b51" stop-opacity=".64"/><stop offset=".55" stop-color="#b95f4e" stop-opacity=".20"/><stop offset="1" stop-color="#e68858" stop-opacity="0"/></radialGradient>
+    <radialGradient id="iceGlow"><stop stop-color="#86b5bc" stop-opacity=".53"/><stop offset="1" stop-color="#5f979f" stop-opacity="0"/></radialGradient>
+    <linearGradient id="grassland" x2="0" y2="1"><stop stop-color="#8d7448"/><stop offset=".53" stop-color="#526248"/><stop offset="1" stop-color="#233b32"/></linearGradient>
+    <linearGradient id="forestBank" x2="1" y2=".75"><stop stop-color="#263a31"/><stop offset=".43" stop-color="#4b4136"/><stop offset="1" stop-color="#172c2b"/></linearGradient>
+    <linearGradient id="iceShelf" x2="0" y2="1"><stop stop-color="#c8e3dd"/><stop offset=".42" stop-color="#6e9ca1"/><stop offset="1" stop-color="#335b6b"/></linearGradient>
+    <linearGradient id="cream" x2="0" y2="1"><stop stop-color="#fff6db"/><stop offset=".65" stop-color="#cfbf9b"/><stop offset="1" stop-color="#888a75"/></linearGradient>
+    <linearGradient id="hide" x1=".1" y1="0" x2=".88" y2="1"><stop stop-color="#e0bd83"/><stop offset=".43" stop-color="#aa895e"/><stop offset="1" stop-color="#5b5948"/></linearGradient>
+    <linearGradient id="fur" x2=".11" y2="1"><stop stop-color="#ead0af"/><stop offset=".54" stop-color="#b18e7e"/><stop offset="1" stop-color="#71564f"/></linearGradient>
+    <linearGradient id="polar" x2="0" y2="1"><stop stop-color="#f3f1dc"/><stop offset=".50" stop-color="#dce2ca"/><stop offset="1" stop-color="#9bac9f"/></linearGradient>
+    <linearGradient id="brass" x2="0" y2="1"><stop stop-color="#fff5af"/><stop offset=".45" stop-color="#efb65a"/><stop offset="1" stop-color="#c55e3f"/></linearGradient>
+    <radialGradient id="scopeField" cx=".47" cy=".41"><stop stop-color="#3b6964"/><stop offset=".68" stop-color="#22534f"/><stop offset="1" stop-color="#142f31"/></radialGradient>
+    <radialGradient id="cytoplasm" cx=".40" cy=".36"><stop stop-color="#a3d1ac"/><stop offset=".69" stop-color="#70ab96"/><stop offset="1" stop-color="#377568"/></radialGradient>
+    <radialGradient id="nucleus" cx=".43" cy=".37"><stop stop-color="#f1d69b"/><stop offset=".72" stop-color="#ceaf7f"/><stop offset="1" stop-color="#996e60"/></radialGradient>
+    <radialGradient id="darkEdge"><stop stop-color="#0c2225" stop-opacity="0"/><stop offset=".79" stop-color="#0c2225" stop-opacity="0"/><stop offset="1" stop-color="#0c2225" stop-opacity=".26"/></radialGradient>
+    <pattern id="paper" width="13" height="11" patternUnits="userSpaceOnUse"><path d="M3 2h1m6 5h1m-7 3h1m5-9h1" fill="none" stroke="#c7c9a8" stroke-opacity=".13" stroke-width=".55"/><path d="M7 5h1M1 7h1m7 3h1" fill="none" stroke="#101f23" stroke-opacity=".25" stroke-width=".75"/></pattern>
+    <pattern id="dots" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".8" fill="#c3d8b7" opacity=".39"/></pattern>
+    <clipPath id="lensClip"><circle r="76"/></clipPath>
+    <path id="tree" d="M0 0-7 14h4l-10 14h5l-10 16H-2v14H2V44H18L8 28h5L3 14h4Z"/>
+    <path id="acacia" d="M1 54l6-35 2 1 3 2q1-14 12-15 8-7 22-7 13 0 19 5 13 0 17 7l-8 2-12-1-7 3-14-1-7 2-16 1-4 11-4 6-4 18Z"/>
+    <path id="grass" d="M0 3q0-12-7-22M0 3q3-16 9-20M0 3q5-9 13-10M0 3q-4-7-10-8" fill="none" stroke-linecap="round"/>
+    <path id="reed" d="M1 2q4-15 9-26M1 2q0-20-5-32M-4-30l-1-5m15 11 2-6M1 2q-4-11-11-15" fill="none" stroke-linecap="round"/>
   </defs>
-  <rect width="1200" height="226" fill="url(#paper)"/>
-  <rect width="1200" height="226" fill="url(#grid)"/>
-  <g fill="none" stroke="#9aab8a" stroke-opacity=".17" stroke-width="1">
-    <path d="M-18 171c103-67 169-41 229-58S323 39 421 56s134 83 220 59S807 11 956 61s178 78 269 32M-18 182c103-67 181-43 240-58s108-64 192-51 146 82 232 55S808 32 952 78s181 72 273 26M-18 193c103-62 193-45 251-58s105-50 181-38 147 72 234 44S804 54 949 97s184 63 276 19M-18 205c109-57 207-50 258-58s103-41 170-27 150 64 243 34 146-78 295-40 185 60 277 13"/>
-    <path d="M-10 67c102-61 222 31 292 1s134-82 230-59m301 20c71-53 100-35 195-8s128 42 199-16"/>
-    <path d="M10 45h1180M10 177h1180M250 27v169M485 27v169M715 27v169M950 27v169" stroke-dasharray="2 6"/>
-  </g>
-  <g fill="none" stroke="#d1ad70" stroke-opacity=".65">
-    <rect x="12.5" y="12.5" width="1175" height="201" rx="9"/>
-    <path d="M25 37V25h13m1124 0h13v12M25 189v12h13m1124 0h13v-12"/>
-    <path d="M276 190h48m187 0h48m181 0h48m187 0h48m-987 0h48"/>
-  </g>
-  <!-- Blue wildebeest: sloping rump, deep shoulders, beard, mane and outward-curving horns. -->
-  <g transform="translate(29 41)">
-    <path d="M9 126q60 3 105 0t83 0" stroke="#608f74" fill="none" stroke-width="2"/>
-    <path d="M25 123l-7-16m8 16 2-20m154 23 8-18m-9 18-1-19m-166 23-7-9m157 8 9-12" fill="none" stroke="#9eb491"/>
-    <path d="M172 50q15 15 10 44l9 11q-13-1-14-19t-13-31" fill="#97ae8b"/>
-    <path d="M148 70l15 33-5 22h8l7-21-11-35M90 69l11 34-7 22h9l7-22-7-39" fill="#789881" stroke="#16372e" stroke-width="2"/>
-    <path d="M57 46q16-16 48-16l47 13q17 1 21 22 3 15-7 23l-16 10-2 25 6 1v5h-14l2-33-22-14-26 2-10 24 1 16h6v5H75l1-27-7-22-16-11-13 13-16-1-8-10 9-18 5-17 15 1Z" fill="url(#mint)" stroke="#153830" stroke-width="2.2" stroke-linejoin="round"/>
-    <path d="M46 45Q49 29 70 28l21 1-23 11-10 17 4 18-9 8-2 14-4-13-6 12 1-18" fill="#2a5144"/>
-    <path d="M26 51q-15-6-15-21 8 13 23 12l12-4q19-3 25-18 2 21-19 27l-14 9" fill="url(#cream)" stroke="#183a31" stroke-width="2" stroke-linejoin="round"/>
-    <path d="M29 48l-9-6 1 9 6 6m23-11 15 3-13 7" fill="#a9bc9d"/>
-    <path d="M56 61q12 11 11 24m-6-34q15 12 16 32m-6-40q17 10 17 39m-4-43q13 15 13 39m3-39q9 16 10 31m10-23q26 1 40 14m-22 29 8 8" fill="none" stroke="#326552" stroke-width="1.3"/>
-    <path d="M19 70q9 5 18 2m-13 5h9" stroke="#e6dfbe" fill="none" stroke-width="1.4"/>
-    <circle cx="35" cy="58" r="2.2" fill="#101f1a"/>
-  </g>
-  <!-- Forest fire study: conifer silhouettes, low flames and rising smoke. -->
-  <g transform="translate(273 37)">
-    <path d="M5 128q45-8 98 1t92-3" fill="none" stroke="#77a086" stroke-width="2"/>
-    <path d="M96 63c11-22 42-13 44-32 1-8-10-11-20-7 7-14 34-14 40-3 4 8-4 20-18 27 23-5 37-14 34-27-2-7-9-9-16-10 23-7 37 13 23 27-13 12-39 16-59 28" fill="none" stroke="#b8c3a8" stroke-opacity=".54" stroke-width="1.6"/>
-    <g fill="#779c81"><use href="#tree" transform="translate(22 24) scale(1.25 1.62)"/><use href="#tree" transform="translate(64 42) scale(.88 1.3)"/><use href="#tree" transform="translate(172 48) scale(.92 1.2)"/><use href="#tree" transform="translate(142 62) scale(.7 .96)"/></g>
-    <path d="M47 133c-10-20 5-29 11-41 3 12 7 14 10 21 2-23 17-26 16-46 8 6 12 16 13 26 10-7 19-22 14-36 14 12 22 28 18 43 7-4 10-8 14-15 3 15 16 15 12 31 7-2 12-5 15-11 3 13 1 22-5 28Z" fill="url(#brass)" stroke="#f1c681" stroke-width="1.5"/>
-    <path d="M62 131c7-2 15-18 17-27 9 7 7 16 9 24 5-13 14-16 20-29 3 7 1 15 1 18 10-4 16-10 16-22 7 10 13 21 8 31l10-10q5 11 1 15Z" fill="#f1d49b"/>
-    <g fill="#f3ce8f"><circle cx="89" cy="58" r="2"/><circle cx="139" cy="71" r="2"/><circle cx="102" cy="74" r="1.4"/><circle cx="126" cy="63" r="1.8"/><circle cx="77" cy="84" r="1.5"/></g>
-  </g>
-  <!-- Microscopy field: a stylized animal cell, showing membrane, nucleus and interior structures. -->
-  <g transform="translate(597 105)">
-    <circle r="70" fill="#15372f" stroke="#90a78b" stroke-width="1.5"/>
-    <circle r="63" fill="none" stroke="#91aa8b" stroke-dasharray="1 4"/>
-    <path d="M-54-10C-50-43-21-60 2-51 26-43 45-49 53-22 60-4 50 10 51 24 49 43 26 47 7 49-10 52-25 44-38 37-52 25-61 8-54-10Z" fill="url(#cell)" stroke="#c4d8b6" stroke-width="2.7"/>
-    <path d="M-51 1q7-41 39-47m-38 61q14 24 47 28m25-81q22 3 27 31m-6 29q-11 17-33 19" fill="none" stroke="#dce3bf" stroke-opacity=".63" stroke-width="1.7"/>
-    <path d="M-20-7C-19-27 7-32 21-21 38-9 31 11 17 22 4 31-20 21-21 5Z" fill="#d0b97e" stroke="#f5dca6" stroke-width="2"/>
-    <path d="M-11-8Q2-21 15-12T17 10 0 15-11-8Z" fill="#a8784b"/>
-    <path d="M-10-2q7-7 10-2t11-2m-17 13q4-6 13 1" fill="none" stroke="#f5dbad" stroke-width="1.5"/>
-    <g fill="none" stroke="#d4deaa" stroke-width="1.5">
-      <path d="M-41-19q13-11 18-3t-4 10-14-7Zm2 0 5-2 1 4 4-3 3 3M18 32q7-8 14-5t-1 10q-11 4-13-5Zm5-1 1 3 5-4 1 4M-42 18q10 1 16 12m-17-6q11 2 15 9m-11-4 10 8M30-24q8-1 12 5m-15-11q9-3 14 2"/>
+  <rect width="1200" height="226" fill="url(#sky)"/>
+  <!-- Wide editorial spread: connected graphic rhythm, separate scientific subjects. -->
+  <ellipse cx="157" cy="91" rx="288" ry="135" fill="url(#dusk)"/>
+  <ellipse cx="354" cy="132" rx="185" ry="119" fill="url(#embers)"/>
+  <ellipse cx="1139" cy="95" rx="208" ry="120" fill="url(#iceGlow)"/>
+  <g stroke="#b3b496" stroke-width=".8" fill="none" opacity=".19"><path d="M0 115Q68 65 152 83t156-13 158 7 122-11 134-9 144 10 143-29 191 15M0 124Q68 76 151 94t156-13 156 9 125-9 135-7 142 11 142-29 193 15M0 136Q69 88 151 105t156-13 154 8 130-10 134-6 137 10 143-30 195 15M0 148Q69 102 153 116t154-13 155 10 130-10 134-6 136 9 141-30 197 17"/></g>
+  <path d="M0 122c53-14 87-4 125-22s96-18 132-1 49 6 75-6l29 133H0Z" fill="#797859" opacity=".39"/>
+  <path d="M0 142q72-23 142-14 82-21 123 0 31 14 70 9l65 89H0Z" fill="url(#grassland)"/>
+  <path d="M0 180q57-4 108 4 89-24 159-1 15 4 56-10l31 53H0Z" fill="#374d38"/>
+  <path d="M22 144q81-10 153 0 51-15 94-8m-251 36 88-6m83-6q56-10 92 5m-267 37h56m91-18 48-9" fill="none" stroke="#d6c086" stroke-opacity=".45" stroke-width="1.2"/>
+  <use href="#acacia" transform="translate(29 80) scale(1.03)" fill="#263d31" opacity=".89"/>
+  <use href="#acacia" transform="translate(206 103) scale(.46)" fill="#2b4333" opacity=".71"/>
+  <path d="M261 165q40-53 97-50 70-22 136 6 64 43 129 49l10 56H287Z" fill="url(#forestBank)"/>
+  <g fill="#39564a" opacity=".79"><use href="#tree" transform="translate(287 99) scale(.8)"/><use href="#tree" transform="translate(310 81) scale(1.09)"/><use href="#tree" transform="translate(347 90) scale(.94)"/><use href="#tree" transform="translate(446 84) scale(1.08)"/><use href="#tree" transform="translate(468 105) scale(.81)"/></g>
+  <path d="M308 154c29-13 59-1 63-15 6-19-25-21-27-37-1-18 36-27 75-13 23 8 63 1 91-16-21 28-61 34-93 28-20-5-42 2-27 12 17 12 45 24 34 38-13 18-59 0-116 3Z" fill="#b19c8b" opacity=".21"/>
+  <g fill="none" stroke="#bbad8e" stroke-linecap="round" opacity=".35"><path d="M393 120c-36-15-45-31-25-44 22-13 62 8 93-7m-64 51c-19-16-14-25 3-27 21-2 43 7 74-6"/></g>
+  <path d="M690 164c39-34 67-19 108-32s89-20 151 14l34 80H636Z" fill="#3b5a4e"/>
+  <path d="M663 196c42-18 66 11 115-5 59-18 120-25 182-9l27 44H660Z" fill="#294237"/>
+  <g transform="translate(0 -1)" stroke="#7e9d77" stroke-width="1.6" opacity=".65"><use href="#reed" x="708" y="182"/><use href="#reed" x="746" y="193" transform="rotate(8 746 193)"/><use href="#reed" x="915" y="169"/><use href="#reed" x="929" y="177"/></g>
+  <path d="M910 124l39-16 28 1 26-7 21 3 34-17 40 13 26-4 44 8 32-5v99H941Z" fill="#83aeb1" opacity=".37"/>
+  <path d="M921 166l30-17 37 4 45-18 37 4 37-8 37 6 56-12v101H937Z" fill="url(#iceShelf)"/>
+  <path d="M912 185l37-18 38 4 42-16 29 6 42-10 34 9 66-10v76H934Z" fill="#3d7182" opacity=".79"/>
+  <path d="M921 176l31-13 37 3 42-15 28 0 44-8 34 4 63-8m-260 58 52-14 29 4 15-11 69 3 29-11 55-3m-148 33 28-1 13-7 62 2 45-9" fill="none" stroke="#c3ded6" stroke-width="1.25" opacity=".71"/>
+  <path d="M957 209l25-10 32 2 23-5m90-14 52-6m-49-58 43 2 31-8" fill="none" stroke="#78a8b4" stroke-width="1"/>
+  <g id="study-wildebeest" data-subject="wildebeest" transform="translate(54 34) scale(1.15)"><ellipse cx="99" cy="127" rx="86" ry="7" fill="#21352c" opacity=".62"/><path d="M172 50q15 15 10 44l9 11q-13-1-14-19t-13-31" fill="#97ae8b"/><path d="M148 70l15 33-5 22h8l7-21-11-35M90 69l11 34-7 22h9l7-22-7-39" fill="#4c493e" stroke="#16372e" stroke-width="2"/><path d="M57 46q16-16 48-16l47 13q17 1 21 22 3 15-7 23l-16 10-2 25 6 1v5h-14l2-33-22-14-26 2-10 24 1 16h6v5H75l1-27-7-22-16-11-13 13-16-1-8-10 9-18 5-17 15 1Z" fill="url(#hide)" stroke="#153830" stroke-width="2.2" stroke-linejoin="round"/><path d="M46 45Q49 29 70 28l21 1-23 11-10 17 4 18-9 8-2 14-4-13-6 12 1-18" fill="#322d23"/><path d="M26 51q-15-6-15-21 8 13 23 12l12-4q19-3 25-18 2 21-19 27l-14 9" fill="url(#cream)" stroke="#183a31" stroke-width="2" stroke-linejoin="round"/><path d="M29 48l-9-6 1 9 6 6m23-11 15 3-13 7" fill="#a9bc9d"/><path d="M56 61q12 11 11 24m-6-34q15 12 16 32m-6-40q17 10 17 39m-4-43q13 15 13 39m3-39q9 16 10 31m10-23q26 1 40 14m-22 29 8 8" fill="none" stroke="#604b38" stroke-width="1.3"/><path d="M19 70q9 5 18 2m-13 5h9" stroke="#e6dfbe" fill="none" stroke-width="1.4"/><circle cx="35" cy="58" r="2.2" fill="#101f1a"/><path d="M76 38c16-5 38-5 53 0l23 7M70 46q21-7 41-4m-28 13 14 8m-13 2 11 7m-5 4 9 6m36-31 14 6q7 3 11 9m-9-5q11 6 10 14m-13 13-4 7m-70 4 6 11m-3 2 6 4" fill="none" stroke="#e0be83" stroke-width="1.15" stroke-linecap="round" opacity=".62"/>
+    <path d="M20 74l8 4 8-3m6-20 6-6m-33 1 8 3m30-1 9-10m16 40 4 12m68 7 1 11" fill="none" stroke="#f4d49f" stroke-width="1.3" stroke-linecap="round" opacity=".50"/>
+    <path d="M22 65q6 3 12-1" fill="none" stroke="#171d1b" stroke-width="1.3"/><circle cx="35.5" cy="57.5" r=".65" fill="#ffefbd"/></g>
+  <g id="study-forest-fire" data-subject="forest-fire" transform="translate(290 47) scale(.98)"><g fill="#779c81"><use href="#tree" transform="translate(22 24) scale(1.25 1.62)"/><use href="#tree" transform="translate(64 42) scale(.88 1.3)"/><use href="#tree" transform="translate(172 48) scale(.92 1.2)"/><use href="#tree" transform="translate(142 62) scale(.7 .96)"/></g><path d="M47 133c-10-20 5-29 11-41 3 12 7 14 10 21 2-23 17-26 16-46 8 6 12 16 13 26 10-7 19-22 14-36 14 12 22 28 18 43 7-4 10-8 14-15 3 15 16 15 12 31 7-2 12-5 15-11 3 13 1 22-5 28Z" fill="url(#brass)" stroke="#f1c681" stroke-width="1.5"/><path d="M62 131c7-2 15-18 17-27 9 7 7 16 9 24 5-13 14-16 20-29 3 7 1 15 1 18 10-4 16-10 16-22 7 10 13 21 8 31l10-10q5 11 1 15Z" fill="#f1d49b"/><g fill="#f3ce8f"><circle cx="89" cy="58" r="2"/><circle cx="139" cy="71" r="2"/><circle cx="102" cy="74" r="1.4"/><circle cx="126" cy="63" r="1.8"/><circle cx="77" cy="84" r="1.5"/></g></g>
+  <g id="study-animal-cell" data-subject="animal-cell" transform="translate(588 111) scale(1.075)"><circle r="85" fill="#132e2e" stroke="#b3b18b" stroke-width="1.2"/><circle r="80.5" fill="none" stroke="#658b80" stroke-width=".8"/>
+    <circle r="76" fill="url(#scopeField)" stroke="#b8d3b5" stroke-width=".8"/>
+    <g clip-path="url(#lensClip)">
+      <circle r="76" fill="url(#dots)" opacity=".68"/>
+      <path d="M-84-37C-63-66-34-72-9-65M-83-31C-63-56-38-66-11-60M35 63q18-22 51-15M37 68q22-21 50-15M81-49q-22 20-12 34M81-37q-14 12-9 22" fill="none" stroke="#a5c9a9" stroke-width="1" opacity=".38"/>
+      <path d="M-59-12C-55-43-37-56-13-53c14 2 22 7 35 5 19-3 24 9 31 24 4 10 4 17 1 27-3 9-4 14-1 25 3 15-13 24-26 25-11 1-19-1-29 4-14 5-20 0-29-8-12-10-24-11-28-28-3-13-4-21 0-33Z" fill="url(#cytoplasm)" stroke="#d0ebbc" stroke-width="2.5"/>
+      <path d="M-54-12c4-29 20-41 42-37 15 2 26 7 37 4 11-2 18 2 24 17m1 40q-4 11-1 18c2 11-10 19-20 20m-17 0q-13-2-20 4-14 4-22-5-15-10-21-20" fill="none" stroke="#e3ebbf" stroke-width="1" opacity=".70"/>
+      <path d="M-24-10c0-12 11-23 26-22 18 1 24 7 28 17 7 18 1 30-14 37-12 5-27 4-36-6-7-8-6-17-4-26Z" fill="url(#nucleus)" stroke="#f9e9b6" stroke-width="2"/>
+      <path d="M-17-11c2-9 9-17 21-17m19 16q8 15-7 27m-27-1q-8-5-8-13" fill="none" stroke="#fdf0bc" stroke-width="1" opacity=".64"/>
+      <path d="M-8-9Q4-18 14-8T12 8Q1 16-8 6T-8-9" fill="#94665c" stroke="#c7966f" stroke-width="1.1"/>
+      <path d="M-6-5q3-4 9-3t6 6m-16 6q4 6 11 4" fill="none" stroke="#f0c398" stroke-width="1"/>
+      <g stroke="#e9deb1" stroke-width="1.2" stroke-linecap="round" fill="#4d8073">
+        <path d="M-45-19q5-11 14-10 7 2 5 7-3 7-10 8-7 1-9-5ZM21 37q4-7 13-6 9 1 8 6-2 6-12 7-8 1-9-7ZM33-35q6-1 11 4 5 7 1 9-5 3-10-3-6-5-2-10Z"/>
+        <path d="M-41-19l4-6 1 5 4-4m-7 44q9 0 15 7m-14-4q10 1 15 7m-15-3q8 0 12 6m-7-2 9 5m49 2 5-4-1 4 6-3m9-26q7 1 9 5m-12-3q6 2 10 6m-13-3q4 1 8 6m-9-2 5 5m-4-58 5 3-1 4 4-1" fill="none"/>
+      </g>
+      <g fill="#dceabc" opacity=".86"><circle cx="-45" cy="3" r="2.7"/><circle cx="-50" cy="14" r="1.7"/><circle cx="-31" cy="4" r="1.4"/><circle cx="36" cy="-15" r="2.1"/><circle cx="-17" cy="-40" r="2.4"/><circle cx="-6" cy="42" r="2.2"/><circle cx="9" cy="40" r="1.4"/><circle cx="46" cy="25" r="1.7"/><circle cx="17" cy="-37" r="1.3"/></g>
     </g>
-    <g fill="#d2e0b7"><circle cx="-38" cy="10" r="2"/><circle cx="-47" cy="-5" r="1.5"/><circle cx="34" cy="15" r="2.5"/><circle cx="42" cy="2" r="1.5"/><circle cx="-21" cy="-32" r="2.1"/><circle cx="8" cy="36" r="1.8"/></g>
-    <path d="M-80 0h7m146 0h7M0-80v7m0 146v7" stroke="#cfad73" stroke-width="1.5"/>
-  </g>
-  <!-- Rat: rounded ears, tapered muzzle and a naturally curved, scaled tail. -->
-  <g transform="translate(738 46)">
-    <path d="M81 115c-16 9-45 21-66 16-12-3-15-11-9-16" fill="none" stroke="#b19474" stroke-width="4" stroke-linecap="round"/>
-    <path d="M82 115c-16 9-46 20-67 15" fill="none" stroke="#dec8a1" stroke-width="1.1" stroke-dasharray="1 4"/>
-    <path d="M133 80q12-24 32-19l20 13 10 11-12 10-22 2-16 14-12 12 15 5h-30l-1-11-31-2-8 10 17 3H61l-4-9q-21-14-14-38 8-32 53-32 20 0 37 31Z" fill="url(#cream)" stroke="#193a32" stroke-width="2.2" stroke-linejoin="round"/>
-    <path d="M125 81q-8-16-5-26 3-13 14-12 13 2 9 16-2 15-12 22" fill="#bfa076" stroke="#3c6150" stroke-width="2"/>
-    <path d="M127 76q-10-11-5-21 3-8 9-5 8 6-4 26" fill="#cfab86"/>
-    <path d="M156 62q-1-16 8-17 9 2 3 19" fill="#a4ae91" stroke="#3c6150" stroke-width="1.5"/>
-    <path d="M59 113q25 12 39-6 8-14-6-20 7 10-2 17m8 9q24-1 39-12m1-14 9 8 11-1m-98-36q27-10 48 8m-41-9q25-4 39 14m-44-4q25-6 38 10" fill="none" stroke="#62816d" stroke-width="1.4"/>
-    <path d="M190 80l5 5-7 5-5-3Z" fill="#233c33"/><circle cx="166" cy="77" r="3.3" fill="#183028"/><circle cx="167" cy="76" r="1" fill="#fff1d6"/>
-    <path d="M178 84l21-6m-19 8 21-1m-22 3 19 6m-22-4 16 7" stroke="#ede5c8" stroke-width="1" fill="none"/>
-  </g>
-  <!-- Polar bear: long neck, small ears, heavy paws and a low head. -->
-  <g transform="translate(962 35)">
-    <path d="M4 136l48-11 48 8 38-6 68 11m-180 5 30-4 47 5m43-8 24 7 30-2" stroke="#84ab98" fill="none" stroke-width="2"/>
-    <path d="M33 55q-12-3-16 9 4 8 15 5" fill="#b5c8ae" stroke="#24493d" stroke-width="2"/>
-    <path d="M62 85l-8 37 7 6h17l-2-13 12-26m52-2 2 25 9 14h15l1-5-11-5 1-31" fill="#849e89" stroke="#24493d" stroke-width="2"/>
-    <path d="M39 50q28-23 64-19 27-4 42 16l19 16 15 2 15 12 12 6-3 11-21 4-16-4-12-9-10 12-6 20 4 8 9 1v7h-23l-3-8-6-26-10-12-22 1-22 17-9 18 6 5v5H37l-4-9 6-18 3-21-11-10q-10-17 8-25Z" fill="url(#cream)" stroke="#214136" stroke-width="2.3" stroke-linejoin="round"/>
-    <path d="M156 63q-4-14 4-17 10-4 12 9l-2 8" fill="#bdc9ad" stroke="#597b68" stroke-width="2"/>
-    <path d="M55 48q32-11 56-6m-62 9q34-9 53-5m-26 4q23-6 42 1m13-2q13 8 14 20m-2 2q3 11 10 16m-37-4-9-11m-63-5q6 12 21 14m-23-4q12 9 26 10m61 11-3 13" fill="none" stroke="#7a9b85" stroke-width="1.5"/>
-    <path d="M175 91q17 5 28-3m-25 7 12 1" fill="none" stroke="#37584a" stroke-width="1.3"/>
-    <path d="M200 80l7 3-3 6-7-3Z" fill="#1d3028"/><circle cx="177" cy="73" r="2" fill="#142c22"/>
-    <path d="M34 130h26m68 0h21" stroke="#edf0d5" stroke-width="1.4" stroke-dasharray="4 2"/>
-  </g>
+    <path d="M-91 0h14m154 0h14M0-91v14m0 154v14" stroke="#d9b778" stroke-width="1.5"/>
+    <g fill="none" stroke="#b6c9a9" opacity=".64"><path d="M-57-55q17-16 35-22M56 55q-14 16-38 21" stroke-width="1.2"/><circle r="94" stroke-dasharray="1 6" stroke-width=".75"/></g>
+</g>
+  <g id="study-rat" data-subject="rat" transform="translate(717 54) scale(.98)"><ellipse cx="120" cy="126" rx="73" ry="7" fill="#233a33" opacity=".52"/><path d="M81 115c-16 9-45 21-66 16-12-3-15-11-9-16" fill="none" stroke="#b19474" stroke-width="4" stroke-linecap="round"/><path d="M82 115c-16 9-46 20-67 15" fill="none" stroke="#dec8a1" stroke-width="1.1" stroke-dasharray="1 4"/><path d="M133 80q12-24 32-19l20 13 10 11-12 10-22 2-16 14-12 12 15 5h-30l-1-11-31-2-8 10 17 3H61l-4-9q-21-14-14-38 8-32 53-32 20 0 37 31Z" fill="url(#fur)" stroke="#3b3534" stroke-width="2.2" stroke-linejoin="round"/><path d="M125 81q-8-16-5-26 3-13 14-12 13 2 9 16-2 15-12 22" fill="#bfa076" stroke="#3c6150" stroke-width="2"/><path d="M127 76q-10-11-5-21 3-8 9-5 8 6-4 26" fill="#cfab86"/><path d="M156 62q-1-16 8-17 9 2 3 19" fill="#a4ae91" stroke="#3c6150" stroke-width="1.5"/><path d="M59 113q25 12 39-6 8-14-6-20 7 10-2 17m8 9q24-1 39-12m1-14 9 8 11-1m-98-36q27-10 48 8m-41-9q25-4 39 14m-44-4q25-6 38 10" fill="none" stroke="#76594c" stroke-width="1.4"/><path d="M190 80l5 5-7 5-5-3Z" fill="#233c33"/><circle cx="166" cy="77" r="3.3" fill="#183028"/><circle cx="167" cy="76" r="1" fill="#fff1d6"/><path d="M178 84l21-6m-19 8 21-1m-22 3 19 6m-22-4 16 7" stroke="#ede5c8" stroke-width="1" fill="none"/></g>
+  <g id="study-polar-bear" data-subject="polar-bear" transform="translate(944 28) scale(1.06)"><ellipse cx="107" cy="127" rx="87" ry="6" fill="#518595" opacity=".51"/><path d="M33 55q-12-3-16 9 4 8 15 5" fill="#b5c8ae" stroke="#24493d" stroke-width="2"/><path d="M62 85l-8 37 7 6h17l-2-13 12-26m52-2 2 25 9 14h15l1-5-11-5 1-31" fill="#849e89" stroke="#24493d" stroke-width="2"/><path d="M39 50q28-23 64-19 27-4 42 16l19 16 15 2 15 12 12 6-3 11-21 4-16-4-12-9-10 12-6 20 4 8 9 1v7h-23l-3-8-6-26-10-12-22 1-22 17-9 18 6 5v5H37l-4-9 6-18 3-21-11-10q-10-17 8-25Z" fill="url(#polar)" stroke="#214136" stroke-width="2.3" stroke-linejoin="round"/><path d="M156 63q-4-14 4-17 10-4 12 9l-2 8" fill="#bdc9ad" stroke="#788d8a" stroke-width="2"/><path d="M55 48q32-11 56-6m-62 9q34-9 53-5m-26 4q23-6 42 1m13-2q13 8 14 20m-2 2q3 11 10 16m-37-4-9-11m-63-5q6 12 21 14m-23-4q12 9 26 10m61 11-3 13" fill="none" stroke="#849e9c" stroke-width="1.5"/><path d="M175 91q17 5 28-3m-25 7 12 1" fill="none" stroke="#37584a" stroke-width="1.3"/><path d="M200 80l7 3-3 6-7-3Z" fill="#1d3028"/><circle cx="177" cy="73" r="2" fill="#142c22"/></g>
+  <g stroke="#b7ac76" stroke-width="1.6" opacity=".72"><use href="#grass" transform="translate(32 207) scale(1.35)"/><use href="#grass" transform="translate(47 186) scale(.73)"/><use href="#grass" transform="translate(121 218) scale(.67)"/><use href="#grass" transform="translate(228 208) scale(1.15)"/><use href="#grass" transform="translate(283 215) scale(1.32)"/></g>
+  <g fill="none" stroke="#d0b777" stroke-width="1.5" opacity=".60"><path d="M15 34V16h19m1132 0h19v18M15 192v18h19m1132 0h19v-18"/><path d="M63 202h21m6 0h5m260-2h21m6 0h5m424-1h21m6 0h5m200 0h21m6 0h5" stroke-dasharray="1 3"/></g>
+  <rect width="1200" height="226" fill="url(#paper)" pointer-events="none"/>
+  <rect width="1200" height="226" fill="url(#darkEdge)" pointer-events="none"/>
 </svg>
