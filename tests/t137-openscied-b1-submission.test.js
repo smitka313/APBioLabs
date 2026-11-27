@@ -279,7 +279,9 @@ test('Carrying Capacity compares the student’s prediction with the observed op
   assert.equal(note.hidden,false);
   assert.match(note.textContent,/went from 2 to 3 wildebeest/);
   assert.match(note.textContent,/I expect the herd to grow/);
-  assert.match(note.textContent,/One round does not show what will happen over 12 rounds or with less grass/);
+  assert.match(note.textContent,/2 of 2 wildebeest found grass \(18 grass units were available\), and 1 calf was added/);
+  assert.match(note.textContent,/One round does not show whether the herd will keep growing/);
+  assert.match(note.textContent,/less than one grass unit per wildebeest/);
   state.selected='comparison';render();
   assert.equal(note.hidden,true);
 });

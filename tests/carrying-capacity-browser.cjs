@@ -952,7 +952,7 @@ async function followWorkflow(browser, url) {
     const firstOutcome = (await p.locator('#cc-outcome').textContent()).trim();
     check(firstOutcome.length > 10, 'keyboard starts a round and reveals a plain-language outcome');
     const firstPrediction=await p.locator('#cc-round-one-prediction').textContent();
-    check(firstPrediction.includes('from 2 to 3 wildebeest')&&firstPrediction.includes(TEXT.prediction)&&firstPrediction.includes('One round does not show'),
+    check(firstPrediction.includes('from 2 to 3 wildebeest')&&firstPrediction.includes(TEXT.prediction)&&firstPrediction.includes('2 of 2 wildebeest found grass (18 grass units were available), and 1 calf was added')&&firstPrediction.includes('less than one grass unit per wildebeest'),
       'the opening result puts the actual prediction beside the first observed population change and its limit');
     await p.reload();
     await rounds(p, 1);

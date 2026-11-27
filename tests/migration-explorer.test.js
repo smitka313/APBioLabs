@@ -142,7 +142,7 @@ test('the three rainfall displays keep the original graph and provide a dark tre
 test('the field evidence panel states sampling and outbreak limits before students compare cards',()=>{
   const html=fs.readFileSync(path.join(__dirname,'../openscied-b1-migration.html'),'utf8');
   const evidence=html.slice(html.indexOf('id="collection-cards"'),html.indexOf('id="card-groups"'));
-  for(const phrase of ['monthly group averages for sampled male wildebeest','several studies','outbreak year','whole herd','126 carcasses sampled in 1968–1973','not the number behind any one card'])assert.ok(evidence.includes(phrase),phrase);
+  for(const phrase of ['monthly group averages for sampled male wildebeest','several studies','outbreak year','whole herd','126 carcasses sampled in 1968–1973','not the number behind any one card','cannot convert the anthrax percentages to animal counts'])assert.ok(evidence.includes(phrase),phrase);
 });
 test('published evidence charts disable the toolkit simulation label',()=>{
   for(const collection of ['cards','rainfall']){
@@ -243,4 +243,13 @@ test('evidence checks explain all distractors without grading free text', () => 
   const disease=checks[0];
   assert.match(C.evaluate(disease,'higher-dead').message,/June shows 20% in all three groups; July shows 20% in all three groups/);
   assert.match(C.evaluate(disease,'same-groups').message,/does not prove anthrax never mattered/);
+});
+
+test('each health card and its saved note identify missing group sample sizes',()=>{
+  const src=fs.readFileSync(path.join(__dirname,'../openscied-b1-migration.js'),'utf8');
+  const begin=src.indexOf('  function cardText('),end=src.indexOf('  const observation=',begin);
+  const note=vm.runInNewContext(src.slice(begin,end)+'\ncardText(L.CARDS[0]);',{L});
+  assert.match(note,/Sample size: not reported for this group\.$/);
+  assert.match(src,/el\('p',CARD_SAMPLE_SIZE\)/);
+  assert.doesNotMatch(note,/126/,'study-wide total is not a card denominator');
 });

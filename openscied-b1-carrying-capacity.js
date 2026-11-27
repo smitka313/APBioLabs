@@ -119,9 +119,9 @@
     const guess=prediction?.length>160?prediction.slice(0,157)+'…':prediction;
     const change=first.ending-first.starting;
     const result='Round 1: The herd went from '+first.starting+' to '+first.ending+' wildebeest with all grass available. It '+(change>0?'grew by '+change:change<0?'shrank by '+Math.abs(change):'stayed the same')+'.';
-    const limit='One round does not show what will happen over 12 rounds or with less grass.';
-    note.textContent=guess ? result+' You predicted: “'+guess+'” '+(change>0?'If you expected growth, the first round supports that part. If you expected the herd to shrink or stay the same, the first result differs. ':'Did you predict this direction of change? ')+limit :
-      result+' Before running round 2, predict whether this growth will continue over the rest of the run.';
+    const evidence=first.survivors+' of '+first.starting+' wildebeest found grass ('+first.grassAvailable+' grass units were available), and '+first.births+(first.births===1?' calf was':' calves were')+' added.';
+    const next='One round does not show whether the herd will keep growing. In later rounds, compare the number of grass units with the starting herd. What happens in the first round with less than one grass unit per wildebeest?';
+    note.textContent=[result,evidence,guess?'Your prediction: “'+guess+'” Did you expect the herd to grow at first? Use the feeding and calf counts to explain why it did.':'Before Round 2, predict whether this growth will continue.',next].join(' ');
   }
   function renderLab() {
     const s = current(), last = s.rows.at(-1), done = s.round === ROUNDS, compared = !!state.comparison;
