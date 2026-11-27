@@ -579,6 +579,8 @@
       if(b)host.append(itemizedQuote(profile,s.trial,'Redesign: itemized visit costs'));
     }
   }
+  const narrowEvidence=window.matchMedia('(max-width: 720px)').matches;
+  if(narrowEvidence)$('recommendation-evidence').open=false;
   function render(){
     const explain=s.step==='explain'&&ready();
     $('map-section').hidden=explain;$('explain-section').hidden=!explain;
@@ -592,8 +594,12 @@
     $('view').options[1].disabled=!s.trial;$('view').value=view;
     if(s.started){drawPatient();drawCases();table($('results'));}
     if(s.trial){
-      table($('evidence'));$('case-evidence').replaceChildren(...cases.map((p,i)=>{
-        const d=el('details');d.className='sd-deeper';d.open=i===0;
+      table($('evidence'));
+      const holder=$('case-evidence'), before=[...holder.querySelectorAll('details[data-case-evidence]')];
+      holder.replaceChildren(...cases.map((p,i)=>{
+        const d=el('details');d.className='sd-deeper';
+        d.dataset.caseEvidence=String(p.id);
+        d.open=before.find(panel=>panel.dataset.caseEvidence===d.dataset.caseEvidence)?.open??(!narrowEvidence&&i===0);
         const body=el('div');body.className='sd-story';story(body,p.id);
         d.append(el('summary','Case '+(i+1)+' · '+p.place),body);return d;
       }));

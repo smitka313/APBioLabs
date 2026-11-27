@@ -536,3 +536,11 @@ main > .step > .step-body:not(.split) { grid-template-columns:minmax(0,1fr); }
 
 .making-sense { grid-template-columns:minmax(0,1fr); }
 .making-sense > .table-wrap { min-inline-size:0; }
+
+/* Keep each question’s evidence available without turning Analyze into a long phone scroll. */
+.q-evidence > summary{width:fit-content;max-width:100%;min-height:30px;line-height:30px;cursor:pointer}
+.q-evidence > summary:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+.q-evidence[open] > summary{margin-bottom:4px}
+#analyze .q-evidence ul{overflow-wrap:anywhere}
+@media(max-width:850px){#analyze .q-evidence{padding:4px 9px}}
+@media print{#analyze .q-evidence:not([open]) > ul{display:block!important}}

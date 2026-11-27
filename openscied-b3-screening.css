@@ -144,3 +144,10 @@
 
 
 .sd-trip{margin:.45rem 0}.sd-trip h4,.sd-trip p{margin:.25rem 0}.sd-trip ol{margin:.3rem 0;padding-inline-start:1.35rem}
+
+/* Fold the existing comparison at the point of use instead of duplicating the tables. */
+.sd-recommendation-evidence{min-width:0;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);padding:.35rem .65rem}
+.sd-recommendation-evidence > summary{min-height:32px;padding-block:.38rem;font-weight:700;cursor:pointer}
+.sd-recommendation-evidence > summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sd-recommendation-evidence[open] > summary{margin-bottom:.35rem}
+@media print{.sd-recommendation-evidence:not([open]) > :not(summary){display:block!important}}

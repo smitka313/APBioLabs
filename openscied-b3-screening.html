@@ -217,7 +217,10 @@
 </section>
 <section id="sd-explain-section" class="sd-panel" aria-labelledby="sd-explain-title" hidden>
 <h2 id="sd-explain-title" tabindex="-1">Recommend a plan</h2>
-<div class="sd-grid"><div><div id="sd-evidence"></div><h3>Evidence from your three patients</h3><div id="sd-case-evidence"></div></div><div>
+<div class="sd-grid"><details class="sd-recommendation-evidence" id="sd-recommendation-evidence" open>
+ <summary>View my plan and patient data</summary>
+ <div id="sd-evidence"></div><h3>Evidence from your three patients</h3><div id="sd-case-evidence"></div>
+</details><div>
  <label for="sd-claim"><strong>Which plan would you fund?</strong> Compare one outcome and one cost from the table. Explain what you give up in return.</label><textarea id="sd-claim" rows="4" maxlength="1800"></textarea>
  <label for="sd-limit"><strong>Who might still get left out?</strong> Use one of your three patient comparisons or an area’s results to propose one change and explain why it might help.</label><textarea id="sd-limit" rows="4" maxlength="1800"></textarea>
  <p class="small muted">Three milestones: run the hospital plan, test and compare a redesign, then finish your recommendation. The two tabs group those milestones.</p>

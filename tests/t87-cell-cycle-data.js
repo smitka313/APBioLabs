@@ -38,6 +38,18 @@ const T = require('./_h');
       T.ok(label <= 520, tag + 'the chart axis label fits inside the chart (' + Math.round(label) + ' of 520)');
       const stroke = await p.locator('.dna-line').evaluate(el => getComputedStyle(el).stroke);
       T.ok(stroke && stroke !== 'none', tag + 'chart line is drawn with the theme accent (' + stroke + ')');
+      await p.locator('.step-nav a[href="#growth-model"]').click();
+      await p.locator('#run-trials').click();
+      await p.locator('.step-nav a[href="#analyze"]').click();
+      const variation = p.locator('#qe-analysis-variation');
+      const open = () => variation.evaluate(el => el instanceof HTMLDetailsElement && el.open);
+      T.ok(await open() === (o.width > 850), tag + 'only wide view loads question evidence expanded');
+      if (!(await open())) await variation.locator('summary').press('Enter');
+      T.ok(await variation.locator('summary').getAttribute('aria-label') === 'View my data for question 2', tag + 'the disclosure identifies its question');
+      T.ok(await variation.locator('ul').isVisible() && /Set 1.*trials.*range/.test(await variation.locator('ul').innerText()), tag + 'the recorded trial results are beside the response');
+      T.ok(await variation.evaluate(el => el.nextElementSibling?.id === 'analysis-variation'), tag + 'no return to the growth page to see the trial counts');
+      await variation.locator('summary').press('Enter');
+      T.ok(!(await open()) && await p.locator('#analysis-variation').isVisible(), tag + 'folding data keeps the response available');
       T.ok(p.errors.length === 0, tag + 'no page errors ' + JSON.stringify(p.errors));
       await ctx.close();
     }
