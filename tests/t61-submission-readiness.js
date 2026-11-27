@@ -19,8 +19,8 @@ const T = require('./_h');
       const pdf = toolbar.locator('#lab-report-print-pdf').and(toolbar.getByRole('button', { name: 'Print or save as PDF', exact: true }));
       T.ok(await word.isVisible() && await word.isEnabled(), lab + ': labeled Word download visible and enabled with incomplete work');
       T.ok(await pdf.isVisible() && await pdf.isEnabled(), lab + ': labeled PDF action visible and enabled with incomplete work');
-      T.ok(/saved in this browser; it has not been sent to your teacher/i.test(text), lab + ': saved work is not represented as submitted');
-      T.ok(/activities remaining/i.test(text), lab + ': unfinished activity counts visible');
+      T.ok(/work in this browser only; it has not been sent to your teacher/i.test(await p.getByRole('region', { name: 'Where your work is saved' }).innerText()), lab + ': saved work is not represented as submitted');
+      T.ok(/activit(?:y|ies) remaining/i.test(text), lab + ': unfinished activity counts visible');
       const resume = ready.getByRole('button', { name: 'Continue unfinished work' });
       T.ok(await resume.count() === 1, lab + ': resume button appears when work remains');
       if (await resume.count()) {

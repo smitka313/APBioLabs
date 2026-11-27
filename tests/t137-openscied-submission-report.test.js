@@ -19,6 +19,17 @@ test('preview explains how to hand in a saved report and that downloading is not
   assert.match(help.textContent, /To hand in, upload or share the saved report where your teacher directs\. Downloading does not submit it\./);
 });
 
+test('preview distinguishes editing from a portable copy and explains the next step for each status', () => {
+  const draft = mountedReport({ status:'draft', missing:['Save another observation'] });
+  assert.match(draft.dialog.querySelector('.osr-next-step')?.textContent, /Still to do/);
+  assert.equal(draft.dialog.querySelector('.osr-missing').all().some(node => node.textContent === 'Save another observation'), true);
+  assert.ok(draft.dialog.all().some(node => /same browser profile.*neither a report nor a dashboard backup can restore editable OpenSciEd work/.test(node.textContent || '')));
+  const final = mountedReport();
+  assert.match(final.dialog.querySelector('.osr-next-step')?.textContent, /required work is recorded/i);
+  const recovery = mountedReport({ status:'recovery' });
+  assert.match(recovery.dialog.querySelector('.osr-next-step')?.textContent, /save a copy before you close/i);
+});
+
 test('final actions offer the same ordered handoff and both exports are visible in the preview', () => {
   const f = mountedReport();
   assert.deepEqual(f.target.all().filter(n => n.tag === 'button').map(n => n.textContent),
@@ -134,7 +145,8 @@ function mountedReport(options = {}) {
   guard.read(key);
   assert.ok(guard.write(key, 'fictional saved work').ok);
   const identify = Guard.reportIdentity(guard, [key], () => owner);
-  const collect = () => ({ ...fixture(), student: identify(), status: guard.check(key).ok ? 'final' : 'recovery' });
+  const collect = () => ({ ...fixture(), student: identify(),
+    status: guard.check(key).ok ? (options.status || 'final') : 'recovery', missing: options.missing });
   let startPack;
   const packStarted = new Promise(resolve => { startPack = resolve; });
   let release;
