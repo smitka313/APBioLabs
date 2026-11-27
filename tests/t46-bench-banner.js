@@ -40,7 +40,7 @@ async function art(page) {
         assert.ok(await p.locator('#resume').isVisible(), 'saved work remains resumable independently of the banner');
         const ratios = await p.evaluate(() => {
           const lum = css => {
-            const [r,g,b] = css.match(/[\\d.]+/g).slice(0,3).map(n => {
+            const [r,g,b] = css.match(/[0-9.]+/g).slice(0,3).map(n => {
               const v = +n / 255; return v <= .04045 ? v / 12.92 : ((v+.055)/1.055)**2.4;
             });
             return r*.2126 + g*.7152 + b*.0722;
