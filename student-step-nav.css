@@ -12,8 +12,16 @@
   .step-nav[data-blb-step-nav] .nl { text-align: start; }
   html[data-openscied] nav[data-blb-step-nav] > button[data-blb-step-state] {
     position: relative;
+  }
+  html[data-openscied] nav[data-blb-step-nav]:not(.journey-tabs) > button[data-blb-step-state] {
     min-block-size: 3rem;
     padding-block-end: .95rem;
+  }
+  @media (min-width: 851px) {
+    html[data-openscied] nav.journey-tabs[data-blb-step-nav] > button[data-blb-step-state] {
+      min-block-size: 3rem;
+      padding-block-end: .95rem;
+    }
   }
   html[data-openscied] nav[data-blb-step-nav] > button > .blb-step-status {
     position: absolute;
@@ -33,16 +41,9 @@
 }
 @media print { .blb-step-status, .blb-step-unlock { display: none !important; } }
 
-/* Journey intentionally fits the whole play view on small screens. Keep the
-   status in the existing tab padding and use Journey's original unlock cue. */
+/* Journey keeps its native compact tabs and unlock message on small screens.
+   Do not give a viewport-only activity a taller rail or a second cue. */
 @media screen and (max-width: 850px) {
-  html[data-openscied] nav.journey-tabs[data-blb-step-nav] > button[data-blb-step-state] {
-    min-block-size: 0;
-    padding-block-end: 8px;
-  }
-  html[data-openscied] nav.journey-tabs[data-blb-step-nav] > button > .blb-step-status {
-    inset-block-end: 0;
-    font-size: .56rem;
-  }
-  nav.journey-tabs[data-blb-step-nav] + .blb-step-unlock { display: none; }
+  .journey-tabs[data-blb-step-nav] .blb-step-status,
+  .journey-tabs[data-blb-step-nav] + .blb-step-unlock { display: none !important; }
 }
