@@ -51,6 +51,7 @@ async function contract(root) {
     assert.match(raw, /<button\b[^>]*\bdata-copy-assignment\b[^>]*>Copy assignment/);
     const text = value => ({textContent:value.replace(/&amp;/g, '&')});
     const titleText = raw.match(/<h4>([^<]+)<\/h4>/)[1];
+    assert.ok(raw.includes('aria-label="Copy assignment: ' + titleText + '"'), 'report the exact activity title to assistive technology');
     const timing = raw.match(/<p class="assign-meta">.*?<span>([^<]+)<\/span>/s)[1];
     const turnIn = raw.match(/<p class="assign-turnin"><strong>Turn in:<\/strong> ([^<]+)/)[1];
     for (const full of [false,true]) for (const clipboard of [true,false]) {
