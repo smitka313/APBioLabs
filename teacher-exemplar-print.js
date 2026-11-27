@@ -18,7 +18,7 @@
     const activity = ap ? 'lab' + ap[1] : /^guide-(b\d-.*)$/.exec(card?.id || '')?.[1];
     if (!activity) return null;
     const richSample = details.querySelector(':scope > .rv-paper');
-    const divSample = details.matches('.full-model-report') && details.querySelector(':scope > div');
+    const divSample = details.matches('.full-model-report') && details.querySelector(':scope > div:not(.tn-exemplar-actions)');
     const source = richSample || divSample || details;
     const report = make(document, 'div', '', 'tn-exemplar-paper');
     const originalMeta = richSample?.querySelector('.rv-info');
