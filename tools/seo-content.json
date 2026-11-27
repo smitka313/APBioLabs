@@ -8,7 +8,7 @@
         {
           "id": 1,
           "minutes": 115,
-          "alt": "Simulation scene: a growth chamber of Fast Plant seedlings seen from above",
+          "alt": "Illustration: Fast Plant seedlings under a grow light, with leaf hairs enlarged through a hand lens",
           "title": "Artificial Selection",
           "q": "Can extreme selection change expression of a quantitative trait in a population in one generation?",
           "sim": "Count trichomes on Fast Plants, select parents, and grow the next generation.",
@@ -38,7 +38,7 @@
         {
           "id": 3,
           "minutes": 150,
-          "alt": "Simulation scene: a fossil slab of a small feathered animal",
+          "alt": "Illustration: A feathered fossil beside a sketch of an evolutionary tree",
           "title": "Comparing DNA Sequences with BLAST",
           "q": "How can bioinformatics be used as a tool to determine evolutionary relationships and to better understand genetic diseases?",
           "sim": "Build a cladogram, then align a mystery gene against a sequence database.",
@@ -60,7 +60,7 @@
         {
           "id": 4,
           "minutes": 160,
-          "alt": "Simulation scene: dialysis-tubing bags in cups of solution",
+          "alt": "Illustration: Dialysis bags suspended in three beakers of solution",
           "title": "Diffusion and Osmosis",
           "q": "What causes my plants to wilt if I forget to water them?",
           "sim": "Agar cubes, dialysis-tube model cells, potato cores, and plasmolysis.",
@@ -75,7 +75,7 @@
         {
           "id": 5,
           "minutes": 130,
-          "alt": "Simulation scene: two cups of leaf disks under a lamp, with disks floating in the bicarbonate cup",
+          "alt": "Illustration: Leaf disks floating and sinking in two cups under a lamp",
           "title": "Photosynthesis",
           "q": "What factors affect the rate of photosynthesis in living leaves?",
           "sim": "Floating leaf disk assay under changing light, CO₂ and temperature.",
@@ -90,7 +90,7 @@
         {
           "id": 6,
           "minutes": 130,
-          "alt": "Simulation scene: two microrespirometers in a water bath",
+          "alt": "Illustration: Two glass microrespirometers in a water bath",
           "title": "Cellular Respiration",
           "q": "What factors affect the rate of cellular respiration in multicellular organisms?",
           "sim": "Microrespirometers with germinating seeds, beads, and temperature.",
@@ -127,7 +127,7 @@
         {
           "id": 8,
           "minutes": 115,
-          "alt": "Simulation scene: a lab bench with a tube rack, an ice bucket and a 42 °C water bath",
+          "alt": "Illustration: Two agar plates with glowing and non-glowing colonies",
           "title": "Bacterial Transformation",
           "q": "How can we use genetic engineering techniques to manipulate heritable information?",
           "sim": "pGLO transformation, heat shock, four plates, and transformation efficiency.",
@@ -142,7 +142,7 @@
         {
           "id": 9,
           "minutes": 155,
-          "alt": "Simulation scene: a stained agarose gel with DNA bands beside a power supply",
+          "alt": "Illustration: An illuminated electrophoresis gel with wells, bands and a DNA ladder",
           "title": "Restriction Enzyme Analysis of DNA",
           "q": "How can we use genetic information to identify and profile individuals?",
           "sim": "Digest lambda DNA, run a gel, and size fragments from a standard curve.",
@@ -164,7 +164,7 @@
         {
           "id": 10,
           "minutes": 130,
-          "alt": "Simulation scene: shelves of Fast Plants under a light bank",
+          "alt": "Illustration: Fast Plants growing under lights beside a feeding caterpillar",
           "title": "Energy Dynamics",
           "q": "What factors govern energy capture, allocation, storage, and transfer between producers and consumers in a terrestrial ecosystem?",
           "sim": "Fast Plant biomass and butterfly larvae energy budgets with a live energy-flow diagram.",
@@ -179,7 +179,7 @@
         {
           "id": 11,
           "minutes": 160,
-          "alt": "Simulation scene: a plant cutting in a water-filled potometer",
+          "alt": "Illustration: A leafy cutting attached to a thin glass potometer tube",
           "title": "Transpiration",
           "q": "What factors, including environmental variables, affect the rate of transpiration in plants?",
           "sim": "Stomata peels under the microscope and whole-plant water loss.",

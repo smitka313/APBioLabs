@@ -5,7 +5,7 @@ const path = require('node:path');
 const T = require('./_h');
 
 const originals = {
-  "b1-field-notebook": ["openscied-atlas-b1-field-notebook-preview.webp",960,600],
+  "b1-field-notebook": ["openscied-atlas-b1-field-notebook-preview.svg",960,600],
   "b5-wapusk": [
     "openscied-wapusk-card.svg",
     960,
@@ -21,6 +21,19 @@ const originals = {
     1000,
     480
   ]
+};
+const refreshed = {
+  "b4-hawksbeard": "openscied-activity-b4-hawksbeard.webp",
+  "b3-screening": "openscied-activity-b3-screening.webp",
+  "b1-serengeti": "openscied-activity-b1-serengeti.webp",
+  "b1-carrying-capacity": "openscied-activity-b1-carrying-capacity.webp",
+  "b3-cancer-rates": "openscied-activity-b3-cancer-rates.webp",
+  "b4-rat-generations": "openscied-activity-b4-rat-generations.webp",
+  "b5-hybrid": "openscied-activity-b5-hybrid.webp",
+  "b4-wildlife-corridor": "openscied-activity-b4-wildlife-corridor.webp",
+  "b5-thermoregulation": "openscied-activity-b5-thermoregulation.webp",
+  "b5-wapusk": "openscied-activity-b5-wapusk.webp",
+  "b1-field-notebook": "openscied-atlas-b1-field-notebook-preview.webp"
 };
 const keys = [
   'b1-field-notebook','b1-migration','b1-carrying-capacity','b1-serengeti','b1-ripple',
@@ -64,7 +77,7 @@ const keys = [
                 &&art.left>=card.left-1&&art.right<=card.right+1&&art.width>100,
               src:img.getAttribute('src')};
           });
-          const [filename,nw,nh]=originals[key]??['openscied-atlas-'+key+'.svg',960,600];
+          const [filename,nw,nh]=refreshed[key] ? [refreshed[key],960,600] : (originals[key]??['openscied-atlas-'+key+'.svg',960,600]);
           const {nw:decodedWidth,nh:decodedHeight,...layout}=report;
           assert.deepEqual(layout,{width:String(nw),height:String(nh),loaded:true,alt:'',decorative:'true',
             fits:true,src:'assets/'+filename},width+'px '+key);
