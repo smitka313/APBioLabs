@@ -42,14 +42,20 @@ function draw(page, initial, tracking=true) {
  vm.runInNewContext(script,{document,location:{pathname:'/course/'+page},URL,NodeFilter:{SHOW_TEXT:4}});
  return {body,footer,link};
 }
-const privacy='This site counts anonymous page visits without cookies. Nothing you type, including your name and answers, is sent anywhere.';
+const privacy='This site counts page visits without cookies. Student names and answers stay in this browser unless you choose to share them.';
 test('brand routes include both activities with and without .html, and leave the skip link first',()=>{
  for(const [slug,label] of [['lab01.html','AP Biology labs'],['openscied-b1-serengeti','Unit 1'],['openscied-b4-junco.html','Unit 4']]){
   const {body}=draw(slug,null);
   assert.equal(body.children[0].className,'skip-link');
   const masthead=body.children[1];
   assert.equal(masthead.className,'bench-activity-bar');
-  assert.ok(masthead.textContent.endsWith(label));
+  const [,course,help]=masthead.children[0].children;
+  assert.ok(course.textContent.endsWith(label));
+  assert.equal(course.tag,'a');
+  assert.equal(course.href,'https://example.test/course/'+(slug.startsWith('lab')?'ap-biology.html':'openscied-dashboard.html'));
+  assert.equal(help.tag,'a');
+  assert.equal(help.textContent,'Saving & help');
+  assert.equal(help.href,'https://example.test/course/privacy-help.html#saving');
   assert.equal(masthead.children[0].children[0].href,'https://example.test/course/index.html');
   assert.equal(masthead.children[0].children[0].children.length,2);
  }
@@ -58,11 +64,11 @@ test('brand routes include both activities with and without .html, and leave the
  }
 });
 test('privacy statement is consistent, never added to an untracked page, and preserves source credit links',()=>{
- for(const old of [null,'Analytics count page visits only.','This site counts anonymous page visits with GoatCounter (no cookies). Nothing you type, including your name and answers, is sent anywhere.']){
+ for(const old of [null,privacy,'Analytics count page visits only.','This site counts anonymous page visits with GoatCounter (no cookies). Nothing you type, including your name and answers, is sent anywhere.']){
   const {footer,link}=draw('lab01.html',old);
-  assert.ok(footer.textContent.includes(privacy));
+  assert.equal(footer.textContent.split(privacy).length-1,1);
   assert.ok(!/GoatCounter/i.test(footer.textContent));
   assert.equal(footer.querySelectorAll('p')[0].children[0],link);
  }
- assert.doesNotMatch(draw('lab01.html',null,false).footer.textContent,/anonymous page visits/);
+ assert.ok(!draw('lab01.html',null,false).footer.textContent.includes(privacy));
 });
