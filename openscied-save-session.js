@@ -114,7 +114,16 @@
 
   // A write can be denied even while controls and local model state still work.
   // Keep the recovery route visible without touching the record or prompting a reload.
+  const failedWrites = new Set();
+  function reportFailure(key, failed) {
+    const root = typeof window === 'object' && window;
+    if (!root?.dispatchEvent) return;
+    if (failed) failedWrites.add(key); else failedWrites.delete(key);
+    root.BiologyBenchSaveState = { ...root.BiologyBenchSaveState, failed: failedWrites.size > 0 };
+    root.dispatchEvent(new Event('blb:save-state'));
+  }
   function warn(key, reason) {
+    reportFailure(key, true);
     const doc = typeof document === 'object' && document;
     if (!doc?.body?.prepend || !doc.createElement || !doc.querySelector) return;
     const message = reason === 'erased' ? 'Saved work was reset after this tab opened.' :
@@ -133,6 +142,7 @@
     if (notice.textContent !== text) notice.textContent = text;
   }
   function clearWarning(key) {
+    reportFailure(key, false);
     const notice = typeof document === 'object' && document?.getElementById?.('ose-save-warning');
     if (notice?.dataset?.workKey === key) notice.remove();
   }
@@ -196,7 +206,7 @@
       const result = check(key);
       if (!result.ok) { warn(key, result.reason); return result; }
       try {
-        if (raw === state(key).raw) { clearWarning(key); return success(); }
+        if (raw === state(key).raw) return success();
         const previous=state(key).raw;
         storage.setItem(key, raw);
         state(key).raw = raw;
@@ -225,6 +235,7 @@
         slot.raw = raw;
         // Discard the previous evidence fingerprint when this tab starts over.
         // Otherwise rebuilding the same answer can look like its old save.
+        clearWarning(key);
         updateResume(key,previous,raw);
         return success();
       } catch (_) { return unavailable(); }
