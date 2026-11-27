@@ -148,8 +148,8 @@ const fs = require('node:fs');
         return { path: new URL(el.currentSrc).pathname, width: el.naturalWidth, height: el.naturalHeight };
       });
       assert.deepEqual(art, width <= 580
-        ? { path: '/assets/bench-field-atlas-mobile.svg', width: 600, height: 272 }
-        : { path: '/assets/bench-field-atlas.svg', width: 1200, height: 226 });
+        ? { path: '/assets/bench-field-atlas-mobile.webp', width: 1200, height: 544 }
+        : { path: '/assets/bench-field-atlas-desktop.webp', width: 1800, height: 302 });
       assert.equal(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       assert.deepEqual(p.errors, []);
       T.ok(true, width + 'px: Light/Dark/Auto, theme persistence, sign-in, backup, clear, and AP work preservation');
