@@ -62,8 +62,15 @@ const screenshot=process.env.BENCH_AUDIT_SCREENSHOTS;
       }
      }else assert.equal(await bar.count(),0,page+' keeps its native branded masthead');
      if(page==='ap-biology.html'){
-      const filter=await p.locator('.card .thumb').first().evaluate(e=>getComputedStyle(e).filter);
-      assert.equal(filter.includes('brightness(0.64)'),theme==='dark');
+      const filter=async lab=>p.locator('.card .thumb[src$="/'+lab+'.webp"]').evaluate(e=>getComputedStyle(e).filter);
+      if(theme==='dark'){
+        assert.match(await filter('lab02'),/^brightness\(0\.71\)$/,'bright graph art is selectively dimmed');
+        assert.match(await filter('lab01'),/^brightness\(0\.91\)$/,'seedling detail keeps a lighter touch');
+        assert.match(await filter('lab07'),/^brightness\(1\)$/,'already dark microscope art is not dimmed');
+      }else{
+        assert.equal(await filter('lab02'),'none');
+        assert.equal(await filter('lab07'),'none');
+      }
      }
      if(page==='openscied-b1-migration.html'){
       const map=p.locator('#migration-map');
