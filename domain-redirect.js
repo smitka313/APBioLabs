@@ -85,6 +85,8 @@
   var source = document.currentScript;
   if (!source || !source.src || location.hostname === 'smitka313.github.io' ||
       !/(?:^|\/)(?:lab(?:0[1-9]|1[0-3])|openscied-b[1-5]-[a-z0-9-]+)(?:\.html)?\/?$/i.test(location.pathname)) return;
+  // Carbon Journey owns a viewport-fitted navigation rail and its unlock cue.
+  if (/(?:^|\/)openscied-b2-carbon-journey(?:\.html)?\/?$/i.test(location.pathname)) return;
   var css = document.createElement('link');
   css.rel = 'stylesheet';
   css.href = new URL('student-step-nav.css', source.src).href;

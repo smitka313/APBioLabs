@@ -151,7 +151,7 @@
     const article = document.createElement('article'), label = document.createElement('label'), input = document.createElement('textarea');
     label.htmlFor = id; label.textContent = text; input.id = id; input.rows = id === 'q3' ? 6 : 3;
     input.maxLength = 20000; input.value = state.answers[id] || '';
-    input.addEventListener('input', () => { state.answers[id] = input.value; save(); updateNavProgress(); });
+    input.addEventListener('input', () => { state.answers[id] = input.value; save(); });
     article.append(label);
     if (id === 'q2') {
       const panel = document.createElement('div'); panel.id = 'question-totals'; panel.className = 'journey-question-evidence'; article.append(panel);
@@ -167,10 +167,6 @@
     }
     article.append(input); $('#questions').append(article);
   });
-  function updateNavProgress() {
-    $('.journey-tabs [data-page="play"]').toggleAttribute('data-nav-step-complete',state.done && state.rows.length>=10);
-    $('.journey-tabs [data-page="sense"]').toggleAttribute('data-nav-step-complete',questions.every(([id])=>state.answers[id]?.trim()));
-  }
   let tourStation = '';
   function renderTour() {
     const samples = L.tour(state);
@@ -265,7 +261,7 @@
     if (chart) chart.update(opts); else chart = Lab.chart($('#charts'), opts);
   }
   function render() {
-    updateRestart(); updateBudgetGate(); updateNavProgress();
+    updateRestart(); updateBudgetGate();
     const pending = state.pending !== null, c = pending ? L.outcome(state) : null, n = state.rows.length;
     const missing = L.coverageQueue(state);
     const review = state.coverageCheckpoint ? missing[0] : null;

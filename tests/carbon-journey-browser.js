@@ -19,6 +19,7 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       const p = await ctx.newPage(), errors = []; p.on('pageerror', e => errors.push(e.message));
       await p.goto(url);
       await p.goto(url + '#budget');
+      assert.equal(await p.locator('script[src$="/student-step-nav.js"], link[href$="/student-step-nav.css"]').count(), 0, 'Journey keeps its native viewport-fitted navigation');
       assert.equal(await p.getByRole('button',{name:'Carbon & Energy Budget',exact:true}).isDisabled(),true);
       assert.equal(await p.locator('#budget').isHidden(),true);
       const shot = state => p.screenshot({ path: path.join(root, `artifacts/l9/${width}-${state}.png`), fullPage: true });
