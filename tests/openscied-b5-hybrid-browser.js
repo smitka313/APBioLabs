@@ -98,8 +98,8 @@ const server=http.createServer((req,res)=>{
     const [htmlFile]=await Promise.all([p.waitForEvent('download'),at('save-html').click()]);
     const html=fs.readFileSync(await htmlFile.path(),'utf8');assert.match(html,/Avery Ice.*HY-[A-F0-9]{8}.*annual minimum extent.*NOS3/s);
     assert.deepEqual(result.report[2].items[1].rows.map(row=>row.slice(1).map(v=>v.startsWith('Tails')?1:0)).flat(),D.flips(seed,40));
-    await p.getByRole('button',{name:'Preview report'}).click();await p.getByText('More formats',{exact:true}).click();
-    const word=p.waitForEvent('download');await p.getByRole('button',{name:/Download Word/i}).click();
+    await p.getByRole('button',{name:'Preview report'}).click();
+    const word=p.waitForEvent('download');await p.locator('dialog.osr-dialog').getByRole('button',{name:/Download Word/i}).click();
     const z=await require('jszip').loadAsync(fs.readFileSync(await (await word).path()));
     const xml=await z.file('word/document.xml').async('string');
     for(const pattern of [/Avery Ice/,/HY-[A-F0-9]{8}/,/NOS3/,/Which conclusion matches/,/2100/])assert.match(xml,pattern);

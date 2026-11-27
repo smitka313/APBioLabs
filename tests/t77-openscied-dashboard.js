@@ -62,6 +62,11 @@ const fs = require('node:fs');
       assert.match(await identity.textContent(), /Casey Student/);
       assert.match(await p.locator('#cell-cycle-progress').textContent(), /1 of 31 responses/);
       assert.equal(await p.locator('#openscied-resume-link').getAttribute('href'), 'openscied-b3-cell-cycle.html#analyze');
+      assert.equal(await p.locator('#openscied-resume-destination').textContent(), 'Opens at Step 5: Analyze');
+      const browse = p.locator('#openscied-resume').getByRole('link', { name: 'Browse all activities' });
+      assert.equal(await browse.getAttribute('href'), '#activities');
+      await browse.click();
+      assert.equal(new URL(p.url()).hash, '#activities');
       // Open the actual activity using Resume and verify its section and saved answer.
       await p.locator('#openscied-resume-link').click();
       await p.waitForFunction(() => document.querySelector('#analyze.is-current'));
@@ -158,5 +163,3 @@ const fs = require('node:fs');
   } finally { await browser.close(); server.close(); }
   T.done('openscied-dashboard');
 })().catch(e => { console.error(e); process.exitCode = 1; });
-
-

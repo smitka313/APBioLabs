@@ -182,7 +182,6 @@ const setRange = async (p, id, v) => { await p.evaluate(([i, x]) => { const r = 
       'My trials has one classroom preview; old backups and table tools start collapsed');
     await preview.click();
     const dialog = p.locator('dialog.osr-dialog');
-    await dialog.getByText('More formats', { exact: true }).click();
     const wordDownload = p.waitForEvent('download');
     await dialog.getByRole('button', { name: 'Download Word (.docx)', exact: true }).click();
     const word = await wordDownload;

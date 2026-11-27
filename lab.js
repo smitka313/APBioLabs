@@ -1740,8 +1740,15 @@
       catch (e) { fallback.value = text; fallback.hidden = false; fallback.focus(); fallback.select(); msg.textContent = 'Copy is blocked here. Your text is selected below: press Ctrl+C (or ⌘C).'; }
     } }, 'Copy all my responses');
     const clearBtn = h('button', { class: 'btn btn--ghost btn--sm btn-startover', type: 'button', 'aria-haspopup': 'dialog', onclick: () => startOverLabDialog(clearBtn) }, 'Start over');
-    el.append(h('div', { class: 'responses-bar' }, msg, copyBtn, clearBtn), fallback);
-    if (PAGE.kind !== 'teacher' && PAGE.kind !== 'info') el.append(...reportTools(), transferBlock(), moveWorkPanel());
+    const supplemental = h('div', { class: 'responses-bar' }, msg, copyBtn, clearBtn);
+    if (PAGE.kind !== 'teacher' && PAGE.kind !== 'info') {
+      supplemental.append(h('button', { class: 'btn btn--ghost', type: 'button', onclick: printWorksheet }, 'Print worksheet'));
+      el.append(...reportTools(), supplemental, fallback,
+        h('section', { class: 'stack report-progress-transfer', 'aria-label': 'Continue on another device' },
+          h('h3', null, 'Continue on another device'),
+          h('p', { class: 'small muted' }, 'These tools move editable work between devices. Do not turn in your transfer code or progress file.'),
+          transferBlock({ primary: false }), moveWorkPanel()));
+    } else el.append(supplemental, fallback);
   };
 
   /* ---------------- Hosting environment ----------------
@@ -2107,6 +2114,7 @@
     const view = h('div', { id: 'lab-report', class: 'report-view', role: 'region', 'aria-labelledby': 'rv-title' },
       h('div', { class: 'rv-tools' },
         h('div', { class: 'row' },
+          wordReportButton({ status, note }),
           h('button', { class: 'btn btn--primary', type: 'button', onclick: doPrint }, 'Print or save as PDF'),
           h('button', { class: 'btn', type: 'button', onclick: closeReport }, 'Close report')),
         h('p', { class: 'small' }, 'In the print window, choose “Save as PDF” or “Microsoft Print to PDF”. ' + HAND_IN_REPORT),
@@ -2401,9 +2409,9 @@
     }
   }
   /* The "Get my transfer code" button and the place its result appears. */
-  function transferBlock() {
+  function transferBlock({ primary = true } = {}) {
     const out = h('div', { class: 'transfer-out' });
-    const btn = h('button', { class: 'btn btn--primary btn--lg transfer-btn', type: 'button', 'aria-expanded': 'false', onclick: async () => {
+    const btn = h('button', { class: 'btn transfer-btn' + (primary ? ' btn--primary btn--lg' : ''), type: 'button', 'aria-expanded': 'false', onclick: async () => {
       btn.disabled = true; out.innerHTML = ''; out.append(h('p', { class: 'muted', role: 'status' }, 'Making your transfer code…'));
       try { await fillTransfer(out); btn.setAttribute('aria-expanded', 'true'); btn.textContent = 'Update my transfer code'; }
       catch (e) { out.innerHTML = ''; out.append(h('p', { class: 'tool-status is-bad', role: 'alert' }, 'Could not make a transfer code here. Save a progress file instead.')); }
@@ -2505,12 +2513,9 @@
         confirmRow, status, note));
   }
 
-  /* Report tools added to the responses toolbar on student lab pages. */
-  function reportTools() {
-    const status = h('p', { class: 'tool-status', 'aria-live': 'polite' });
-    const note = previewNote();
+  function wordReportButton({ id, status, note }) {
     const say = (t, bad) => { status.textContent = t; status.classList.toggle('is-bad', !!bad); };
-    const docxBtn = h('button', { id: 'lab-report-download-word', class: 'btn btn--primary', type: 'button', onclick: async () => {
+    const docxBtn = h('button', { id, class: 'btn', type: 'button', onclick: async () => {
       docxBtn.disabled = true; say('Building your Word file…');
       try {
         const name = reportFileBase() + '.docx';
@@ -2528,15 +2533,22 @@
         else { console.error(e); say('Something went wrong building the Word file. Use Save as PDF instead.', true); }
       } finally { docxBtn.disabled = false; }
     } }, 'Download Word (.docx)');
+    return docxBtn;
+  }
+
+  /* Report tools added to the responses toolbar on student lab pages. */
+  function reportTools() {
+    const status = h('p', { class: 'tool-status', 'aria-live': 'polite' });
+    const note = previewNote();
+    const docxBtn = wordReportButton({ id: 'lab-report-download-word', status, note });
     const pdfBtn = h('button', { id: 'lab-report-print-pdf', class: 'btn', type: 'button', onclick: () => openReport({ print: true, opener: pdfBtn }) }, 'Print or save as PDF');
-    const prevBtn = h('button', { class: 'btn report-preview-btn', type: 'button', onclick: () => openReport({ opener: prevBtn }) }, 'Preview my report');
+    const prevBtn = h('button', { class: 'btn btn--primary report-preview-btn', type: 'button', onclick: () => openReport({ opener: prevBtn }) }, 'Preview report');
     const tlBox = h('input', { type: 'checkbox', id: 'tl-include', checked: tlInclude() || null, onchange: () => store.set('tl-include', tlBox.checked) });
     const tlRow = h('label', { class: 'check tl-include', for: 'tl-include', hidden: true }, tlBox, ' Include my timelapse in the report');
     const tlSync = () => { tlRow.hidden = !Lab.timelapse.withRun().length; };
     window.addEventListener('aplab:timelapse', tlSync); setTimeout(tlSync, 400);
-    const bar = h('div', { class: 'responses-bar report-bar' },
-      h('span', { class: 'grow' }, 'Preview your report or save a Word or PDF copy. ' + HAND_IN_REPORT + ' To keep editing on another device, use the separate progress tools below.'), docxBtn, pdfBtn, prevBtn,
-      h('button', { class: 'btn btn--ghost', type: 'button', onclick: printWorksheet }, 'Print worksheet'), tlRow);
+    const bar = h('section', { class: 'responses-bar report-bar', 'aria-label': 'Hand in your report' },
+      h('span', { class: 'grow' }, HAND_IN_REPORT), prevBtn, docxBtn, pdfBtn, tlRow);
     // Informational only: existing sectionWork() drives the same progress indicators as the step navigation.
     // Do not gate report downloads or introduce additional completion requirements.
     const readiness = h('div', { class: 'callout callout--tip', role: 'region', 'aria-label': 'Submission readiness' });
@@ -3186,11 +3198,13 @@
           h('div', { class: 'pickup-main' },
             h('p', { class: 'eyebrow' }, 'Pick up where you left off'),
             h('h2', { class: 'pickup-lab', id: hid }, labName),
-            last.name ? h('p', { class: 'pickup-part' }, useBm ? 'You paused at: ' : 'Part: ', h('strong', null, last.name + (useBm && bm.stepNo ? ', step ' + bm.stepNo : ''))) : null,
+            last.step && last.name ? h('p', { class: 'pickup-part' }, useBm ? 'You paused at: ' : 'Opens at part: ', h('strong', null, last.name + (useBm && bm.stepNo ? ', step ' + bm.stepNo : ''))) : null,
             hr && hr.hint ? h('p', { class: 'pickup-next' }, h('span', { class: 'sn-k' }, 'Next: '), hr.hint)
               : hr && hr.done ? h('p', { class: 'pickup-next' }, h('span', { class: 'sn-k' }, '✓ '), hr.done) : null,
             pr && pr.total && progressText(pr) !== 'Not started' ? h('p', { class: 'pickup-prog small muted' }, progressText(pr, { suffix: true })) : null),
-          h('a', { class: 'btn btn--primary btn--lg resume-link', href }, 'Resume', h('span', { class: 'sr-only' }, ' ' + labName + (last.name ? ', ' + last.name : '')), h('span', { 'aria-hidden': 'true' }, ' →')));
+          h('div', { class: 'row' },
+            h('a', { class: 'btn btn--primary btn--lg resume-link', href }, 'Continue', h('span', { class: 'sr-only' }, ' ' + labName + (last.step && last.name ? ', ' + last.name : '')), h('span', { 'aria-hidden': 'true' }, ' →')),
+            h('a', { class: 'btn', href: '#labs' }, 'Browse all activities')));
         el.hidden = false;
       }
     }

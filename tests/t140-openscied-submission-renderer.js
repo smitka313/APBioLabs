@@ -65,6 +65,9 @@ const FIXTURE = '<!doctype html><html lang="en"><meta charset="utf-8"><title>Ope
     });
     await page.waitForFunction(() => document.querySelector('[data-ose-report-final] button') === window.initialLauncher);
     assert.equal(await page.getByRole('button', { name: 'Preview report' }).count(), 1);
+    const final = page.locator('[data-ose-report-final]');
+    assert.deepEqual(await final.getByRole('button').allTextContents(), ['Preview report', 'Download Word (.docx)', 'Print or save as PDF']);
+    assert.match(await final.innerText(), /Downloading does not submit it/);
     await page.evaluate(() => { document.querySelector('#final-phase').hidden = true; });
     await page.waitForFunction(() => document.querySelector('#submit button') === window.initialLauncher);
     await page.evaluate(() => { document.querySelector('#final-phase').hidden = false; });
@@ -90,7 +93,7 @@ const FIXTURE = '<!doctype html><html lang="en"><meta charset="utf-8"><title>Ope
     assert.match(await dialog.innerText(), /In progress/i);
     assert.ok(await dialog.getByRole('button', { name: 'Print or save as PDF' }).isVisible());
     assert.ok(await dialog.getByRole('button', { name: 'Close report' }).isVisible());
-    assert.equal(await dialog.getByRole('button', { name: 'Download Word (.docx)' }).count(), 0, 'Word starts inside a closed disclosure');
+    assert.ok(await dialog.getByRole('button', { name: 'Download Word (.docx)' }).isVisible(), 'Word is visible beside the PDF action');
     assert.match(await dialog.innerText(), /Finish the final trial/);
     assert.match(await dialog.innerText(), /<img src=x/);
     assert.equal(await dialog.getByRole('img').count(), 0);
@@ -127,7 +130,6 @@ const FIXTURE = '<!doctype html><html lang="en"><meta charset="utf-8"><title>Ope
 
     // Hold the original preview snapshot even if the activity state changes before download/print.
     await page.evaluate(() => { synthetic.sections[0].items[0].value = 'Evidence edited in another step'; });
-    await dialog.getByText('More formats', { exact: true }).click();
     assert.ok(await dialog.getByRole('button', { name: 'Download Word (.docx)' }).isVisible());
     const download = page.waitForEvent('download');
     await dialog.getByRole('button', { name: 'Download Word (.docx)' }).click();
@@ -192,7 +194,6 @@ const FIXTURE = '<!doctype html><html lang="en"><meta charset="utf-8"><title>Ope
     assert.doesNotMatch(await dialog.innerText(), /Dataset ID/);
     assert.notEqual(await sealPng(dialog), previewSeal, 'named completion without an ID has a genuine no-ID stamp');
     if (shots) await page.screenshot({ path:path.join(shots, 'submission-preview-complete-without-id.png') });
-    await dialog.getByText('More formats', { exact: true }).click();
     const editedDownload = page.waitForEvent('download');
     await dialog.getByRole('button', { name: 'Download Word (.docx)' }).click();
     const editedFile = path.join(dir, 'corrected.docx');
@@ -215,7 +216,6 @@ const FIXTURE = '<!doctype html><html lang="en"><meta charset="utf-8"><title>Ope
     assert.match(await dialog.locator('.osr-meta').innerText(), /Original student/);
     assert.doesNotMatch(await dialog.innerText(), /Wrong Next Student/);
     assert.equal(await dialog.locator('.osr-stamp').count(), 0);
-    await dialog.getByText('More formats', { exact: true }).click();
     const recoveredDownload = page.waitForEvent('download');
     await dialog.getByRole('button', { name:'Download Word (.docx)' }).click();
     const recovery = await recoveredDownload;

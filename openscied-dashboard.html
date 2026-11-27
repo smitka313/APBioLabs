@@ -39,6 +39,8 @@
 <link rel="stylesheet" href="openscied-dashboard.css?v=field-atlas-2">
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 <link rel="stylesheet" href="bench-course-dashboards.css">
+<link rel="stylesheet" href="bench-activity-finder.css">
+<noscript><style>.activity-finder { display: none; }</style></noscript>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to activities</a>
@@ -127,6 +129,16 @@
   </div>
 </header>
 <div id="activities" class="dashboard-units wrap wrap--wide gutter" tabindex="-1">
+<div class="activity-finder">
+  <form class="activity-finder-form" data-activity-finder="openscied" role="search" aria-label="OpenSciEd activities">
+    <div class="activity-finder-fields">
+      <div><label for="activity-search">Find an activity</label><input id="activity-search" type="search" placeholder="Try “Serengeti” or “lesson 3”" autocomplete="off"></div>
+      <div><label for="activity-group">Unit</label><select id="activity-group"><option value="">All units</option><option value="unit1">1 · Serengeti</option><option value="unit2">2 · Fires</option><option value="unit3">3 · Cells and DNA</option><option value="unit4">4 · Natural selection</option><option value="unit5">5 · Arctic bears</option></select></div>
+      <button class="btn activity-finder-clear" type="button">Clear filters</button>
+    </div>
+    <p class="activity-finder-results small" role="status">24 activities</p>
+  </form>
+</div>
 <p class="dashboard-badge-key"><strong>Evidence on each card:</strong> <strong>Simulated</strong> means data from a model. <strong>Real data</strong> means evidence people measured. Some activities use both.</p>
 <section class="dashboard-unit current" aria-labelledby="unit1">
 <span class="dashboard-tag">5 activities available</span><h2 id="unit1" tabindex="-1">Unit 1 · Ecosystem Interactions &amp; Dynamics: Serengeti</h2>
@@ -293,6 +305,7 @@
 <script src="openscied-save-session.js"></script>
 <script src="openscied-b1-field-notebook-logic.js"></script>
 <script src="openscied-dashboard.js?v=audit-progress-1"></script>
+<script src="bench-activity-finder.js"></script>
 </body>
 </html>
 

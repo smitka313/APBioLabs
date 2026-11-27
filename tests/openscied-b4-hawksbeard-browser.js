@@ -421,7 +421,6 @@ async function confirmReport(page, state) {
   }
   await page.getByRole('button',{name:'Preview report',exact:true}).click();
   const wordPreview=page.locator('dialog.osr-dialog');
-  await wordPreview.getByText('More formats',{exact:true}).click();
   const pending=page.waitForEvent('download',{timeout:15000});
   await wordPreview.getByRole('button',{name:'Download Word (.docx)',exact:true}).click();
   const word=await pending;

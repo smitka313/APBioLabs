@@ -135,11 +135,10 @@ async function run(){
    assert.match(report,/first 72 bases can give the same count.*full comparisons/s);
    if(width===1366)assert.match(report,/Giant panda \+ Polar Bear\s+273/);
    if(width===1366){
-    await p.getByText('More formats',{exact:true}).click();
     const diagnostic=async()=>p.locator('dialog .osr-tools [role=status]').allTextContents();
     let doc;
     try{
-     [doc]=await Promise.all([p.waitForEvent('download',{timeout:12000}),p.getByRole('button',{name:/Download.*Word/}).click()]);
+     [doc]=await Promise.all([p.waitForEvent('download',{timeout:12000}),p.locator('dialog.osr-dialog').getByRole('button',{name:/Download.*Word/}).click()]);
     }catch(err){
      const state=await p.evaluate(()=>({packer:typeof window.docx?.Packer?.toBlob,packingError:window.__baWordError,report:document.querySelector('dialog .osr-tools [role="status"]')?.textContent}));
      throw new Error('Word download: '+JSON.stringify({state,feedback:await diagnostic(),errs}),{cause:err});
