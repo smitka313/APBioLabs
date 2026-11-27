@@ -66,8 +66,10 @@ async function checkMixedVersionWorkspace(browser,site) {
       /Continue only if this work is yours\. Otherwise, switch students\./);
     const resume = savedWork.getByRole('link', { name:'Continue my saved Hawksbeard Wind Lab →', exact:true });
     assert.equal(await resume.getAttribute('href'), 'openscied-b4-hawksbeard.html#release');
-    assert.equal(await resume.getAttribute('aria-describedby'), 'openscied-resume-description',
-      'the shared-device warning also describes the focused Resume link');
+    assert.deepEqual((await resume.getAttribute('aria-describedby')).split(/\s+/),
+      ['openscied-resume-description', 'openscied-resume-destination'],
+      'the focused Continue link announces both the shared-device warning and the saved destination');
+    assert.match(await savedWork.locator('#openscied-resume-destination').innerText(), /release/i);
     async function placement() {
       return p.evaluate(()=>{
         const jump=document.querySelector('.dashboard-unit-jumps'), resume=document.querySelector('#openscied-resume');

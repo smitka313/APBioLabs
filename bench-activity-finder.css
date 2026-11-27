@@ -1,0 +1,37 @@
+/* The finder does not animate/reorder cards or change the rest of the dashboard. */
+.activity-finder.wrap { padding-block-start: 24px; }
+.activity-finder-form {
+  padding: clamp(12px, 2vw, 20px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg, 14px);
+  color: var(--ink);
+}
+.activity-finder-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, min(34%, 290px)) auto;
+  gap: 10px 14px;
+  align-items: end;
+}
+.activity-finder-fields > div { display: grid; gap: 4px; min-width: 0; }
+.activity-finder-fields label { font-weight: 700; }
+.activity-finder-fields input, .activity-finder-fields select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  font: inherit;
+}
+.activity-finder-clear.btn { justify-self: start; min-height: 44px; }
+.activity-finder-form :is(button, input, select):focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.activity-finder-results { margin: 8px 0 0; color: var(--muted); }
+/* Printing is not filtered. On screen, don't let a card's display:grid
+   rule bring an excluded card back into view. */
+@media screen { [data-activity-finder-excluded] { display: none !important; } }
+@media (max-width: 650px) {
+  .activity-finder-fields { grid-template-columns: minmax(0, 1fr) auto; }
+  .activity-finder-fields > :first-child { grid-column: 1 / -1; }
+}
+@media print { .activity-finder { display: none; } }

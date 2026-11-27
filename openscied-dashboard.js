@@ -203,6 +203,36 @@
       summary: started ? months + ' of 12 months with notes · ' + notes + ' notebook ' + (notes===1?'entry':'entries') + ' · ' + answers + ' of 10 responses written' : 'Not started' };
   }
   function activityDestination(activity, item) { return activity.file + (item.section ? '#' + item.section : ''); }
+  // Use the labels in each activity’s navigation, not the saved hash or a guess
+  // from progress counts. A null entry is a destination without a step number.
+  // Some activities choose their own landing step; their hashless links stay unlabeled.
+  const RESUME_STEPS = {
+    migration:[['explore','Explore the year'],['evidence','Investigate evidence'],['explain','Build an explanation']],
+    'b2-burn':[['overview','Overview'],['ideas','First ideas'],['fuels','The fuels'],['burn','Burn demonstration'],['sense','Make sense'],['sort','Matter and energy'],['peat','Why peat burns'],['wrapup','Wrap up']],
+    'b2-fires':[['overview','Overview'],['ideas','First ideas'],['plan','Plan the yeast test'],['yeast','Run the yeast test'],['cards','Matter and energy'],['sense3','Make sense: decomposition'],['hypothesis','Hypothesis'],['tilt','Tilt test'],['sense5','Make sense: tilt'],['peat','Back to the peat'],['wrapup','Wrap up']],
+    'peat-bog':[['overview','Overview'],['bog','The bog'],['graph','Test one variable'],['zombie','Zombie fires'],['warming','Global warming'],['trials','My trials'],['model','About this model']],
+    'carbon-journey':[['play','Journey'],['evidence','Your evidence'],['sense','Make sense']],
+    'cancer-rates':[['predict','Predict'],['explore','Explore More Data'],['explain','Explain']],
+    'cell-cycle':[['overview','Overview'],['background','Get ready'],['cell-game','Cell-cycle game'],['growth-model','Growth model'],['analyze','Analyze'],['submit','Wrap up']],
+    'dna-workshop':[['nucleotide','Assemble one nucleotide'],['build','Build DNA'],['copy','Copy DNA (Replication)'],['rna','Make RNA (Transcription)'],['chain','Build a Chain (Translation)'],['sort','Match products to processes']],
+    'dna-p53':[['overview','Overview'],['ideas','First ideas'],['fork','DNA fork'],['sense5','Making sense'],['checklist','Checklist'],['explain','Explain'],['expression','Gene expression'],['sense6','Making sense'],['wrapup','Wrap up']],
+    'inh-env':[['overview','Overview'],['ideas','First ideas'],['families','Two families'],['reader','Read a pedigree'],['lakita','Lakita’s family'],['twogene','Two genes'],['passing','Passing on alleles'],['exit8','Exit ticket'],['envideas','Environment'],['skindata','Skin data'],['plan','Plan a test'],['yeast','Virtual yeast'],['uvdna','UV and DNA'],['wrapup','Wrap up']],
+    hawksbeard:[['predict','Predict'],['release','Release'],['compare','Compare'],['explain','Explain']],
+    'rat-generations':[['predict','Predict'],['model','Model'],['analyze','Analyze'],['explain','Explain']],
+    junco:[['field','In the field'],['aviary','Shared aviary'],['cort','Hormone clue']],
+    thermoregulation:[['field','Field evidence'],['treadmill','Treadmill'],['human','Human comparison'],['model','Explain']],
+    'bear-ancestry':[['traits','Inspect traits'],['dna','Compare DNA'],['tree','Build a tree'],['explain','Explain']],
+    'bear-speciation':[['cycles','Move bears'],['fossils','Find fossils'],['traits','Test traits'],['argument','Revise']],
+    'bear-hybrid':[['ice','Read the ice'],['family','Trace the family'],['model','Model matings'],['claim','Make a claim']]
+  };
+  function resumeDestinationLabel(activity, item) {
+    if (!item.section || item.destinationUncertain) return '';
+    if (activity.id==='carbon-journey' && item.section==='budget') return 'Carbon & Energy Budget';
+    if (activity.id==='cancer-rates' && item.section==='cr-income-cards') return 'Evidence Cards';
+    const steps=RESUME_STEPS[activity.id];
+    const index=steps?.findIndex(([id])=>id===item.section) ?? -1;
+    return index<0 ? '' : 'Step '+(index+1)+': '+steps[index][1];
+  }
   function carbonResponseIds(saved) { if(saved?.version===3)return ['q1','q2','q3','q4','q5']; return ['q2', 'q3', 'q4', 'q5', 'q6']; }
   function carbonJourneyProgress(raw, optional = []) {
     const journey = originalCarbonJourneyProgress(raw);
@@ -333,7 +363,11 @@
     const workshops=['nucleotide','build','copy','rna','chain','sort'];
     const steps=logic?.complete ? {stepsDone:workshops.filter(id=>logic.complete(id,s.progress)).length,
       stepsTotal:workshops.length,stepsLabel:'Workshop practices completed'} : {};
-    return {started:true,section:['nucleotide','build','copy','rna','chain','sort'].includes(s.step)?s.step:'nucleotide',
+    const section=workshops.includes(s.step)?s.step:'nucleotide';
+    // Older work can be routed to the new primer. Preserve the link, but only
+    // claim a later destination when its prerequisites can be confirmed.
+    const destinationUncertain=workshops.slice(0,workshops.indexOf(section)).some(id=>!logic?.complete?.(id,s.progress));
+    return {started:true,section,destinationUncertain,
       visited:Number.isFinite(s.lastVisitedAt)?s.lastVisitedAt:0,...steps,
       summary:placements+' '+(placements===1?'piece':'pieces')+' placed'+(n?' · '+n+' '+(n===1?'response':'responses')+' saved':'')};
   }
@@ -802,10 +836,22 @@
     let tracker;
     try { tracker=window.OpenSciEdResume?.connect(localStorage); } catch (_) { /* saved-work display already handles blocked storage */ }
     const resumeLink=$('#openscied-resume-link');
+    const resumeWhere=document.createElement('p');
+    resumeWhere.id='openscied-resume-destination';
+    resumeWhere.hidden=true;
     const resumeDate=document.createElement('time');
     resumeDate.className='dashboard-last-opened';
     resumeDate.hidden=true;
-    resumeLink?.before?.(resumeDate);
+    const resumeActions=document.createElement('div');
+    resumeActions.className='row';
+    const browseLink=document.createElement('a');
+    browseLink.className='btn';
+    browseLink.href='#activities';
+    browseLink.textContent='Browse all activities';
+    if (resumeLink) {
+      resumeLink.before(resumeWhere,resumeDate,resumeActions);
+      resumeActions.append?.(resumeLink,browseLink);
+    }
     const meters=new Map();
     function updateMilestone(activity, status, item) {
       let meter=meters.get(activity.id);
@@ -927,8 +973,12 @@
           $('#openscied-resume-description').textContent = guest
             ? activity.name + ' · ' + item.summary + '. Continue only if this work is yours. Otherwise, switch students.'
             : activity.name + ' · ' + item.summary;
+          const landing=resumeDestinationLabel(activity,item);
+          resumeWhere.hidden=!landing;
+          resumeWhere.textContent=landing?'Opens at '+landing:'';
           resumeLink.href = activityDestination(activity, item);
           resumeLink.textContent = (guest ? 'Continue my saved ' : 'Resume ') + activity.name + ' →';
+          resumeLink.setAttribute('aria-describedby','openscied-resume-description'+(landing?' openscied-resume-destination':''));
         } else dateLabel(0);
         $('#download-openscied-results').disabled = !count;
         $('#clear-openscied-results').disabled = !count;

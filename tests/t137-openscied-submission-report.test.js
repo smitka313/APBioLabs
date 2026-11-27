@@ -19,6 +19,16 @@ test('preview explains how to hand in a saved report and that downloading is not
   assert.match(help.textContent, /To hand in, upload or share the saved report where your teacher directs\. Downloading does not submit it\./);
 });
 
+test('final actions offer the same ordered handoff and both exports are visible in the preview', () => {
+  const f = mountedReport();
+  assert.deepEqual(f.target.all().filter(n => n.tag === 'button').map(n => n.textContent),
+    ['Preview report', 'Download Word (.docx)', 'Print or save as PDF']);
+  assert.match(f.target.querySelector('.osr-handoff-note').textContent, /Downloading does not submit it/);
+  assert.deepEqual(f.dialog.all().filter(n => n.tag === 'button').slice(0, 3).map(n => n.textContent),
+    ['Download Word (.docx)', 'Print or save as PDF', 'Close report']);
+  assert.equal(f.dialog.querySelector('.osr-formats'), undefined, 'Word is not concealed in a disclosure');
+});
+
 test('report normalization snapshots typed activity evidence and preserves zero, false and multiline answers', () => {
   const input = fixture(), actual = Report.normalize(input, NOW);
   input.sections[0].items[0].value = 'changed after capture';
@@ -88,11 +98,11 @@ function mountedReport(options = {}) {
       Object.assign(this, { tag, children: [], handlers: {}, className: '',
         classList: { add() {}, remove() {} } });
     }
-    append(...nodes) { nodes.forEach(n => { n.parent = this; this.children.push(n); }); }
+    append(...nodes) { nodes.forEach(n => { n.remove(); n.parent = this; this.children.push(n); }); }
     after(n) { n.parent = this.parent; this.parent.children.splice(this.parent.children.indexOf(this) + 1, 0, n); }
-    replaceChildren(...nodes) { this.children = []; this.append(...nodes); }
+    replaceChildren(...nodes) { this.children.forEach(n => { n.parent = null; }); this.children = []; this.append(...nodes); }
     replaceWith(n) { this.after(n); this.remove(); }
-    remove() { if (this.parent) this.parent.children.splice(this.parent.children.indexOf(this), 1); }
+    remove() { if (this.parent) { this.parent.children.splice(this.parent.children.indexOf(this), 1); this.parent = null; } }
     setAttribute() {}
     addEventListener(key, fn) { this.handlers[key] = fn; }
     click() { if (this.download) downloads.push(this.download); this.handlers.click?.(); }
@@ -102,6 +112,7 @@ function mountedReport(options = {}) {
     all() { return [this, ...this.children.flatMap(n => n.all())]; }
     getClientRects() { return [1]; }
     getContext() { return null; }
+    contains(n) { return this.all().includes(n); }
   }
   function copyNode(n) {
     const copy = Object.assign(new Node(n.tag), { className:n.className, id:n.id, textContent:n.textContent });
@@ -139,9 +150,11 @@ function mountedReport(options = {}) {
   };
   vm.runInNewContext(fs.readFileSync(require.resolve('../openscied-submission-report.js'), 'utf8'), { window, URL });
   const target = new Node('target'); doc.body.append(target);
-  window.OpenSciEdSubmission.mount({ target, collect, printInNewTab:options.printInNewTab }).open();
+  const report = window.OpenSciEdSubmission.mount({ target, collect, printInNewTab:options.printInNewTab });
+  if (!options.manual) report.open();
+  const dialog = doc.body.all().find(n => n.tag === 'dialog');
   return {
-    doc, events, downloads, printed, packStarted, release, printTab, tabPrinted,
+    doc, target, dialog, events, downloads, printed, packStarted, release, printTab, tabPrinted,
     get popupAttempts() { return popupAttempts; },
     retire() {
       assert.ok(Guard.invalidate(storage).ok);
@@ -149,9 +162,32 @@ function mountedReport(options = {}) {
       assert.equal(collect().status, 'recovery');
       assert.equal(collect().student.name, 'Original Student');
     },
-    button: text => doc.body.all().find(n => n.tag === 'button' && n.textContent === text),
+    button: text => dialog.all().find(n => n.tag === 'button' && n.textContent === text),
+    shortcut: text => target.all().find(n => n.tag === 'button' && n.textContent === text),
   };
 }
+
+test('shortcuts run through the guarded preview and do not silently export recovered work', async () => {
+  const normal = mountedReport({ manual:true, printInNewTab:true });
+  normal.shortcut('Print or save as PDF').click();
+  assert.equal(normal.dialog.open, true);
+  assert.equal(normal.popupAttempts, 1);
+
+  const word = mountedReport({ manual:true });
+  word.shortcut('Download Word (.docx)').click();
+  await word.packStarted;
+  word.retire();
+  word.release({});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(word.downloads, []);
+  assert.equal(word.dialog.querySelector('.osr-label').textContent, 'Recovered work');
+
+  const recovered = mountedReport({ manual:true, printInNewTab:true });
+  recovered.retire();
+  recovered.shortcut('Print or save as PDF').click();
+  assert.equal(recovered.popupAttempts, 0);
+  assert.match(recovered.dialog.all().find(n => n.id?.endsWith('-preview-status')).textContent, /Review it before exporting/);
+});
 
 test('an open preview must downgrade before the PDF button or native print can export retired work', () => {
   for (const nativePrint of [false, true]) {

@@ -122,8 +122,7 @@ const {chromium}=require('playwright'),{ROOT,serve}=require('./_h');
        assert.ok(report.includes(owlResult),'Owl River verdict must match the checked account on screen');
        assert.ok(selected.every(label=>report.includes(label)),'report must include all submitted scale choices');
        if(width===1366){
-         await page.getByText('More formats',{exact:true}).click();
-         const [word]=await Promise.all([page.waitForEvent('download'),page.getByRole('button',{name:/Download Word/}).click()]);
+         const [word]=await Promise.all([page.waitForEvent('download'),page.locator('dialog.osr-dialog').getByRole('button',{name:/Download Word/}).click()]);
          const xml=await (await require('jszip').loadAsync(await fs.readFile(await word.path()))).file('word/document.xml').async('string');
          assert.ok(xml.includes(localScale),'Word carries the same local scale');
          assert.ok(selected.every(label=>xml.includes(label)),'Word includes exact checked choices');

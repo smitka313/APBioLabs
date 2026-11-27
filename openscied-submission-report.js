@@ -412,12 +412,14 @@
     if (style.display === 'contents') return isShown(n.parentElement);
     return n.getClientRects().length > 0;
   }
-  function placeLauncher(config, target, tray, open) {
+  function placeLauncher(config, target, tray, open, setFinal) {
     const finals = typeof config.finalTarget === 'string' ? [...doc.querySelectorAll(config.finalTarget)]
       : config.finalTarget ? [config.finalTarget] : [...doc.querySelectorAll('[data-ose-report-final]')];
-    if (!finals.length) { target.append(tray); return () => {}; }
+    if (!finals.length) { setFinal(true); target.append(tray); return () => {}; }
     function place() {
-      const destination = finals.find(n => n !== target && isShown(n)) || target;
+      const final = finals.find(isShown);
+      const destination = final || target;
+      setFinal(Boolean(final));
       if (tray.parentElement === destination) return;
       const restoreFocus = tray.contains(doc.activeElement);
       destination.append(tray);
@@ -517,12 +519,23 @@
     const titleId = 'openscied-report-title-' + (++serial);
     const tray = node('div', 'osr-actions');
     const open = action('Preview report', true);
+    const wordShortcut = action('Download Word (.docx)'), printShortcut = action('Print or save as PDF');
+    const handoff = node('p', 'osr-handoff-note', HAND_IN_REPORT);
     // Do not add a live region; several activities maintain their own one-region narration.
     const live = node('p', 'osr-live');
     live.id = titleId + '-page-status'; live.tabIndex = -1;
     open.setAttribute('aria-describedby', live.id);
+    wordShortcut.setAttribute('aria-describedby', live.id); printShortcut.setAttribute('aria-describedby', live.id);
     const dialog = node('dialog', 'osr-dialog'); dialog.setAttribute('aria-labelledby', titleId);
-    let runningStyle = null, checkPrint = null;
+    let runningStyle = null, checkPrint = null, opener = null, onFinal = false;
+    function setFinal(final) {
+      if (final === onFinal) return;
+      onFinal = final;
+      const focused = tray.contains(doc.activeElement);
+      const previous = doc.activeElement;
+      tray.replaceChildren(open, ...(final ? [wordShortcut, printShortcut, handoff] : []), live);
+      if (focused && !dialog.open) (tray.contains(previous) ? previous : open).focus({ preventScroll: true });
+    }
     function beforePrint() {
       if (dialog.open) checkPrint?.();
     }
@@ -550,24 +563,22 @@
         message(status, 'Could not download the Word file. You can still print or save as PDF from the preview.', true);
       } finally { button.disabled = false; }
     };
-    function show() {
+    function show(mode, trigger = open) {
       let report;
       try { report = capture(); }
       catch (_) { message(live, 'Could not prepare a report. Your work has not changed.', true); return; }
       live.textContent = '';
       const original = report;
       const tools = node('div', 'osr-tools'), controls = node('div', 'osr-actions');
-      const print = action('Print or save as PDF', true), save = action('Download Word (.docx)'), close = action('Close report');
+      const save = action('Download Word (.docx)'), print = action('Print or save as PDF', true), close = action('Close report');
       const status = node('p', 'osr-live');
       status.id = titleId + '-preview-status'; status.tabIndex = -1;
       print.setAttribute('aria-describedby', status.id); save.setAttribute('aria-describedby', status.id);
-      const formats = node('details', 'osr-formats');
-      formats.append(node('summary', '', 'More formats'), save);
-      controls.append(print, close);
+      controls.append(save, print, close);
       const printHelp = config.printInNewTab
         ? 'Opens a separate print tab so your activity stays open. Choose Print or save as PDF there.'
         : 'In the print window, choose “Save as PDF” to download a PDF file.';
-      tools.append(controls, node('p', 'osr-screen-help', printHelp + ' ' + HAND_IN_REPORT), formats, status);
+      tools.append(controls, node('p', 'osr-screen-help', HAND_IN_REPORT + ' ' + printHelp), status);
       let preview = article(report, titleId), identityEditor;
       // Keep the captured work and timestamps immutable. Corrections affect only this preview
       // and its exports; they do not change the browser identity or the underlying record.
@@ -625,6 +636,7 @@
       }
       try { dialog.showModal(); }
       catch (_) { message(live, 'Could not open the report preview. Your work has not changed.', true); return; }
+      opener = trigger;
       clearPrint();
       syncPrint();
       doc.body.classList.add('openscied-report-print');
@@ -670,16 +682,28 @@
       });
       close.addEventListener('click', () => dialog.close());
       preview.querySelector('.osr-title').focus();
+      // Final-step shortcuts run through the same snapshot and guard as the
+      // preview's buttons. Print still starts during the original user gesture.
+      if ((mode === 'word' || mode === 'print') && report.status === 'recovery') {
+        message(status, 'This preview contains recovered work. Review it before exporting.', true);
+        return;
+      }
+      if (mode === 'word') save.click();
+      if (mode === 'print') print.click();
     }
-    open.addEventListener('click', show);
+    open.addEventListener('click', () => show());
+    wordShortcut.addEventListener('click', () => show('word', wordShortcut));
+    printShortcut.addEventListener('click', () => show('print', printShortcut));
     dialog.addEventListener('close', () => {
       if (dialog.open) return;
       checkPrint = null;
       clearPrint();
-      if (isShown(open)) open.focus({ preventScroll: true });
+      if (isShown(opener)) opener.focus({ preventScroll: true });
+      else if (isShown(open)) open.focus({ preventScroll: true });
+      opener = null;
     });
     tray.append(open, live);
-    const stopPlacing = placeLauncher(config, target, tray, open);
+    const stopPlacing = placeLauncher(config, target, tray, open, setFinal);
     doc.body.append(dialog);
     return { open: show, destroy() { stopPlacing(); root.removeEventListener('beforeprint', beforePrint); if (dialog.open) { dialog.close(); clearPrint(); } dialog.remove(); tray.remove(); } };
   }

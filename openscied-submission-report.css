@@ -10,6 +10,7 @@
 
 /* Shared report layout. Print and the isolated PDF document keep paper colors. */
 .osr-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; }
+.osr-handoff-note { flex: 1 1 100%; margin: 0; font-size: .9rem; }
 .osr-live { flex: 1 1 100%; margin: 0; font-size: .92rem; }
 .osr-live:empty { display: none; }
 :is(.osr-dialog, .osr-print-sheet) {
@@ -57,9 +58,6 @@
 :is(.osr-dialog, .osr-print-sheet) :focus-visible { outline: 3px solid #185b84; outline-offset: 2px; }
 .osr-dialog .osr-title:focus-visible { outline: none; }
 .osr-screen-help { color: var(--osr-muted); font-size: .88rem; margin: .44rem 0 0; }
-.osr-formats { margin: .25rem 0 0; font-size: .9rem; }
-.osr-formats summary { display: list-item; width: fit-content; min-height: 24px; padding: .15rem 0; color: var(--osr-blue); cursor: pointer; font-weight: 650; }
-.osr-formats > .btn { margin: .25rem 0; min-height: 30px; }
 .osr-identity-editor {
   margin: .52rem clamp(.55rem, 2vw, 1.2rem) 0;
   padding: .1rem .75rem; color: var(--osr-ink);

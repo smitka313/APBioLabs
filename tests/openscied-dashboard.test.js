@@ -13,7 +13,7 @@ function setup(blocked = false, overrides = {}, absent = [], tracker, workshopLo
   function element(tag) {
     const handlers = {};
     return { tag, value: '', disabled: false, textContent: '', open: false, attrs:{},
-      setAttribute(k,v) { this.attrs[k]=v; }, before() {}, after() {},
+      setAttribute(k,v) { this.attrs[k]=v; }, before() {}, after() {}, append() {},
       addEventListener(type, fn) { handlers[type] = fn; },
       fire(type) { handlers[type]?.({ preventDefault() {} }); },
       showModal() { this.open = true; }, close() { this.open = false; this.fire('close'); },
@@ -67,6 +67,29 @@ test('mounts the shared sign-in and confirms an OpenSciEd-only reset', () => {
   for (const key of Object.keys(s.data).filter(k => k!==SaveSession.globalKey)) assert.equal(s.data[key], before[key]);
   assert.equal(s.el('#clear-openscied-dialog').open, false);
   assert.equal(s.el('#clear-openscied-results').disabled, true);
+});
+test('Resume names the verified landing step and has a separate browse action', () => {
+  const s=setup(false,{'aplab:openscied:b4-junco:v1':JSON.stringify({step:'aviary',prediction:'My prediction',revealed:true})});
+  const dest=s.created.find(el=>el.id==='openscied-resume-destination');
+  const browse=s.created.find(el=>el.textContent==='Browse all activities');
+  assert.equal(s.el('#openscied-resume').hidden,false);
+  assert.equal(s.el('#openscied-resume-link').href,'openscied-b4-junco.html#aviary');
+  assert.match(s.el('#openscied-resume-link').textContent,/Junco Investigation/);
+  assert.equal(dest.hidden,false);
+  assert.equal(dest.textContent,'Opens at Step 2: Shared aviary');
+  assert.match(s.el('#openscied-resume-link').attrs['aria-describedby'],/openscied-resume-destination/);
+  assert.equal(browse.href,'#activities');
+});
+test('Resume does not guess a landing step for native restores or legacy DNA work', () => {
+  for (const [data,href] of [
+    [{'aplab:openscied:b3-screening:v1':JSON.stringify({v:1,seed:8,practice:{route:1}})},'openscied-b3-screening.html'],
+    [{'aplab:openscied:b3-dna-workshop:v1':JSON.stringify({v:1,step:'copy',progress:{v:1,placed:{slot:'A'}}})},'openscied-b3-dna-workshop.html#copy'],
+  ]) {
+    const s=setup(false,data);
+    assert.equal(s.el('#openscied-resume-link').href,href);
+    assert.equal(s.created.find(el=>el.id==='openscied-resume-destination').hidden,true);
+    assert.doesNotMatch(s.el('#openscied-resume-link').attrs['aria-describedby'],/openscied-resume-destination/);
+  }
 });
 test('backup stores parsed records and gives the current sign-in an explicit non-owner role', async () => {
   const s = setup();

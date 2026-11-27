@@ -148,8 +148,7 @@ function unzipWord(zip){
        assert.match(report,/Heat transferred\s+Energy transferred/);
        assert.match(report,/Required work was recorded. This does not show who did the work or how well/);
        if(width===1366){
-         await p.getByText('More formats',{exact:true}).click();
-         const [d]=await Promise.all([p.waitForEvent('download',{timeout:15000}),p.getByRole('button',{name:/Download.*Word/}).click()]);
+         const [d]=await Promise.all([p.waitForEvent('download',{timeout:15000}),p.locator('dialog.osr-dialog').getByRole('button',{name:/Download.*Word/}).click()]);
          assert.equal(d.suggestedFilename(),'bear-thermoregulation-submission.docx');
          const word=fs.readFileSync(await d.path());
          const xml=unzipWord(word);

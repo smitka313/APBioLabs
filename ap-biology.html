@@ -132,6 +132,8 @@
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 <noscript><style>.home-status, .bench-appearance { display: none !important; } .nojs-labs { padding-block: 32px 40px; }</style></noscript>
 <link rel="stylesheet" href="bench-course-dashboards.css">
+<link rel="stylesheet" href="bench-activity-finder.css">
+<noscript><style>.activity-finder { display: none; }</style></noscript>
 </head>
 <body>
 <a class="skip-link" href="#labs">Skip to content</a>
@@ -161,6 +163,16 @@
 </header>
 
 <main id="labs">
+<div class="activity-finder wrap wrap--wide gutter">
+  <form class="activity-finder-form" data-activity-finder="ap" role="search" aria-label="AP Biology investigations">
+    <div class="activity-finder-fields">
+      <div><label for="activity-search">Find an activity</label><input id="activity-search" type="search" placeholder="Try “photosynthesis” or “lab 6”" autocomplete="off"></div>
+      <div><label for="activity-group">Big idea</label><select id="activity-group"><option value="">All big ideas</option><option value="bi1">1 · Evolution</option><option value="bi2">2 · Energetics</option><option value="bi3">3 · Information storage and transmission</option><option value="bi4">4 · Systems interactions</option></select></div>
+      <button class="btn activity-finder-clear" type="button">Clear filters</button>
+    </div>
+    <p class="activity-finder-results small" role="status">13 activities</p>
+  </form>
+</div>
 <!-- lab-catalog:start -->
   <section class="bi wrap wrap--wide gutter" aria-labelledby="bi1">
     <div class="bi-head"><span class="eyebrow">Big Idea 1</span><h2 id="bi1">Evolution</h2><span class="muted small">Units 5–7</span></div>
@@ -352,5 +364,6 @@
 <script>
 Lab.home({ identity: '#home-identity', resume: '#resume' });
 </script>
+<script src="bench-activity-finder.js"></script>
 </body>
 </html>
