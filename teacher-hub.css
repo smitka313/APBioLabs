@@ -1,0 +1,55 @@
+.teacher-hub .assign-intro {
+  padding-block: clamp(2.5rem, 8vw, 5.5rem);
+  background: linear-gradient(135deg, var(--surface-2), var(--bg) 78%);
+  border-bottom: 1px solid var(--line);
+}
+.teacher-hub .assign-intro h1 {
+  max-width: 16ch;
+  margin: .2em 0 .25em;
+  font-size: clamp(2.4rem, 6vw, 4.6rem);
+  line-height: 1.05;
+  text-wrap: balance;
+}
+.assign-intro .lede { max-width: 58ch; }
+.assign-jumps, .assign-actions {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: .6rem 1rem;
+}
+.assign-jumps a:not(.btn), .assign-actions a { text-underline-offset: .16em; }
+.assign-jumps a, .assign-actions a, .assign-actions button {
+  display: inline-flex; align-items: center; min-height: 44px;
+}
+.assign-start { padding-block: clamp(1.8rem, 5vw, 3.5rem); }
+.assign-start ol {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem;
+  padding-inline: 1.5rem 0; margin-block: .75rem;
+}
+.assign-start li { padding: .6rem 1rem .6rem .15rem; }
+.assign-course { padding-block: 2rem 3rem; border-top: 1px solid var(--line); }
+.assign-group { margin-block-start: 2rem; }
+.assign-group > h3 { margin-block-end: .7rem; }
+.assign-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: .8rem;
+}
+.assign-card {
+  min-width: 0; display: flex; flex-direction: column; align-items: start; gap: .45rem;
+  padding: clamp(.8rem, 3vw, 1.35rem);
+  border: 1px solid var(--line); background: var(--surface); border-radius: 14px;
+}
+.assign-card h4, .assign-card p { margin: 0; }
+.assign-card h4 { font-size: 1.15rem; }
+.assign-meta { display: flex; flex-wrap: wrap; column-gap: .65em; font-size: .9rem; color: var(--muted); }
+.assign-turnin { font-size: .95rem; }
+.assign-actions { margin-block-start: auto; padding-top: .3rem; gap: .15em .8em; font-size: .88rem; }
+.assign-actions [hidden], #assign-copy-dialog [hidden] { display: none; }
+#assign-status:not(:empty) {
+  position: fixed; inset-inline: 1rem; bottom: 1rem; z-index: 5;
+  max-width: max-content; margin-inline: auto; padding: .65rem 1rem;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 10px;
+  pointer-events: none;
+}
+#assign-copy-dialog { max-width: min(32rem, calc(100% - 2rem)); width: 100%; }
+#assign-copy-url { width: 100%; margin-block: .5rem; }
+@media (max-width: 720px) {
+  .assign-start ol { grid-template-columns: 1fr; gap: 0; }
+}

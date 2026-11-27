@@ -7,6 +7,7 @@
       "labs": [
         {
           "id": 1,
+          "minutes": 115,
           "alt": "Simulation scene: a growth chamber of Fast Plant seedlings seen from above",
           "title": "Artificial Selection",
           "q": "Can extreme selection change expression of a quantitative trait in a population in one generation?",
@@ -21,6 +22,7 @@
         },
         {
           "id": 2,
+          "minutes": 130,
           "alt": "Simulation scene: a gene-pool jar of allele beads beside a graph of allele frequency over generations",
           "title": "Mathematical Modeling: Hardy-Weinberg",
           "q": "How can mathematical models be used to investigate the relationship between allele frequencies in populations of organisms and evolutionary change?",
@@ -35,6 +37,7 @@
         },
         {
           "id": 3,
+          "minutes": 150,
           "alt": "Simulation scene: a fossil slab of a small feathered animal",
           "title": "Comparing DNA Sequences with BLAST",
           "q": "How can bioinformatics be used as a tool to determine evolutionary relationships and to better understand genetic diseases?",
@@ -56,6 +59,7 @@
       "labs": [
         {
           "id": 4,
+          "minutes": 160,
           "alt": "Simulation scene: dialysis-tubing bags in cups of solution",
           "title": "Diffusion and Osmosis",
           "q": "What causes my plants to wilt if I forget to water them?",
@@ -70,6 +74,7 @@
         },
         {
           "id": 5,
+          "minutes": 130,
           "alt": "Simulation scene: two cups of leaf disks under a lamp, with disks floating in the bicarbonate cup",
           "title": "Photosynthesis",
           "q": "What factors affect the rate of photosynthesis in living leaves?",
@@ -84,6 +89,7 @@
         },
         {
           "id": 6,
+          "minutes": 130,
           "alt": "Simulation scene: two microrespirometers in a water bath",
           "title": "Cellular Respiration",
           "q": "What factors affect the rate of cellular respiration in multicellular organisms?",
@@ -105,6 +111,7 @@
       "labs": [
         {
           "id": 7,
+          "minutes": 185,
           "alt": "Simulation scene: stained onion root-tip cells under the microscope",
           "title": "Cell Division: Mitosis and Meiosis",
           "q": "How do eukaryotic cells divide to produce genetically identical cells or to produce gametes with half the normal DNA?",
@@ -119,6 +126,7 @@
         },
         {
           "id": 8,
+          "minutes": 115,
           "alt": "Simulation scene: a lab bench with a tube rack, an ice bucket and a 42 °C water bath",
           "title": "Bacterial Transformation",
           "q": "How can we use genetic engineering techniques to manipulate heritable information?",
@@ -133,6 +141,7 @@
         },
         {
           "id": 9,
+          "minutes": 155,
           "alt": "Simulation scene: a stained agarose gel with DNA bands beside a power supply",
           "title": "Restriction Enzyme Analysis of DNA",
           "q": "How can we use genetic information to identify and profile individuals?",
@@ -154,6 +163,7 @@
       "labs": [
         {
           "id": 10,
+          "minutes": 130,
           "alt": "Simulation scene: shelves of Fast Plants under a light bank",
           "title": "Energy Dynamics",
           "q": "What factors govern energy capture, allocation, storage, and transfer between producers and consumers in a terrestrial ecosystem?",
@@ -168,6 +178,7 @@
         },
         {
           "id": 11,
+          "minutes": 160,
           "alt": "Simulation scene: a plant cutting in a water-filled potometer",
           "title": "Transpiration",
           "q": "What factors, including environmental variables, affect the rate of transpiration in plants?",
@@ -182,6 +193,7 @@
         },
         {
           "id": 12,
+          "minutes": 130,
           "alt": "Simulation scene: fruit flies climbing in an upright vial",
           "title": "Fruit Fly Behavior",
           "q": "What environmental factors trigger a fruit fly response?",
@@ -196,6 +208,7 @@
         },
         {
           "id": 13,
+          "minutes": 135,
           "alt": "Simulation scene: a rack of pH tubes turning brown as the enzyme works",
           "title": "Enzyme Activity",
           "q": "How do abiotic or biotic factors influence the rates of enzymatic reactions?",

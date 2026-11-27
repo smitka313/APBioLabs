@@ -37,6 +37,15 @@ def page_specs():
         'openscied-dashboard.html': ('Biology Companion Activities (for OpenSciEd units) | Biology Lab Bench',
                                      'Explore free, independent interactive companion activities for all five OpenSciEd high school biology units.',
                                      'OpenSciEd Biology Companion Activities'),
+        'teacher-hub.html': ('Teacher Hub: Plan and Assign Biology Labs | Biology Lab Bench',
+                             'Choose AP Biology and OpenSciEd investigations, check pacing and report expectations, and copy student assignment links.',
+                             'Teacher hub'),
+        'privacy-help.html': ('Privacy and Help | Biology Lab Bench',
+                              'Learn where student work is saved, how to turn in a report, and what to do on a shared device or school network.',
+                              'Privacy and Help'),
+        'sample-student-report.html': ('Fictional Sample Student Report | Biology Lab Bench',
+                                       'See how a completed student report presents a question, data, and an explanation. This fictional demonstration is not an activity answer key.',
+                                       'Sample student report'),
         'teachers.html': ('Free AP Biology Virtual Labs for Teachers | Lab Bench',
                           'Teach all 13 AP Biology investigations with free virtual labs, printable student directions, protected teacher notes, and downloadable student reports.',
                           'For teachers'),
@@ -339,6 +348,7 @@ def cards():
                        f'        <h3>{escape(lab["title"])}</h3>\n'
                        f'        <span class="dq">{escape(lab["q"])}</span>\n'
                        f'        <span class="sim-line">{escape(lab["sim"])}</span>\n'
+                       f'        <span class="card-assignment small muted"><strong>Time:</strong> {lab["minutes"]} min (full lab) · <strong>Turn in:</strong> lab report.</span>\n'
                        '        <span class="meta">' + ''.join('<span class="tag">' + escape(t) + '</span>' for t in lab['topics']) + '</span>\n'
                        f'        <span class="lab-prog" data-lab-progress="lab{number:02}"></span>\n'
                        '      </a>')
