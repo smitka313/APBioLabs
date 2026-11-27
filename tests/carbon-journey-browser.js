@@ -26,7 +26,17 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       const fits = async selector => { const b = await p.locator(selector).boundingBox(); assert.ok(b && b.y >= 0 && b.y + b.height <= height + 1, `${selector} within viewport at ${width}x${height}: ${JSON.stringify(b)}`); };
       await p.locator('#roll').waitFor();
       assert.equal(await p.locator('#restart').isDisabled(), true);
-      if (width < 851) { await fits('#roll'); await fits('#board'); assert.ok(await p.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1)); }
+      if (width < 851) {
+        await fits('#roll'); await fits('#board');
+        const viewport = await p.evaluate(() => ({
+          height: innerHeight,
+          scrollHeight: document.documentElement.scrollHeight,
+          shell: document.querySelector('.journey-shell').getBoundingClientRect().height,
+          masthead: document.querySelector('.bench-activity-bar')?.getBoundingClientRect().height ?? null
+        }));
+        assert.ok(viewport.scrollHeight <= viewport.height + 1,
+          `Journey play view fits ${width}×${height}: ${JSON.stringify(viewport)}`);
+      }
       await shot('start');
       await p.locator('#inspect-current').click();
       assert.ok(await p.locator('#inspect-dialog').isVisible());

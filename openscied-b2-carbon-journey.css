@@ -38,3 +38,11 @@
 .journey-question-evidence dl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:.25rem .55rem;margin:.3rem 0 0}
 .journey-question-evidence dt,.journey-question-evidence summary{font-weight:700}
 .journey-question-evidence dd{min-width:0;margin:0}
+
+/* The shared masthead (or its pre-load placeholder) occupies 3.35rem in
+   screen layout. On compact play screens the activity owns only the rest. */
+@media screen and (max-width:850px) {
+  body.journey-playing .journey-shell {
+    height: calc(100dvh - 3.35rem);
+  }
+}
