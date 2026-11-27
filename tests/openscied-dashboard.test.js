@@ -137,7 +137,11 @@ test('backup indexes exact activity report IDs without attributing a shared arch
 test('browser backup is explained without attributing mixed work to one student', () => {
   const html=fs.readFileSync(path.join(__dirname,'../openscied-dashboard.html'),'utf8');
   assert.match(html,/id="download-openscied-results" aria-describedby="openscied-backup-help"/);
-  assert.match(html,/id="openscied-backup-help"[^>]*>[^<]*more than one student[^<]*Preview report/);
+  const help=html.match(/<p\b[^>]*id="openscied-backup-help"[^>]*>([\s\S]*?)<\/p>/)?.[1].replace(/<[^>]+>/g,'') || '';
+  assert.match(help,/more than one student/);
+  assert.match(help,/downloader, not the owner/);
+  assert.match(help,/cannot be loaded back into an activity/);
+  assert.match(help,/Preview report.*named Word or PDF file/);
 });
 test('blocked browser storage disables actions and explains the problem', () => {
   const s = setup(true);

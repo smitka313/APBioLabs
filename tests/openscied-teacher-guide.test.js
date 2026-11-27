@@ -82,7 +82,7 @@ test('teachers can jump from the guide header to accessible collection instructi
   const collection = guide.match(/<aside class="ose-teacher-callout" aria-labelledby="collect">([\s\S]*?)<\/aside>/)?.[1];
   assert.match(collection || '', /For individual reports[\s\S]*Group reports do not need an individual name/);
   assert.match(collection || '', /Students choose <strong>Print or save as PDF<\/strong> and turn in the file/);
-  assert.match(collection || '', /dashboard JSON is an archive[\s\S]*cannot reopen a session on the dashboard/);
+  assert.match(collection || '', /dashboard JSON is an archive, not a classroom report or a way to restore editable work[\s\S]*same browser profile to keep editing/);
   assert.match(collection || '', /Recovered work<\/strong> while keeping its original name, when known/);
   assert.match(guide, /A typed draft appears in the report under its month, but it counts as a notebook observation only after students save it/);
   assert.match(guide, /Repeating the same settings does not count as a comparison/);
