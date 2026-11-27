@@ -1,11 +1,11 @@
 /* OpenSciEd dashboard previews: published unit and activity order, the registry order in the script,
-   self-contained SVG previews in every unit, HTML captions below each picture, stable 8:5 boxes, no layout shift, and axe clean in light and dark.
+   optimized notebook art and self-contained SVG previews, HTML captions below each picture, stable 8:5 boxes, no layout shift, and axe clean in light and dark.
    Run: NODE_PATH=$(npm root -g) AXE=<path>/axe.min.js node tests/t109-openscied-dashboard-previews.js */
 const T = require('./_h');
 const fs = require('fs'), path = require('path');
 const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: /gc\.zgo\.at/.test(r.request().url()) ? 'application/javascript' : 'text/css', body: '' }));
 const UNIT1 = ['openscied-b1-field-notebook.html', 'openscied-b1-migration.html', 'openscied-b1-carrying-capacity.html', 'openscied-b1-serengeti.html', 'openscied-b1-ripple.html'];
-const FIELD_PREVIEW = 'assets/openscied-atlas-b1-field-notebook-preview.svg';
+const FIELD_PREVIEW = 'assets/openscied-atlas-b1-field-notebook-preview.webp';
 const MIGRATION_PREVIEW = 'assets/openscied-atlas-b1-migration.svg';
 const CARRYING_PREVIEW = 'assets/openscied-atlas-b1-carrying-capacity.svg';
 const SERENGETI_PREVIEW = 'assets/openscied-atlas-b1-serengeti.svg';
@@ -20,8 +20,11 @@ const CORRIDOR_PREVIEW='assets/openscied-atlas-b4-wildlife-corridor.svg';
   const files = [...js.matchAll(/file: '([^']+)'/g)].map(m => m[1]);
   const originalActivities=UNIT1.concat(UNIT2,UNIT3,UNIT4,['openscied-b5-wapusk.html','openscied-b5-thermoregulation.html','openscied-b5-ancestry.html','openscied-b5-speciation.html','openscied-b5-hybrid.html']);
   T.ok(JSON.stringify(files.slice(0,originalActivities.length)) === JSON.stringify(originalActivities), 'openscied-dashboard.js preserves the published activity order through Unit 5');
-  for (const activity of UNIT1.concat(UNIT2,UNIT3,UNIT4)) {
-    const file = activity===UNIT1[0] ? '../'+FIELD_PREVIEW : '../assets/openscied-atlas-'+activity.replace(/^openscied-|\.html$/g,'')+'.svg';
+  const notebook = fs.readFileSync(path.join(__dirname, '../'+FIELD_PREVIEW));
+  T.ok(notebook.toString('ascii',0,4)==='RIFF' && notebook.toString('ascii',8,12)==='WEBP' && notebook.length < 170*1024,
+    'Field Notebook uses one optimized local WebP');
+  for (const activity of UNIT1.slice(1).concat(UNIT2,UNIT3,UNIT4)) {
+    const file = '../assets/openscied-atlas-'+activity.replace(/^openscied-|\.html$/g,'')+'.svg';
     const art = fs.readFileSync(path.join(__dirname,file),'utf8');
     T.ok((art.match(/<(?:path|circle|ellipse|rect|polygon)\b/g)||[]).length>40 &&
       !/<(?:[\w.-]+:)?(?:image|feImage)\b|data:image\//i.test(art), activity+' preview is detailed, self-contained vector art');
@@ -87,8 +90,8 @@ const CORRIDOR_PREVIEW='assets/openscied-atlas-b4-wildlife-corridor.svg';
             complete: img.complete, widthAttr: img.getAttribute('width'), heightAttr: img.getAttribute('height')} : null
         };
       }));
-      T.ok(m.length===files.length && m.every(x=>x.img?.src?.endsWith('.svg') && x.img.alt===''),
-        width + ' px: all published activities have their own decorative SVG image');
+      T.ok(m.length===files.length && m.every((x,i)=>x.img?.alt==='' && (i===0 ? x.img.src===FIELD_PREVIEW : x.img.src.endsWith('.svg'))),
+        width + ' px: all published activities have their own decorative image');
       const actionCounts = await Promise.all((await p.locator('.dashboard-activity').all()).map(card => card.getByRole('link').count()));
       T.ok(m.every(x => x.previewHidden && /^Open activity: .+/.test(x.label)) &&
         new Set(m.map(x => x.label)).size === files.length && actionCounts.every(n => n === 1),
