@@ -99,7 +99,6 @@
   const pieceName=value=>LABELS[value]??M.TILE_LABELS[value]?.split(' · ').at(-1)??String(value);
   const pieceText=(value,step)=>step==='sort'?pieceName(value):value==='Stop'?'Stop':value;
   const pieceKind=step=>step==='nucleotide'?'component':step==='chain'?'amino':step==='sort'?'product':'base';
-  const slotElement=id=>$('[data-dw-slot="'+id+'"]',E('board'));
   function markPiece(n,value,step){
     const kind=pieceKind(step);
     n.dataset.pieceKind=kind;
@@ -432,8 +431,14 @@
     state.progress=result.progress;state.actions.push(id);selected='';
     E('board').classList.remove('has-selection');
     renderBoard(state.step);renderEvidence();controls();save();
-    if(keyboard)slotElement(id)?.focus({preventScroll:true});
     const done=complete(state.step);
+    if(keyboard){
+      // Rendering replaces the old controls. Retain a short, visible route
+      // to the next piece instead of stranding focus in the filled grid.
+      const onward=[E('next'),E('continue')].find(control=>!control.hidden&&!control.disabled);
+      const original=$$('[data-dw-piece]',E('palette')).find(b=>b.dataset.dwPiece===value);
+      (done&&onward||original||E('palette').querySelector('button'))?.focus();
+    }
     const stop=value==='Stop'?' The stop codon stops chain building without adding an amino acid.':'';
     announce(done?readyFor(state.step):pieceName(value)+' placed.'+stop,'success');
     return true;

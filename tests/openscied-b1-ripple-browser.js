@@ -18,6 +18,22 @@ const out=path.join(ROOT,'artifacts','ripple');
     assert.ok(await by('to-compare').isDisabled());
     await shot('build');
     const node=k=>p.locator('[data-node="'+k+'"]');
+    const select=async el=>width===390?el.tap():el.press('Space');
+    await select(node('herd'));
+    assert.equal(await node('herd').getAttribute('aria-pressed'),'true');
+    assert.match(await by('board-note').textContent(),/Now select what/);
+    if(width===390)await select(node('herd'));
+    else await node('dung').press('Escape');
+    assert.equal(await node('herd').getAttribute('aria-pressed'),'false');
+    assert.match(await by('board-note').textContent(),/Arrow canceled/);
+    assert.equal(await by('count').textContent(),'0 of 6 connections');
+    if(width!==390){
+      await node('herd').press('Space');await node('dung').press('Enter');
+      assert.ok(await by('link-editor').isVisible());
+      await by('more').press('Escape');
+      assert.ok(await by('link-editor').isHidden());
+      assert.ok(await node('herd').evaluate(el=>el===document.activeElement));
+    }
     assert.equal(await p.locator('#rp-threads line').count(),0);
     assert.equal(await by('count').textContent(),'0 of 6 connections');
     await by('hint').click();assert.match(await by('clue').textContent(),/What do they leave behind/);
@@ -41,7 +57,7 @@ const out=path.join(ROOT,'artifacts','ripple');
     assert.match(await by('board-note').textContent(),/no direct link/);
     for(const [i,edge] of M.links.entries()){
       if(i===0)await drag(node(edge.from),node(edge.to));
-      else{await node(edge.from).focus();await p.keyboard.press('Enter');await node(edge.to).focus();await p.keyboard.press('Enter');}
+      else{await select(node(edge.from));await select(node(edge.to));}
       assert.ok(await by('link-editor').isVisible());
       if(i===0){await by('less').click();assert.match(await by('board-note').textContent(),/Try the other/);}
       await by(edge.sign===1?'more':'less').click();
@@ -63,10 +79,18 @@ const out=path.join(ROOT,'artifacts','ripple');
     await by('choice').selectOption('decrease');await by('reason').fill('Dung is a resource for beetles.');
     assert.ok(await by('experiment').isHidden());
     await by('form').getByRole('button',{name:'Save prediction'}).click();
-    await drag(by('stay').locator('button').first(),by('refuge'));
+    const firstGroup=by('stay').locator('button').first();
+    await select(firstGroup);
+    assert.match(await by('herd-note').textContent(),/Group 1 selected.*Neighboring patch/);
+    if(width===390)await select(firstGroup);else await by('refuge').press('Escape');
+    assert.equal(await firstGroup.getAttribute('aria-pressed'),'false');
+    assert.ok(await by('herd-note').textContent().then(text=>text.includes('Select a group')));
+    assert.equal(await by('away').locator('button').count(),0);
+    if(width!==390)assert.ok(await firstGroup.evaluate(el=>el===document.activeElement));
+    await drag(firstGroup,by('refuge'));
     assert.equal(await by('away').locator('button').count(),1);assert.ok(await by('to-explain').isDisabled());
     await p.reload();assert.equal(await by('away').locator('button').count(),1);
-    await by('stay').locator('button').first().click();await by('refuge').click();
+    await select(by('stay').locator('button').first());await select(by('refuge'));
     assert.equal(await by('away').locator('button').count(),2);
     assert.equal(await by('stay').locator('button').count(),2);
     if(width===1366){

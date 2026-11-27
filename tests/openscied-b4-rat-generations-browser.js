@@ -677,6 +677,10 @@ async function play(browser, base, cfg) {
     const trialId = await page.locator('#rg-trial-id').innerText();
     check(trialId.trim() === 'Dataset ID: ' + trialTag(seed), label + ' displays the exact trial identifier');
     await events(page, 0, label);
+    const inputHelp=page.locator('#rg-cross-input-help');
+    check(await inputHelp.isVisible() && /select the piece and then the slot.*Tab and Enter or Space.*Esc/.test(await inputHelp.innerText()) &&
+      await page.locator('#rg-punnett').getAttribute('aria-describedby')==='rg-cross-input-help',
+      label+' Punnett workbench explains tapping and keyboard selection throughout the cross');
     await expectBoard(page, model, null, label);
     check(compact(count(model.generations[0].born), { RR:0,RB:1,BB:3 }),
       label + ' starts with the source handout’s four founders');

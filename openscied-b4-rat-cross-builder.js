@@ -146,7 +146,7 @@
       if(keepFocus){
         const next=sources.querySelector('button')||instruction;
         if(next===instruction)next.tabIndex=-1;
-        next.focus({preventScroll:true});
+        next.focus();
       }
     }
     function choose(key) {
