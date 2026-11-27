@@ -170,9 +170,9 @@ async function checkMixedVersionWorkspace(browser,site) {
           return { file: new URL(img.currentSrc).pathname.split('/').pop(), width, height };
         });
         const isPhone = width <= 580;
-        assert.equal(panorama.file, isPhone ? 'bench-field-atlas-mobile.svg' : 'bench-field-atlas.svg',
-          'phones show the two-row atlas without changing the tablet or desktop artwork');
-        const ratio = isPhone ? 272 / 600 : 226 / 1200;
+        assert.equal(panorama.file, isPhone ? 'bench-field-atlas-mobile.webp' : 'bench-field-atlas-desktop.webp',
+          'phones load the wildebeest-and-cell crop; wider screens load the full atlas');
+        const ratio = isPhone ? 544 / 1200 : 302 / 1800;
         assert.ok(Math.abs(panorama.height - panorama.width * ratio) <= 1, 'banner is not stretched or cropped');
         const unit1=p.locator('[aria-labelledby="unit1"]');
         const geometry=await unit1.locator('article').evaluateAll(cards=>cards.map(c=>{
