@@ -38,15 +38,24 @@ const out=path.join(ROOT,'artifacts','ripple');
     assert.equal(await by('count').textContent(),'0 of 6 connections');
     await by('hint').click();assert.match(await by('clue').textContent(),/What do they leave behind/);
     const drag=async (source,target)=>{
-      await source.scrollIntoViewIfNeeded();await target.scrollIntoViewIfNeeded();
-      const a=await source.boundingBox(),b=await target.boundingBox();
-      const [x,y,u,v]=[a.x+a.width/2,a.y+a.height/2,b.x+b.width/2,b.y+b.height/2];
+      // Center the whole board/pasture. Moving two individual locators into
+      // view can leave the other outside the hit-testable viewport on phones.
+      await source.evaluate(el=>el.closest('.rp-map, .rp-pasture').scrollIntoView({block:'center',behavior:'instant'}));
+      const center=async el=>el.evaluate(node=>{
+        const r=node.getBoundingClientRect(), x=Math.round(r.left+r.width/2),y=Math.round(r.top+r.height/2);
+        return {x,y,hit:node.contains(document.elementFromPoint(x,y))};
+      });
+      const a=await center(source),b=await center(target);
+      assert.ok(a.hit&&b.hit, 'drag endpoints must be visible and hit-testable at '+width+' px');
+      const {x,y}=a,{x:u,y:v}=b;
       if(width===390){
         const cdp=await ctx.newCDPSession(p);
         const fire=(type,touchPoints)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints});
-        await fire('touchStart',[{x,y}]);
-        for(let i=1;i<=8;i++)await fire('touchMove',[{x:x+(u-x)*i/8,y:y+(v-y)*i/8}]);
-        await fire('touchEnd',[]);await cdp.detach();
+        try{
+          await fire('touchStart',[{x,y,id:1}]);
+          for(let i=1;i<=8;i++)await fire('touchMove',[{x:Math.round(x+(u-x)*i/8),y:Math.round(y+(v-y)*i/8),id:1}]);
+          await fire('touchEnd',[]);
+        }finally{await cdp.detach();}
       }else{
         await p.mouse.move(x,y);await p.mouse.down();
         await p.mouse.move(u,v,{steps:8});await p.mouse.up();
@@ -56,9 +65,16 @@ const out=path.join(ROOT,'artifacts','ripple');
     await node('beetles').click();await node('herd').click();
     assert.match(await by('board-note').textContent(),/no direct link/);
     for(const [i,edge] of M.links.entries()){
+      const gesture=i===0?'drag':width===390?'tap':'keyboard';
       if(i===0)await drag(node(edge.from),node(edge.to));
-      else{await select(node(edge.from));await select(node(edge.to));}
-      assert.ok(await by('link-editor').isVisible());
+      else{
+        await select(node(edge.from));
+        assert.equal(await node(edge.from).getAttribute('aria-pressed'),'true',
+          width+' px '+gesture+' selected '+edge.from+' before '+edge.to);
+        await select(node(edge.to));
+      }
+      assert.ok(await by('link-editor').isVisible(),
+        width+' px '+gesture+' opens '+edge.from+' → '+edge.to+'; feedback: '+await by('board-note').textContent());
       if(i===0){await by('less').click();assert.match(await by('board-note').textContent(),/Try the other/);}
       await by(edge.sign===1?'more':'less').click();
       assert.equal(await by('count').textContent(),(i+1)+' of 6 connections');
