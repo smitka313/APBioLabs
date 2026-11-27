@@ -1,117 +1,64 @@
-/* Lab-bench scene on ap-biology.html: finished equipment is always visible, progress stays accurate, text remains readable, and phones crop gracefully.
-   Run: NODE_PATH=$(npm root -g) node tests/t46-bench-banner.js  (OUT=dir keeps screenshots) */
+/* AP Biology course hero: responsive artwork, readable copy, and independent saved work. */
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const T = require('./_h');
-const OUT = process.env.OUT || '';
-const prog = n => ['aplab:progress:lab' + String(n).padStart(2, '0'), JSON.stringify({ done: 5, total: 5, sections: 7, items: { done: 9, total: 9 }, partial: null, t: Date.now() })];
-const ALL = Array.from({ length: 13 }, (_, i) => i + 1);
-
-/* Pixel signature of a region of the bench canvas. */
-const sig = async (p, r) => { await p.evaluate(() => document.fonts.ready); await p.waitForTimeout(250); return sig0(p, r); };
-const sig0 = (p, r) => p.evaluate(r => { const c = document.getElementById('bench-scene'), k = c.width / c.getBoundingClientRect().width; const d = c.getContext('2d').getImageData(Math.max(0, r.x0 * k), Math.max(0, r.y0 * k), Math.max(1, (r.x1 - r.x0) * k), Math.max(1, (r.y1 - r.y0) * k)).data; let h = 0, s = 0; for (let i = 0; i < d.length; i += 4) { h = (h * 31 + d[i] + d[i + 1] * 3 + d[i + 2] * 7) | 0; s += d[i] + d[i + 1] + d[i + 2]; } return { h, s }; }, r);
-const item = (p, id) => p.evaluate(id => LabBench.items().find(i => i.id === id) || null, id);
-
-(async () => {
-  const srv = await T.serve(), b = await T.launch();
-  let ctx = await T.ctxFor(b);
-  let p = await T.open(ctx, 'ap-biology.html', '', srv.url);
-
-  console.log('Scene draws');
-  const base = await p.evaluate(() => { const c = document.getElementById('bench-scene'); const r = c.getBoundingClientRect(); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let nz = 0, lum = 0; for (let i = 0; i < d.length; i += 40) { nz++; lum += d[i] + d[i + 1] + d[i + 2]; } return { w: r.width, h: r.height, avg: lum / nz / 3, ids: LabBench.items().map(i => i.id), label: c.getAttribute('aria-label') }; });
-  T.ok(base.w > 1300 && base.h > 250, `the canvas fills the hero (${Math.round(base.w)}×${Math.round(base.h)})`);
-  T.ok(base.avg > 15 && base.avg < 110, 'a dark bench (mean brightness ' + base.avg.toFixed(0) + ')');
-  T.ok(base.ids.join() === 'flask,petri,gel,scope,balance,rack,vials', 'all seven pieces of equipment: ' + base.ids.join(', '));
-  T.ok(/virtual lab bench/.test(base.label) && /finished/.test(base.label) && /all 13 investigations/.test(base.label), 'the canvas describes the ready-to-use finished equipment');
-  T.ok(await p.locator('#bench-note').count() === 0, 'the redundant note below the hero links is absent');
-  T.ok(await p.evaluate(() => !document.querySelector('#bench-preview') && !document.querySelector('#bench-preview-label') && !('preview' in document.querySelector('#bench-scene').dataset)), 'the preview controls and state are removed');
-  T.ok(await p.locator('#migration-help').count() === 0, 'the retired old-site migration banner is absent from the homepage');
-  const items = await p.evaluate(() => LabBench.items());
-  T.ok(items.every(i => i.level === i.labs.length), 'every object starts in its finished appearance');
-  const grid = await p.evaluate(() => [document.querySelectorAll('.card').length, document.querySelector('.cards').getBoundingClientRect().width]);
-  T.ok(grid[0] === 13, 'the 13 lab cards are untouched');
-  if (OUT) await p.locator('.hero').screenshot({ path: OUT + '/t46-banner-light-1366.png' });
-  const before = {}; for (const i of items) before[i.id] = await sig(p, i);
-  for (const i of items) before[i.id + '#core'] = await sig(p, Object.assign({}, i, { x0: i.x0 + (i.x1 - i.x0) * 0.25, x1: i.x1 - (i.x1 - i.x0) * 0.25 }));
-
-  console.log('Finished equipment stays permanent as student progress changes');
-  const cases = [['gel', [9]], ['gel', [3, 9]], ['flask', [13]], ['flask', [5, 13]], ['petri', [8]], ['scope', [7]], ['vials', [12]], ['balance', [4]], ['rack', [6]]];
-  for (const [id, labs] of cases) {
-    const c2 = await T.ctxFor(b);
-    await c2.addInitScript(arr => { arr.forEach(([k, v]) => { if (!localStorage.getItem('__bench_done')) localStorage.setItem(k, v); }); localStorage.setItem('__bench_done', '1'); }, labs.map(prog));
-    const q = await T.open(c2, 'ap-biology.html', '', srv.url);
-    const it = await item(q, id);
-    T.ok(it.level === it.labs.length && JSON.stringify(await q.evaluate(() => LabBench.completed())) === JSON.stringify(labs), `${id}: icon stays finished while saved completion remains ${labs.join(', ')}`);
-    for (const obj of await q.evaluate(() => LabBench.items())) {
-      const signature = await sig(q, obj);
-      T.ok(signature.h === before[obj.id].h, `${obj.id} finished appearance does not change with student progress`);
-    }
-    T.ok(await q.locator('#bench-preview').count() === 0, 'no preview option is shown');
-    if (OUT && (id === 'gel' && labs.length === 2)) await q.locator('.hero').screenshot({ path: OUT + '/t46-banner-some.png' });
-    T.ok(q.errors.length === 0, 'no console errors ' + q.errors.join('|'));
-    await c2.close();
-  }
-  { // everything done
-    const c2 = await T.ctxFor(b);
-    await c2.addInitScript(arr => { if (!localStorage.getItem('__bench_done')) { arr.forEach(([k, v]) => localStorage.setItem(k, v)); localStorage.setItem('__bench_done', '1'); } }, ALL.map(prog));
-    const q = await T.open(c2, 'ap-biology.html', '', srv.url);
-    T.ok((await q.evaluate(() => LabBench.items())).every(i => i.level === i.labs.length), 'all objects retain their finished appearance when all labs are complete');
-    T.ok(await q.evaluate(() => LabBench.completed().length) === 13, 'saved completion is still reported accurately');
-    T.ok(await q.locator('#bench-note').count() === 0, 'the redundant note stays absent when all labs are complete');
-    if (OUT) await q.locator('.hero').screenshot({ path: OUT + '/t46-banner-all-light.png' });
-    await q.evaluate(() => Lab.theme.set('dark')); await q.waitForTimeout(500);
-    if (OUT) await q.locator('.hero').screenshot({ path: OUT + '/t46-banner-all-dark.png' });
-    await c2.close();
-  }
-
-  console.log('Readable overlays, light and dark');
-  const contrast = async q => q.evaluate(() => {
-    const lum = c => { const v = c.map(n => { n /= 255; return n <= .03928 ? n / 12.92 : Math.pow((n + .055) / 1.055, 2.4); }); return .2126 * v[0] + .7152 * v[1] + .0722 * v[2]; };
-    const cv = document.getElementById('bench-scene'), k = cv.width / cv.getBoundingClientRect().width, ctx = cv.getContext('2d'), out = {};
-    const parse = s => (s.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
-    [['h1', '.hero h1'], ['lede', '.hero p.lede'], ['links', '.hero .hero-links a'], ['eyebrow', '.hero .eyebrow']].forEach(([n, sel]) => {
-      const e = document.querySelector(sel), r = e.getBoundingClientRect(), hr = document.querySelector('.hero').getBoundingClientRect();
-      const d = ctx.getImageData(Math.max(0, (r.left - hr.left) * k), Math.max(0, (r.top - hr.top) * k), Math.max(1, Math.min(r.width, 400) * k), Math.max(1, r.height * k)).data;
-      let worst = 0; for (let i = 0; i < d.length; i += 16) { const L = lum([d[i], d[i + 1], d[i + 2]]); if (L > worst) worst = L; }
-      const fg = lum(parse(getComputedStyle(e).color)); out[n] = +((fg + .05) / (worst + .05)).toFixed(1);
-    });
-    return out;
+const OUT = process.env.OUT;
+const mobile = 'bench-ap-studio-mobile.webp', desktop = 'bench-ap-studio.webp';
+const completion = { done: 5, total: 5, sections: 7, items: { done: 9, total: 9 }, partial: null, t: Date.now() };
+async function art(page) {
+  return page.locator('.bench-ap-picture img').evaluate(async img => {
+    await img.decode();
+    const r = img.getBoundingClientRect(), copy = document.querySelector('.hero-grid').getBoundingClientRect();
+    return { file: new URL(img.currentSrc).pathname.split('/').pop(), natural: [img.naturalWidth, img.naturalHeight],
+      w: r.width, h: r.height, noOverlap: r.bottom <= copy.top, full: r.left >= 0 && r.right <= innerWidth, alt: img.alt };
   });
-  for (const dark of [false, true]) {
-    const c2 = await T.ctxFor(b, { dark });
-    const q = await T.open(c2, 'ap-biology.html', '', srv.url);
-    const cr = await contrast(q);
-    T.ok(Object.values(cr).every(v => v >= 4.5), `${dark ? 'dark' : 'light'}: text vs. the brightest bench pixel behind it: ` + JSON.stringify(cr));
-    T.ok(await q.evaluate(() => { const s = document.querySelector('.hero .home-status'); const bg = getComputedStyle(s).backgroundColor; return !/rgba\(0, 0, 0, 0\)/.test(bg); }), 'the sign-in panel has its own surface');
-    await c2.close();
-  }
-  { // pick-up card on top
-    const c2 = await T.ctxFor(b, { dark: true });
-    await c2.addInitScript(() => { if (!localStorage.getItem('__s')) { localStorage.setItem('aplab:last', JSON.stringify({ lab: 'lab05', step: 'float-assay', name: 'Float assay', title: 'Lab 5 · Photosynthesis', t: Date.now() })); localStorage.setItem('__s', '1'); } });
-    const q = await T.open(c2, 'ap-biology.html', '', srv.url);
-    T.ok(await q.locator('#resume').isVisible(), '"Pick up where you left off" shows over the bench');
-    T.ok(await q.evaluate(() => { const r = document.querySelector('#resume').getBoundingClientRect(), it = LabBench.items(); return it.every(i => r.top >= i.y1 - 4 || r.left > i.x1 || r.right < i.x0); }), 'and does not sit on the equipment');
-    if (OUT) await q.locator('.hero').screenshot({ path: OUT + '/t46-banner-pickup-dark.png' });
-    await c2.close();
-  }
-
-  console.log('Phone');
-  for (const dark of [false, true]) {
-    const c2 = await T.ctxFor(b, { width: 400, height: 800, dark });
-    const q = await T.open(c2, 'ap-biology.html', '', srv.url);
-    const info = await q.evaluate(() => ({ over: document.documentElement.scrollWidth - innerWidth, items: LabBench.items().map(i => [i.id, Math.round(i.x0), Math.round(i.x1), i.level]), w: innerWidth }));
-    T.ok(info.over <= 0, 'no sideways scroll at 400 px');
-    T.ok(info.items.length >= 4 && info.items.every(([, a, z]) => a >= 0 && z <= info.w), 'the scene scales: ' + info.items.length + ' objects, all inside the screen');
-    T.ok(['gel', 'petri', 'vials'].every(id => info.items.some(i => i[0] === id)), 'the compact bench consistently keeps its core equipment: ' + info.items.map(i => i[0]).join(', '));
-    if (OUT) await q.locator('.hero').screenshot({ path: OUT + '/t46-banner-400-' + (dark ? 'dark' : 'light') + '.png' });
-    await c2.close();
-  }
-
-  console.log('Reduced motion');
-  { const c2 = await T.ctxFor(b, { reduced: true }); const q = await T.open(c2, 'ap-biology.html', '', srv.url);
-    T.ok(await q.evaluate(() => getComputedStyle(document.querySelector('.bench-sheen')).display) === 'none', 'the faint sheen is off'); await c2.close(); }
-  { const c2 = await T.ctxFor(b); const q = await T.open(c2, 'ap-biology.html', '', srv.url);
-    T.ok(await q.evaluate(() => getComputedStyle(document.querySelector('.bench-sheen'), '::before').animationName) === 'bench-sheen', 'otherwise a very faint sheen drifts'); await c2.close(); }
-
-  await b.close(); srv.close();
-  T.done('t46-bench-banner');
-})();
+}
+(async () => {
+  const server = await T.serve(), browser = await T.launch();
+  try {
+    for (const [width, dark] of [[375, true], [430, false], [600, false], [601, true], [1366, false], [1920, true]]) {
+      const ctx = await T.ctxFor(browser, { width, height: 900, dark, reduced: width === 375 });
+      try {
+        await ctx.addInitScript(({ dark, completion }) => {
+          localStorage.setItem('aplab:pref:theme', dark ? 'dark' : 'light');
+          localStorage.setItem('aplab:progress:lab05', JSON.stringify(completion));
+          localStorage.setItem('aplab:last', JSON.stringify({ lab: 'lab05', step: 'float-assay', name: 'Float assay', title: 'Lab 5 · Photosynthesis', t: Date.now() }));
+        }, { dark, completion });
+        const p = await T.open(ctx, 'ap-biology.html', '', server.url);
+        const image = await art(p);
+        const expected = width <= 600 ? [1120, 545] : [1800, 456];
+        assert.equal(image.file, width <= 600 ? mobile : desktop);
+        assert.deepEqual(image.natural, expected);
+        assert.ok(image.full && image.noOverlap && Math.abs(image.h - image.w * expected[1] / expected[0]) <= 1,
+          'art is not clipped, distorted, or behind the title');
+        assert.match(image.alt, /Microscope.*agar plates.*flask.*gel electrophoresis/i);
+        assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+        assert.equal(await p.locator('#labs .card').count(), 13);
+        assert.equal(await p.locator('#bench-note, #bench-preview, #migration-help').count(), 0);
+        assert.equal(await p.locator('[data-lab-progress="lab05"] .prog-bar i').evaluate(el => el.style.width), '100%');
+        assert.ok(await p.locator('#resume').isVisible(), 'saved work remains resumable independently of the banner');
+        const ratios = await p.evaluate(() => {
+          const lum = css => {
+            const [r,g,b] = css.match(/[0-9.]+/g).slice(0,3).map(n => {
+              const v = +n / 255; return v <= .04045 ? v / 12.92 : ((v+.055)/1.055)**2.4;
+            });
+            return r*.2126 + g*.7152 + b*.0722;
+          };
+          const bg = lum(getComputedStyle(document.querySelector('.hero')).backgroundColor);
+          return ['h1', '.eyebrow', 'p.lede', '.hero-links a', '.hero-browse'].map(sel => {
+            const fg = lum(getComputedStyle(document.querySelector('.hero ' + sel)).color);
+            return (Math.max(fg,bg)+.05)/(Math.min(fg,bg)+.05);
+          });
+        });
+        assert.ok(ratios.every(n => n >= 4.5), 'copy meets AA contrast against the solid hero surface');
+        assert.deepEqual(p.errors, []);
+        if (OUT) { fs.mkdirSync(OUT, { recursive: true }); await p.locator('.hero').screenshot({ path: path.join(OUT, 'ap-bench-' + width + '.png') }); }
+        await p.emulateMedia({ media: 'print' });
+        assert.ok(await p.locator('.bench-ap-picture').isHidden(), 'print does not include decorative artwork');
+        console.log('AP bench: ' + width + 'px ' + (dark ? 'dark' : 'light') + ' passed');
+      } finally { await ctx.close(); }
+    }
+  } finally { await browser.close(); server.close(); }
+})().catch(err => { console.error(err); process.exitCode = 1; });
 
