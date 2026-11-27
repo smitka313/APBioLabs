@@ -122,7 +122,7 @@ test('the real activity script initializes and drives exhibits and map controls 
     return css==='.sf-map .sf-map-visual'&&e.attrs.class?.includes('sf-map-visual');
   };
   let collect;
-  const doc={createElement:()=>el(),getElementById:id=>ids[id],querySelector:sel=>entries.find(n=>match(n,sel)),
+  const doc={createElement:()=>el(),createElementNS:()=>el(),getElementById:id=>ids[id],querySelector:sel=>entries.find(n=>match(n,sel)),
     querySelectorAll:sel=>entries.filter(n=>n.mounted&&sel.split(',').some(q=>match(n,q)))};
   const window={SerengetiFieldNotebook:M,OpenSciEdSaveSession:require('../openscied-save-session.js'),
     OpenSciEdSubmission:{mount(c){collect=c.collect;}},addEventListener(){}};
@@ -143,11 +143,18 @@ test('the real activity script initializes and drives exhibits and map controls 
   assert.match(element('map-caption').textContent,/Oct: Maasai Mara/);
   element('exhibits').children[1].onclick();element('pin').onclick();
   element('stations').children[4].onclick();element('pin').onclick();
+  const note=element('note');note.value='A note about the station as a whole.';note.events.input();
+  const status=element('note-status');
+  assert.match(status?.textContent||'',/Station note saved to this browser/);
+  element('exhibits').children[2].onclick();element('pin').onclick();
+  assert.match(element('collected').textContent,/2 stations with evidence.*3 exhibits pinned/);
   const report=collect();
+  assert.deepEqual([...report.sections.find(x=>x.title==='Station evidence').items].filter(x=>x.value===note.value).map(x=>x.prompt),['People of the Serengeti · Station note']);
+  assert.deepEqual([...report.missing],['Write your explanation.','Write one question you still have.']);
   assert.match(JSON.stringify(report.sections),/800–1,000 km/);
   assert.match(JSON.stringify(report.sections),/Nata elder/);
-  assert.deepEqual(JSON.parse(data['aplab:openscied:b1-field-notebook:v1']).pinnedCards,{movement:[1],people:[0]});
-  assert.match(element('collected').textContent,/2 of 2 stations collected/);
+  assert.deepEqual(JSON.parse(data['aplab:openscied:b1-field-notebook:v1']).pinnedCards,{movement:[1],people:[0,2]});
+  assert.match(element('collected').textContent,/2 stations with evidence/);
   element('stations').children[3].onclick();
   assert.ok(element('pin').disabled);
   assert.doesNotMatch(element('exhibit-text').textContent,/farther southeast/);
@@ -162,4 +169,14 @@ test('the real activity script initializes and drives exhibits and map controls 
   entries.find(n=>n.dataset.go==='explain').onclick();
   assert.deepEqual(element('question-recap').children.map(n=>n.textContent),['What changed?','Why?']);
   assert.match(JSON.stringify(collect().sections),/Area I marked.*North, near the Kenya border/);
+  for(const [key,value] of [['claim','The herd regularly crossed the park boundary.'],['wonder','What happens in dry years?']]){
+    const n=element(key);n.value=value;n.events.input();
+  }
+  const saved=JSON.parse(data['aplab:openscied:b1-field-notebook:v1']);
+  assert.equal(saved.migrationMonth,9);
+  assert.equal(M.clean({...saved,migrationMonth:12}).migrationMonth,0);
+  assert.deepEqual([...collect().missing],['Select Finish notebook to mark this work complete.']);
+  element('finish').onclick();
+  assert.equal(collect().status,'final');
+  assert.deepEqual([...collect().missing],[]);
 });

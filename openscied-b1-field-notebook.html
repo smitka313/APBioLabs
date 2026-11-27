@@ -111,6 +111,7 @@
       <circle id="sf-boundary-marker" cx="395" cy="319" r="29" fill="none" stroke="#ffe9b2" stroke-width="10" hidden></circle>
       <circle id="sf-boundary-marker-edge" cx="395" cy="319" r="29" fill="none" stroke="#3b2634" stroke-width="4" stroke-dasharray="6 4" hidden></circle>
      </g>
+     <g id="sf-pin-leaders" fill="none" stroke="#6a472c" stroke-width="2" aria-hidden="true"></g>
     </svg>
     <div id="sf-map-pins" role="group" aria-label="Explore stations on the schematic map"></div>
    </div>
@@ -155,7 +156,8 @@
    <details class="sf-disclosure"><summary>Quick evidence check</summary><p id="sf-check-prompt"></p><div id="sf-check-options" class="sf-check-options"></div><p id="sf-check-feedback"></p></details>
    <p id="sf-source" class="sf-caption"></p>
    <label for="sf-note" id="sf-note-label">Station notes</label>
-   <textarea id="sf-note" maxlength="1800" rows="3"></textarea>
+   <textarea id="sf-note" maxlength="1800" rows="3" aria-describedby="sf-note-status"></textarea>
+   <p class="sf-caption sf-note-status" id="sf-note-status"></p>
   </article>
  </div>
  <div id="sf-movement-video" hidden>
