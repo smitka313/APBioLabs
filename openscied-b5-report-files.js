@@ -55,7 +55,7 @@
       try{
         const report=root.OpenSciEdSubmission.normalize(collect());
         download(html(report),'text/html;charset=utf-8',basename+'-'+report.datasetId+'.html');
-        announce('Downloaded the HTML report for this activity.');
+        announce('HTML report downloaded to this device. It has not been submitted.');
       }catch(_){announce('Could not download this report. Your work has not changed.');}
     });
   }
