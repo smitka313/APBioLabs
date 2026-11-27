@@ -63,7 +63,8 @@ test('malformed work is not treated as empty and unknown fields do not affect th
 
 test('all four original videos are optional, caption-preferred in-page players with a fallback',()=>{
   const html=fs.readFileSync(path.join(__dirname,'../openscied-b1-field-notebook.html'),'utf8');
-  const ids=['Pg35n6elF3Y','iPyB3Gw6fBY','7JOk6ivcuco','cVj4883yzeO'];
+  // Case-sensitive IDs from the actual PDF hyperlinks in the B.1 Lesson 2 Teacher Edition and slides.
+  const ids=['Pg35n6eIF3Y','ipYb3Gw6fBY','7JOk6ivcuco','cVj4883yze0'];
   const frames=[...html.matchAll(/<template><iframe[^>]+\/embed\/([\w-]+)\?cc_load_policy=1[^>]*><\/iframe><\/template>/g)].map(m=>m[1]);
   assert.deepEqual(frames,ids);
   ids.forEach(id=>assert.ok(html.includes('https://youtu.be/'+id+'"')));
