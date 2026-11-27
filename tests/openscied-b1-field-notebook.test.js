@@ -148,9 +148,10 @@ test('the real activity script initializes and drives exhibits and map controls 
   assert.match(element('map-caption').textContent,/Oct: Maasai Mara/);
   element('exhibits').children[1].onclick();element('pin').onclick();
   element('stations').children[4].onclick();element('pin').onclick();
-  const note=element('note');note.value='A note about the station as a whole.';note.events.input();
-  const status=element('note-status');
-  assert.match(status?.textContent||'',/Station note saved to this browser/);
+  const note=element('note'),status=element('note-status');
+  assert.equal(status.textContent,'Notes save as you type.');
+  note.value='A note about the station as a whole.';note.events.input();
+  assert.match(status.textContent,/Note saved just now/);
   element('exhibits').children[2].onclick();element('pin').onclick();
   assert.match(element('collected').textContent,/2 stations with evidence.*3 exhibits pinned/);
   const report=collect();
@@ -186,6 +187,8 @@ test('the real activity script initializes and drives exhibits and map controls 
   assert.deepEqual([...collect().missing],[]);
   // Readable storage is not proof a later write succeeded.
   element('stations').children[4].onclick();
+  assert.match(status.textContent,/Previous note loaded/);
+  assert.doesNotMatch(status.textContent,/saved just now/);
   denyNotebookWrites=true;
   note.value='Edited note that did not fit in storage.';note.events.input();
   assert.match(status.textContent,/Note not saved/);
@@ -199,7 +202,7 @@ test('the real activity script initializes and drives exhibits and map controls 
   assert.equal(JSON.parse(data[notebookKey]).fields.people,'A note about the station as a whole.');
   denyNotebookWrites=false;
   note.events.input();
-  assert.match(status.textContent,/Station note saved/);
+  assert.match(status.textContent,/Note saved just now/);
   assert.equal(JSON.parse(data[notebookKey]).fields.people,note.value);
   assert.equal(collect().status,'final');
 });
