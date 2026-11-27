@@ -1,30 +1,50 @@
 /* OpenSciEd dashboard previews: published unit and activity order, the registry order in the script,
-   self-contained SVG previews in every unit, HTML captions below each picture, stable 8:5 boxes, no layout shift, and axe clean in light and dark.
+   published SVG and WebP previews, HTML captions below each picture, stable 8:5 boxes, no layout shift, and axe clean in light and dark.
    Run: NODE_PATH=$(npm root -g) AXE=<path>/axe.min.js node tests/t109-openscied-dashboard-previews.js */
 const T = require('./_h');
 const fs = require('fs'), path = require('path');
 const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: /gc\.zgo\.at/.test(r.request().url()) ? 'application/javascript' : 'text/css', body: '' }));
 const UNIT1 = ['openscied-b1-field-notebook.html', 'openscied-b1-migration.html', 'openscied-b1-carrying-capacity.html', 'openscied-b1-serengeti.html', 'openscied-b1-ripple.html'];
-const FIELD_PREVIEW = 'assets/openscied-atlas-b1-field-notebook-preview.svg';
+const FIELD_PREVIEW = 'assets/openscied-atlas-b1-field-notebook-preview.webp';
 const MIGRATION_PREVIEW = 'assets/openscied-atlas-b1-migration.svg';
-const CARRYING_PREVIEW = 'assets/openscied-atlas-b1-carrying-capacity.svg';
-const SERENGETI_PREVIEW = 'assets/openscied-atlas-b1-serengeti.svg';
+const CARRYING_PREVIEW = 'assets/openscied-activity-b1-carrying-capacity.webp';
+const SERENGETI_PREVIEW = 'assets/openscied-activity-b1-serengeti.webp';
 const UNIT2 = ['openscied-b2-burn-lab.html', 'openscied-b2-fires.html', 'openscied-b2-peat-bog-lab.html', 'openscied-b2-carbon-journey.html'];
 const UNIT3 = ['openscied-b3-cancer-rates.html', 'openscied-b3-screening.html', 'openscied-b3-cell-cycle.html', 'openscied-b3-dna-workshop.html', 'openscied-b3-dna-p53.html', 'openscied-b3-inheritance-environment.html'];
 const UNIT4 = ['openscied-b4-hawksbeard.html','openscied-b4-rat-generations.html','openscied-b4-junco.html','openscied-b4-wildlife-corridor.html'];
-const HAWKSBEARD_PREVIEW = 'assets/openscied-atlas-b4-hawksbeard.svg';
-const CORRIDOR_PREVIEW='assets/openscied-atlas-b4-wildlife-corridor.svg';
+const HAWKSBEARD_PREVIEW = 'assets/openscied-activity-b4-hawksbeard.webp';
+const CORRIDOR_PREVIEW='assets/openscied-activity-b4-wildlife-corridor.webp';
+const refreshed = {
+  "b4-hawksbeard": "openscied-activity-b4-hawksbeard.webp",
+  "b3-screening": "openscied-activity-b3-screening.webp",
+  "b1-serengeti": "openscied-activity-b1-serengeti.webp",
+  "b1-carrying-capacity": "openscied-activity-b1-carrying-capacity.webp",
+  "b3-cancer-rates": "openscied-activity-b3-cancer-rates.webp",
+  "b4-rat-generations": "openscied-activity-b4-rat-generations.webp",
+  "b5-hybrid": "openscied-activity-b5-hybrid.webp",
+  "b4-wildlife-corridor": "openscied-activity-b4-wildlife-corridor.webp",
+  "b5-thermoregulation": "openscied-activity-b5-thermoregulation.webp",
+  "b5-wapusk": "openscied-activity-b5-wapusk.webp",
+  "b1-field-notebook": "openscied-atlas-b1-field-notebook-preview.webp"
+};
 (async () => {
   // order in the script registry matches the page
   const js = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.js'), 'utf8');
   const files = [...js.matchAll(/file: '([^']+)'/g)].map(m => m[1]);
   const originalActivities=UNIT1.concat(UNIT2,UNIT3,UNIT4,['openscied-b5-wapusk.html','openscied-b5-thermoregulation.html','openscied-b5-ancestry.html','openscied-b5-speciation.html','openscied-b5-hybrid.html']);
   T.ok(JSON.stringify(files.slice(0,originalActivities.length)) === JSON.stringify(originalActivities), 'openscied-dashboard.js preserves the published activity order through Unit 5');
-  for (const activity of UNIT1.concat(UNIT2,UNIT3,UNIT4)) {
-    const file = activity===UNIT1[0] ? '../'+FIELD_PREVIEW : '../assets/openscied-atlas-'+activity.replace(/^openscied-|\.html$/g,'')+'.svg';
-    const art = fs.readFileSync(path.join(__dirname,file),'utf8');
-    T.ok((art.match(/<(?:path|circle|ellipse|rect|polygon)\b/g)||[]).length>40 &&
-      !/<(?:[\w.-]+:)?(?:image|feImage)\b|data:image\//i.test(art), activity+' preview is detailed, self-contained vector art');
+  for (const activity of originalActivities) {
+    const key = activity.replace(/^openscied-|\.html$/g,'');
+    const filename = refreshed[key];
+    if (filename) {
+      const art = fs.readFileSync(path.join(__dirname,'../assets',filename));
+      T.ok(art.subarray(0,4).toString() === 'RIFF' && art.subarray(8,12).toString() === 'WEBP',
+        activity+' refreshed preview is WebP');
+    } else if (!activity.startsWith('openscied-b5-')) {
+      const art = fs.readFileSync(path.join(__dirname,'../assets/openscied-atlas-'+key+'.svg'),'utf8');
+      T.ok((art.match(/<(?:path|circle|ellipse|rect|polygon)\b/g)||[]).length>40 &&
+        !/<(?:[\w.-]+:)?(?:image|feImage)\b|data:image\//i.test(art), activity+' existing preview is self-contained SVG');
+    }
   }
   const b = await T.launch(), srv = await T.serve();
   try {
@@ -52,13 +72,13 @@ const CORRIDOR_PREVIEW='assets/openscied-atlas-b4-wildlife-corridor.svg';
       await p.waitForFunction(path=>{const img=document.querySelector('img[src="'+path+'"]');return img?.complete&&img.naturalWidth===960;},CARRYING_PREVIEW,{timeout:10000});
       await p.locator('img[src="'+HAWKSBEARD_PREVIEW+'"]').scrollIntoViewIfNeeded();
       await p.waitForFunction(path=>{const img=document.querySelector('img[src="'+path+'"]');return img?.complete&&img.naturalWidth===960;},HAWKSBEARD_PREVIEW,{timeout:10000});
-      const cancerImage=p.locator('img[src="assets/openscied-atlas-b3-cancer-rates.svg"]');
+      const cancerImage=p.locator('img[src="assets/openscied-activity-b3-cancer-rates.webp"]');
       await cancerImage.scrollIntoViewIfNeeded();
       await cancerImage.evaluate(img=>img.decode());
       const workshopImage=p.locator('img[src="assets/openscied-atlas-b3-dna-workshop.svg"]');
       await workshopImage.scrollIntoViewIfNeeded();
       await workshopImage.evaluate(img=>img.decode());
-      const ratImage = p.locator('img[src="assets/openscied-atlas-b4-rat-generations.svg"]');
+      const ratImage = p.locator('img[src="assets/openscied-activity-b4-rat-generations.webp"]');
       await ratImage.scrollIntoViewIfNeeded();
       await ratImage.evaluate(img => img.decode());
       const juncoImage = p.locator('img[src="assets/openscied-atlas-b4-junco.svg"]');
@@ -87,8 +107,8 @@ const CORRIDOR_PREVIEW='assets/openscied-atlas-b4-wildlife-corridor.svg';
             complete: img.complete, widthAttr: img.getAttribute('width'), heightAttr: img.getAttribute('height')} : null
         };
       }));
-      T.ok(m.length===files.length && m.every(x=>x.img?.src?.endsWith('.svg') && x.img.alt===''),
-        width + ' px: all published activities have their own decorative SVG image');
+      T.ok(m.length===files.length && m.every(x=>/\.(svg|webp)$/.test(x.img?.src||'') && x.img.alt===''),
+        width + ' px: all published activities have their own decorative illustration');
       const actionCounts = await Promise.all((await p.locator('.dashboard-activity').all()).map(card => card.getByRole('link').count()));
       T.ok(m.every(x => x.previewHidden && /^Open activity: .+/.test(x.label)) &&
         new Set(m.map(x => x.label)).size === files.length && actionCounts.every(n => n === 1),
@@ -108,7 +128,7 @@ const CORRIDOR_PREVIEW='assets/openscied-atlas-b4-wildlife-corridor.svg';
         carrying.img.w===960 && carrying.img.h===600 && carrying.img.alt==='' &&
         carrying.label === 'Open activity: Carrying Capacity',
         width + ' px: Carrying Capacity card has the revised carrying capacity illustration and a named link');
-      const wapusk = m.find(x=>x.img?.src==='assets/openscied-wapusk-card.svg');
+      const wapusk = m.find(x=>x.img?.src==='assets/openscied-activity-b5-wapusk.webp');
       T.ok(wapusk?.img?.complete && wapusk.img.w===960 && wapusk.img.h===600 &&
         wapusk.img.widthAttr==='960' && wapusk.img.heightAttr==='600' &&
         wapusk.label==='Open activity: Three Bears in Wapusk',
@@ -119,12 +139,12 @@ const CORRIDOR_PREVIEW='assets/openscied-atlas-b4-wildlife-corridor.svg';
         hawksbeard.img.widthAttr==='960' && hawksbeard.img.heightAttr==='600' &&
         hawksbeard.label === 'Open activity: Hawksbeard Wind Lab',
         width + ' px: the Hawksbeard illustration loads at the reserved size and its primary link has a descriptive accessible name');
-      const rats = m.find(x=>x.img?.src==='assets/openscied-atlas-b4-rat-generations.svg');
-      T.ok(rats?.img?.complete && rats.img.src === 'assets/openscied-atlas-b4-rat-generations.svg' &&
+      const rats = m.find(x=>x.img?.src==='assets/openscied-activity-b4-rat-generations.webp');
+      T.ok(rats?.img?.complete && rats.img.src === 'assets/openscied-activity-b4-rat-generations.webp' &&
         rats.img.w === 960 && rats.img.h === 600 && rats.img.alt === '' &&
         rats.label === 'Open activity: Rat Generations',
         width + ' px: Rat Generations shows its revised illustration and a named primary link');
-      const cancer=m.find(x=>x.img?.src==='assets/openscied-atlas-b3-cancer-rates.svg');
+      const cancer=m.find(x=>x.img?.src==='assets/openscied-activity-b3-cancer-rates.webp');
       T.ok(cancer?.img?.complete && cancer.img.w===960 && cancer.img.h===600 &&
         cancer.img.alt==='' && cancer.label === 'Open activity: Cancer Rates Data Dive' && /Real data/.test(cancer.capText),
         width + ' px: Cancer Rates Data Dive has a named primary link and accurate real-data descriptor');
