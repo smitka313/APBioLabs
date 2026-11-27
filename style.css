@@ -1348,3 +1348,62 @@ html[data-openscied] nav:is(
   }
 }
 @media print { .bench-activity-bar { display: none !important; } }
+
+/* Course dashboards: mount existing preview art in the same inset 8:5 frame.
+   These selectors stop at the collection cards; neither page's banner is affected. */
+#labs .cards > .card,
+.dashboard-shell .dashboard-activity {
+  --bench-preview-inset: clamp(4px, .45vw, 7px);
+}
+#labs .cards > .card > img.thumb {
+  /* The AP card has 18px of inline padding; keep the art aligned to the
+     same inset from the outer edge that OpenSciEd uses. */
+  width: calc(100% + 36px - 2 * var(--bench-preview-inset));
+  margin: var(--bench-preview-inset) calc(var(--bench-preview-inset) - 18px) 6px;
+  aspect-ratio: 8 / 5;
+  border: 1px solid var(--line);
+  border-color: color-mix(in srgb, var(--line) 82%, var(--muted));
+  border-radius: 7px;
+  filter: var(--bench-ap-preview-filter, none);
+}
+
+/* The AP illustrations range from a white graph to a dark microscope field.
+   In Dark, tame the paper-like scenes without dimming an already-dark image
+   or lowering contrast across the entire collection. */
+:root[data-theme="dark"] #labs .cards > .card > img.thumb {
+  --bench-ap-preview-filter: brightness(var(--bench-preview-light, .81));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) #labs .cards > .card > img.thumb {
+    --bench-ap-preview-filter: brightness(var(--bench-preview-light, .81));
+  }
+}
+#labs .cards > .card > img.thumb[src$="/lab02.webp"] { --bench-preview-light: .71; }
+#labs .cards > .card > img.thumb:is([src$="/lab01.webp"], [src$="/lab08.webp"], [src$="/lab10.webp"]) {
+  --bench-preview-light: .91;
+}
+#labs .cards > .card > img.thumb:is([src$="/lab07.webp"], [src$="/lab09.webp"]) { --bench-preview-light: 1; }
+
+.dashboard-shell .dashboard-activity .dashboard-preview {
+  aspect-ratio: 8 / 5;
+  margin: var(--bench-preview-inset) var(--bench-preview-inset) 0;
+  border: 1px solid var(--line);
+  border-color: color-mix(in srgb, var(--line) 82%, var(--muted));
+  border-radius: 7px;
+  box-shadow: 0 1px 2px #0a16251a;
+}
+/* Two original Unit 5 illustrations are wider than the 8:5 frames.
+   Keep their full art, not just the center crop; use a quiet, matching mat. */
+.dashboard-shell .dashboard-activity .dashboard-preview:is([href="openscied-b5-thermoregulation.html"], [href="openscied-b5-ancestry.html"]) > img {
+  object-fit: contain;
+}
+.dashboard-shell .dashboard-activity .dashboard-preview[href="openscied-b5-thermoregulation.html"] {
+  background: linear-gradient(#112635, #142a39);
+}
+.dashboard-shell .dashboard-activity .dashboard-preview[href="openscied-b5-ancestry.html"] {
+  background: linear-gradient(110deg, #112d3a, #24564f);
+}
+@media print {
+  #labs .cards > .card > img.thumb { filter: none; }
+  .dashboard-shell .dashboard-activity .dashboard-preview { box-shadow: none; }
+}

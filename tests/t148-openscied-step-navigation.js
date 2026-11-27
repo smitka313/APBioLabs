@@ -86,7 +86,7 @@ async function verifyThumbnails(page,base,width,mode){
   await image.waitFor();
   await image.evaluate(img=>img.decode());
   const filter=()=>image.evaluate(img=>getComputedStyle(img).filter);
-  if(mode==='dark') assert.equal(await filter(),'brightness(0.64) contrast(0.9) saturate(1.02)','Dark thumbnails reduce glare without obscuring details');
+  if(mode==='dark') assert.equal(await filter(),'brightness(0.91)','Dark mode gently dims the Lab 1 seedling thumbnail without obscuring details');
   else assert.equal(await filter(),'none');
   if(process.env.POLISH_SCREENSHOTS){
     await image.screenshot({path:path.join(process.env.POLISH_SCREENSHOTS,'ap-thumbnail-'+width+'-'+mode+'.png'),animations:'disabled'});
