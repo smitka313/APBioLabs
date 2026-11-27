@@ -182,8 +182,11 @@
     if(!M.progress(state).ready)state.finished=false;
     const saved=save();renderProgress();return saved;
   }
-  function setNoteStatus(saved=usable()&&!unsaved){
-    $('note-status').textContent=!saved?'Note not saved to this browser.':$('note').value.trim()?'Station note saved to this browser.':'Notes save as you type.';
+  function setNoteStatus(saved=usable()&&!unsaved, edited=false){
+    const hasNote=!!$('note').value.trim();
+    $('note-status').textContent=!saved?'Note not saved to this browser.':
+      edited?(hasNote?'✓ Note saved just now.':'✓ Note cleared.'):
+      hasNote?'Previous note loaded. Edits save as you type.':'Notes save as you type.';
   }
   function pickMonth(i){
     month=i;$('month').value=String(i);state.migrationMonth=i;
@@ -212,7 +215,7 @@
     box.value=state.fields[box.dataset.field]||'';
     box.addEventListener('input',()=>change(box.dataset.field,box.value));
   });
-  $('note').addEventListener('input',()=>setNoteStatus(change(state.station,$('note').value)));
+  $('note').addEventListener('input',()=>setNoteStatus(change(state.station,$('note').value),true));
   $('pin').onclick=()=>{
     if($('pin').disabled)return;
     const pinned=M.togglePin(state,state.station,exhibit);

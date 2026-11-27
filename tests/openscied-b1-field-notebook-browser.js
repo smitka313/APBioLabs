@@ -115,7 +115,7 @@ const {ROOT,serve}=require('./_h');
     assert.match(await by('exhibit-text').innerText(),/800–1,000 km/);
     await by('pin').click();
     await by('note').fill('The herd regularly leaves the park.');
-    assert.match(await by('note-status').textContent(),/Station note saved to this browser/);
+    assert.match(await by('note-status').textContent(),/Note saved just now/);
     assert.ok(await go('explain').isDisabled());
     const people=p.getByRole('button',{name:'People of the Serengeti',exact:true});
     if(width===390) await people.tap();
