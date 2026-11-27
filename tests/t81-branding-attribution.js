@@ -13,7 +13,7 @@ async function footerChecks(p, where) {
   T.ok(/CC BY-NC 4\.0/.test(text) && await f.locator('a[href="https://creativecommons.org/licenses/by-nc/4.0/"]').count() === 1, `${where}: source license CC BY-NC 4.0 is named and linked`);
   T.ok(await f.locator('a[href="https://www.openscied.org/"]').count() >= 1, `${where}: footer links to OpenSciEd`);
   T.ok(/Adapted and reorganized as an interactive companion/.test(text), `${where}: footer says changes were made`);
-  const privacy = /counts anonymous page visits without cookies\. Nothing you type, including your name and answers, is sent anywhere/;
+  const privacy = /counts page visits without cookies\. Student names and answers stay in this browser unless you choose to share them/;
   T.ok(privacy.test(text), `${where}: standard privacy line`);
 }
 (async () => {

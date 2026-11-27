@@ -40,7 +40,7 @@ const SECTIONS = ['overview', 'ideas', 'fork', 'sense5', 'checklist', 'explain',
     T.ok(await p.locator('.site-footer a[href="https://www.openscied.org/"]').count() >= 1, 'footer links openscied.org');
     T.ok(/Adapted and reorganized as an interactive companion; the models, reading summaries and questions are new/.test(foot), 'footer states what was changed');
     T.ok(/Not affiliated with, endorsed by, or sponsored by OpenSciEd/.test(foot), 'non-endorsement line');
-    T.ok(/counts anonymous page visits without cookies/.test(foot) && /Nothing you type/.test(foot) && !/GoatCounter/i.test(foot), 'plain privacy line');
+    T.ok(/counts page visits without cookies/.test(foot) && /Student names and answers stay in this browser unless you choose to share them/.test(foot) && !/GoatCounter/i.test(foot), 'plain privacy line');
     T.ok(await p.locator('script[data-goatcounter]').count() === 1, 'one page-visit tracker remains');
     T.ok(await p.locator('.attribution a[href="https://creativecommons.org/licenses/by-nc/4.0/"]').count() === 1, 'attribution block links the license');
 
