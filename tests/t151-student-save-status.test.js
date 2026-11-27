@@ -31,18 +31,19 @@ test('OpenSciEd receipt holds a multi-record failure until the affected work is 
  assert.equal(cx.BiologyBenchSaveState.failed,true);
 });
 test('shared save receipt mounts once and distinguishes idle, confirmed and failed states without using private data',()=>{
- function el(){return {children:[],dataset:{},setAttribute(){},append(...cs){this.children.push(...cs);}};}
+ function el(){return {children:[],attrs:{},dataset:{},setAttribute(k,v){this.attrs[k]=v;},removeAttribute(k){delete this.attrs[k];},append(...cs){this.children.push(...cs);}};}
  const host=el(),head=el(),handlers={};let receipt;
- host.after=z=>{receipt=z;};
+ host.append=z=>{receipt=z;};
  const document={currentScript:{src:'https://example.test/blb/student-save-status.js'},head,querySelector:()=>host,getElementById:()=>receipt,createElement:el};
  const cx={URL,document,location:{pathname:'/openscied-b1-migration'},addEventListener:(name,f)=>{handlers[name]=f;}};
  cx.window=cx; vm.runInNewContext(read('student-save-status.js'),cx);
  assert.equal(receipt.dataset.state,'idle');
- assert.equal(receipt.children[0].textContent,'No save confirmed yet');
+ assert.equal(receipt.textContent,'No save confirmed yet');
  cx.BiologyBenchSaveState={at:100,failed:false};handlers['blb:save-state']();
- assert.equal(receipt.dataset.state,'ok');assert.equal(receipt.children[0].textContent,'Saved to this browser');
+ assert.equal(receipt.dataset.state,'ok');assert.equal(receipt.textContent,'Saved to this browser');
  cx.BiologyBenchSaveState={at:100,failed:true};handlers['blb:save-state']();
- assert.equal(receipt.dataset.state,'bad');assert.match(receipt.children[1].textContent,/Preview report to keep a copy before closing/);
+ assert.equal(receipt.dataset.state,'bad');assert.match(receipt.attrs.title,/Preview report to keep a copy before closing/);
+ assert.equal(receipt.attrs['aria-live'],undefined);
 });
 test('AP receipt uses the stored timestamp and holds a failed write through no-op saves',()=>{
  const body=read('lab.js');
