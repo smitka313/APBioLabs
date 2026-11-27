@@ -97,7 +97,12 @@ test('the real activity script initializes and drives exhibits and map controls 
   const raw=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
   const source=raw('openscied-b1-field-notebook.html');
   const data={};
-  const storage={getItem:k=>data[k]??null,setItem:(k,v)=>{data[k]=v;},removeItem:k=>delete data[k]};
+  const notebookKey='aplab:openscied:b1-field-notebook:v1';
+  let denyNotebookWrites=false;
+  const storage={getItem:k=>data[k]??null,setItem:(k,v)=>{
+    if(denyNotebookWrites&&k===notebookKey)throw Object.assign(Error('Storage quota exceeded'),{name:'QuotaExceededError'});
+    data[k]=v;
+  },removeItem:k=>delete data[k]};
   const entries=[];
   function el(attrs={}){
     const dataset=Object.fromEntries(Object.keys(attrs).filter(k=>k.startsWith('data-')).map(k=>[k.slice(5).replace(/-([a-z])/g,(_,c)=>c.toUpperCase()),attrs[k]]));
@@ -179,4 +184,22 @@ test('the real activity script initializes and drives exhibits and map controls 
   element('finish').onclick();
   assert.equal(collect().status,'final');
   assert.deepEqual([...collect().missing],[]);
+  // Readable storage is not proof a later write succeeded.
+  element('stations').children[4].onclick();
+  denyNotebookWrites=true;
+  note.value='Edited note that did not fit in storage.';note.events.input();
+  assert.match(status.textContent,/Note not saved/);
+  element('stations').children[3].onclick();
+  element('stations').children[4].onclick();
+  assert.equal(note.value,'Edited note that did not fit in storage.');
+  assert.match(status.textContent,/Note not saved/);
+  assert.match(element('save').textContent,/Recent changes are not saved/);
+  assert.equal(collect().status,'recovery');
+  assert.match(JSON.stringify(collect().sections),/Edited note that did not fit in storage/);
+  assert.equal(JSON.parse(data[notebookKey]).fields.people,'A note about the station as a whole.');
+  denyNotebookWrites=false;
+  note.events.input();
+  assert.match(status.textContent,/Station note saved/);
+  assert.equal(JSON.parse(data[notebookKey]).fields.people,note.value);
+  assert.equal(collect().status,'final');
 });

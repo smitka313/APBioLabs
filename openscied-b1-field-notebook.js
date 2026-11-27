@@ -6,7 +6,7 @@
   const element=(tag,txt)=>Object.assign(document.createElement(tag),{textContent:txt});
   const say=msg=>{$('status').textContent=msg;};
   if(!M){say('The notebook did not load. Reload this page to try again.');return;}
-  let state=M.clean(null), session, unreadable=false, map='region', exhibit=0, month=0;
+  let state=M.clean(null), session, unreadable=false, unsaved=false, map='region', exhibit=0, month=0;
   // Each station's anchor followed by its offset button position, leaving map labels legible.
   const coordinates={plains:[386,657,456,713],woodland:[266,396,172,392],
     mara:[404,242,491,248],park:[370,439,315,506],ngorongoro:[549,551,603,532]};
@@ -26,14 +26,17 @@
   const identity=api?.reportIdentity?.(session,[key],()=>window.Lab?.identity?.get?.()??null)??(()=>null);
   const usable=()=>!unreadable&&!!session?.check(key).ok;
   function notice(){
-    $('save').textContent=usable()?'Your notebook is stored in this browser. Download a report to share it.':
-      'This tab cannot save this notebook. Use Preview report for a recovery copy before reloading.';
-    $('reset').disabled=!usable();
+    const canSave=usable();
+    $('save').textContent=!canSave?'This tab cannot save this notebook. Use Preview report for a recovery copy before reloading.':
+      unsaved?'Recent changes are not saved. Use Preview report for a recovery copy before reloading.':
+      'Your notebook is stored in this browser. Download a report to share it.';
+    $('reset').disabled=!canSave;
   }
   function save(){
     state.lastVisitedAt=Date.now();
     const result=!unreadable&&session?.write(key,JSON.stringify(state));
-    if(result?.ok) identity();
+    unsaved=!result?.ok;
+    if(!unsaved) identity();
     notice();
     if(!result?.ok) say('Not saved to this browser. Use Preview report to keep a recovery copy.');
     return !!result?.ok;
@@ -179,7 +182,7 @@
     if(!M.progress(state).ready)state.finished=false;
     const saved=save();renderProgress();return saved;
   }
-  function setNoteStatus(saved=usable()){
+  function setNoteStatus(saved=usable()&&!unsaved){
     $('note-status').textContent=!saved?'Note not saved to this browser.':$('note').value.trim()?'Station note saved to this browser.':'Notes save as you type.';
   }
   function pickMonth(i){
@@ -284,7 +287,7 @@
   };
   window.addEventListener('storage',notice);window.addEventListener('pageshow',notice);
   const report=()=>{
-    const p=M.progress(state), recovery=!usable();
+    const p=M.progress(state), recovery=unsaved||!usable();
     const section=(title,ids)=>({title,items:ids.map(id=>({type:'answer',prompt:M.fields[id],value:state.fields[id]||''}))});
     return {
       title:'Serengeti Field Notebook', unit:'OpenSciEd Biology B.1 · Lesson 2', source:'OpenSciEd B.1 Lesson 2 history reading, maps, and scavenger-hunt evidence. Map is schematic, not to scale.',
