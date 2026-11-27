@@ -74,8 +74,9 @@
   <div><label for="sf-question1">Question 1</label><textarea id="sf-question1" data-field="question1" rows="2" maxlength="1800" placeholder="What do you wonder about what was protected?"></textarea></div>
   <div><label for="sf-question2">Question 2</label><textarea id="sf-question2" data-field="question2" rows="2" maxlength="1800" placeholder="What do you wonder about why the boundaries changed?"></textarea></div>
  </div>
- <p class="sf-caption">Two different questions unlock the stations.</p>
- <button class="btn btn--primary" data-go="explore" disabled>Open the field stations →</button>
+ <p id="sf-go-explore-hint" class="sf-caption">Write two different questions to open the stations.</p>
+ <button class="btn" id="sf-questions-jump" type="button" hidden>Go to the next question</button>
+ <button class="btn btn--primary" data-go="explore" aria-describedby="sf-go-explore-hint" disabled>Open the field stations →</button>
 </section>
 <section data-page="explore" class="sf-panel" aria-labelledby="sf-explore-title" hidden>
  <h2 id="sf-explore-title" tabindex="-1">Explore five evidence stations</h2>
@@ -165,7 +166,9 @@
   <details class="ose-video sf-disclosure"><summary>Watch: Field clip 2 from the animal movement station</summary><div class="ose-video-body"><p class="ose-video-fallback" data-local-media-alternative><strong>Continue without video:</strong> Turn on Herd movement and compare two months on the map. Use an animal movement exhibit to explain what changed.</p><template><iframe title="Serengeti animal movement field clip 2" src="https://www.youtube-nocookie.com/embed/7JOk6ivcuco?cc_load_policy=1" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></template><p class="ose-video-fallback"><a href="https://youtu.be/7JOk6ivcuco" target="_blank" rel="noopener noreferrer">Open on YouTube (new tab)</a></p></div></details>
  </div>
  <div id="sf-people-video" hidden><details class="ose-video sf-disclosure"><summary>Watch: Field clip from the people station</summary><div class="ose-video-body"><p class="ose-video-fallback" data-local-media-alternative><strong>Continue without video:</strong> Read the people station exhibits above. Pick an example of a decision about the park and ask whose perspective it represents.</p><template><iframe title="People of the Serengeti field clip" src="https://www.youtube-nocookie.com/embed/cVj4883yze0?cc_load_policy=1" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></template><p class="ose-video-fallback"><a href="https://youtu.be/cVj4883yze0" target="_blank" rel="noopener noreferrer">Open on YouTube (new tab)</a></p></div></details></div>
- <button class="btn btn--primary" data-go="explain" disabled>Open your evidence notebook →</button>
+ <p id="sf-go-explain-hint" class="sf-caption">Pin an exhibit or write a note in two different stations.</p>
+ <button class="btn" id="sf-evidence-jump" type="button" hidden>Choose another station</button>
+ <button class="btn btn--primary" data-go="explain" aria-describedby="sf-go-explain-hint" disabled>Open your evidence notebook →</button>
 </section>
 <section data-page="explain" class="sf-panel" aria-labelledby="sf-explain-title" hidden>
  <h2 id="sf-explain-title" tabindex="-1">Explain and share your evidence</h2>
@@ -182,8 +185,9 @@
    <textarea id="sf-claim" data-field="claim" maxlength="1800" rows="4"></textarea>
    <label for="sf-wonder">What is one question you still have?</label>
    <textarea id="sf-wonder" data-field="wonder" maxlength="1800" rows="2"></textarea>
-   <button class="btn btn--primary" id="sf-finish">Finish notebook</button>
-   <p id="sf-finish-note" class="sf-caption"></p>
+   <p id="sf-finish-note" class="sf-caption">Write your explanation and one remaining question to finish.</p>
+   <button class="btn" id="sf-finish-jump" type="button" hidden>Go to the missing response</button>
+   <button class="btn btn--primary" id="sf-finish" aria-describedby="sf-finish-note" disabled>Finish notebook</button>
    <div data-ose-report-final></div>
   </div>
  </div>

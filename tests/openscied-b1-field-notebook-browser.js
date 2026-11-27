@@ -42,13 +42,23 @@ const {ROOT,serve}=require('./_h');
       await checkClip(p.locator('details.ose-video').first(),'Pg35n6eIF3Y');
     }
     assert.ok(await go('explore').isDisabled());
+    assert.match(await by('go-explore-hint').textContent(),/two different questions/);
+    await by('questions-jump').press('Enter');
+    assert.equal(await p.evaluate(()=>document.activeElement.id),'sf-question1');
     await by('question1').fill('What did people want to protect?');
+    assert.match(await by('go-explore-hint').textContent(),/one more question/);
+    await by('questions-jump').press('Enter');
+    assert.equal(await p.evaluate(()=>document.activeElement.id),'sf-question2');
     await by('question2').fill('What did people want to protect?');assert.ok(await go('explore').isDisabled());
+    assert.match(await by('go-explore-hint').textContent(),/Make your two questions different/);
     await by('question2').fill('Why did the boundaries change?');
     await shot('orientation');
     await go('explore').click();
     assert.ok(await page('explore').isVisible());
     assert.ok(await go('explain').isDisabled());
+    assert.match(await by('go-explain-hint').textContent(),/two different stations/);
+    await by('evidence-jump').press('Enter');
+    assert.ok(await p.evaluate(()=>document.activeElement.matches('#sf-stations [data-station]')));
     assert.equal(await p.locator('iframe').count(),0);
     const stations=[
       ['habitats',/open grassland.*woodland/],
@@ -147,6 +157,9 @@ const {ROOT,serve}=require('./_h');
     assert.match(await by('exhibit-text').innerText(),/farther southeast/);
     await by('pin').click();
     await go('explain').click();
+    assert.ok(await by('finish').isDisabled());
+    await by('finish-jump').press('Enter');
+    assert.equal(await p.evaluate(()=>document.activeElement.id),'sf-claim');
     assert.deepEqual(await by('question-recap').locator('li').allTextContents(),['What did people want to protect?','Why did the boundaries change?']);
     assert.match(await by('evidence-recap').innerText(),/The herd regularly leaves the park/);
     assert.match(await by('evidence-recap').innerText(),/Nata elder/);

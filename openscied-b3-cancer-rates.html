@@ -267,6 +267,7 @@
     <button type="button" data-step="explain" disabled><span aria-hidden="true">03</span> Explain</button>
   </nav>
   <p id="cr-step-hint" class="cr-muted">Choose and save a prediction before opening the Evidence Folder.</p>
+  <button type="button" class="btn btn--sm" id="cr-next-required" hidden>Go to what’s next</button>
   <noscript><p>This activity needs JavaScript for its charts and to save your work.</p></noscript>
   <section id="predict" class="cr-card cr-start" aria-labelledby="cr-predict-title">
     <div class="cr-heading"><div><p class="eyebrow">01 · Initial hunch</p><h2 id="cr-predict-title" tabindex="-1">Will the rankings match?</h2></div><span class="cr-chip">Real U.S. data</span></div>
@@ -277,7 +278,8 @@
         <select id="cr-prediction"><option value="">Choose a prediction…</option><option value="same">Yes, the same cancer will top both.</option><option value="different">No, different cancers will top the lists.</option><option value="unsure">I’m not sure yet.</option></select>
         <label for="cr-reason">What makes you think that? <span class="cr-muted">(optional)</span></label>
         <textarea id="cr-reason" rows="2" maxlength="1200"></textarea>
-        <button type="button" class="btn btn--primary" id="cr-lock" disabled>Save prediction &amp; open the Evidence Folder</button>
+        <p id="cr-prediction-unlock" class="cr-muted">Choose a prediction to enable Save. The explanation is optional.</p>
+        <button type="button" class="btn btn--primary" id="cr-lock" aria-describedby="cr-prediction-unlock" disabled>Save prediction &amp; open the Evidence Folder</button>
       </div>
       <aside class="cr-context" aria-label="Reading the numbers">
         <h3>Two different measurements</h3>
@@ -344,7 +346,8 @@
         <label for="cr-income-question">Write one question you could explore with the cancer data.</label>
         <p id="cr-income-question-help">Try: “How does ___ compare across ___?” or “Do places with higher ___ also tend to have higher ___?”</p>
         <textarea id="cr-income-question" rows="2" maxlength="500" required aria-describedby="cr-income-question-help"></textarea>
-        <button id="cr-income-explore" class="btn btn--primary" disabled type="submit">Explore More Data</button>
+        <p id="cr-question-unlock" class="cr-muted">Write a follow-up question to open Explore More Data.</p>
+        <button id="cr-income-explore" class="btn btn--primary" aria-describedby="cr-question-unlock" disabled type="submit">Explore More Data</button>
         <button id="cr-restore-question" class="btn" hidden type="button">Keep my saved question</button>
       </form>
     </div>
@@ -402,7 +405,8 @@
         <label for="cr-compare-b">B<select id="cr-compare-b"></select></label>
         <div id="cr-pair-values"></div>
         <button type="button" class="btn btn--primary" id="cr-pin">Pin this comparison</button>
-        <button type="button" class="btn" id="cr-to-explain" disabled>Use my evidence →</button>
+        <p id="cr-explain-unlock" class="cr-muted">Pin one comparison to open Explain.</p>
+        <button type="button" class="btn" id="cr-to-explain" aria-describedby="cr-explain-unlock" disabled>Use my evidence →</button>
       </aside>
     </div>
     <div class="cr-table-panel">

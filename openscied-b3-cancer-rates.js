@@ -193,7 +193,14 @@
       if(step===state.step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');
       b.setAttribute('aria-description',hint[step]);
     }
-    text('step-hint',!locked?hint.predict:!ready?hint.explore:!pinned?hint.explore:finished?hint.explain:state.step==='explain'?hint.explain:'Open Explain to use your pinned evidence.');
+    const remaining=caseMarks(state).filter(mark=>!mark).length;
+    const next=$('next-required'), target=nextRequiredTask();
+    next.hidden=!target;
+    if(target)next.textContent=target.label;
+    text('step-hint',!locked?hint.predict:!ready?
+      (!remaining?'Write and save a follow-up question to unlock Explore More Data.':
+        remaining===1?'Finish the last exhibit, then save a follow-up question to unlock Explore More Data.':hint.explore)
+      :!pinned?hint.explore:finished?hint.explain:state.step==='explain'?hint.explain:'Open Explain to use your pinned evidence.');
   }
   function goto(step,focus=true){
     if(!steps.includes(step)||!available(step))return;
@@ -209,7 +216,8 @@
     if(casefile.hidden)casefile.open=false;
     $('prediction').value=state.prediction.choice;$('reason').value=state.prediction.reason;
     $('prediction').disabled=state.prediction.locked;$('reason').readOnly=state.prediction.locked;
-    $('lock').disabled=!state.prediction.choice; $('lock').textContent=state.prediction.locked?'Open the Evidence Folder':'Save prediction & open the Evidence Folder';
+    renderPredictionUnlock();
+    $('lock').textContent=state.prediction.locked?'Open the Evidence Folder':'Save prediction & open the Evidence Folder';
     for(const where of ['explore','explain']){
       $('question-'+where).hidden=!state.casework.opened;
       text('question-'+where+'-text',state.casework.question);
@@ -249,6 +257,9 @@
     text('chart-key','● A and ◆ B are your picks. '+(v==='poverty'?'Use the table for exact values. A trend line summarizes the visible dots, not a cause.':'Bars start at zero. Your picks stay visible while you search. Use the table for the complete list.'));
     renderChart();renderPair();renderTable();
     $('to-explain').disabled=!state.evidence.length;
+    $('explain-unlock').hidden=!$('to-explain').disabled;
+    if($('to-explain').disabled)$('to-explain').setAttribute('aria-describedby','cr-explain-unlock');
+    else $('to-explain').removeAttribute('aria-describedby');
   }
   function pick(id,ref=null){
     const s=current(),r=D[state.view].rows.find(x=>x.id===id);
@@ -549,7 +560,13 @@
   window.addEventListener('storage',event=>{if(event.key===null||event.key==='aplab:student')syncIdentity();});
   window.addEventListener('pageshow',syncIdentity);
   for(const b of all('[data-step]'))b.addEventListener('click',()=>goto(b.dataset.step));
-  $('prediction').addEventListener('change',()=>{state.prediction.choice=$('prediction').value;save();$('lock').disabled=!state.prediction.choice;});
+  function renderPredictionUnlock(){
+    $('lock').disabled=!state.prediction.choice;
+    $('prediction-unlock').hidden=!$('lock').disabled;
+    if($('lock').disabled)$('lock').setAttribute('aria-describedby','cr-prediction-unlock');
+    else $('lock').removeAttribute('aria-describedby');
+  }
+  $('prediction').addEventListener('change',()=>{state.prediction.choice=$('prediction').value;save();renderPredictionUnlock();renderSteps();});
   $('reason').addEventListener('input',()=>{if(!state.prediction.locked){state.prediction.reason=$('reason').value;save();}});
   $('lock').addEventListener('click',()=>{if(state.prediction.choice){state.prediction.locked=true;save();updateFollowup();render();casefile.open=true;casefile.querySelector('summary').focus();}});
   $('view').addEventListener('change',()=>{state.view=$('view').value;save();renderExplore();announce('Now showing '+spec[state.view].title+'.');});
@@ -623,11 +640,31 @@
   let caseOpener=null, focusQuestion=false;
   const caseTabs=['lesson1-diagnoses','lesson1-deaths','lesson1-map',...exhibits.map(k=>'income-'+k)];
   const mayWriteQuestion=()=>state.prediction.locked&&caseMarks(state).every(Boolean);
+  function nextRequiredTask(){
+    if(!state.prediction.locked)return state.prediction.choice?
+      {label:'Go to Save prediction',id:'lock'}:{label:'Go to My prediction',id:'prediction'};
+    if(!available('explore')){
+      const i=caseMarks(state).indexOf(false);
+      return i<0?{label:'Go to my follow-up question',id:'income-question',folder:true}:
+        {label:'Go to Exhibit '+'ABCDEF'[i],id:caseTabs[i]+'-tab',folder:true};
+    }
+    return !state.evidence.length&&state.step==='predict'?{label:'Go to Explore More Data',page:'explore'}:null;
+  }
+  $('next-required').onclick=()=>{
+    const target=nextRequiredTask();
+    if(!target)return;
+    if(target.page){goto(target.page);return;}
+    if(target.folder)casefile.open=true;
+    $(target.id).focus();
+  };
   function updateFollowup(){
     const marks=caseMarks(state), count=marks.filter(Boolean).length, ready=mayWriteQuestion();
     const remaining=marks.flatMap((mark,i)=>mark?[]:['ABCDEF'[i]]);
     followup.hidden=!ready;
     $('income-explore').disabled=!ready||!question.value.trim();
+    $('question-unlock').hidden=!$('income-explore').disabled;
+    if($('income-explore').disabled)$('income-explore').setAttribute('aria-describedby','cr-question-unlock');
+    else $('income-explore').removeAttribute('aria-describedby');
     questionJump.disabled=!ready;
     $('restore-question').hidden=!state.casework.opened||!L.hasPendingQuestion(state.casework);
     for(const next of all('[data-case-next]')){
