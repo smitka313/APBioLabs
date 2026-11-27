@@ -392,6 +392,8 @@
     const stem = String(custom || r.title).replace(/\.docx$/i, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     return (stem || 'openscied') + (r.status === 'final' ? '-submission' : r.status === 'recovery' ? '-recovery' : '-draft') + '.docx';
   }
+  const HAND_IN_REPORT = 'To hand in, upload or share the saved report where your teacher directs. Downloading does not submit it.';
+
   function downloadBlob(blob, filename) {
     const url = root.URL.createObjectURL(blob), link = node('a');
     link.href = url; link.download = filename; link.hidden = true;
@@ -481,7 +483,7 @@
       shell.setAttribute('aria-labelledby', heading.id);
       const tools = node('div', 'osr-tools');
       const print = action('Print or save as PDF', true);
-      const help = node('p', 'osr-screen-help', 'Choose “Save as PDF” in the print window. Close this tab to return to your activity.');
+      const help = node('p', 'osr-screen-help', 'Choose “Save as PDF” in the print window. ' + HAND_IN_REPORT + ' Close this tab to return to your activity.');
       const status = node('p', 'osr-live', cssText ? '' : 'Preparing the print layout…');
       status.setAttribute('role', 'status');
       print.disabled = !cssText;
@@ -543,7 +545,7 @@
         const file = await word(report);
         if (!stillCurrent()) return;
         downloadBlob(file, nameFor(report, config.filename));
-        message(status, 'Word report downloaded.');
+        message(status, 'Word report downloaded to this device. It has not been submitted.');
       } catch (_) {
         message(status, 'Could not download the Word file. You can still print or save as PDF from the preview.', true);
       } finally { button.disabled = false; }
@@ -565,7 +567,7 @@
       const printHelp = config.printInNewTab
         ? 'Opens a separate print tab so your activity stays open. Choose Print or save as PDF there.'
         : 'In the print window, choose “Save as PDF” to download a PDF file.';
-      tools.append(controls, node('p', 'osr-screen-help', printHelp), formats, status);
+      tools.append(controls, node('p', 'osr-screen-help', printHelp + ' ' + HAND_IN_REPORT), formats, status);
       let preview = article(report, titleId), identityEditor;
       // Keep the captured work and timestamps immutable. Corrections affect only this preview
       // and its exports; they do not change the browser identity or the underlying record.

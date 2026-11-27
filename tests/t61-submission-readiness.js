@@ -10,12 +10,12 @@ const T = require('./_h');
       const text = await ready.innerText();
       T.ok(/Your progress: \d+ of \d+ sections with all tracked activities complete/.test(text), lab + ': readiness count visible');
       T.ok(/you can download a report before finishing every activity/i.test(text), lab + ': explicitly non-blocking');
-      T.ok(/Downloading does not submit it/.test(await p.locator('.report-bar').innerText()), lab + ': report download is clearly distinguished from submission');
+      T.ok(/To hand in, upload or share the saved report where your teacher directs\. Downloading does not submit it\./.test(await p.locator('.report-bar').innerText()), lab + ': report download names the separate hand-in action');
       const transferHelp = await p.locator('details.move-work .inner').textContent();
       T.ok(/answers and Dataset ID/.test(transferHelp) && /cannot restore editable lab progress/.test(transferHelp), lab + ': transfer instructions distinguish progress backups from reports');
 
-      T.ok(await p.getByRole('button', { name: 'Download .docx' }).isEnabled(), lab + ': Word download enabled with incomplete work');
-      T.ok(await p.getByRole('button', { name: 'Save as PDF' }).isEnabled(), lab + ': PDF enabled with incomplete work');
+      T.ok(await p.getByRole('button', { name: 'Download Word (.docx)', exact: true }).isEnabled(), lab + ': Word download enabled with incomplete work');
+      T.ok(await p.getByRole('button', { name: 'Print or save as PDF', exact: true }).isEnabled(), lab + ': PDF enabled with incomplete work');
       T.ok(/saved in this browser; it has not been sent to your teacher/i.test(text), lab + ': saved work is not represented as submitted');
       T.ok(/activities remaining/i.test(text), lab + ': unfinished activity counts visible');
       const resume = ready.getByRole('button', { name: 'Continue unfinished work' });
