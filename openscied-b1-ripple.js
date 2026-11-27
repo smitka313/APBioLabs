@@ -250,7 +250,7 @@
     sel.addEventListener('change',()=>{
       round=Number(sel.value);render();document.getElementById(sel.id)?.focus();
     });
-    holder.replaceChildren(label,t,buildEl('p','Compare the same component at the same step. Values are indices, not counts of animals. ↓ and ↑ compare the fewer-visitors run with the usual visit.'));
+    holder.replaceChildren(label,t,buildEl('p','Compare the same component at the same step. These indices come from this companion’s model for OpenSciEd B.1 Lesson 8, not Serengeti field counts. ↓ and ↑ compare the fewer-visitors run with the usual visit.'));
   }
   function render(){
     for(const step of Object.keys(title))$(step).hidden=s.step!==step;
