@@ -86,6 +86,11 @@ async function contract(root) {
         assert.ok(value.includes('Open the activity: ' + url + '\n\n'));
         assert.ok(value.includes('Estimated time: ' + text(timing).textContent));
         assert.ok(value.includes('Turn in: ' + text(turnIn).textContent));
+        if (copyTargets[i] === 'openscied-b4-junco.html') {
+          assert.match(value, /Turn in: A field observation, an aviary prediction, an evidence-based explanation, and one limit or next question[.]/);
+          assert.match(value, /Virtual trials are optional[.]/);
+          assert.doesNotMatch(value, /Turn in: Trial observations/);
+        }
         assert.match(value,/Upload one file to this Schoology assignment[.]$/);
         assert.doesNotMatch(value,/teacher-(?:lab|notes)|aplab:/);
       } else assert.equal(value,url);
