@@ -59,6 +59,9 @@ async function runStudent(browser, url) {
     ok(/prediction first/i.test(await step(page, 'explore').getAttribute('aria-description')), 'Locked Explore gives a readable prerequisite');
     await fit(page, '390 dark Predict'); await shot(page, '390-dark-predict');
 
+    ok(await $(page, 'prediction-unlock').isVisible(), 'Save prediction has its own visible unlock hint');
+    await $(page, 'next-required').press('Enter');
+    ok(await page.evaluate(() => document.activeElement?.id === 'cr-prediction'), 'The next-action shortcut focuses the prediction without advancing');
     await $(page, 'prediction').selectOption('different');
     await page.reload();
     ok(await $(page, 'prediction').inputValue() === 'different' && await $(page, 'income-cards').isHidden() &&
@@ -67,6 +70,8 @@ async function runStudent(browser, url) {
     ok(await marked(page, 'predict') && await $(page, 'income-cards').evaluate(el => el.open) &&
        await step(page, 'explore').isDisabled() && /six exhibits/.test(await note(page, 'step-hint')),
        'Saving the prediction opens the folder but the six exhibits and question still gate Explore');
+    await $(page, 'next-required').press('Enter');
+    ok(await page.evaluate(() => document.activeElement?.id === 'cr-lesson1-diagnoses-tab'), 'The next-action shortcut focuses the first unfinished exhibit');
     for (const [id, text] of Object.entries(notes)) {
       await tap('lesson1-' + id + '-tab');
       if (id !== 'map') {
@@ -91,6 +96,9 @@ async function runStudent(browser, url) {
       await tap('case-close');
     }
     ok(await $(page, 'income-explore').isDisabled() && await step(page, 'explore').isDisabled(), 'Even after six exhibits, Explore requires a saved question');
+    await $(page, 'next-required').press('Enter');
+    ok(await page.evaluate(() => document.activeElement?.id === 'cr-income-question'), 'The shortcut moves to the question after all six exhibits');
+    ok(await $(page, 'question-unlock').isVisible(), 'The disabled Explore button explains how to unlock it');
     await $(page, 'income-question').fill(full);
     await tap('income-explore');
     ok(await page.locator('#explore').isVisible() && (await note(page, 'question-explore-text')) === full, 'Explore opens with the student question visible');
@@ -99,6 +107,7 @@ async function runStudent(browser, url) {
     ok(await page.locator('#cr-table tbody tr').count() === 6, 'Phone table starts with six rows and can show more');
     ok(await step(page, 'explain').isDisabled() && !await marked(page, 'explore') && /pin one comparison/i.test(await note(page, 'step-hint')),
       'Explain requires a pinned comparison, and the next action is explicit');
+    ok(await $(page, 'explain-unlock').isVisible(), 'The local Explain button names the pin prerequisite');
     await fit(page, '390 dark Explore'); await shot(page, '390-dark-explore');
     await $(page, 'view').selectOption('michigan');
     await $(page, 'measure').selectOption('late-rate');
@@ -110,6 +119,7 @@ async function runStudent(browser, url) {
     await $(page, 'search').fill('Kentucky');
     await tap('pin');
     ok(await marked(page, 'explore') && !await step(page, 'explain').isDisabled(), 'Pinning a comparison completes Explore and opens Explain');
+    ok(await $(page, 'explain-unlock').isHidden(), 'The pin prerequisite clears as soon as Explain unlocks');
     await tap('to-explain');
     ok(/Not shown in this scatterplot: New Mexico/.test(await note(page, 'evidence-list')),
       'The pin names the selected state that was outside the filtered scatterplot');

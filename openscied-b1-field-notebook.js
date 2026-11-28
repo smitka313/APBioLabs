@@ -127,15 +127,33 @@
     $('movement-video').hidden=st.id!=='movement';$('people-video').hidden=st.id!=='people';
     showCheck();showExhibit();
   }
+  function questionTarget(){
+    return state.fields.question1?.trim() ? 'question2' : 'question1';
+  }
+  function stationTarget(){
+    return M.stations.find(st=>!state.pins.includes(st.id)&&!state.fields[st.id]?.trim())?.id;
+  }
+  function finishTarget(){
+    return state.fields.claim?.trim() ? 'wonder' : 'claim';
+  }
   function renderProgress(){
     const p=M.progress(state);
+    const firstQuestion=state.fields.question1?.trim(), secondQuestion=state.fields.question2?.trim();
+    const questionHint=p.questions?'Both questions saved.':firstQuestion&&secondQuestion?
+      'Make your two questions different to open the stations.':firstQuestion||secondQuestion?
+      'Write one more question to open the stations.':'Write two different questions to open the stations.';
+    const evidenceHint=p.evidence?'Evidence collected from '+p.used+' stations.':
+      p.used===1?'Pin an exhibit or write a note in one more station.':'Pin an exhibit or write a note in two different stations.';
+    $('go-explore-hint').textContent=questionHint;
+    $('go-explain-hint').textContent=evidenceHint;
+    $('questions-jump').hidden=p.questions;
+    $('evidence-jump').hidden=p.evidence;
     all('[data-step]').forEach(b=>{
       const step=b.dataset.step;
       b.disabled=step==='explore'&&!p.questions||step==='explain'&&!p.evidence;
       b.setAttribute('aria-current',step===state.step?'step':'false');
       b.toggleAttribute('data-nav-step-complete',step==='orient'?p.questions:step==='explore'?p.evidence:p.complete);
-      b.setAttribute('data-nav-step-unlock',!b.disabled?'':!p.questions?'Write two different investigation questions to unlock the stations.':
-        'Collect evidence from two stations before writing your explanation.');
+      b.setAttribute('data-nav-step-unlock',!b.disabled?'':!p.questions?questionHint:evidenceHint);
     });
     all('[data-go]').forEach(b=>{b.disabled=b.dataset.go==='explore'?!p.questions:!p.evidence;});
     const pinned=M.pinList(state,state.station).includes(exhibit);
@@ -154,8 +172,11 @@
     const pinCount=M.stations.reduce((n,st)=>n+M.pinList(state,st.id).length,0);
     $('collected').textContent=p.used+' '+(p.used===1?'station':'stations')+' with evidence (2 needed) · '+pinCount+' '+(pinCount===1?'exhibit':'exhibits')+' pinned';
     $('finish').disabled=!p.ready||p.complete;
+    $('finish-jump').hidden=p.ready||p.complete;
     $('finish-note').textContent=p.complete?'Notebook complete. Use Preview report to share your work.':
-      'Write your explanation and one new question to finish.';
+      p.ready?'Select Finish notebook to mark your work complete.':
+      !state.fields.claim?.trim()&&!state.fields.wonder?.trim()?'Write your explanation and one remaining question to finish.':
+      finishTarget()==='claim'?'Write your explanation to finish.':'Add one question you still have to finish.';
     $('questions').hidden=!p.questions;
     $('questions').textContent=p.questions?'Your questions\n1. '+state.fields.question1+'\n2. '+state.fields.question2:'';
   }
@@ -278,6 +299,9 @@
     say('History entry: '+b.textContent+'.');
   };});
   all('[data-step],[data-go]').forEach(b=>{b.onclick=()=>page(b.dataset.step||b.dataset.go,true);});
+  $('questions-jump').onclick=()=>$(questionTarget()).focus();
+  $('evidence-jump').onclick=()=>$('stations').querySelector('[data-station="'+stationTarget()+'"]')?.focus();
+  $('finish-jump').onclick=()=>$(finishTarget()).focus();
   $('finish').onclick=()=>{
     if(!M.progress(state).ready)return;
     state.finished=true;if(save())say('Field notebook complete.');renderProgress();
