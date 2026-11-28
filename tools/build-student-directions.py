@@ -28,11 +28,12 @@ def shell(title, body):
 <title>''' + escape(title) + ''' · Biology Lab Bench</title>
 <link rel="stylesheet" href="student-directions.css">
 <script src="student-directions.js" defer></script>
+<script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
 <a class="skip" href="#directions">Skip to directions</a>
 ''' + body + '''
-<footer>Biology Lab Bench · Created by Robert Smitka · <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a></footer>
+<footer>Created by Robert Smitka. · Biology Lab Bench · <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a></footer>
 </body>
 </html>
 '''
@@ -76,7 +77,7 @@ for lab, custom in CONTENT.items():
     body += '<p class="screen-only print-help">If printing is blocked, use <strong>Download PDF</strong> to open a ready-to-print copy. Save or print it from your PDF viewer. You can also use your browser’s Print command.</p>\n'
     body += '<header><p class="eyebrow">Lab ' + str(int(lab)) + ' · Printable student directions</p><h1>' + escape(title) + '</h1><p class="question">' + escape(question) + '</p><p class="identity">Name: ____________________ &nbsp; Class/period: __________ &nbsp; Dataset ID: __________</p></header>\n'
     body += '<main id="directions"><aside><h2>How to use this guide</h2><p>Check off each numbered step as you work in the online simulation. Follow your teacher’s assigned sections and repeat counts. This guide explains the workflow; enter your measurements and responses in the lab or your assigned worksheet.</p><p>Use Data for tables and editable calculations, Graph for plots, and Scene for the simulation. Some controls are under More options. Write predictions before running an experiment and scroll below the simulation for response boxes.</p><p class="screen-only">To print, use the button above or your browser’s Print command. Choose Save as PDF to keep a copy.</p></aside>\n'
-    body += '\n'.join(sections_html) + '<section class="notes"><h2>Teacher instructions / notes</h2><div class="rules" aria-label="Space for handwritten notes"></div></section></main>'
+    body += '\n'.join(sections_html) + '<section class="notes"><h2>Teacher instructions / notes</h2><div class="rules" role="region" aria-label="Space for handwritten notes"></div></section></main>'
     (ROOT / page).write_text(shell('Lab ' + str(int(lab)) + ' student directions', body))
     # Links are in static markup, usable before any simulation JavaScript runs.
     for part in ('Overview', 'Submit'):

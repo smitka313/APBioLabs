@@ -159,7 +159,7 @@
   }
   function drawSeason(){
     $('map').dataset.season=state.season;
-    for(const b of all('[data-season]'))b.setAttribute('aria-pressed',String(b.dataset.season===state.season));
+    for(const b of all('.wb-controls [data-season]'))b.setAttribute('aria-pressed',String(b.dataset.season===state.season));
     $('markers').replaceChildren(...marks[state.season].map(([glyph,label,x,y],i)=>{
       const b=el('button',glyph);b.className='wb-marker';b.type='button';b.style.setProperty('--x',x+'%');b.style.setProperty('--y',y+'%');b.setAttribute('aria-label',label);b.onclick=()=>showMark(i);return b;
     }));
@@ -225,7 +225,7 @@
   if(directIce)state.figure=2;
   drawFigure(state.figure);
   for(const b of all('[data-step]'))b.onclick=()=>section(b.dataset.step);
-  for(const b of all('[data-season]'))b.onclick=()=>{state.season=b.dataset.season;picked=-1;drawSeason();save();};
+  for(const b of all('.wb-controls [data-season]'))b.onclick=()=>{state.season=b.dataset.season;picked=-1;drawSeason();save();};
   for(const [key,r] of Object.entries(regions)){
     const b=el('button',r.name);b.type='button';b.className='btn';b.dataset.region=key;b.onclick=()=>{state.region=key;drawRegion();save();};$('region-buttons').append(b);
   }

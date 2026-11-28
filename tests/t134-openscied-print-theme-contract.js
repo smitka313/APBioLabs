@@ -7,7 +7,7 @@ const themeScript=cut("  const THEME_KEY = 'aplab:pref:theme';","  /* ----------
 const printScript=cut('  function forceLight(', '  function lightTokenResolver()');
 function simulate(start,osDark,target,mode){
   const key='aplab:pref:theme', attrs=new Map(), listeners=new Map(), storage=new Map();
-  if(start!=='auto'){attrs.set('data-theme',start);storage.set(key,start);}
+  if(start!=='auto')attrs.set('data-theme',start);storage.set(key,start);  // lab.js stores 'auto' explicitly; a missing key now means the dark default
   const localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};
   const context={Lab:{},PAGE:{id:'openscied-b3-dna-p53'},localStorage,
     document:{documentElement:{getAttribute:k=>attrs.get(k)??null,setAttribute:(k,v)=>attrs.set(k,v),removeAttribute:k=>attrs.delete(k)}},
@@ -20,8 +20,8 @@ function simulate(start,osDark,target,mode){
   if(mode==='print') vm.runInContext('printPrepare()',context);
   else vm.runInContext('restoreTheme=forceLight(true)',context);
   const whileTemporary=attrs.get('data-theme');
-  assert.equal(storage.get(key), start==='auto'?undefined:start,'temporarily using paper colors does not persist a setting');
-  if(target==='auto')storage.delete(key);else storage.set(key,target);
+  assert.equal(storage.get(key), start,'temporarily using paper colors does not persist a setting');
+  storage.set(key,target);
   listeners.get('storage')({key});
   const beforeRestore=attrs.get('data-theme');
   if(mode==='print')vm.runInContext('printRestore()',context);

@@ -1,4 +1,4 @@
-# AP Bio Digital Lab Bench
+# Biology Lab Bench
 
 **Free to use:** [biologylabbench.com](https://biologylabbench.com/) · [Teacher setup](https://biologylabbench.com/getting-started.html) · [Printable student directions](https://biologylabbench.com/student-directions.html)
 

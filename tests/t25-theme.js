@@ -97,7 +97,7 @@ async function themeContext(browser, options = {}) {
     let draws = 0; const draw = () => { draws++; c.ctx.fillStyle = Lab.color('--surface'); c.ctx.fillRect(0, 0, c.w, c.h); };
     c.onresize = draw; draw();
     const px = () => Array.from(c.ctx.getImageData(2, 2, 1, 1).data).join(',');
-    const before = px(); let ev = 0; window.addEventListener('aplab:theme', () => ev++);
+    Lab.theme.set('light'); draw(); const before = px(); let ev = 0; window.addEventListener('aplab:theme', () => ev++);  // start from light: the default is dark
     Lab.theme.set('dark');
     return { before, after: px(), draws, ev, dark: document.documentElement.getAttribute('data-theme') };
   });
