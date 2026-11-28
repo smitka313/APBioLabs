@@ -3,6 +3,31 @@ const assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=r
 const {chromium}=require('playwright'),{ROOT,serve}=require('./_h');
 const M=require('../openscied-b1-ripple-logic.js');
 const out=path.join(ROOT,'artifacts','ripple');
+async function drag(p,ctx,width,source,target){
+      // Center the whole board/pasture. Moving two individual locators into
+      // view can leave the other outside the hit-testable viewport on phones.
+      await source.evaluate(el=>el.closest('.rp-map, .rp-pasture').scrollIntoView({block:'center',behavior:'instant'}));
+      const center=async el=>el.evaluate(node=>{
+        const r=node.getBoundingClientRect(), x=Math.round(r.left+r.width/2),y=Math.round(r.top+r.height/2);
+        return {x,y,hit:node.contains(document.elementFromPoint(x,y))};
+      });
+      const a=await center(source),b=await center(target);
+      assert.ok(a.hit&&b.hit, 'drag endpoints must be visible and hit-testable at '+width+' px');
+      const {x,y}=a,{x:u,y:v}=b;
+      if(width===390){
+        const cdp=await ctx.newCDPSession(p);
+        const fire=(type,touchPoints)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints});
+        try{
+          await fire('touchStart',[{x,y,id:1}]);
+          for(let i=1;i<=8;i++)await fire('touchMove',[{x:Math.round(x+(u-x)*i/8),y:Math.round(y+(v-y)*i/8),id:1}]);
+          await fire('touchEnd',[]);
+        }finally{await cdp.detach();}
+      }else{
+        await p.mouse.move(x,y);await p.mouse.down();
+        await p.mouse.move(u,v,{steps:8});await p.mouse.up();
+      }
+}
+
 (async()=>{
  const site=await serve();let browser;
  try{
@@ -42,37 +67,13 @@ const out=path.join(ROOT,'artifacts','ripple');
     assert.equal(await p.locator('#rp-threads line').count(),0);
     assert.equal(await by('count').textContent(),'0 of 6 connections');
     await activate(by('hint'));await by('clue').waitFor({state:'visible'});assert.match(await by('clue').textContent(),/What do they leave behind/);
-    const drag=async (source,target)=>{
-      // Center the whole board/pasture. Moving two individual locators into
-      // view can leave the other outside the hit-testable viewport on phones.
-      await source.evaluate(el=>el.closest('.rp-map, .rp-pasture').scrollIntoView({block:'center',behavior:'instant'}));
-      const center=async el=>el.evaluate(node=>{
-        const r=node.getBoundingClientRect(), x=Math.round(r.left+r.width/2),y=Math.round(r.top+r.height/2);
-        return {x,y,hit:node.contains(document.elementFromPoint(x,y))};
-      });
-      const a=await center(source),b=await center(target);
-      assert.ok(a.hit&&b.hit, 'drag endpoints must be visible and hit-testable at '+width+' px');
-      const {x,y}=a,{x:u,y:v}=b;
-      if(width===390){
-        const cdp=await ctx.newCDPSession(p);
-        const fire=(type,touchPoints)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints});
-        try{
-          await fire('touchStart',[{x,y,id:1}]);
-          for(let i=1;i<=8;i++)await fire('touchMove',[{x:Math.round(x+(u-x)*i/8),y:Math.round(y+(v-y)*i/8),id:1}]);
-          await fire('touchEnd',[]);
-        }finally{await cdp.detach();}
-      }else{
-        await p.mouse.move(x,y);await p.mouse.down();
-        await p.mouse.move(u,v,{steps:8});await p.mouse.up();
-      }
-    };
     // Invalid direction should explain itself without adding an arrow.
     await activate(node('beetles'));await selected('beetles',true);
     await activate(node('herd'));await selected('beetles',false);
     assert.match(await by('board-note').textContent(),/no direct link/);
     for(const [i,edge] of M.links.entries()){
-      const gesture=i===0?'drag':width===390?'tap':'keyboard';
-      if(i===0)await drag(node(edge.from),node(edge.to));
+      const gesture=phone?'tap':i===0?'drag':'keyboard';
+      if(gesture==='drag')await drag(p,ctx,width,node(edge.from),node(edge.to));
       else{
         await select(node(edge.from));
         await selected(edge.from,true);
@@ -118,10 +119,18 @@ const out=path.join(ROOT,'artifacts','ripple');
     assert.ok(await by('herd-note').textContent().then(text=>text.includes('Select a group')));
     assert.equal(await by('away').locator('button').count(),0);
     if(width!==390)assert.ok(await firstGroup.evaluate(el=>el===document.activeElement));
-    await drag(firstGroup,by('refuge'));
+    if(phone){
+      await select(firstGroup);
+      await by('herd-note').filter({hasText:'Group 1 selected'}).waitFor({state:'visible',timeout:4000});
+      await activate(by('refuge'));
+    }else await drag(p,ctx,width,firstGroup,by('refuge'));
+    await by('away').locator('button').first().waitFor({state:'visible',timeout:4000});
     assert.equal(await by('away').locator('button').count(),1);assert.ok(await by('to-explain').isDisabled());
     await p.reload();assert.equal(await by('away').locator('button').count(),1);
-    await select(by('stay').locator('button').first());await select(by('refuge'));
+    await select(by('stay').locator('button').first());
+    await by('stay').locator('[aria-pressed="true"]').waitFor({state:'visible',timeout:4000});
+    await select(by('refuge'));
+    await by('away').locator('button').nth(1).waitFor({state:'visible',timeout:4000});
     assert.equal(await by('away').locator('button').count(),2);
     assert.equal(await by('stay').locator('button').count(),2);
     if(width===1366){
@@ -150,8 +159,35 @@ const out=path.join(ROOT,'artifacts','ripple');
     const report=p.getByRole('button',{name:'Preview report'});await report.click();
     assert.match(await p.getByRole('dialog').filter({hasText:'Serengeti Ripple Effects'}).textContent(),/Rainfall did not change/);
     assert.deepEqual(errors,[]);
-    console.log('ok: Serengeti Ripple '+width+'px dragged connections and herd, watched and scrubbed matched runs, evidence, reload and report');
+    console.log('ok: Serengeti Ripple '+width+'px completed connections and herd, watched and scrubbed matched runs, evidence, reload and report');
    }finally{await ctx.close();}
+  }
+  // Touch drags via raw CDP use separate contexts from Playwright taps. A drag
+  // should work, but it must not be a prerequisite for any phone task.
+  for(const workbench of ['web','herd']){
+    const ctx=await browser.newContext({viewport:{width:390,height:900},hasTouch:true,reducedMotion:'reduce'});
+    try{
+      if(workbench==='herd')await ctx.addInitScript(answers=>{
+        localStorage.setItem('aplab:openscied:b1-ripple:v1',JSON.stringify({
+          v:1,seed:217,answers,checked:true,choice:'decrease',reason:'Fewer visits leave less dung.',
+          predicted:true,usual:true,moved:[],step:'compare'
+        }));
+      },M.links.map(link=>link.sign));
+      const origin=new URL(site.url).origin;
+      await ctx.route('**/*',r=>new URL(r.request().url()).origin===origin?r.continue():r.abort());
+      const p=await ctx.newPage();
+      await p.goto(site.url+'openscied-b1-ripple.html');
+      if(workbench==='web'){
+        await drag(p,ctx,390,p.locator('[data-node=herd]'),p.locator('[data-node=dung]'));
+        await p.locator('#rp-link-editor').waitFor({state:'visible',timeout:4000});
+        assert.match(await p.locator('#rp-link-prompt').textContent(),/what happens to dung/i);
+      }else{
+        await drag(p,ctx,390,p.locator('#rp-stay button').first(),p.locator('#rp-refuge'));
+        await p.locator('#rp-away button').first().waitFor({state:'visible',timeout:4000});
+        assert.equal(await p.locator('#rp-away button').count(),1);
+      }
+      console.log('ok: 390px isolated native touch drag in '+workbench);
+    }finally{await ctx.close();}
   }
  }finally{await browser?.close();await site.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
