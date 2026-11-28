@@ -294,6 +294,18 @@ async function exercise(browser,base,size) {
     await activate(id(page,'ju-to-cort'),size);
     await id(page,'cort').waitFor({state:'visible'});
     const chart=id(page,'ju-chart');
+    const graphReference=id(page,'ju-cort-reference'), fieldReference=id(page,'ju-field-report-evidence');
+    const isOpen=panel=>panel.evaluate(node=>node.open);
+    const wide=size.width>720;
+    check(await isOpen(graphReference)===wide&&await isOpen(fieldReference)===wide,
+      label+' narrow screens start with two compact evidence disclosures');
+    if(!wide){
+      check(await chart.isHidden()&&await id(page,'ju-claim').isVisible(),label+' writing is available while the long graph is folded');
+      await activate(graphReference.locator(':scope > summary'),size);
+      await fieldReference.locator(':scope > summary').press('Enter');
+      check(await id(page,'ju-evidence').isVisible()&&(await id(page,'ju-saved-observation').innerText()).includes(OBSERVATION),
+        label+' keyboard reveals the earlier field note and published context');
+    }
     await chart.locator('svg').first().waitFor({state:'visible'});
     const guide=page.getByRole('region',{name:'How to read this graph'});
     check(await guide.isVisible() &&

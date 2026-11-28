@@ -392,6 +392,12 @@
   }
   $('dataset-id').textContent=datasetId(state.notebookSeed);
   if(needsId&&!invalid)save();
+  if(window.matchMedia('(max-width: 720px)').matches){
+    $('cort-reference').open=false;
+    $('field-report-evidence').open=false;
+  }
+  // The size of a plot container can change from zero when its disclosure opens.
+  $('cort-reference').addEventListener('toggle',()=>{if($('cort-reference').open&&state.step==='cort')cort();});
   draw();
   if(invalid)notSaved('unreadable');
   const monitorSave=()=>{

@@ -243,9 +243,19 @@ const out=path.join(ROOT,'artifacts','screening');
       assert.match(await id('case-progress').textContent(),/3 of 3/);
       assert.ok(await id('results').locator('table').first().isVisible());
     }
-    await id('to-explain').click();assert.match(await id('evidence').innerText(),/Simulated outcome/);
-    assert.equal(await id('case-evidence').locator(':scope > details').count(),3);
-    assert.match(await id('case-evidence').innerText(),/Hospital plan:.*Redesign:/s);
+    await id('to-explain').click();
+    const evidence=id('recommendation-evidence'), cases=id('case-evidence').locator(':scope > details');
+    assert.equal(await evidence.evaluate(d=>d.open),width>720);
+    if(width<=720){
+      assert.equal(await id('evidence').locator('table').first().isVisible(),false);
+      assert.equal(await id('claim').isVisible(),true);
+      await evidence.locator(':scope > summary').press('Enter');
+      await cases.first().locator(':scope > summary').tap();
+    }
+    assert.match(await id('evidence').innerText(),/Simulated outcome/);
+    assert.equal(await cases.count(),3);
+    assert.match(await cases.first().innerText(),/Hospital plan:.*Redesign:/s);
+    assert.equal(await id('evidence').locator('table').first().isVisible(),true);
     await id('claim').fill('The redesign costs more in exchange for more completed ultrasound visits.');
     await id('limit').fill('Vouchers could help with the price of a trip, but cannot create more time.');
     assert.equal(await id('finish').isEnabled(),true);

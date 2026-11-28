@@ -285,7 +285,9 @@
   <section id="cort" class="ju-stage" aria-labelledby="ju-cort-title" hidden>
     <div class="ju-heading"><div><p class="ju-kicker">03 · LOOK FOR A RELATIONSHIP</p><h2 id="ju-cort-title" tabindex="-1">Does the stress response go with exploration?</h2></div><span class="ju-tag">Evidence C</span></div>
     <div class="ju-layout ju-analysis">
-      <article class="ju-sheet">
+      <details class="ju-cort-reference" id="ju-cort-reference" open>
+        <summary>View CORT graph and data</summary>
+        <div class="ju-sheet">
         <section class="ju-chart-guide" id="ju-chart-guide" aria-labelledby="ju-chart-guide-title">
           <h3 id="ju-chart-guide-title">How to read this graph</h3>
           <p>Each dot shows the <strong>same bird’s results from two separate tests.</strong></p>
@@ -304,13 +306,14 @@
         <div id="ju-chart" class="ju-plot" aria-describedby="ju-cort-populations"></div>
         <p id="ju-cort-status" class="ju-chart-note"></p>
         <details class="ju-data" id="ju-cort-details"><summary>Read the plotted values</summary><p id="ju-cort-pool-note">Rows number the dots in the table. The source does not identify each bird’s population.</p><table id="ju-cort-table"><thead><tr><th scope="col" id="ju-cort-id">Bird (dot)</th><th scope="col" id="ju-cort-x">CORT</th><th scope="col">Exploration score</th><th scope="col">Population of origin</th></tr></thead><tbody></tbody></table></details>
-      </article>
+        </div>
+      </details>
       <aside class="ju-clipboard">
         <p class="ju-kicker">SYNTHESIZE THE EVIDENCE</p><h3>Your field report</h3>
-        <section class="ju-evidence-strip" aria-labelledby="ju-evidence-heading">
-          <h4 id="ju-evidence-heading">Field and aviary evidence</h4>
+        <details class="ju-evidence-strip" id="ju-field-report-evidence" open>
+          <summary>View field and aviary evidence</summary>
           <div id="ju-evidence"></div><p id="ju-saved-observation" hidden></p>
-        </section>
+        </details>
         <label for="ju-claim">How did the aviary results change or support your explanation? Use evidence from at least two parts.</label><textarea id="ju-claim" rows="4" maxlength="1600"></textarea>
         <label for="ju-limits">What can’t these data tell us? Describe a question or comparison you’d investigate next.</label><textarea id="ju-limits" rows="4" maxlength="1600"></textarea>
         <fieldset class="ju-report-identity"><legend>Put your name on the report (optional)</legend>

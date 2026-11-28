@@ -989,9 +989,13 @@
     Object.keys(lines).forEach(id=>{
       const field=document.getElementById(id);if(!field)return;
       let box=document.getElementById('qe-'+id);
-      if(!box){box=document.createElement('div');box.className='q-evidence';box.id='qe-'+id;
-        const h=document.createElement('p');h.className='q-evidence-title';h.textContent='Your data';box.appendChild(h);
-        const list=document.createElement('ul');box.appendChild(list);field.parentNode.insertBefore(box,field);}
+      if(!box){box=document.createElement('details');box.className='q-evidence';box.id='qe-'+id;
+        // Use the same question-specific data at every size; don't move or clone results.
+        box.open=!matchMedia('(max-width: 850px)').matches;
+        const h=document.createElement('summary');h.className='q-evidence-title';h.textContent='View my data';
+        const q=field.parentNode.querySelector('.question-number')?.textContent;
+        if(q)h.setAttribute('aria-label','View my data for question '+q);
+        const list=document.createElement('ul');box.append(h,list);field.parentNode.insertBefore(box,field);}
       const list=box.querySelector('ul');list.replaceChildren(...lines[id].map(t=>{const li=document.createElement('li');li.textContent=t;return li;}));
     });
   }
