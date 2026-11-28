@@ -18,12 +18,17 @@ const out=path.join(ROOT,'artifacts','ripple');
     assert.ok(await by('to-compare').isDisabled());
     await shot('build');
     const node=k=>p.locator('[data-node="'+k+'"]');
-    const select=async el=>width===390?el.tap():el.press('Space');
-    await select(node('herd'));
+    const phone=width===390;
+    const activate=el=>phone?el.tap():el.click();
+    const select=el=>phone?el.tap():el.press('Space');
+    const selected=(key,pressed)=>p.locator('[data-node="'+key+'"][aria-pressed="'+pressed+'"]')
+      .waitFor({state:'attached',timeout:4000});
+    await select(node('herd'));await selected('herd',true);
     assert.equal(await node('herd').getAttribute('aria-pressed'),'true');
     assert.match(await by('board-note').textContent(),/Now select what/);
     if(width===390)await select(node('herd'));
     else await node('dung').press('Escape');
+    await selected('herd',false);
     assert.equal(await node('herd').getAttribute('aria-pressed'),'false');
     assert.match(await by('board-note').textContent(),/Arrow canceled/);
     assert.equal(await by('count').textContent(),'0 of 6 connections');
@@ -36,7 +41,7 @@ const out=path.join(ROOT,'artifacts','ripple');
     }
     assert.equal(await p.locator('#rp-threads line').count(),0);
     assert.equal(await by('count').textContent(),'0 of 6 connections');
-    await by('hint').click();assert.match(await by('clue').textContent(),/What do they leave behind/);
+    await activate(by('hint'));await by('clue').waitFor({state:'visible'});assert.match(await by('clue').textContent(),/What do they leave behind/);
     const drag=async (source,target)=>{
       // Center the whole board/pasture. Moving two individual locators into
       // view can leave the other outside the hit-testable viewport on phones.
@@ -62,26 +67,33 @@ const out=path.join(ROOT,'artifacts','ripple');
       }
     };
     // Invalid direction should explain itself without adding an arrow.
-    await node('beetles').click();await node('herd').click();
+    await activate(node('beetles'));await selected('beetles',true);
+    await activate(node('herd'));await selected('beetles',false);
     assert.match(await by('board-note').textContent(),/no direct link/);
     for(const [i,edge] of M.links.entries()){
       const gesture=i===0?'drag':width===390?'tap':'keyboard';
       if(i===0)await drag(node(edge.from),node(edge.to));
       else{
         await select(node(edge.from));
+        await selected(edge.from,true);
         assert.equal(await node(edge.from).getAttribute('aria-pressed'),'true',
           width+' px '+gesture+' selected '+edge.from+' before '+edge.to);
         await select(node(edge.to));
       }
-      assert.ok(await by('link-editor').isVisible(),
-        width+' px '+gesture+' opens '+edge.from+' → '+edge.to+'; feedback: '+await by('board-note').textContent());
-      if(i===0){await by('less').click();assert.match(await by('board-note').textContent(),/Try the other/);}
-      await by(edge.sign===1?'more':'less').click();
+      await by('link-editor').waitFor({state:'visible',timeout:4000}).catch(async error=>{
+        throw new Error(width+' px '+gesture+' did not open '+edge.from+' → '+edge.to+'; feedback: '+await by('board-note').textContent(),{cause:error});
+      });
+      if(i===0){
+        await activate(by('less'));
+        await by('board-note').filter({hasText:'Try the other'}).waitFor({state:'visible',timeout:4000});
+      }
+      await activate(by(edge.sign===1?'more':'less'));
+      await by('link-editor').waitFor({state:'hidden',timeout:4000});
       assert.equal(await by('count').textContent(),(i+1)+' of 6 connections');
       assert.ok(await by('clue').isHidden());
       if(i===4){
         assert.equal(await by('next').textContent(),'One more connection to make!');
-        await by('hint').click();assert.match(await by('clue').textContent(),/having more prey/);
+        await activate(by('hint'));await by('clue').waitFor({state:'visible'});assert.match(await by('clue').textContent(),/having more prey/);
         await p.reload();assert.equal(await by('next').textContent(),'One more connection to make!');
       }
     }
@@ -91,14 +103,17 @@ const out=path.join(ROOT,'artifacts','ripple');
     await p.locator('.rp-why-web summary').click();
     assert.match(await by('web').innerText(),/releases nutrients that roots can take up/);
     assert.match(await by('web').innerText(),/feed on dung and lay eggs in it/);
-    await by('to-compare').click();
+    await activate(by('to-compare'));
     await by('choice').selectOption('decrease');await by('reason').fill('Dung is a resource for beetles.');
     assert.ok(await by('experiment').isHidden());
-    await by('form').getByRole('button',{name:'Save prediction'}).click();
+    await activate(by('form').getByRole('button',{name:'Save prediction'}));
+    await by('experiment').waitFor({state:'visible'});
     const firstGroup=by('stay').locator('button').first();
     await select(firstGroup);
+    await by('herd-note').filter({hasText:'Group 1 selected'}).waitFor({state:'visible',timeout:4000});
     assert.match(await by('herd-note').textContent(),/Group 1 selected.*Neighboring patch/);
     if(width===390)await select(firstGroup);else await by('refuge').press('Escape');
+    await by('herd-note').filter({hasText:'Select a group'}).waitFor({state:'visible',timeout:4000});
     assert.equal(await firstGroup.getAttribute('aria-pressed'),'false');
     assert.ok(await by('herd-note').textContent().then(text=>text.includes('Select a group')));
     assert.equal(await by('away').locator('button').count(),0);
