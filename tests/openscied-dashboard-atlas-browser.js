@@ -4,37 +4,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const T = require('./_h');
 
-const originals = {
-  "b1-field-notebook": ["openscied-atlas-b1-field-notebook-preview.svg",960,600],
-  "b5-wapusk": [
-    "openscied-wapusk-card.svg",
-    960,
-    600
-  ],
-  "b5-thermoregulation": [
-    "openscied-bear-thermoregulation.svg",
-    1000,
-    480
-  ],
-  "b5-ancestry": [
-    "openscied-bear-ancestry.svg",
-    1000,
-    480
-  ]
-};
-const refreshed = {
-  "b4-hawksbeard": "openscied-activity-b4-hawksbeard.webp",
-  "b3-screening": "openscied-activity-b3-screening.webp",
-  "b1-serengeti": "openscied-activity-b1-serengeti.webp",
-  "b1-carrying-capacity": "openscied-activity-b1-carrying-capacity.webp",
-  "b3-cancer-rates": "openscied-activity-b3-cancer-rates.webp",
-  "b4-rat-generations": "openscied-activity-b4-rat-generations.webp",
-  "b5-hybrid": "openscied-activity-b5-hybrid.webp",
-  "b4-wildlife-corridor": "openscied-activity-b4-wildlife-corridor.webp",
-  "b5-thermoregulation": "openscied-activity-b5-thermoregulation.webp",
-  "b5-wapusk": "openscied-activity-b5-wapusk.webp",
-  "b1-field-notebook": "openscied-atlas-b1-field-notebook-preview.webp"
-};
+const previewFile = key => key === 'b1-field-notebook'
+  ? 'openscied-atlas-b1-field-notebook-preview.webp'
+  : 'openscied-activity-'+key+'.webp';
 const keys = [
   'b1-field-notebook','b1-migration','b1-carrying-capacity','b1-serengeti','b1-ripple',
   'b2-burn-lab','b2-fires','b2-peat-bog-lab','b2-carbon-journey',
@@ -77,18 +49,11 @@ const keys = [
                 &&art.left>=card.left-1&&art.right<=card.right+1&&art.width>100,
               src:img.getAttribute('src')};
           });
-          const [filename,nw,nh]=refreshed[key] ? [refreshed[key],960,600] : (originals[key]??['openscied-atlas-'+key+'.svg',960,600]);
+          const filename=previewFile(key), nw=960, nh=600;
           const {nw:decodedWidth,nh:decodedHeight,...layout}=report;
           assert.deepEqual(layout,{width:String(nw),height:String(nh),loaded:true,alt:'',decorative:'true',
             fits:true,src:'assets/'+filename},width+'px '+key);
-          if (key==='b5-ancestry') {
-            // This original SVG has a viewBox but no inherent pixel size. Chromium
-            // reports a fallback natural size (300 × 144), not the viewBox dimensions.
-            assert.ok(decodedWidth>0&&decodedHeight>0&&Math.abs(decodedWidth/decodedHeight-nw/nh)<.01,
-              width+'px '+key+' preserves the original SVG aspect ratio');
-          } else {
-            assert.deepEqual([decodedWidth,decodedHeight],[nw,nh],width+'px '+key+' intrinsic size');
-          }
+          assert.deepEqual([decodedWidth,decodedHeight],[nw,nh],width+'px '+key+' intrinsic size');
         }
         if (process.env.OPENSCIED_DASHBOARD_SCREENSHOTS) {
           fs.mkdirSync(process.env.OPENSCIED_DASHBOARD_SCREENSHOTS,{recursive:true});

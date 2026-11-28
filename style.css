@@ -1377,9 +1377,8 @@ html[data-openscied] nav:is(
   filter: var(--bench-ap-preview-filter, none);
 }
 
-/* The AP illustrations range from a white graph to a dark microscope field.
-   In Dark, tame the paper-like scenes without dimming an already-dark image
-   or lowering contrast across the entire collection. */
+/* In Dark, keep brightly lit specimens comfortable while preserving the
+   details in the darker illustrations. */
 :root[data-theme="dark"] #labs .cards > .card > img.thumb {
   --bench-ap-preview-filter: brightness(var(--bench-preview-light, .81));
 }
@@ -1388,11 +1387,11 @@ html[data-openscied] nav:is(
     --bench-ap-preview-filter: brightness(var(--bench-preview-light, .81));
   }
 }
-#labs .cards > .card > img.thumb[src$="/lab02.webp"] { --bench-preview-light: .71; }
 #labs .cards > .card > img.thumb:is([src$="/lab01.webp"], [src$="/lab08.webp"], [src$="/lab10.webp"]) {
   --bench-preview-light: .91;
 }
-#labs .cards > .card > img.thumb:is([src$="/lab07.webp"], [src$="/lab09.webp"]) { --bench-preview-light: 1; }
+#labs .cards > .card > img.thumb[src$="/lab02.webp"] { --bench-preview-light: .91; }
+#labs .cards > .card > img.thumb[src$="/lab09.webp"] { --bench-preview-light: 1; }
 
 .dashboard-shell .dashboard-activity .dashboard-preview {
   aspect-ratio: 8 / 5;
@@ -1402,16 +1401,12 @@ html[data-openscied] nav:is(
   border-radius: 7px;
   box-shadow: 0 1px 2px #0a16251a;
 }
-/* Two original Unit 5 illustrations are wider than the 8:5 frames.
-   Keep their full art, not just the center crop; use a quiet, matching mat. */
-.dashboard-shell .dashboard-activity .dashboard-preview:is([href="openscied-b5-thermoregulation.html"], [href="openscied-b5-ancestry.html"]) > img {
+/* Keep the Thermoregulation preview centered on a matching background. */
+.dashboard-shell .dashboard-activity .dashboard-preview[href="openscied-b5-thermoregulation.html"] > img {
   object-fit: contain;
 }
 .dashboard-shell .dashboard-activity .dashboard-preview[href="openscied-b5-thermoregulation.html"] {
   background: linear-gradient(#112635, #142a39);
-}
-.dashboard-shell .dashboard-activity .dashboard-preview[href="openscied-b5-ancestry.html"] {
-  background: linear-gradient(110deg, #112d3a, #24564f);
 }
 @media print {
   #labs .cards > .card > img.thumb { filter: none; }

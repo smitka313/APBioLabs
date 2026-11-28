@@ -301,7 +301,7 @@ test('Unit 4 shows Hawksbeard, Rat Generations, then Junco, with a real curricul
   assert.match(unit, /id="hawksbeard-open"[^>]*href="openscied-b4-hawksbeard\.html"/);
   assert.match(unit, /href="openscied-b4-rat-generations\.html"[^>]*><img src="assets\/openscied-activity-b4-rat-generations\.webp" width="960" height="600"/);
   assert.ok(unit.indexOf('id="hawksbeard-open"') < unit.indexOf('id="rat-generations-open"'));
-  assert.match(unit, /href="openscied-b4-junco\.html"[^>]*><img src="assets\/openscied-atlas-b4-junco\.svg" width="960" height="600"/);
+  assert.match(unit, /href="openscied-b4-junco\.html"[^>]*><img src="assets\/openscied-activity-b4-junco\.webp" width="960" height="600"/);
   assert.ok(unit.indexOf('id="rat-generations-open"') < unit.indexOf('id="junco-open"'));
   assert.match(unit, /href="openscied-b4-wildlife-corridor\.html"[^>]*><img src="assets\/openscied-activity-b4-wildlife-corridor\.webp" width="960" height="600"/);
   assert.match(unit, /id="wildlife-corridor-open"[^>]*href="openscied-b4-wildlife-corridor\.html"/);

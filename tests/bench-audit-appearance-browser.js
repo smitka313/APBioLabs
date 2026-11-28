@@ -64,9 +64,9 @@ const screenshot=process.env.BENCH_AUDIT_SCREENSHOTS;
      if(page==='ap-biology.html'){
       const filter=async lab=>p.locator('.card .thumb[src$="/'+lab+'.webp"]').evaluate(e=>getComputedStyle(e).filter);
       if(theme==='dark'){
-        assert.match(await filter('lab02'),/^brightness\(0\.71\)$/,'bright graph art is selectively dimmed');
+        assert.match(await filter('lab02'),/^brightness\(0\.91\)$/,'the darker allele-bead scene keeps its detail');
         assert.match(await filter('lab01'),/^brightness\(0\.91\)$/,'seedling detail keeps a lighter touch');
-        assert.match(await filter('lab07'),/^brightness\(1\)$/,'already dark microscope art is not dimmed');
+        assert.match(await filter('lab07'),/^brightness\(0\.81\)$/,'the brighter microscope slide is gently dimmed');
       }else{
         assert.equal(await filter('lab02'),'none');
         assert.equal(await filter('lab07'),'none');

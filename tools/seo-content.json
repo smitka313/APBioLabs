@@ -23,7 +23,7 @@
         {
           "id": 2,
           "minutes": 130,
-          "alt": "Simulation scene: a gene-pool jar of allele beads beside a graph of allele frequency over generations",
+          "alt": "Illustration: A glass jar of green and amber allele beads beside a sketch of allele frequencies",
           "title": "Mathematical Modeling: Hardy-Weinberg",
           "q": "How can mathematical models be used to investigate the relationship between allele frequencies in populations of organisms and evolutionary change?",
           "sim": "Spreadsheet-style model with selection, mutation, migration and drift.",
@@ -112,7 +112,7 @@
         {
           "id": 7,
           "minutes": 185,
-          "alt": "Simulation scene: stained onion root-tip cells under the microscope",
+          "alt": "Illustration: Onion root-tip cells showing several stages of mitosis",
           "title": "Cell Division: Mitosis and Meiosis",
           "q": "How do eukaryotic cells divide to produce genetically identical cells or to produce gametes with half the normal DNA?",
           "sim": "Onion root tip counts, chi-square, meiosis models, and Sordaria crossing over.",
@@ -194,7 +194,7 @@
         {
           "id": 12,
           "minutes": 130,
-          "alt": "Simulation scene: fruit flies climbing in an upright vial",
+          "alt": "Illustration: Fruit flies in a clear two-ended choice chamber",
           "title": "Fruit Fly Behavior",
           "q": "What environmental factors trigger a fruit fly response?",
           "sim": "A two-chamber choice test with live fly movement and chi-square.",
@@ -209,7 +209,7 @@
         {
           "id": 13,
           "minutes": 135,
-          "alt": "Simulation scene: a rack of pH tubes turning brown as the enzyme works",
+          "alt": "Illustration: A cut turnip beside test tubes with different shades of amber-brown liquid",
           "title": "Enzyme Activity",
           "q": "How do abiotic or biotic factors influence the rates of enzymatic reactions?",
           "sim": "Turnip peroxidase and guaiacol color changes across pH, temperature and concentration.",
