@@ -43,7 +43,7 @@
   padding-block-end:.45rem;
 }
 .dw-top a { min-height:34px; display:inline-flex; align-items:center; font-size:.91rem; font-weight:700; }
-.dw-top .theme-opt { min-height:32px; }
+.dw-top .theme-opt { min-height:44px; }
 .dw-hero {
   display:grid;
   grid-template-columns:minmax(0,1fr) minmax(205px,.88fr);

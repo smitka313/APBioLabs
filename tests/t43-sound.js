@@ -75,7 +75,7 @@ const get = p => p.evaluate(k => localStorage.getItem(k), KEY);
   T.ok(await p.locator('.sound-toggle').getAttribute('aria-pressed') === 'true', 'lab 5 shows it on');
   // Start over (this lab)
   await p.evaluate(() => Lab.pages.go('submit')); await p.waitForTimeout(300);
-  await p.locator('.responses-bar .btn-startover').click();
+  await p.locator('.start-over-section .btn-startover').click();
   await p.locator('.dm-card input[type=checkbox]').check();
   let nav = p.waitForNavigation({ waitUntil: 'load' }).catch(() => {});
   await p.locator('.dm-confirm').click(); await nav; await p.waitForTimeout(900);

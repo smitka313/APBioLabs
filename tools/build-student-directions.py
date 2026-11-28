@@ -24,6 +24,7 @@ def shell(title, body):
 <head>
 <meta charset="utf-8">
 <script src="domain-redirect.js"></script>
+<script>try{const t=localStorage.getItem('aplab:pref:theme'),r=document.documentElement;if(t==='light'||t==='dark')r.dataset.theme=t;else if(t==='auto')r.removeAttribute('data-theme');else r.dataset.theme='dark'}catch(_){document.documentElement.dataset.theme='dark'}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>''' + escape(title) + ''' · Biology Lab Bench</title>
 <link rel="stylesheet" href="student-directions.css">

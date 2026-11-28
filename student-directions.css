@@ -1,29 +1,34 @@
-:root { color-scheme: light; font: 17px/1.5 system-ui, sans-serif; color: #17271e; background: #f3f6f4; }
+:root { color-scheme: light; --ink: #17271e; --paper: #f3f6f4; --card: #ffffff; --accent: #07573f; --on-accent: #ffffff; --link: #07573f; --line: #cad7cf; --rule: #aab5ae; --focus: #07573f; font: 17px/1.5 system-ui, sans-serif; color: var(--ink); background: var(--paper); }
+/* The saved theme (aplab:pref:theme) is applied by a head script as data-theme. Auto (no data-theme) follows the computer. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --ink: #e8f1ec; --paper: #0f1915; --card: #18231e; --accent: #8fd6b8; --on-accent: #0b1a13; --link: #8fd6b8; --line: #33473d; --rule: #5c6e64; --focus: #8fd6b8; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --ink: #e8f1ec; --paper: #0f1915; --card: #18231e; --accent: #8fd6b8; --on-accent: #0b1a13; --link: #8fd6b8; --line: #33473d; --rule: #5c6e64; --focus: #8fd6b8; color-scheme: dark; }
 * { box-sizing: border-box; }
 body { max-width: 860px; margin: auto; padding: 24px; }
-a { color: #07573f; text-underline-offset: .15em; }
-a:focus-visible, button:focus-visible { outline: 3px solid #07573f; outline-offset: 4px; }
+a { color: var(--link); text-underline-offset: .15em; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
 .screen-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin-bottom: 24px; }
 .screen-actions a, button { min-height: 44px; display: inline-flex; align-items: center; }
-button { font: inherit; padding: 9px 16px; border: 1px solid #07573f; border-radius: 6px; background: #07573f; color: white; cursor: pointer; }
+button { font: inherit; padding: 9px 16px; border: 1px solid var(--accent); border-radius: 6px; background: var(--accent); color: var(--on-accent); cursor: pointer; }
 [hidden] { display: none !important; }
-header, main { background: white; padding: 24px; }
-header { border-bottom: 2px solid #17271e; }
+header, main { background: var(--card); padding: 24px; }
+header { border-bottom: 2px solid var(--ink); }
 h1 { font-size: 1.9rem; line-height: 1.15; margin: .3em 0 .6em; overflow-wrap: anywhere; }
 h2 { font-size: 1.2rem; margin: 0 0 .4em; }
 p { margin: .5em 0; }
 .eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: .8rem; font-weight: 700; }
 .identity { margin-top: 24px; line-height: 2; }
-aside { padding: 16px; background: #f3f6f4; border: 1px solid #cad7cf; }
+aside { padding: 16px; background: var(--paper); border: 1px solid var(--line); }
 section { padding-top: 24px; }
 .open-part { margin-top: 0; font-size: .9rem; }
 .steps { margin: .5em 0 0; padding-left: 2.8em; }
 .steps li { padding-left: .3em; margin-bottom: .7em; position: relative; }
 .steps li::before { content: ''; position: absolute; left: -2.8em; top: .38em; width: .65em; height: .65em; border: 1px solid currentColor; }
-.rules { height: 80px; background: repeating-linear-gradient(white, white 25px, #aab5ae 26px, white 27px); }
+.rules { height: 80px; background: repeating-linear-gradient(var(--card), var(--card) 25px, var(--rule) 26px, var(--card) 27px); }
 footer { font-size: .8rem; padding: 18px 0; }
 .catalog li { margin-bottom: 16px; }
-.pdf-download { padding: 9px 16px; border: 1px solid #07573f; border-radius: 6px; background: white; font-weight: 700; text-decoration: none; }
+.pdf-download { padding: 9px 16px; border: 1px solid var(--accent); border-radius: 6px; background: var(--card); color: var(--ink); font-weight: 700; text-decoration: none; }
 .print-help { margin: -8px 0 20px; font-size: .9rem; }
 .catalog a { display: inline-flex; align-items: center; min-height: 44px; }
 .catalog-pdf { font-size: .85rem; margin-left: 12px; white-space: nowrap; }
@@ -37,17 +42,18 @@ footer { font-size: .8rem; padding: 18px 0; }
   .catalog-pdf { margin-left: 0; }
 }
 .skip { position: absolute; top: -100px; }
-.skip:focus { top: 8px; background: white; padding: 8px; }
+.skip:focus { top: 8px; background: var(--card); color: var(--ink); padding: 8px; }
 @page { size: auto; margin: 15mm; }
 @media print {
-  :root { font: 11pt/1.4 Arial, sans-serif; color: #000; background: white; }
+  /* Printed guides are always black on white, whatever the screen theme. */
+  :root, :root[data-theme="dark"], :root[data-theme="light"], :root:not([data-theme="light"]) { --ink: #000; --paper: #fff; --card: #fff; --accent: #000; --on-accent: #000; --link: #000; --line: #888; --rule: #888; --focus: #000; color-scheme: light; font: 11pt/1.4 Arial, sans-serif; color: #000; background: #fff; }
   body { padding: 0; max-width: none; }
   header, main { padding: 0; }
   header { padding-bottom: 10pt; }
   h1 { font-size: 19pt; }
   h2 { font-size: 13pt; break-after: avoid; }
   section { padding-top: 14pt; }
-  aside { background: white; padding: 8pt; margin-top: 12pt; }
+  aside { background: #fff; padding: 8pt; margin-top: 12pt; }
   .screen-actions, .screen-only, .skip, .open-part { display: none !important; }
   .identity { margin-top: 10pt; }
   .steps li, aside, .notes { break-inside: avoid; }

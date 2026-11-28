@@ -1028,7 +1028,7 @@ body.has-dm { overflow: hidden; }
   .crumbs a, .project-link { display: inline-flex; align-items: center; }
   select, input[type="text"], input[type="number"], input[type="search"], input[type="email"], input:not([type]) { min-height: 40px; box-sizing: border-box; }
   input[type="range"] { min-height: 40px; }
-  details > summary, details.more > summary, details.disclose > summary, details.disclose--sm > summary { min-height: 40px; box-sizing: border-box; padding-block: 10px; }
+  details > summary, details.more > summary, details.disclose > summary, details.disclose--sm > summary { min-height: 44px; box-sizing: border-box; padding-block: 10px; }
   label.check, .choice, .dm-check-label { min-height: 40px; display: flex; align-items: center; }
   .step-nav ol { padding-block: 6px; }
   .dm-save .transfer-btn { min-height: 40px; }
@@ -1180,7 +1180,7 @@ html[data-openscied] nav:is(
   [aria-label="Investigation steps"], [aria-label="Investigation sections"],
   [aria-label="Workshop steps"]
 ) button:not(.nav-arrow) {
-  min-block-size: 42px;
+  min-block-size: 44px;
   font-weight: 700;
 }
 html[data-openscied] nav:is(
@@ -1233,7 +1233,7 @@ html[data-openscied] nav:is(
   /* A tall, wrapping sticky bar can mask controls below it. Keep long
      lesson rails compact; their existing targets already meet 24px. */
   html[data-openscied] nav.step-nav[aria-label="Activity steps"]:not(:has(li:nth-child(10))) li > a[href^="#"] {
-    min-block-size: 42px;
+    min-block-size: 44px;
     font-weight: 700;
   }
   html[data-openscied] nav.step-nav[aria-label="Activity steps"] .n { flex-shrink: 0; }
@@ -1292,7 +1292,7 @@ html[data-openscied] nav:is(
   .bench-activity-home {
     inline-size: clamp(128px, 36vw, 162px);
     flex: 0 1 auto;
-    min-block-size: 42px;
+    min-block-size: 44px;
     display: grid;
     align-items: center;
   }
@@ -1312,7 +1312,7 @@ html[data-openscied] nav:is(
   .bench-activity-bar .bench-activity-course {
     display: inline-flex;
     align-items: center;
-    min-block-size: 42px;
+    min-block-size: 44px;
     padding-inline: .4rem;
     font: 700 clamp(.78rem, 2.2vw, .875rem)/1.2 var(--f-body);
     color: var(--muted);
@@ -1416,4 +1416,32 @@ html[data-openscied] nav:is(
 @media print {
   #labs .cards > .card > img.thumb { filter: none; }
   .dashboard-shell .dashboard-activity .dashboard-preview { box-shadow: none; }
+}
+
+/* Submit step: the numbered Hand in box, the secondary progress note, and the separate Start over section. */
+.hand-in { border: 2px solid var(--accent); border-radius: var(--r); background: var(--surface); padding: 14px 18px; margin: 0 0 16px; }
+.hand-in h3 { margin: 0 0 .3em; font-size: 1.1rem; }
+.hand-in ol { margin: 0; padding-left: 1.5em; }
+.hand-in li { margin: .3em 0; }
+.submit-progress { font-size: .9rem; margin-top: 12px; }
+.submit-progress p { margin: .3em 0; }
+.start-over-section { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 14px; }
+.start-over-section h3 { margin: 0 0 .3em; font-size: 1rem; }
+
+/* ---------- Touch targets: 44 px minimum on phones and touch screens (tests/t117-usability-targets.js) ----------
+   Covers controls, navigation and card-style links. Inline links inside running prose are not changed. */
+@media (max-width: 760px), (pointer: coarse) {
+  .theme-opt, .theme-switch button, .bench-portal-theme button, [data-bench-theme], .sound-toggle,
+  .linkbtn, .link-btn, .si-show, .project-link, .nav-arrow, .parts-toggle, .pause-btn, .pager-all, .pager-pause,
+  .btn, .btn--sm, a.btn, .dashboard-open, .dashboard-back, .step-nav a, .sim-tab, .tab,
+  .crumbs a, .bench-logo, .bench-activity-home, .bench-activity-course, .bench-guide, .bench-cross-route,
+  .bench-brandbar a, .bench-welcome-brand a, .welcome-for-teachers,
+  nav a, header a, footer a, .site-footer a, summary, main li > a, td.parts a, th[scope="row"] a, .eg a, label:has(> input[type="checkbox"]), label.check {
+    min-height: 44px; box-sizing: border-box;
+  }
+  .theme-opt, .theme-switch button, .bench-portal-theme button, [data-bench-theme] { display: inline-flex; align-items: center; justify-content: center; }
+  nav a, header a, footer a, .site-footer a, main li > a, td.parts a, th[scope="row"] a, .eg a, .dashboard-back, .bench-logo, .bench-guide, .crumbs a, summary,
+  label:has(> input[type="checkbox"]), label.check { display: inline-flex; align-items: center; }
+  label:has(> input[type="checkbox"]), label.check { padding-block: 6px; }
+  td.parts a, .eg a { padding-inline: 6px; }
 }

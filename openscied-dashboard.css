@@ -68,7 +68,7 @@
   display: grid;
   grid-template-columns: repeat(3,minmax(0,1fr));
 }
-.dashboard-theme-controls .theme-opt { min-width: 0; min-height: 0; padding-inline: .2em; }
+.dashboard-theme-controls .theme-opt { min-width: 0; min-height: 44px; padding-inline: .2em; }
 .dashboard-panorama {
   position: relative;
   width: min(1088px, calc(100% - 32px));
@@ -266,7 +266,7 @@
   padding-block-start: .3rem;
   overflow-wrap: anywhere;
 }
-.dashboard-activity :is(button, .dashboard-open) { min-height: 36px; }
+.dashboard-activity :is(button, .dashboard-open) { min-height: 44px; }
 .dashboard-activity > .dashboard-open {
   justify-self: start;
   margin: 0 .8rem .74rem;
