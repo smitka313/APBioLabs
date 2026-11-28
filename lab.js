@@ -1132,8 +1132,8 @@
       return;
     }
     const line = h('p', { class: 'id-line' },
-      h('span', null, 'Signed in as ', h('strong', null, idn.name), idn.period ? ' · ' + periodText(idn.period) : ''));
-    if (IS_LAB) line.append(h('span', null, ' · Dataset ID ', h('code', { class: 'ds-id', title: 'Dataset number ' + SEED.datasetNumber }, SEED.datasetId)));
+      h('span', null, 'Name and period: ', h('strong', null, idn.name), idn.period ? ' · ' + periodText(idn.period) : ''));
+    if (IS_LAB) line.append(h('span', null, ' · Your data ID ', h('code', { class: 'ds-id', title: 'Dataset number ' + SEED.datasetNumber }, SEED.datasetId)));
     line.append(' · ', h('button', { class: 'linkbtn id-change', type: 'button',
       'aria-label': box._sharedDevice ? 'Edit my name or class period' : 'Change name or class period',
       onclick: () => { renderIdentity(box, 'form'); focusIn(box, 'input'); } }, box._sharedDevice ? 'Edit my name or class period' : 'change'));
@@ -1148,7 +1148,7 @@
     }
     if (IS_LAB) line.append(' · ', h('button', { class: 'linkbtn id-help', type: 'button', title: 'Show the quick tour of this page again', 'aria-label': 'Help: show the quick tour again', onclick: e => { if (Lab.tour) Lab.tour.start({ opener: e.currentTarget, force: true }); } }, 'Help'));
     line.append(' · ', h('button', { class: 'linkbtn id-signout', type: 'button', title: 'Remove this student and all saved work from this computer', 'aria-haspopup': 'dialog',
-      onclick: e => signOutDialog(e.currentTarget, {switchStudent:box._sharedDevice, downloadOpenSciEd:box._downloadOpenSciEd}) }, box._sharedDevice ? 'Switch student' : 'Sign out'));
+      onclick: e => signOutDialog(e.currentTarget, {switchStudent:box._sharedDevice, downloadOpenSciEd:box._downloadOpenSciEd}) }, 'Switch student'));
     if (IS_LAB) { const t = savedClock(); line.append(h('span', { class: 'id-saved', 'aria-hidden': 'true', hidden: !t, 'data-state': SAVE.ok === false ? 'bad' : 'ok' }, t)); }
     box.append(line); if (confirmRow) box.append(confirmRow);
     const own = IS_LAB ? ownerNoticeKind() : null;
@@ -1739,8 +1739,13 @@
       try { await navigator.clipboard.writeText(text); msg.textContent = 'Copied. Paste it into your document or LMS.'; fallback.hidden = true; Lab.toast('Copied all your responses', { type: 'ok', announce: false }); }
       catch (e) { fallback.value = text; fallback.hidden = false; fallback.focus(); fallback.select(); msg.textContent = 'Copy is blocked here. Your text is selected below: press Ctrl+C (or ⌘C).'; }
     } }, 'Copy all my responses');
+    // Start over is kept apart from the report and copy buttons (its own section, same confirmation dialog).
     const clearBtn = h('button', { class: 'btn btn--ghost btn--sm btn-startover', type: 'button', 'aria-haspopup': 'dialog', onclick: () => startOverLabDialog(clearBtn) }, 'Start over');
-    const supplemental = h('div', { class: 'responses-bar' }, msg, copyBtn, clearBtn);
+    const startOver = h('section', { class: 'start-over-section stack', 'aria-label': 'Start over' },
+      h('h3', null, 'Start over'),
+      h('p', { class: 'small muted' }, 'This erases this lab’s answers, data and results from this computer. Download your report first. It can’t be undone.'),
+      clearBtn);
+    const supplemental = h('div', { class: 'responses-bar' }, msg, copyBtn);
     if (PAGE.kind !== 'teacher' && PAGE.kind !== 'info') {
       supplemental.append(h('button', { class: 'btn btn--ghost', type: 'button', onclick: printWorksheet }, 'Print worksheet'));
       const moveWork = moveWorkPanel();
@@ -1748,12 +1753,22 @@
         moveWork.open = true;
         moveWork.querySelector('summary').focus();
       };
+      // One numbered "Hand in" box at the top of the Submit step: what to do next.
+      const handIn = h('section', { class: 'hand-in', 'aria-label': 'Hand in' },
+        h('h3', null, 'Hand in'),
+        h('ol', null,
+          h('li', null, 'Download the Word report or save the PDF.'),
+          h('li', null, 'Upload or share it where your teacher directs. Downloading does not submit it.')));
+      const stepSec = el.closest('section.step');
+      const stepHead = stepSec && stepSec.querySelector(':scope > header');
+      if (stepHead) stepHead.after(handIn); else el.prepend(handIn);
       el.append(...reportTools(moveTo), supplemental, fallback,
         h('section', { class: 'stack report-progress-transfer', 'aria-label': 'Continue on another device' },
           h('h3', null, 'Continue on another device'),
           h('p', { class: 'small muted' }, 'Use the tools below to move editable work. Keep your progress file and transfer code private. Turn in the Word or PDF report instead.'),
-          transferBlock({ primary: false }), moveWork));
-    } else el.append(supplemental, fallback);
+          transferBlock({ primary: false }), moveWork),
+        startOver);
+    } else el.append(supplemental, fallback, startOver);
   };
 
   /* ---------------- Hosting environment ----------------
@@ -2623,7 +2638,9 @@
     // otherwise a direct #submit reload can retain an incomplete startup snapshot.
     if (document.readyState !== 'complete') window.addEventListener('load', renderReadiness, { once: true });
     const ss = saveStatusEl(); ss.classList.add('save-status--bar');
-    return [readiness, bar, localWork, ss, makeLabBadge(), status, note];
+    // Progress is secondary: it sits below the report buttons.
+    readiness.classList.add('submit-progress');
+    return [bar, status, note, readiness, localWork, ss, makeLabBadge()];
   }
 
   /* ---------------- Printable worksheet ----------------
@@ -3827,9 +3844,9 @@
     { id: 'results', find: () => firstShown('.sim-tabs'), title: 'Your results build next to the simulation',
       body: 'Switch between Data and Graph to watch your table fill and your graph grow as you run trials.',
       plain: 'Next to each simulation, a Data / Graph switch shows your table filling and your graph growing as you run trials. A small “new” badge marks a tab that changed.' },
-    { id: 'who', find: () => firstShown('.id-box'), title: 'Your name and Dataset ID',
-      body: 'Enter your name and class period for your report. Your Dataset ID identifies your simulated data. Choose “New dataset” only when you want a fresh set of numbers. “Help” reopens this tour.',
-      plain: 'Your name and class period go on your report, and your Dataset ID identifies your own simulated numbers.' },
+    { id: 'who', find: () => firstShown('.id-box'), title: 'Your name and data ID',
+      body: 'Enter your name and class period for your report. Your data ID identifies your simulated data. Choose “New dataset” only when you want a fresh set of numbers. “Help” reopens this tour.',
+      plain: 'Your name and class period go on your report, and your data ID identifies your own simulated numbers.' },
     { id: 'submit', find: () => firstShown('.report-bar'), title: 'Hand in your work and back it up',
       body: 'In Submit, check your progress and download a Word report or save a PDF. Hand the file in as your teacher directs. To continue on another device, use the separate progress file or resume code.',
       plain: 'In the last part, Submit, review your progress and download a Word report or save a PDF. To continue on another device, use “Move your work to another computer” to save a progress file or resume code.' },

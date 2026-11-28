@@ -29,7 +29,7 @@
 .bench-appearance :is([data-ph="theme"],.theme-switch){inline-size:168px;max-inline-size:100%;block-size:36px}
 .bench-appearance:has([data-ph="theme"]) > span:first-child{visibility:hidden}
 .bench-appearance .theme-switch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
-.bench-appearance .theme-opt{min-width:0;min-height:0;padding-inline:.2em}
+.bench-appearance .theme-opt{min-width:0;min-height:44px;padding-inline:.2em}
 @media (max-width:580px){
   .bench-control-bar .bench-route-nav{margin-inline-start:auto}
   .bench-control-bar .bench-route-nav a{padding-inline:.35rem}

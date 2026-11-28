@@ -24,6 +24,8 @@
   /* ---------- setup ---------- */
   .setup { max-width: 760px; margin: 0 auto; padding: 28px 16px 40px; display: grid; gap: 18px; }
   .setup h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); font-weight: 800; }
+  .setup .crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin: 0; }
+  .setup .crumbs a { display: inline-flex; align-items: center; min-height: 44px; }
   .setup .lede { color: var(--muted); }
   .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 16px; }
   .field { display: grid; gap: 6px; }
@@ -93,6 +95,7 @@
 
 <main id="setup" class="setup" tabindex="-1" aria-labelledby="setup-title">
   <header>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="teachers.html">Back to the teacher guide</a></nav>
     <div class="eyebrow">For the classroom screen</div>
     <h1 id="setup-title">Projector mode</h1>
     <p class="lede">Choose a lab and today's parts. The next screen shows large type, a countdown timer, the bench safety reminders and a QR code students can scan.</p>

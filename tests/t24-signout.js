@@ -44,7 +44,7 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   let p = await T.open(ctx, 'lab05.html', '', srv.url);
   let beforeUnloadPrompts = 0; p.on('dialog', d => { beforeUnloadPrompts++; d.dismiss().catch(() => {}); });
   const line = (await p.locator('.id-line').first().innerText()).replace(/\s+/g, ' ');
-  T.ok(/Signed in as Jordan Lee · Period 3 · Dataset ID \S+ · change · New dataset values · Help · Sign out$/.test(line), 'identity line ends with Sign out: ' + line);
+  T.ok(/Name and period: Jordan Lee · Period 3 · Your data ID \S+ · change · New dataset values · Help · Switch student/.test(line), 'identity line ends with Switch student: ' + line);
   const snap = await dump(p);
   T.ok(Object.keys(snap).length >= 10, 'seeded work is in storage');
 
@@ -236,7 +236,7 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   await p.waitForTimeout(1500);
   const snap3 = await dump(p);
   const ds3 = (await p.locator('.ds-id').first().innerText()).trim();
-  T.ok(await p.locator('.responses-bar .btn-startover').count() === 1, 'Submit tools has Start over');
+  T.ok(await p.locator('.start-over-section .btn-startover').count() === 1, 'Submit has its own Start over section');
   await p.evaluate(() => document.querySelector('.btn-startover').click());
   const d3 = p.locator('.dm-card');
   T.ok(await d3.getAttribute('role') === 'alertdialog' && /Start Lab 5 over\?/.test(await d3.innerText()), 'same dialog style, names the lab');

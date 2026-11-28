@@ -51,7 +51,7 @@ const fs = require('node:fs');
       await identity.getByLabel('Enter your name as your teacher knows it').fill('Casey Student');
       await identity.getByLabel('Class period', { exact: true }).selectOption('3');
       await identity.getByRole('button', { name: 'Save', exact: true }).click();
-      assert.match(await identity.textContent(), /Signed in as Casey Student/);
+      assert.match(await identity.textContent(), /Name and period: Casey Student/);
       await p.evaluate(() => {
         localStorage.setItem('aplab:openscied:b3-cell-cycle:v1', JSON.stringify({v: 1, trials: [], fields: {'analysis-design': 'My evidence'}, lastSection: 'analyze', lastVisitedAt: Date.now()}));
         localStorage.setItem('aplab:openscied:other-activity:v1', '{"keep":"other activity"}');

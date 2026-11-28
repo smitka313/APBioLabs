@@ -19,13 +19,17 @@
 .bench-choice-meta{color:var(--muted);font-weight:650;font-size:.87rem;margin-bottom:1.05rem}
 .bench-choice-links{margin-top:auto;display:flex;flex-wrap:wrap;align-items:center;gap:.55rem .9rem}
 .bench-choice-links .btn{white-space:normal;min-height:44px}
-.bench-choice-links .bench-guide{min-height:32px;display:inline-flex;align-items:center;text-underline-offset:4px}
+.bench-choice-links .bench-guide{min-height:44px;display:inline-flex;align-items:center;text-underline-offset:4px}
 .bench-data-note p{margin:0}
 .bench-data-note p+p{margin-top:.18rem}
 .bench-data-note{padding-block:0 1.5rem;margin:0 auto;color:var(--muted);font-size:.88rem}
 /* The home header's teacher link uses the same 44 px pill as the course links on the course pages. */
 .bench-welcome-brand .welcome-for-teachers{display:inline-flex;align-items:center;min-height:44px;border-radius:999px;font-weight:700}
 .bench-portal-theme{display:flex;flex-wrap:wrap;gap:.15rem}
-.bench-portal-theme button{min-height:31px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);font:inherit;font-size:.8rem;padding:.18rem .42rem}
+.bench-portal-theme button{min-height:44px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);font:inherit;font-size:.8rem;padding:.18rem .42rem}
 .bench-portal-theme button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);font-weight:750}
 @media(max-width:650px){.bench-choices{grid-template-columns:1fr}}
+/* Two-button course chooser under the hero intro: phones and small tablets only (desktop shows both cards at once). */
+.bench-quick-choose{display:none;grid-template-columns:1fr 1fr;gap:12px;max-width:34rem;margin-top:0;padding-bottom:clamp(.9rem,2.5vw,1.4rem)}
+@media (max-width:900px){.bench-quick-choose{display:grid}}
+.bench-quick-choose a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;text-align:center}
