@@ -93,7 +93,9 @@ async function runLab(b, srv, lab, dir) {
   ok(reportActions === 'Preview report|Download Word (.docx)|Print or save as PDF', 'the report toolbar matches the OpenSciEd order');
   ok((await reportBar.innerText()).includes('Downloading does not submit it.'), 'the report toolbar explains how to hand in the file');
   const transfer = p.getByRole('region', { name: 'Continue on another device', exact: true });
-  ok(await transfer.isVisible() && (await transfer.innerText()).includes('Do not turn in your transfer code or progress file.'), 'editable-work transfer is labeled in its own area');
+  const transferText = await transfer.innerText();
+  ok(await transfer.isVisible() && transferText.includes('Keep your progress file and transfer code private.') &&
+    transferText.includes('Turn in the Word or PDF report instead.'), 'editable-work transfer is separate from the file students turn in');
   const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 30000 }), word.click()]);
   const docx = path.join(dir, lab + '-report.docx'); await dl.saveAs(docx);
   const zip = await JSZip.loadAsync(fs.readFileSync(docx));

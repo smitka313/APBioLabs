@@ -393,6 +393,7 @@
     return (stem || 'openscied') + (r.status === 'final' ? '-submission' : r.status === 'recovery' ? '-recovery' : '-draft') + '.docx';
   }
   const HAND_IN_REPORT = 'To hand in, upload or share the saved report where your teacher directs. Downloading does not submit it.';
+  const LOCAL_WORK = 'To keep editing, return to this activity in the same browser profile. A Word or PDF report keeps a copy, but neither a report nor a dashboard backup can restore editable OpenSciEd work.';
 
   function downloadBlob(blob, filename) {
     const url = root.URL.createObjectURL(blob), link = node('a');
@@ -522,7 +523,7 @@
     const tray = node('div', 'osr-actions');
     const open = action('Preview report', true);
     const wordShortcut = action('Download Word (.docx)'), printShortcut = action('Print or save as PDF');
-    const handoff = node('p', 'osr-handoff-note', HAND_IN_REPORT);
+    const handoff = node('p', 'osr-handoff-note', 'Choose Preview report to check your name, class period, and what is still to do. ' + HAND_IN_REPORT);
     // Do not add a live region; several activities maintain their own one-region narration.
     const live = node('p', 'osr-live');
     live.id = titleId + '-page-status'; live.tabIndex = -1;
@@ -580,7 +581,19 @@
       const printHelp = config.printInNewTab
         ? 'Opens a separate print tab so your activity stays open. Choose Print or save as PDF there.'
         : 'In the print window, choose “Save as PDF” to download a PDF file.';
-      tools.append(controls, node('p', 'osr-screen-help', HAND_IN_REPORT + ' ' + printHelp), status);
+      const next = node('p', 'small osr-next-step');
+      const updateNextStep = () => {
+        next.textContent = report.status === 'recovery'
+          ? 'This copy may be the only record of changes still in this tab. Save a copy before you close it.'
+          : report.status === 'final'
+            ? 'The required work is recorded. Check your name, class period, and answers before you download.'
+            : report.missing.length
+              ? 'For a complete report, finish the items under “Still to do” below. If your teacher assigned only part of the activity, you can turn in this draft.'
+              : 'This is a draft. Return to the activity and finish the steps your teacher assigned, or save this draft if requested.';
+      };
+      updateNextStep();
+      tools.append(next, controls, node('p', 'osr-screen-help', HAND_IN_REPORT + ' ' + printHelp),
+        node('p', 'osr-screen-help', LOCAL_WORK), status);
       let preview = article(report, titleId), identityEditor;
       // Keep the captured work and timestamps immutable. Corrections affect only this preview
       // and its exports; they do not change the browser identity or the underlying record.
@@ -655,6 +668,7 @@
           missing: ['The saved record changed after this preview opened. This copy preserves the work that was already shown here.'] };
         identityEditor?.remove();
         identityEditor = null;
+        updateNextStep();
         const updated = article(report, titleId);
         preview.replaceWith(updated);
         preview = updated;

@@ -1732,7 +1732,7 @@
   }
   Lab.responses = function (el) {
     if (typeof el === 'string') el = $(el);
-    const msg = h('span', { class: 'grow', 'aria-live': 'polite' }, 'Your answers save in this browser automatically. Copy them to paste into a document or your class LMS.');
+    const msg = h('span', { class: 'grow', 'aria-live': 'polite' }, 'Copy your answers as text to paste into a document or your class LMS.');
     const fallback = h('textarea', { class: 'copy-fallback', hidden: true, readonly: true, 'aria-label': 'Your responses as text' });
     const copyBtn = h('button', { class: 'btn btn--primary', type: 'button', onclick: async () => {
       const text = collectText();
@@ -1743,11 +1743,16 @@
     const supplemental = h('div', { class: 'responses-bar' }, msg, copyBtn, clearBtn);
     if (PAGE.kind !== 'teacher' && PAGE.kind !== 'info') {
       supplemental.append(h('button', { class: 'btn btn--ghost', type: 'button', onclick: printWorksheet }, 'Print worksheet'));
-      el.append(...reportTools(), supplemental, fallback,
+      const moveWork = moveWorkPanel();
+      const moveTo = () => {
+        moveWork.open = true;
+        moveWork.querySelector('summary').focus();
+      };
+      el.append(...reportTools(moveTo), supplemental, fallback,
         h('section', { class: 'stack report-progress-transfer', 'aria-label': 'Continue on another device' },
           h('h3', null, 'Continue on another device'),
-          h('p', { class: 'small muted' }, 'These tools move editable work between devices. Do not turn in your transfer code or progress file.'),
-          transferBlock({ primary: false }), moveWorkPanel()));
+          h('p', { class: 'small muted' }, 'Use the tools below to move editable work. Keep your progress file and transfer code private. Turn in the Word or PDF report instead.'),
+          transferBlock({ primary: false }), moveWork));
     } else el.append(supplemental, fallback);
   };
 
@@ -2504,7 +2509,11 @@
     return h('details', { class: 'disclose move-work' },
       h('summary', null, 'Move your work to another computer'),
       h('div', { class: 'inner' },
-        h('p', { class: 'small muted' }, 'Your work saves only in this browser, not automatically across devices. Before switching computers, save a progress file or copy a resume code. On the new computer, open this same lab and load that file or code. Check that your answers and Dataset ID appear before leaving the original device. A Word or PDF report cannot restore editable lab progress.'),
+        h('ol', { class: 'small' },
+          h('li', null, 'On this device, choose Save progress file or Get a resume code.'),
+          h('li', null, 'On the other device, open this same lab and go to Submit. Open this section and choose Load progress file, or paste your code and choose Load resume code.'),
+          h('li', null, 'After you confirm, check that your answers and Dataset ID match before clearing work on the original device.')),
+        h('p', { class: 'small muted' }, 'Your work does not sync automatically. A Word or PDF report cannot restore editable lab progress.'),
         h('p', { class: 'small backup-status', 'aria-live': 'polite' }),
         h('div', { class: 'row' },
           h('button', { class: 'btn', type: 'button', onclick: () => {
@@ -2552,7 +2561,7 @@
   }
 
   /* Report tools added to the responses toolbar on student lab pages. */
-  function reportTools() {
+  function reportTools(moveTo) {
     const status = h('p', { class: 'tool-status', 'aria-live': 'polite' });
     const note = previewNote();
     const docxBtn = wordReportButton({ id: 'lab-report-download-word', status, note });
@@ -2563,16 +2572,31 @@
     const tlSync = () => { tlRow.hidden = !Lab.timelapse.withRun().length; };
     window.addEventListener('aplab:timelapse', tlSync); setTimeout(tlSync, 400);
     const bar = h('section', { class: 'responses-bar report-bar', 'aria-label': 'Hand in your report' },
-      h('span', { class: 'grow' }, HAND_IN_REPORT), prevBtn, docxBtn, pdfBtn, tlRow);
+      h('span', { class: 'grow' }, 'Preview your report and check your name, class period, and answers. ' + HAND_IN_REPORT), prevBtn, docxBtn, pdfBtn, tlRow);
     // Informational only: existing sectionWork() drives the same progress indicators as the step navigation.
     // Do not gate report downloads or introduce additional completion requirements.
     const readiness = h('div', { class: 'callout callout--tip', role: 'region', 'aria-label': 'Submission readiness' });
+    const savedHere = h('p', { class: 'small' });
+    const renderSaveLocation = () => {
+      const text = window.BiologyBenchSaveState?.failed || SAVE.ok === false
+        ? 'Your latest changes may not be saved. Before leaving, preview a report and check it contains the work you need.'
+        : 'This lab keeps work in this browser only; it has not been sent to your teacher.';
+      if (savedHere.textContent !== text) savedHere.textContent = text;
+    };
+    const localWork = h('div', { class: 'callout callout--tip', role: 'region', 'aria-label': 'Where your work is saved' },
+      savedHere,
+      h('button', { class: 'btn btn--sm', type: 'button', onclick: moveTo }, 'Show device transfer steps'));
+    window.addEventListener('blb:save-state', () => {
+      // saveNote dispatches before updating SAVE.ok. Use its published state once the write returns.
+      queueMicrotask(renderSaveLocation);
+    });
+    renderSaveLocation();
     const renderReadiness = () => {
       const parts = Array.from(document.querySelectorAll('section.step')).filter(sec => sec.id !== 'submit').map(sec => ({ sec, work: sectionWork(sec) })).filter(p => p.work.total > 0);
       const complete = parts.filter(p => p.work.done === p.work.total).length;
       const underway = parts.filter(p => p.work.done > 0 && p.work.done < p.work.total).length;
       readiness.textContent = '';
-      readiness.append(h('p', null, h('strong', null, 'Your progress: '), `${complete} of ${parts.length} sections with all tracked activities complete. Your work is saved in this browser; it has not been sent to your teacher. Standalone calculations and partial work can be saved even when a section is not fully complete. This count is not a grade, and you can download a report before finishing every activity.`));
+      readiness.append(h('p', null, h('strong', null, 'Your progress: '), `${complete} of ${parts.length} sections with all tracked activities complete. This count is not a grade. If your teacher assigned only part of the lab, you can download a report before finishing every activity.`));
       if (underway) readiness.append(h('p', { class: 'small' }, underway + ' additional section' + (underway === 1 ? ' has' : 's have') + ' work in progress. A section counts as complete only when all its tracked activities are done.'));
       const remaining = parts.filter(p => p.work.done < p.work.total);
       if (remaining.length) readiness.append(
@@ -2599,7 +2623,7 @@
     // otherwise a direct #submit reload can retain an incomplete startup snapshot.
     if (document.readyState !== 'complete') window.addEventListener('load', renderReadiness, { once: true });
     const ss = saveStatusEl(); ss.classList.add('save-status--bar');
-    return [readiness, bar, ss, makeLabBadge(), status, note];
+    return [readiness, bar, localWork, ss, makeLabBadge(), status, note];
   }
 
   /* ---------------- Printable worksheet ----------------
