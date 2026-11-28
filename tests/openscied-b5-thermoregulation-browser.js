@@ -37,7 +37,7 @@ function unzipWord(zip){
        const fit=async stage=>assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),stage+' overflows at '+width);
        await p.goto(server.url+'openscied-b5-thermoregulation.html');
        await receipt.ready(p.locator('#th-save'));await receipt.readableDisabled(p.locator('#th-reset'));
-       const title=await p.locator('.th-hero h1 span').evaluate(n=>({rects:n.getClientRects().length,fit:n.getBoundingClientRect().right<=innerWidth}));
+       const title=await p.locator('header.companion-header h1 span').evaluate(n=>({rects:n.getClientRects().length,fit:n.getBoundingClientRect().right<=innerWidth}));
        assert.deepEqual(title,{rects:1,fit:true},'Thermoregulation must stay intact and fit');
        await p.getByRole('button',{name:'Enter your name and class period'}).click();
        await p.getByRole('textbox',{name:'Enter your name as your teacher knows it'}).fill('Avery Thermal');

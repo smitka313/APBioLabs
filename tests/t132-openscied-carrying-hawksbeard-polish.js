@@ -97,13 +97,10 @@ async function fits(page) {
         await page.goto(server.url + HAWKSBEARD);
         // With no saved choice the site now opens dark (the system setting no longer decides).
         const dark = (theme || 'dark') === 'dark';
-        const art = page.locator('.hb-hero img:visible');
-        ok(await art.count() === 1 && (await art.getAttribute('src')).endsWith(dark
-          ? 'hawksbeard-preview-dusk.svg' : 'hawksbeard-preview.svg'),
-          `${width} Hawksbeard uses dedicated dusk artwork only in dark theme`);
-        await art.evaluate(img=>img.decode());
-        ok(await art.evaluate(img=>img.naturalWidth > 0 && getComputedStyle(img).filter === 'none'),
-          `${width} Hawksbeard artwork loads without a filter over its details`);
+        // The hero artwork (day and dusk pictures) left the page with the shared companion header, so the
+        // header carries the title and no picture. The dusk-only rule is no longer checked here.
+        ok(await page.locator('header.companion-header h1').isVisible() && await page.locator('.hb-hero img').count() === 0,
+          `${width} Hawksbeard header shows the shared title with no hero picture`);
         ok(await fits(page), `${width} Hawksbeard page fits in ${dark ? 'dark' : 'light'} mode`);
         const testNote = page.locator('#hb-predict .hb-tip');
         const testNoteText = await testNote.textContent();

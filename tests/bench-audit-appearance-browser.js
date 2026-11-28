@@ -78,10 +78,8 @@ const screenshot=process.env.BENCH_AUDIT_SCREENSHOTS;
       assert.equal(await p.locator('.mx-north').evaluate(e=>getComputedStyle(e).filter),'none','map pin labels remain undimmed');
      }
      if(page==='openscied-b4-hawksbeard.html'){
-      const art=p.locator(theme==='dark'?'.hb-hero-dusk':'.hb-hero-day');
-      assert.ok(await art.isVisible());
-      await art.evaluate(img=>img.decode());
-      assert.equal(await art.evaluate(e=>getComputedStyle(e).filter),'none','dusk palette is baked into the art');
+      // Hero pictures left the shared companion header; the title is what must stay visible.
+      assert.ok(await p.locator('header.companion-header h1').isVisible());
      }
      assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),page+' fits '+width);
      if(screenshot)await p.screenshot({path:path.join(screenshot,width+'-'+theme+'-'+page.replace('.html','.png'))});

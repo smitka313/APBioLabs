@@ -221,7 +221,7 @@ async function inspectIncomeCards(page,size,label) {
   const details=view(page,'cr-income-cards');
   await details.waitFor({state:'visible'});
   check(await details.evaluate(element=>element.open),label+' locking a prediction opens the required Evidence Folder');
-  check(await page.locator('.cr-file-stamp').isVisible()&&await details.locator('.cr-case-index').first().isVisible(),label+' case briefing and evidence log are visible');
+  check(await page.locator('header.companion-header .eyebrow').isVisible()&&await details.locator('.cr-case-index').first().isVisible(),label+' case briefing and evidence log are visible');
   await capture(page,label+'-case-dossier');
   const tabs=view(page,'cr-income-tabs');
   await tabs.waitFor({state:'visible'});

@@ -84,7 +84,8 @@ async function verifyOpenSciEd(page, go) {
   await observation.waitFor();
   assert.equal(await observation.inputValue(), oseNote, 'OpenSciEd note restored after reload');
 
-  await page.locator('.mx-top a[href="openscied-dashboard.html"]').click();
+  // The migration page's back link now lives in the shared companion header breadcrumb.
+  await page.locator('header.companion-header .crumbs a[href="openscied-dashboard.html#unit1"]').click();
   await page.locator('#openscied-resume-link').click();
   await page.waitForURL(href(MIGRATION));
   await observation.waitFor();

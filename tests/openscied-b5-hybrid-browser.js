@@ -26,11 +26,11 @@ const server=http.createServer((req,res)=>{
    await p.goto(base+'openscied-b5-hybrid.html#claim');
    await receipt.ready(p.locator('#hy-save'));await receipt.readableDisabled(p.locator('#hy-reset'));
    if(width===390){
-    const hero=await p.locator('.hy-hero').evaluate(e=>({
-     behind:getComputedStyle(e).backgroundImage,inFlow:getComputedStyle(e,':after').display,
-     below:getComputedStyle(e,':after').backgroundImage,titleFits:e.querySelector('h1').getBoundingClientRect().right<=e.getBoundingClientRect().right
+    // The old hero artwork is gone; the shared companion header holds the title, which must fit at 390 px.
+    const hero=await p.locator('header.companion-header').evaluate(e=>({
+     titleFits:e.querySelector('h1').getBoundingClientRect().right<=e.getBoundingClientRect().right
     }));
-    assert.equal(hero.behind,'none');assert.equal(hero.inFlow,'block');assert.match(hero.below,/openscied-atlas-b5-hybrid\.svg/);assert.equal(hero.titleFits,true);
+    assert.equal(hero.titleFits,true);
    }
    const at=k=>p.locator('#hy-'+k),stage=k=>p.locator('#'+k),go=k=>p.locator('[data-go="'+k+'"]');
    const save=()=>p.evaluate(()=>JSON.parse(localStorage.getItem('aplab:openscied:b5-hybrid:v1')));

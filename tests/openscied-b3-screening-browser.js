@@ -38,7 +38,8 @@ const out=path.join(ROOT,'artifacts','screening');
     const profiles=id('profiles').locator('article');
     assert.equal(await profiles.count(),3);
     assert.equal(await profiles.locator('.sd-avatar svg').count(),3);
-    assert.ok(await p.locator('.sd-hero-art').isVisible());
+    // The page artwork moved out of the hero: the shared companion header now carries the title.
+    assert.ok(await p.locator('header.companion-header h1').isVisible());
     const initial=await profiles.allTextContents();
     for(const [i,place] of M.places.entries()){
       assert.match(initial[i],new RegExp(place+'.*Income:.*Hospital: '+M.distances[i].hub+' mi.*Mobile clinic: '+M.distances[i].mobile+' mi'));
