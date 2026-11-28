@@ -11,16 +11,19 @@
  :root:not([data-theme=light]) .bench-logo img.bench-logo-dark{display:block}
 }
 .bench-route-nav{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:.25rem .95rem;line-height:1.25;font-size:.87rem}
-.bench-route-nav a{display:inline-flex;align-items:center;min-height:40px;padding-inline:.6rem;color:var(--ink);text-underline-offset:4px;border:1px solid transparent;border-radius:8px}
-.bench-route-nav [aria-current=page]{background:var(--accent-soft);color:var(--ink);border-color:var(--accent);font-weight:750;text-decoration:none}
+/* Both course links are the same pill: one height, weight, border and no underline. The current course is filled. */
+.bench-route-nav a{display:inline-flex;align-items:center;min-height:44px;padding-inline:.95rem;color:var(--ink);text-decoration:none;font-weight:700;border:1px solid var(--line);border-radius:999px;background:transparent}
+.bench-route-nav a:hover{border-color:var(--accent)}
+.bench-route-nav [aria-current=page]{background:var(--accent-soft);color:var(--ink);border-color:var(--accent)}
 .bench-brandbar :focus-visible,.bench-portal :focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 @media(max-width:540px){.bench-brandbar-inner{gap:.45rem;align-items:center}.bench-route-nav{gap:.15rem .65rem}}
 .bench-brandbar.dashboard-masthead{background:var(--surface);border-bottom-color:var(--line)}
 .bench-brandbar .dashboard-topbar{min-height:77px;padding-block:.8rem;gap:.35rem 1.1rem}
 .bench-brandbar .dashboard-theme-label{color:var(--muted)}
 .bench-ap-hero h1,.dashboard-hero h1.dashboard-title,.bench-guide-hero h1{font-family:Georgia,'Times New Roman',serif;letter-spacing:-.036em}
+/* Course titles share the public-page display token (style.css). */
+.hero.bench-ap-hero h1,.dashboard-hero h1.dashboard-title{font-size:var(--type-display)}
 @media(max-width:640px){.bench-brandbar .dashboard-topbar .bench-route-nav{margin-left:auto}.bench-brandbar .dashboard-theme-controls{margin-left:auto}}
-.bench-route-nav a.bench-cross-route{font-weight:650}
 .bench-brandbar .bench-control-bar{flex-wrap:wrap}
 .bench-brandbar .bench-appearance{display:flex;align-items:center;justify-content:flex-end;gap:.4rem;margin-inline-start:auto;color:var(--muted);font-size:.8rem}
 .bench-appearance :is([data-ph="theme"],.theme-switch){inline-size:168px;max-inline-size:100%;block-size:36px}

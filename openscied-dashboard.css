@@ -1,23 +1,24 @@
 /* A companion landing page, using the AP home page's wrap, hero, eyebrow and card rhythm.
    Kept here so no companion-only rule changes the main AP page or lab simulations. */
 :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+/* main carries the site's 28 px top padding; the masthead should sit at the very top of the page. */
 .dashboard-shell {
   --dashboard-radius: 12px;
-  padding-block-end: 2.4rem;
+  padding-block: 0 2.4rem;
 }
 .dashboard-hero {
-  --h-ink: #f3f8f5;
-  --h-muted: #cddad4;
-  --h-link: #c4f5e3;
+  --h-ink: var(--hero-ink);
+  --h-muted: var(--hero-muted);
+  --h-link: var(--hero-link);
   position: relative;
   isolation: isolate;
-  background: linear-gradient(140deg,#152e29,#1b2525 76%);
+  background: linear-gradient(140deg,var(--hero-bg),var(--hero-bg-2) 76%);
   color: var(--h-ink);
-  border-bottom: 1px solid #0a0c0e;
+  border-bottom: 1px solid var(--hero-bg-2);
 }
 .dashboard-masthead {
-  background: #1b2024;
-  border-bottom: 1px solid #33423f;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
 }
 .dashboard-topbar,.dashboard-nav,.dashboard-theme-controls {
   display: flex;
@@ -73,9 +74,9 @@
   width: min(1088px, calc(100% - 32px));
   margin: clamp(.65rem,1.35vw,1.1rem) auto 0;
   overflow: hidden;
-  border: 1px solid #426456;
+  border: 1px solid var(--hero-line);
   border-radius: 12px;
-  background: #223b31;
+  background: var(--hero-bg);
 }
 .dashboard-panorama-picture { display: block; }
 .dashboard-hero-art {
@@ -97,7 +98,7 @@
 .dashboard-hero-copy .dashboard-title {
   color: var(--h-ink);
   max-width: 18ch;
-  font-size: clamp(2rem,4.7vw,3.2rem);
+  font-size: var(--type-display);
   font-weight: 800;
   letter-spacing: -.03em;
   margin-block: .14rem .32rem;
@@ -117,11 +118,21 @@
   font-weight: 700;
 }
 .dashboard-browse:hover { background: #fff; border-color: #fff; }
-/* A compact route to the assigned unit, without traversing earlier cards. */
-.dashboard-unit-jumps { margin-block-start: .65rem; max-width: 32rem; }
-.dashboard-unit-jumps ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .22rem .45rem; }
-.dashboard-unit-jumps a { display: flex; flex-wrap: wrap; align-items: center; column-gap: .38em; min-height: 32px; padding: .13rem .3rem; font-size: .86rem; color: var(--h-link); }
-.dashboard-unit-jumps a:focus-visible { outline: 2px solid var(--h-link); outline-offset: 2px; }
+/* Unit chips: the unit name and how many activities it holds, each a 44 px+ target that jumps to the unit. */
+.dashboard-unit-jumps { margin-block-start: .8rem; max-width: 36rem; }
+.dashboard-unit-jumps ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(9.6rem, 1fr)); gap: .45rem; }
+.dashboard-unit-jumps a {
+  display: flex; flex-direction: column; justify-content: center; gap: .08rem;
+  min-height: 56px; padding: .4rem .6rem; border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--h-link) 42%, transparent);
+  background: color-mix(in srgb, var(--h-link) 9%, transparent);
+  color: var(--h-ink); text-decoration: none; font-size: .9rem; line-height: 1.25;
+}
+.dashboard-unit-jumps a:hover { border-color: var(--h-link); }
+.dashboard-unit-jumps .jump-num { color: var(--h-link); font: 700 .74rem/1.2 var(--f-mono); letter-spacing: .04em; }
+.dashboard-unit-jumps .jump-name { font-weight: 650; overflow-wrap: anywhere; }
+.dashboard-unit-jumps .jump-count { color: var(--h-muted); font-size: .8rem; }
+.dashboard-unit-jumps a:focus-visible { outline: 3px solid var(--h-link); outline-offset: 2px; }
 .dashboard-unit h2[id^="unit"] { scroll-margin-top: .8rem; }
 .dashboard-hero-actions { display: grid; gap: .6rem; align-content: center; min-width: 0; }
 .dashboard-student,.dashboard-resume {
@@ -145,17 +156,25 @@
   display: none;
 }
 .dashboard-student .id-line { overflow-wrap: anywhere; }
-.dashboard-student-note { color: var(--muted); font-size: .8rem; line-height: 1.35; }
+.dashboard-student-note { color: var(--muted); font-size: .9375rem; line-height: 1.45; }
 .dashboard-student-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: .27rem;
-  margin-block-start: .54rem;
+  gap: .4rem;
+  margin-block-start: .6rem;
 }
-.dashboard-student-actions .btn { min-height: 36px; padding: .28rem .52rem; font-size: .79rem; }
-#openscied-results-status:not(:empty) { margin-block-start: .38rem; }
+.dashboard-student-actions .btn { min-height: 44px; padding: .4rem .75rem; font-size: .9rem; }
+#openscied-results-status:not(:empty) { margin-block-start: .5rem; color: var(--ink); font-size: .9375rem; }
+/* The long notes about saving, backups and sharing stay one click away. */
+.dashboard-student-more { margin-block-start: .6rem; }
+.dashboard-student-more > summary {
+  display: inline-flex; align-items: center; min-height: 44px; padding-inline: .1rem;
+  color: var(--accent); font-weight: 650; cursor: pointer;
+}
+.dashboard-student-more[open] > summary { margin-block-end: .2rem; }
+.dashboard-student-more > .dashboard-student-note + .dashboard-student-note { margin-block-start: .5rem; }
 
-.dashboard-units { display: grid; gap: 1.5rem; margin-block-start: 1.4rem; }
+.dashboard-units { display: grid; gap: var(--space-section); margin-block-start: 1.4rem; }
 .dashboard-unit.current {
   display: grid;
   grid-template-columns: repeat(3,minmax(0,1fr));
@@ -164,7 +183,7 @@
   align-items: stretch;
 }
 .dashboard-unit.current > :is(h2,p,.dashboard-tag) { grid-column: 1/-1; }
-.dashboard-unit.current h2,.dashboard-coming-soon h2 { font-size: clamp(1.23rem,2.8vw,1.64rem); }
+.dashboard-unit.current h2,.dashboard-coming-soon h2 { font-size: var(--type-h2); }
 .dashboard-unit.current > p {
   color: var(--muted);
   margin-top: -.36rem;
@@ -201,7 +220,7 @@
   aspect-ratio: 8/5;
   border-radius: calc(var(--dashboard-radius) - 1px) calc(var(--dashboard-radius) - 1px) 0 0;
   border-bottom: 1px solid var(--line);
-  background: #0e1d2c;
+  background: var(--surface-2);
 }
 .dashboard-preview svg,.dashboard-preview img { display: block; width: 100%; height: 100%; }
 .dashboard-preview img { object-fit: cover; }
@@ -236,7 +255,7 @@
   padding: .42rem .8rem .52rem;
   min-width: 0;
 }
-.dashboard-activity h3 { font-size: 1.19rem; color: var(--ink); }
+.dashboard-activity h3 { font-size: var(--type-h3); color: var(--ink); }
 .dashboard-activity p { font-size: .89rem; line-height: 1.37; }
 .dashboard-activity .dashboard-meta { color: var(--muted); font-size: .77rem; line-height: 1.3; }
 .dashboard-activity .dashboard-progress {
@@ -307,7 +326,6 @@ time.dashboard-last-opened:not([hidden]) { display: block; margin: .22rem 0 .45r
   .dashboard-nav { gap: 0 .72rem; }
   .dashboard-nav a { font-size: .79rem; min-height: 38px; }
   .dashboard-hero-grid { padding-block: .85rem 1rem; gap: .64rem; }
-  .dashboard-hero-copy .dashboard-title { font-size: clamp(1.85rem,7.5vw,2.45rem); }
   .dashboard-hero-copy .dashboard-intro { font-size: .91rem; }
   .dashboard-browse.btn { margin-block-start: .48rem; }
   .dashboard-student,.dashboard-resume { padding: .58rem .65rem; }
