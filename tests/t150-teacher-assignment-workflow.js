@@ -247,6 +247,8 @@ async function checkViews(browser,base,opt,routeLibs) {
       const fullTrigger=guest.locator('.assign-card').filter({has:guest.locator('[data-assignment][href="'+MIGRATION+'"]')}).locator('[data-copy-assignment]');
       await fullTrigger.press('Enter');
       await dialog.waitFor();
+      // Deliver a delayed close notification while a new fallback is already open.
+      await dialog.evaluate(el=>el.dispatchEvent(new Event('close')));
       const textValue=dialog.getByRole('textbox',{name:'Assignment text'});
       assert.equal(await textValue.inputValue(),migrationText);
       assert.equal(await textValue.evaluate(el=>el.selectionEnd-el.selectionStart),migrationText.length);
