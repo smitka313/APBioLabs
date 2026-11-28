@@ -95,7 +95,8 @@ async function fits(page) {
           `${width} pager also marks the optional habitat prompt`);
 
         await page.goto(server.url + HAWKSBEARD);
-        const dark = (theme || os) === 'dark';
+        // With no saved choice the site now opens dark (the system setting no longer decides).
+        const dark = (theme || 'dark') === 'dark';
         const art = page.locator('.hb-hero img:visible');
         ok(await art.count() === 1 && (await art.getAttribute('src')).endsWith(dark
           ? 'hawksbeard-preview-dusk.svg' : 'hawksbeard-preview.svg'),

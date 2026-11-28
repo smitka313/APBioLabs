@@ -12,7 +12,7 @@ import re
 
 ROOT = Path(__file__).resolve().parent.parent
 ORIGIN = 'https://biologylabbench.com'
-BRAND = 'AP Bio Digital Lab Bench'
+BRAND = 'Biology Lab Bench'
 LICENSE = 'https://creativecommons.org/licenses/by-nc-sa/4.0/'
 CONTENT = json.loads((ROOT / 'tools/seo-content.json').read_text())
 LABS = [lab for group in CONTENT['groups'] for lab in group['labs']]
@@ -31,7 +31,7 @@ def page_specs():
         'index.html': ('Biology Lab Bench | AP Biology and OpenSciEd',
                        'Choose free AP Biology virtual labs or interactive OpenSciEd high school biology companion activities. No account required.',
                        'Biology Lab Bench'),
-        'ap-biology.html': ('Free AP Biology Virtual Labs | AP Bio Digital Lab Bench',
+        'ap-biology.html': ('Free AP Biology Virtual Labs | Biology Lab Bench',
                        'Explore all 13 AP Biology virtual labs for free. Interactive simulations, data analysis, printable student directions, and teacher resources. No installation.',
                        'Free AP Biology virtual labs'),
         'openscied-dashboard.html': ('Biology Companion Activities (for OpenSciEd units) | Biology Lab Bench',
@@ -293,7 +293,7 @@ def structured_data(filename, title, description, label):
 
 def metadata(filename, title, description, label):
     canonical, image = url(filename), ORIGIN + '/img/og.png'
-    alt = 'AP Bio Digital Lab Bench: lab simulation thumbnails beside the site title'
+    alt = 'Biology Lab Bench: lab simulation thumbnails beside the site title'
     if filename == 'index.html':
         image = ORIGIN + '/img/og-home.png'
         alt = 'Biology Lab Bench microscope logo above illustrated AP Biology and OpenSciEd course cards.'

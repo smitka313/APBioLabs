@@ -31,7 +31,7 @@
     return true;
   }
   const style = document.createElement('style');
-  style.textContent = '.bench-activity-inner > :is(.bench-activity-home,.bench-activity-course,#bench-save-receipt){min-inline-size:0}.bench-activity-inner > :is(.bench-activity-course,#bench-save-receipt){overflow-wrap:anywhere}' + '#bench-save-receipt{flex:0 1 10ch;min-width:0;margin:0;text-align:end;align-self:center;color:var(--muted);font:650 clamp(.64rem,2vw,.8rem)/1.13 system-ui,sans-serif}#bench-save-receipt[data-state=bad]{color:var(--bad);font-weight:750}@media print{#bench-save-receipt{display:none!important}}';
+  style.textContent = '.bench-activity-inner > :is(.bench-activity-home,.bench-activity-course,#bench-save-receipt){min-inline-size:0}.bench-activity-inner > :is(.bench-activity-course){overflow-wrap:anywhere}#bench-save-receipt{overflow-wrap:normal}' + '#bench-save-receipt{flex:0 1 auto;max-width:14rem;min-width:0;margin:0;text-align:end;align-self:center;color:var(--muted);font:650 clamp(.64rem,2vw,.8rem)/1.13 system-ui,sans-serif}#bench-save-receipt[data-state=bad]{color:var(--bad);font-weight:750}@media print{#bench-save-receipt{display:none!important}}';
   document.head.append(style);
   window.addEventListener('blb:save-state', render);
   if (!setup()) {
