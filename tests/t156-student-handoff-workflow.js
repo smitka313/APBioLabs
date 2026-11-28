@@ -90,7 +90,8 @@ async function transfer(page) {
       await b.goto(server.url + ose);
       assert.equal(await b.evaluate(key => JSON.parse(localStorage.getItem(key) || 'null')?.notes?.length || 0, oseKey), 0);
       await b.goto(server.url + 'openscied-dashboard.html');
-      assert.match(await b.locator('#openscied-backup-help').innerText(), /cannot be loaded back into an activity/);
+      // The note sits in a collapsed disclosure on the dashboard, so read its text, not what is visible.
+      assert.match(await b.locator('#openscied-backup-help').textContent(), /cannot be loaded back into an activity/);
       assert.ok(await b.locator('#download-openscied-results').isDisabled(), 'no work to archive in this other profile');
       assert.deepEqual([...desktop.errors, ...phone.errors], []);
       console.log('PASS: AP transfer keeps answers and Dataset ID; OpenSciEd edits stay local; draft and turn-in instructions are visible.');

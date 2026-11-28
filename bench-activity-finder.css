@@ -20,7 +20,26 @@
   min-width: 0;
   min-height: 44px;
   font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: .4rem .7rem;
 }
+.activity-finder-fields input::placeholder { color: var(--muted); opacity: 1; }
+/* The select drops the browser's default box; the chevron is drawn with the site's muted ink. */
+.activity-finder-fields select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-inline-end: 2.1rem;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 55%, calc(100% - 12px) 55%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+.activity-finder-fields input:hover, .activity-finder-fields select:hover { border-color: var(--accent); }
+.activity-finder-fields input[type="search"]::-webkit-search-cancel-button { cursor: pointer; }
 .activity-finder-clear.btn { justify-self: start; min-height: 44px; }
 .activity-finder-form :is(button, input, select):focus-visible {
   outline: 3px solid var(--accent);

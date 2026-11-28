@@ -6,6 +6,8 @@
 .bench-dashboard-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem .9rem; margin-top: .75rem; }
 .bench-course-dashboard .bench-dashboard-actions .bench-dashboard-browse { min-height: 44px; margin: 0; color: #0b2a21; background: var(--h-link); border-color: var(--h-link); font-weight: 700; }
 .bench-course-dashboard .bench-dashboard-actions .bench-dashboard-browse:hover { background: #fff; border-color: #fff; }
+.home-status-more > summary { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); font-weight: 650; cursor: pointer; }
+.home-status-more > p { margin-block-start: .2rem; }
 .bench-dashboard-teachers { display: inline-flex; align-items: center; min-height: 44px; color: var(--h-link); text-underline-offset: .17em; }
 .bench-dashboard-actions :focus-visible { outline: 2px solid var(--h-link); outline-offset: 3px; }
 .bench-course-dashboard .bench-dashboard-resume { margin: .75rem 0 0; max-width: 32rem; border-inline-start: 5px solid var(--accent); }

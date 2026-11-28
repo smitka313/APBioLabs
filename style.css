@@ -35,6 +35,14 @@
   --r-sm: 6px;
   /* Paper colors for the report and worksheet views: always black on white, in every theme */
   --paper: #ffffff; --paper-ink: #111111; --paper-muted: #555555; --paper-line: #777777; --paper-shade: #eeeeee;
+  /* Public-page scale (home, AP index, OpenSciEd dashboard, companion headers). Labs keep their own sizes.
+     Display: page titles. h2/h3: section and activity titles. Section: gaps between blocks. */
+  --type-display: clamp(2rem, 1.5rem + 2.6vw, 3.2rem);
+  --type-h2: clamp(1.35rem, 1.1rem + 1.1vw, 1.75rem);
+  --type-h3: clamp(1.1rem, 1rem + .4vw, 1.25rem);
+  --space-section: clamp(1rem, .75rem + 1.2vw, 1.75rem);
+  /* Dark identity band behind the course headers. The same colours in light and dark, because the band stays dark. */
+  --hero-bg: #152e29; --hero-bg-2: #1b2525; --hero-ink: #f3f8f5; --hero-muted: #cddad4; --hero-link: #c4f5e3; --hero-line: #426456;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -83,6 +91,8 @@ sub, sup { line-height: 0; }
 .lab-header { background: var(--surface); border-bottom: 1px solid var(--line); padding-block: 20px 26px; }
 .lab-header .crumbs { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: .92rem; color: var(--muted); margin-bottom: 14px; }
 .lab-header .crumbs a { color: var(--muted); }
+/* Companion page titles use the public-page display token. Labs keep their own h1 size. */
+.lab-header h1.page-title { font-size: var(--type-display); }
 .eyebrow { font-family: var(--f-mono); font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); font-weight: 600; }
 .lab-header .driving-q { font-size: 1.18rem; color: var(--muted); margin-top: 10px; max-width: 60ch; font-style: italic; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }

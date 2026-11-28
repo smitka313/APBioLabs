@@ -62,16 +62,16 @@
   <div class="wrap wrap--wide gutter">
     <div class="hero-grid dashboard-hero-grid bench-dashboard-grid">
       <div class="dashboard-hero-copy bench-dashboard-intro">
-        <p class="dashboard-eyebrow eyebrow">Free interactive companions for OpenSciEd Biology</p>
+        <p class="dashboard-eyebrow eyebrow">Free companions for OpenSciEd Biology</p>
         <h1 class="dashboard-title">Biology Companion Activities</h1>
         <p class="dashboard-intro lede">Choose your unit, then open the activity your teacher assigned.</p>
         <div class="bench-dashboard-actions"><a class="btn btn--primary bench-dashboard-browse dashboard-browse" href="#activities">Browse activities ↓</a><a class="bench-dashboard-teachers" href="teacher-hub.html">For teachers</a></div>
         <nav class="dashboard-unit-jumps" aria-label="Jump to a unit"><ul>
-          <li><a href="#unit1"><strong>Unit 1</strong> Serengeti</a></li>
-          <li><a href="#unit2"><strong>Unit 2</strong> Fires</a></li>
-          <li><a href="#unit3"><strong>Unit 3</strong> Cells and DNA</a></li>
-          <li><a href="#unit4"><strong>Unit 4</strong> Natural selection</a></li>
-          <li><a href="#unit5"><strong>Unit 5</strong> Arctic bears</a></li>
+          <li><a href="#unit1"><span class="jump-num">Unit 1</span><span class="jump-name">Serengeti</span><span class="jump-count">5 activities</span></a></li>
+          <li><a href="#unit2"><span class="jump-num">Unit 2</span><span class="jump-name">Fires</span><span class="jump-count">4 activities</span></a></li>
+          <li><a href="#unit3"><span class="jump-num">Unit 3</span><span class="jump-name">Cells and DNA</span><span class="jump-count">6 activities</span></a></li>
+          <li><a href="#unit4"><span class="jump-num">Unit 4</span><span class="jump-name">Natural selection</span><span class="jump-count">4 activities</span></a></li>
+          <li><a href="#unit5"><span class="jump-num">Unit 5</span><span class="jump-name">Arctic bears</span><span class="jump-count">5 activities</span></a></li>
         </ul></nav>
         <section class="dashboard-unit dashboard-resume bench-dashboard-resume" id="openscied-resume" aria-labelledby="resume-title" hidden>
           <h2 id="resume-title">Continue your activity</h2>
@@ -119,10 +119,13 @@
     } catch (_) {}
   </script>
 </div>
-<p class="dashboard-student-note">Your work stays in this browser profile and does not sync to other devices. To continue editing, return on the same device and use the same browser profile. To hand in work, open the activity and choose <strong>Preview report</strong>. On a shared device, download your files and close activity tabs before choosing <strong>Switch student</strong>.</p>
 <div class="dashboard-student-actions"><button class="btn" type="button" id="download-openscied-results" aria-describedby="openscied-backup-help" disabled>Download backup (.json)</button><button class="btn btn--danger" type="button" id="clear-openscied-results" aria-haspopup="dialog" disabled>Clear saved OpenSciEd work…</button></div>
-<p class="dashboard-student-note" id="openscied-backup-help">This backup is a record only. It cannot be loaded back into an activity, and it may include work from more than one student. It lists the current name and class period as the downloader, not the owner. Use <strong>Preview report</strong> inside the activity for a named Word or PDF file.</p>
 <p class="dashboard-student-note" id="openscied-results-status" role="status" aria-live="polite">No saved work yet. Choose an activity to get started.</p>
+<details class="dashboard-student-more">
+<summary>About saving, backups and handing in</summary>
+<p class="dashboard-student-note">Your work stays in this browser profile and does not sync to other devices. To continue editing, return on the same device and use the same browser profile. To hand in work, open the activity and choose <strong>Preview report</strong>. On a shared device, download your files and close activity tabs before choosing <strong>Switch student</strong>.</p>
+<p class="dashboard-student-note" id="openscied-backup-help">This backup is a record only. It cannot be loaded back into an activity, and it may include work from more than one student. It lists the current name and class period as the downloader, not the owner. Use <strong>Preview report</strong> inside the activity for a named Word or PDF file.</p>
+</details>
 </section>
       </div>
     </div>
