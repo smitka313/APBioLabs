@@ -132,11 +132,20 @@
     el.innerHTML=icon(k);el.append(buildEl('span',M.names[k]));rp('nodes').append(el);nodes[k]=el;
     draggable(el,'[data-node]',end=>connect(k,end?.dataset.node));
     el.onclick=()=>{
+      if(source===k){cancelLink();return;}
       if(source){connect(source,k);return;}
       selected(k);boardNote('Now select what '+M.names[k].toLowerCase()+' directly affects.');
     };
   });
-  rp('cancel-link').onclick=()=>{const was=source;clearLink();boardNote('Arrow canceled. Start with any part of the patch.');nodes[was]?.focus();};
+  function cancelLink(){
+    const was=source;
+    clearLink();boardNote('Arrow canceled. Start with any part of the patch.');
+    nodes[was]?.focus();
+  }
+  rp('cancel-link').onclick=cancelLink;
+  $('build').addEventListener('keydown',event=>{
+    if(event.key==='Escape'&&source){event.preventDefault();cancelLink();}
+  });
   function setLink(sign){
     if(pending<0)return;
     const link=M.links[pending], target=nodes[link.to];
@@ -172,7 +181,11 @@
   const herdTokens=Array.from({length:4},(_,i)=>{
     const el=buildEl('button');el.type='button';el.className='rp-herd';el.setAttribute('aria-label','Wildebeest group '+(i+1)+' (one quarter of the visitors)');el.innerHTML=icon('herd')+icon('herd');
     draggable(el,'.rp-plot',end=>end?.contains(rp('refuge'))&&moveHerd(i));
-    el.onclick=()=>{herdChoice=herdChoice===i?null:i;drawHerd();};
+    el.onclick=()=>{
+      const clearing=herdChoice===i;
+      herdChoice=clearing?null:i;drawHerd();
+      say(clearing?'Group selection cleared.':rp('herd-note').textContent);
+    };
     return el;
   });
   function drawHerd(){
@@ -182,6 +195,9 @@
       el.disabled=moved||s.fewer;el.setAttribute('aria-pressed',String(herdChoice===i));
     });
     rp('refuge').disabled=s.fewer;
+    rp('herd-note').textContent=s.fewer?'Two groups moved.':herdChoice!==null
+      ?'Group '+(herdChoice+1)+' selected. Choose Neighboring patch.'
+      :s.moved.length?'One group moved. Choose one more.':'Select a group on the study patch first.';
   }
   function moveHerd(i){
     if(!prediction(s)||s.fewer||s.moved.includes(i))return;
@@ -192,6 +208,12 @@
     else{if(usable)say('One group moved. Move one more to halve the number of visitors.');herdTokens.find(t=>!t.disabled)?.focus();}
   }
   rp('refuge').onclick=()=>{if(herdChoice!==null)moveHerd(herdChoice);else if(usable)say('Select a wildebeest group on the study patch first.');};
+  rp('pasture').addEventListener('keydown',event=>{
+    if(event.key!=='Escape'||herdChoice===null)return;
+    event.preventDefault();
+    const token=herdTokens[herdChoice];
+    herdChoice=null;drawHerd();say('Group selection cleared.');token.focus();
+  });
   const highlights=[
     ['Same starting patch','Before the visit, both runs for the study patch start at 100. Nothing downstream has changed yet.'],
     ['Fewer visitors arrive','Only the number of visiting wildebeest changes first. The other parts of the web take time to respond.'],

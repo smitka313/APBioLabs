@@ -49,7 +49,7 @@
 <noscript>JavaScript is needed for the model and to save your work.</noscript>
 <section id="build" class="rp-panel" aria-labelledby="build-title">
   <h2 id="build-title" tabindex="-1">Build the web</h2>
-  <p>Drag one part of the ecosystem onto another to show what it directly affects. Or select the two parts in order.</p>
+  <p>Drag one part of the ecosystem onto another, or tap the two parts in order. With a keyboard, use Tab and Enter or Space to select the start and end of the arrow. Press Esc to cancel.</p>
   <div class="rp-coach">
     <div><strong id="rp-count">0 of 6 connections</strong><p id="rp-next" role="status">Find six arrows to finish your web.</p></div>
     <button type="button" class="btn" id="rp-hint" aria-expanded="false" aria-controls="rp-clue">Get a hint</button>
@@ -61,8 +61,8 @@
   </div>
   <div id="rp-link-editor" class="rp-editor" hidden>
     <strong id="rp-link-prompt"></strong>
-    <button type="button" class="btn" id="rp-more">↑ Increases</button>
-    <button type="button" class="btn" id="rp-less">↓ Decreases</button>
+    <button type="button" class="btn" id="rp-more" aria-describedby="rp-link-prompt">↑ Increases</button>
+    <button type="button" class="btn" id="rp-less" aria-describedby="rp-link-prompt">↓ Decreases</button>
     <button type="button" class="btn" id="rp-cancel-link">Cancel</button>
   </div>
   <p id="rp-board-note" class="rp-board-note" role="status">Start with the herd: where does the dung on this patch come from?</p>
@@ -82,11 +82,12 @@
   </form>
   <div id="rp-experiment" hidden>
     <h3>Move half the herd</h3>
-    <p>Drag two wildebeest groups from the study patch to the neighboring patch. Or select a group, then select the neighboring patch. Only the study patch is measured.</p>
+    <p>Drag two wildebeest groups to the neighboring patch, or select each group and then the destination. Use Tab and Enter or Space to do this with a keyboard. Only the study patch is measured.</p>
     <div class="rp-pasture" id="rp-pasture">
       <div class="rp-plot"><strong>Study patch</strong><div class="rp-herds" id="rp-stay"></div></div>
-      <div class="rp-plot"><button type="button" class="btn rp-refuge" id="rp-refuge">Neighboring patch</button><div class="rp-herds" id="rp-away"></div></div>
+      <div class="rp-plot"><button type="button" class="btn rp-refuge" id="rp-refuge" aria-describedby="rp-herd-note">Neighboring patch</button><div class="rp-herds" id="rp-away"></div></div>
     </div>
+    <p id="rp-herd-note" class="rp-muted">Select a group on the study patch first.</p>
     <div id="rp-observe" hidden>
       <h3>Watch the ripple move across the patch</h3>
       <div class="rp-timeline"><button type="button" class="btn" id="rp-replay">Replay ripple</button><label for="rp-scrub">Model step <output id="rp-tick" for="rp-scrub"></output></label><input type="range" min="0" value="0" id="rp-scrub"></div>

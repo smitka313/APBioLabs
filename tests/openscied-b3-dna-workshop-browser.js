@@ -678,6 +678,12 @@ async function exercise(browser,base,size) {
           check(offset>0&&Math.abs((await rail.evaluate(el=>el.scrollLeft))-offset)<2,
             label+' replacing the row after placement retains the student’s scroll position');
         } else await place(page,slot.id,slot.expected,input,label);
+        if(input==='keyboard'){
+          const focused=i+1===slots.length
+            ? page.locator(name==='sort'?'#dw-continue':'#dw-next') : source(page,slot.expected);
+          check(await focused.evaluate(el=>el===document.activeElement),
+            label+' keyboard placement returns to the tray or continues to the next step');
+        }
         if(name==='chain'&&size.width===1366&&i===0){
           const before=await readRecord(page);
           await page.reload();

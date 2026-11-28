@@ -242,8 +242,8 @@
         'Parent '+(slot+1)+' is in its nest. Place the other parent next.');
       if(focus){
         const next=colony.querySelector('[data-rg-burrow-source]');
-        if(next)next.focus({preventScroll:true});
-        else {instruction.tabIndex=-1;instruction.focus({preventScroll:true});}
+        if(next)next.focus();
+        else {instruction.tabIndex=-1;instruction.focus();}
       }
       return true;
     }
