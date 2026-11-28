@@ -20,6 +20,8 @@
     timer = setTimeout(() => { status.textContent = ''; }, 4500);
   };
   dialog.addEventListener('close', () => {
+    // A queued close event from the last copy must not clear a reopened dialog.
+    if (dialog.open) return;
     urlField.value = '';
     textField.value = '';
     if (opener) opener.focus();

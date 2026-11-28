@@ -96,10 +96,24 @@ async function runStudent(browser, url) {
       await tap('case-close');
     }
     ok(await $(page, 'income-explore').isDisabled() && await step(page, 'explore').isDisabled(), 'Even after six exhibits, Explore requires a saved question');
+    await $(page, 'case-dialog').waitFor({state: 'hidden'});
+    await tap('income-test-cost-tab');
+    const focusAfterDelayedClose = await page.evaluate(() => {
+      const dialog = document.getElementById('cr-case-dialog');
+      // Close, choose the next task, then let the previous close notification run.
+      dialog.close();
+      document.getElementById('cr-next-required').click();
+      dialog.dispatchEvent(new Event('close'));
+      return document.activeElement?.id;
+    });
+    ok(focusAfterDelayedClose === 'cr-income-question', 'A delayed exhibit close cannot steal focus from the follow-up');
     await $(page, 'next-required').press('Enter');
+    await page.waitForFunction(() => document.activeElement?.id === 'cr-income-question');
     ok(await page.evaluate(() => document.activeElement?.id === 'cr-income-question'), 'The shortcut moves to the question after all six exhibits');
     ok(await $(page, 'question-unlock').isVisible(), 'The disabled Explore button explains how to unlock it');
     await $(page, 'income-question').fill(full);
+    ok(await $(page, 'income-question').inputValue() === full && await $(page, 'income-explore').isEnabled(),
+      'Writing the follow-up enables Explore without discarding the question');
     await tap('income-explore');
     ok(await page.locator('#explore').isVisible() && (await note(page, 'question-explore-text')) === full, 'Explore opens with the student question visible');
     ok(await $(page, 'view').inputValue() === 'poverty' && await $(page, 'socio').inputValue() === 'poverty',

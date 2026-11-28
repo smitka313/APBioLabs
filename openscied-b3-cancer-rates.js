@@ -706,9 +706,13 @@
   }
   $('case-close').addEventListener('click',()=>caseDialog.close());
   caseDialog.addEventListener('close',()=>{
-    const target=focusQuestion?question:caseOpener;
+    if(caseDialog.open)return;
+    const opener=caseOpener, target=focusQuestion?question:opener;
+    const active=document.activeElement;
     caseOpener=null;focusQuestion=false;text('case-live','');
-    if(target?.isConnected)target.focus(target===question?{}:{preventScroll:true});
+    // Native close already restores focus on many browsers. Do not steal it from a newer action.
+    if(target?.isConnected && (!active || active===document.body || active===opener || caseDialog.contains(active)))
+      target.focus(target===question?{}:{preventScroll:true});
   });
   mapZoom.addEventListener('click',()=>setMapZoom(mapZoom.getAttribute('aria-pressed')!=='true'));
   questionJump.addEventListener('click',()=>{
