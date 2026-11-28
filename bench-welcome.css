@@ -4,7 +4,7 @@
 .bench-welcome-hero{position:relative;background:radial-gradient(ellipse at 83% 5%,var(--wash),transparent 57%),var(--cream);color:var(--ink);border-bottom:1px solid var(--lined)}
 .bench-intro{position:relative;z-index:1;padding-block:clamp(1.2rem,3vw,2.2rem) clamp(1.2rem,3vw,2rem)}
 .bench-portal h1,.bench-portal h2{color:var(--fern);font-family:Georgia,'Times New Roman',serif;letter-spacing:-.037em;line-height:1.06;text-wrap:balance}
-.bench-portal h1{font-weight:650;max-width:20ch;font-size:var(--type-display);margin:.4rem 0 .55rem}
+.bench-portal h1{font-weight:650;max-width:20ch;font-size:clamp(3rem,2rem + 3.9vw,5.1rem);margin:.4rem 0 .55rem}
 .bench-portal h1 em{font-weight:600}
 .bench-portal h2{font-size:var(--type-h2);margin:.3rem 0 .55rem}
 .bench-kicker{font:720 .76rem/1.35 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--brass);margin:0}

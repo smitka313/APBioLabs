@@ -160,7 +160,9 @@ async function page(browser, server, file, { width = 1366, height = 900, theme =
             const h1 = document.querySelector('h1');
             return { h1: getComputedStyle(h1).fontSize, want: probe('var(--type-display)') };
           });
-          T.ok(m.h1 === m.want && m.want !== '16px', `${file} ${width} px: h1 uses the display token (${m.h1}, token ${m.want})`);
+          // The home title keeps its own larger size (owner request); other public titles use the shared display token.
+          if (file === 'index.html') T.ok(parseFloat(m.h1) >= 48 && parseFloat(m.h1) >= (width >= 1200 ? 78 : 40), `${file} ${width} px: home h1 stays large (${m.h1})`);
+          else T.ok(m.h1 === m.want && m.want !== '16px', `${file} ${width} px: h1 uses the display token (${m.h1}, token ${m.want})`);
         } finally { await ctx.close(); }
       }
     }
