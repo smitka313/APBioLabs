@@ -1,12 +1,12 @@
 /* OpenSciEd dashboard previews: published unit and activity order, the registry order in the script,
-   published SVG and WebP previews, HTML captions below each picture, stable 8:5 boxes, no layout shift, and axe clean in light and dark.
+   published WebP previews, HTML captions below each picture, stable 8:5 boxes, no layout shift, and axe clean in light and dark.
    Run: NODE_PATH=$(npm root -g) AXE=<path>/axe.min.js node tests/t109-openscied-dashboard-previews.js */
 const T = require('./_h');
 const fs = require('fs'), path = require('path');
 const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: /gc\.zgo\.at/.test(r.request().url()) ? 'application/javascript' : 'text/css', body: '' }));
 const UNIT1 = ['openscied-b1-field-notebook.html', 'openscied-b1-migration.html', 'openscied-b1-carrying-capacity.html', 'openscied-b1-serengeti.html', 'openscied-b1-ripple.html'];
 const FIELD_PREVIEW = 'assets/openscied-atlas-b1-field-notebook-preview.webp';
-const MIGRATION_PREVIEW = 'assets/openscied-atlas-b1-migration.svg';
+const MIGRATION_PREVIEW = 'assets/openscied-activity-b1-migration.webp';
 const CARRYING_PREVIEW = 'assets/openscied-activity-b1-carrying-capacity.webp';
 const SERENGETI_PREVIEW = 'assets/openscied-activity-b1-serengeti.webp';
 const UNIT2 = ['openscied-b2-burn-lab.html', 'openscied-b2-fires.html', 'openscied-b2-peat-bog-lab.html', 'openscied-b2-carbon-journey.html'];
@@ -14,19 +14,9 @@ const UNIT3 = ['openscied-b3-cancer-rates.html', 'openscied-b3-screening.html', 
 const UNIT4 = ['openscied-b4-hawksbeard.html','openscied-b4-rat-generations.html','openscied-b4-junco.html','openscied-b4-wildlife-corridor.html'];
 const HAWKSBEARD_PREVIEW = 'assets/openscied-activity-b4-hawksbeard.webp';
 const CORRIDOR_PREVIEW='assets/openscied-activity-b4-wildlife-corridor.webp';
-const refreshed = {
-  "b4-hawksbeard": "openscied-activity-b4-hawksbeard.webp",
-  "b3-screening": "openscied-activity-b3-screening.webp",
-  "b1-serengeti": "openscied-activity-b1-serengeti.webp",
-  "b1-carrying-capacity": "openscied-activity-b1-carrying-capacity.webp",
-  "b3-cancer-rates": "openscied-activity-b3-cancer-rates.webp",
-  "b4-rat-generations": "openscied-activity-b4-rat-generations.webp",
-  "b5-hybrid": "openscied-activity-b5-hybrid.webp",
-  "b4-wildlife-corridor": "openscied-activity-b4-wildlife-corridor.webp",
-  "b5-thermoregulation": "openscied-activity-b5-thermoregulation.webp",
-  "b5-wapusk": "openscied-activity-b5-wapusk.webp",
-  "b1-field-notebook": "openscied-atlas-b1-field-notebook-preview.webp"
-};
+const previewFile = key => key === 'b1-field-notebook'
+  ? 'openscied-atlas-b1-field-notebook-preview.webp'
+  : 'openscied-activity-'+key+'.webp';
 (async () => {
   // order in the script registry matches the page
   const js = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.js'), 'utf8');
@@ -35,16 +25,9 @@ const refreshed = {
   T.ok(JSON.stringify(files.slice(0,originalActivities.length)) === JSON.stringify(originalActivities), 'openscied-dashboard.js preserves the published activity order through Unit 5');
   for (const activity of originalActivities) {
     const key = activity.replace(/^openscied-|\.html$/g,'');
-    const filename = refreshed[key];
-    if (filename) {
-      const art = fs.readFileSync(path.join(__dirname,'../assets',filename));
-      T.ok(art.subarray(0,4).toString() === 'RIFF' && art.subarray(8,12).toString() === 'WEBP',
-        activity+' refreshed preview is WebP');
-    } else if (!activity.startsWith('openscied-b5-')) {
-      const art = fs.readFileSync(path.join(__dirname,'../assets/openscied-atlas-'+key+'.svg'),'utf8');
-      T.ok((art.match(/<(?:path|circle|ellipse|rect|polygon)\b/g)||[]).length>40 &&
-        !/<(?:[\w.-]+:)?(?:image|feImage)\b|data:image\//i.test(art), activity+' existing preview is self-contained SVG');
-    }
+    const art = fs.readFileSync(path.join(__dirname,'../assets',previewFile(key)));
+    T.ok(art.subarray(0,4).toString() === 'RIFF' && art.subarray(8,12).toString() === 'WEBP',
+      activity+' preview is WebP');
   }
   const b = await T.launch(), srv = await T.serve();
   try {
@@ -75,19 +58,19 @@ const refreshed = {
       const cancerImage=p.locator('img[src="assets/openscied-activity-b3-cancer-rates.webp"]');
       await cancerImage.scrollIntoViewIfNeeded();
       await cancerImage.evaluate(img=>img.decode());
-      const workshopImage=p.locator('img[src="assets/openscied-atlas-b3-dna-workshop.svg"]');
+      const workshopImage=p.locator('img[src="assets/openscied-activity-b3-dna-workshop.webp"]');
       await workshopImage.scrollIntoViewIfNeeded();
       await workshopImage.evaluate(img=>img.decode());
       const ratImage = p.locator('img[src="assets/openscied-activity-b4-rat-generations.webp"]');
       await ratImage.scrollIntoViewIfNeeded();
       await ratImage.evaluate(img => img.decode());
-      const juncoImage = p.locator('img[src="assets/openscied-atlas-b4-junco.svg"]');
+      const juncoImage = p.locator('img[src="assets/openscied-activity-b4-junco.webp"]');
       await juncoImage.scrollIntoViewIfNeeded();
       await juncoImage.evaluate(img => img.decode());
       const corridorImage=p.locator('img[src="'+CORRIDOR_PREVIEW+'"]');
       await corridorImage.scrollIntoViewIfNeeded();
       await corridorImage.evaluate(img=>img.decode());
-      const rippleImage=p.locator('img[src="assets/openscied-atlas-b1-ripple.svg"]');
+      const rippleImage=p.locator('img[src="assets/openscied-activity-b1-ripple.webp"]');
       await rippleImage.scrollIntoViewIfNeeded();
       await rippleImage.evaluate(img=>img.decode());
       const m = await p.$$eval('.dashboard-activity', cards => cards.map(c => {
@@ -148,7 +131,7 @@ const refreshed = {
       T.ok(cancer?.img?.complete && cancer.img.w===960 && cancer.img.h===600 &&
         cancer.img.alt==='' && cancer.label === 'Open activity: Cancer Rates Data Dive' && /Real data/.test(cancer.capText),
         width + ' px: Cancer Rates Data Dive has a named primary link and accurate real-data descriptor');
-      const junco=m.find(x=>x.img?.src==='assets/openscied-atlas-b4-junco.svg');
+      const junco=m.find(x=>x.img?.src==='assets/openscied-activity-b4-junco.webp');
       T.ok(junco?.img?.complete && junco.img.w===960 && junco.img.h===600 && junco.img.alt==='' &&
         junco.label === 'Open activity: Junco Investigation' && junco.simText === 'Simulated + real data',
         width + ' px: Junco has a named primary link and a combined simulated/real-data descriptor');
@@ -157,11 +140,11 @@ const refreshed = {
         corridor.img.widthAttr==='960' && corridor.img.heightAttr==='600' &&
         corridor.label==='Open activity: Wildlife Corridor Lab' && corridor.simText==='Simulated',
         width + ' px: Wildlife Corridor reserves its revised model artwork and describes it as simulated');
-      const ripple=m.find(x=>x.img?.src==='assets/openscied-atlas-b1-ripple.svg');
+      const ripple=m.find(x=>x.img?.src==='assets/openscied-activity-b1-ripple.webp');
       T.ok(ripple?.img?.complete && ripple.img.w===960 && ripple.img.h===600 && ripple.img.alt==='' &&
         ripple.label==='Open activity: Serengeti Ripple Effects' && ripple.simText==='Simulated',
         width + ' px: Ripple Effects shows the revised illustration and simulated-data badge');
-      const workshop=m.find(x=>x.img?.src==='assets/openscied-atlas-b3-dna-workshop.svg');
+      const workshop=m.find(x=>x.img?.src==='assets/openscied-activity-b3-dna-workshop.webp');
       T.ok(workshop?.img?.complete && workshop.img.w===960 && workshop.img.h===600 &&
         workshop.img.alt==='' && workshop.label === 'Open activity: DNA Workshop: Build, Copy, Decode',
         width + ' px: DNA Workshop shows its revised illustration and a named primary link');

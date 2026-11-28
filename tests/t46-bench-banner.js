@@ -36,6 +36,25 @@ async function art(page) {
         assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
         assert.equal(await p.locator('#labs .card').count(), 13);
         assert.equal(await p.locator('#labs .bench-card-open').count(), 13);
+        const previews = p.locator('#labs .cards > .card > img.thumb');
+        for (let index = 0; index < 13; index++) {
+          const card = previews.nth(index);
+          await card.scrollIntoViewIfNeeded();
+          const result = await card.evaluate(async img => {
+            await img.decode();
+            const bounds = img.getBoundingClientRect(), parent = img.parentElement.getBoundingClientRect();
+            return { src: img.getAttribute('src'), href: img.parentElement.getAttribute('href'),
+              size: [img.naturalWidth, img.naturalHeight], alt: img.alt,
+              fits: bounds.left >= parent.left - 1 && bounds.right <= parent.right + 1 &&
+                Math.abs(bounds.width / bounds.height - 1.6) < .03 };
+          });
+          const number = String(index + 1).padStart(2, '0');
+          assert.equal(result.src, 'img/lab' + number + '.webp');
+          assert.equal(result.href, 'lab' + number + '.html');
+          assert.deepEqual(result.size, [960, 600]);
+          assert.ok(result.alt.startsWith('Illustration: ') && result.fits, width + 'px lab ' + number);
+        }
+
         assert.equal(await p.locator('.bench-dashboard-actions .bench-dashboard-browse').getAttribute('href'), '#labs');
         assert.equal(await p.locator('.bench-dashboard-actions .bench-dashboard-teachers').getAttribute('href'), 'teacher-hub.html');
         assert.equal(await p.locator('#bench-note, #bench-preview, #migration-help').count(), 0);
